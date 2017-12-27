@@ -1,0 +1,67 @@
+﻿@using WebApp.Extensions
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+<div id="EmployeeMessagesDiv"></div>
+<script>
+
+
+    var MessageGrid = "'EmployeeMessagesDiv'"
+    var ReadMessage = function (e) {
+        var currentAnchor = $(e.currentTarget)
+        var dataItem = $("#EmployeeMessagesDiv").getKendoGrid().dataItem(currentAnchor.closest("tr"));
+        $.ajax({
+            url: "/Message/EmployeeMessagesDetails",
+            data: { Id: dataItem.Id,version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            asyn: false,
+            success: function (res) {
+                $("#renderbody").html(res);
+            },
+            error: function (err) {
+                console.log(err.error());
+            }
+        })
+    }
+    var columns = [{
+        field: "FromEmployee",
+        template: "<div style='#:Read!=true ? 'font:message-box' : ''#'>#:FromEmployee#</div>"
+        },
+        { field: "Title", template: "<div style='#:Read!=true ? 'font:message-box' : ''#'>#:Title#</div>" }, { field: "Body", template: "<div class='MyBody'>#: Body #</div>" }];
+
+    Grids.indexGrid({
+        read: "@Url.Action("GetEmployeeMessages", "Message")?MenuId=@Request.QueryString["MenuId"]",
+        del: "@Url.Action("EmployeeMessagesDelete", "Message")",
+        objectName: "EmployeeMessages",
+        recordName: "Title",
+        gridName: "EmployeeMessagesDiv",
+        admin: "@admin",
+        columns: columns,
+        dataBound: function () {
+            var grid = this.gridName;
+            var z ="@MsgUtils.Instance.Trls("Read")";
+            $("#" + grid).off("click", "a.k-grid-" + z.replace(" ", "") + "");
+            $("#" + grid).off("click", "a.k-grid-Read");
+            $("#" + grid).on("click", "a.k-grid-Read", ReadMessage);
+            $("#" + grid).find(".MyBody").each(function () {
+                var row = $(this).closest("tr");
+                var model = $("#" + grid).getKendoGrid().dataItem(row);
+                model.set("Body", decodeHtml(model.Body))
+            });
+        },
+        lang: "@User.Identity.GetCulture()",
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")">&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + MessageGrid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>'
+    });
+
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        var bodyTxt = txt.value.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, '');
+        return bodyTxt.toString();
+    }
+</script>
+

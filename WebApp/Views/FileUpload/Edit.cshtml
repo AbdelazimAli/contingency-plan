@@ -1,0 +1,33 @@
+﻿@{ Layout = null;
+    string Source = Request.QueryString["Source"];
+    string SourceId = Request.QueryString["SourceId"];
+ }
+
+@Styles.Render("~/Content/jQuery-File-Upload")
+@Scripts.Render("~/bundles/jQuery-File-Upload")
+
+<script>
+    $('#fileupload').addClass('fileupload-processing');
+
+    $.ajax({
+         type: 'GET',
+        contentType: "application/json; charset=utf-8",
+        url: "/FileUpload/GetFileList?Source=@Source&SourceId=@SourceId",
+        success: function (data) {
+            $('#fileupload').fileupload('option', 'done').call($('#fileupload'), $.Event('done'), { result: { files: data.files } })
+            $('#fileupload').removeClass('fileupload-processing');
+        }
+    });
+
+    $(function () {
+       
+    var $form = null;
+
+    $form = $('#fileupload').fileupload({
+        dataType: 'json'
+    });
+
+    });
+</script>
+
+@Html.Partial("_Files")

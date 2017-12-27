@@ -1,0 +1,192 @@
+﻿@using WebApp.Models
+@model LoginViewModel
+@{
+    Layout = "~/Views/Account/Hrlogin.cshtml";
+    var compantId = User.Identity.GetDefaultCompany();
+    //var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<div class="login-form">
+    <div class="login-left">
+        <div class="logo">
+            <img id="empImge" src="" alt="" />
+        </div>
+        <h1><span id="welcomeMsg"></span> <span id="localname"></span></h1>
+        <h2><span>Last Login:</span> <span id="lastLogin"></span></h2>
+
+    </div>
+    <div class="login-right">
+        <div class="sap_tabs">
+            <div id="horizontalTab">
+                <div class="resp-tabs-container">
+                    <div class="tab-1 resp-tab-content" aria-labelledby="tab_item-0">
+                        <div class="login-top">
+
+                            @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { id = "form_sample_1", role = "form" }))
+                            {
+                                @Html.AntiForgeryToken()
+
+                                <input type="hidden" id="userid" />
+                                <input type="hidden" id="resetPassVal" />
+                                @Html.HiddenFor(c => c.Culture);
+                                <div class="form-group">
+                                    @Html.TextBoxFor(m => m.UserName, new { @class = "text-input  email", autocomplete = "off", placeholder = "Enter UserName" })
+                                    <b>@Html.ValidationMessageFor(m => m.UserName, "", new { id = "userValidator", @class = "text-danger" })</b>
+                                    <span></span>
+                                    @*<input type="text" class="text-input  email" placeholder="Email" required="" />*@
+                                </div>
+
+                                <div class="form-group">
+
+                                    @Html.PasswordFor(m => m.Password, new { @class = "text-input password", autocomplete = "off", placeholder = "Enter password" })
+                                    <b>@Html.ValidationMessageFor(m => m.Password, "", new { id = "passValidator", @class = "text-danger" })</b>
+                                    <span></span>
+                                    @*<input type="password" class="text-input password" placeholder="Password" required="" />*@
+                                </div>
+
+                                <div class="login-text">
+
+                                    <div class="form-check">
+                                        <label for="remember">Remember Me</label>
+
+                                        <div class="checkbox-input">
+                                            @Html.CheckBoxFor(m => m.RememberMe, new { @class = "form-check-input", autocomplete = "off" })
+                                            <span></span>
+                                        </div>
+                                        <b>@Html.ValidationMessageFor(m => m.RememberMe, "", new { id = "passValidator", @class = "text-danger" })</b>
+                                        @*<input type="checkbox" class="form-check-input" value="Remember-Me" />*@
+
+                                    </div>
+                                    <div class="forget">
+                                        @Html.ActionLink("Forgot password ?", "ForgotPassword", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })
+                                        @*<a href="#">Forgot password?</a>*@
+                                    </div>
+                                </div>
+
+
+                                <div class="login-bottom login-bottom1">
+                                    <div class="submit">
+
+                                        <input type="submit" id="log" class="btn-submit" value="LOGIN" />
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="clear"> </div>
+</div>
+
+@section Lscripts{
+
+    <script>
+        $(function () {
+            function resetCookies() {
+                Cookies.remove("localName");
+                Cookies.remove("lastLogin");
+                Cookies.remove("empImg");
+                Cookies.remove("companyLogo");
+                Cookies.remove("culture");
+                Cookies.remove("welcomeMsg");
+                Cookies.remove("userName");
+                Cookies.remove("password");
+                Cookies.remove("userEmpId");
+                Cookies.remove("userCompanyId");
+                $("#UserName").val('');
+                $("#Password").val('');
+                $("#RememberMe").prop("checked", false);
+                $("#localname").html("Dear. User");
+                $("#welcomeMsg").html("Welcome");
+                $("#empImge").attr("src", "../.././Content/img/noimage.jpg");
+                $("#company-img-id").attr("src", "../.././Content/img/HomeCompany2.png");
+                $("#lastLogin").html("Not Yet");
+            }
+
+
+            localStorage.setItem("Antiforgery", $("input[name='__RequestVerificationToken']").val());
+            var localName = Cookies.get('localName');
+            var lastLogin = Cookies.get('lastLogin');
+            var empImg = Cookies.get('empImg');
+            var companyLogo = Cookies.get('companyLogo');
+            var culture = Cookies.get('culture');
+            var welcomeMsg = Cookies.get('welcomeMsg');
+            var userName = Cookies.get("userName");
+            var password = Cookies.get("password");
+            var userEmpId = Cookies.get("userEmpId");
+            var sourceId = parseInt(userEmpId);
+            var userCompanyId = parseInt(Cookies.get("userCompanyId"));
+            console.log("sourceId", sourceId);
+
+            if (userEmpId) {
+                $.get("@Url.Action("GetImage", "Pages")", { id: sourceId, source: "EmployeePic" }, function (res) {
+
+
+                    document.getElementById("empImge").src = (res ? 'data:image/jpg;base64,' + res : "/Content/Photos/systemnoimage.jpg");
+                });
+            }
+            else {
+                document.getElementById("empImge").src = "/Content/Photos/systemnoimage.jpg";
+            }
+
+
+            if (userCompanyId) {
+                $.get("@Url.Action("GetImage", "Pages")", { id: userCompanyId, source: "ComoanyLogo" }, function (res) {
+
+
+                    document.getElementById("company-img-id").src = (res ? 'data:image/jpg;base64,' + res : "../.././Content/img/HomeCompany2.png");
+                });
+            } else {
+                document.getElementById("company-img-id").src = "../.././Content/img/HomeCompany2.png";
+            }
+
+            if (password) {
+                $("#Password").val(password);
+                $("#RememberMe").prop("checked", true);
+            }
+            if (culture) {
+                $("#Culture").val(culture);
+            }
+            if (userName) {
+                console.log(userName);
+                $("#UserName").val(userName);
+            }
+            else {
+                $("#UserName").val("");
+            }
+            if (localName) {
+                $("#localname").html(localName);
+            }
+            else {
+                $("#localname").html("Dear. User");
+            }
+            if (welcomeMsg) {
+                $("#welcomeMsg").html(welcomeMsg);
+            }
+            else {
+                $("#welcomeMsg").html("Welcome");
+            }
+            if (lastLogin) {
+                $("#lastLogin").html(new Date(lastLogin).toLocaleString());
+            }
+            else {
+                $("#lastLogin").html("Not Yet");
+            }
+        });
+
+        var userEmpId = Cookies.get("userEmpId");
+        if (!userEmpId) {
+            $(".login-left").hide();
+            $(".login-right").addClass("login-right-no-user");
+            $(".submit").addClass("submit-no-user");
+
+        }
+
+
+    </script>
+}

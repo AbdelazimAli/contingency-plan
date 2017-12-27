@@ -1,0 +1,302 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.FlexFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<style>
+    .flexForm .section {
+        border: 1px solid rgba(0, 0, 0, 0.07) !important;
+        padding: 20px !important;
+    }
+
+    /*.flexForm .set.panel {
+        border:  0px #2e6da4 !important;
+        padding: 0px !important;
+    }*/
+
+    .omegaform.rtl .addSet, .omegaform.rtl .addQuest {
+        float: left;
+    }
+</style>
+<div id="flexFormDiv"></div>
+
+<script>
+    console.log('hi');
+
+    $(function() {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        //InputTypes: Number, Text, Radio buttons, Checkboxes
+        var inputTypes = [{ id: 1, name: '@MsgUtils.Instance.Trls("number")' }, { id: 2, name: '@MsgUtils.Instance.Trls("text")' },{ id: 3, name: '@MsgUtils.Instance.Trls("radioset")' },{ id: 4, name: '@MsgUtils.Instance.Trls("checkboxes")' }];
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+
+        var oldPage = localStorage.getItem("menuhigh").split(","), oldulr = $("#"+ oldPage[2] + " a").attr("href"),
+            myForm, formId = "FlexForm",
+            url = "@Url.Action("ReadFormInfo", "Pages")",
+            read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'FlexForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Tasks")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "FlexForms";
+            data.companyId = "@compantId";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+
+            if(read == 1) data.mode = 'show';
+
+            var flexForm = $("#flexFormDiv").Forms(data, model);
+            var descTrls = "@MsgUtils.Instance.Trls("Description")";
+            myForm = $("#" + formId);
+
+            myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            myForm.find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+            FormJs.fillOptionsDynamic(myForm, "DesignedBy", Employees, model, { remoteTableName: "People" });
+
+            //----Bind Events----
+            myForm.on('click', '.addSetBtn, .addQuestBtn', function(e) {
+                e.preventDefault();
+                DrawQuestions($(this));
+            });
+
+            myForm.on('change', '[id^="ShowHint"]', function(e) { toggleHint($(this)); });
+
+            myForm.on('change', '[id^="InputType"]', function(e) { 
+                var InputType = $(this), modelId = InputType.attr('modelId');
+                typeChanged(InputType, InputType.val());
+
+                //if radioset or checkboxes copy last selections in the same fieldset if exsists
+                InputType.closest('.set').find('.section').each(function() {
+                    var selections = $(this).find('[id^="SelectionLst"]');
+                    if(selections.length > 1) {
+                        var fields = selections.clone();
+                        if(fields && fields.length) {
+                            fields.attr('modelId', modelId).attr('id', 'SelectionLst' + modelId);
+                            InputType.closest('.section').find('[id^="SelectionLst"]').parent().html(fields);
+                        }
+                    }
+                });
+            });
+
+            myForm.on('blur', '[id^="SelectionLst"]', function(e) { addSelections($(this)); });
+
+            function toggleHint(showHint) {
+                if(showHint.is(':checked'))
+                    showHint.closest('.section').find('[id^="Hint"]').closest('.form-group').show();
+                else
+                    showHint.closest('.section').find('[id^="Hint"]').closest('.form-group').hide();
+            }
+
+            function typeChanged(InputType, value) {
+                if(value == 3 || value == 4) 
+                    InputType.closest('.section').find('[id^="SelectionLst"],[id^="ShowTextBox"]').closest('.form-group').show();
+                else
+                    InputType.closest('.section').find('[id^="SelectionLst"],[id^="ShowTextBox"]').closest('.form-group').hide();
+            }
+
+            function addSelections(input, value) {
+                var next = input.next(), id = input.attr('modelId');
+
+                //Add selection field if current has value and no next inputs
+                //Remove the value if dosen't have value and next inputs exists
+                if(input.val() && next.length == 0) 
+                    return $('<input type="text" name="SelectionLst" id="SelectionLst'+ id + '" quest="" modelid="' + id + '" class="form-control" value="' + (value ? value : '') + '" >').insertAfter(input);
+                else if(!input.val() && next.length > 0) 
+                    input.remove();
+            }
+
+            //----End Bind Events----
+
+
+            ///-----Draw-----
+            var modelForm = "modelForm",
+                defaultColumn = [{Id: 0, Name: '', ColumnOrder: 1,  InputType: 0, Selections: '', ShowTextBox: false, ShowHint: false, Hint: '' }],
+                addSetBtn = read == 1 ? '' : '<div class="row"><div class="addSet"><span class="badge">@MsgUtils.Instance.Trls("Add Question Group")</span><button class="addSetBtn btn btn-warning btn-circle btn-lg ajaxBtn"><span class="fa fa-plus"></span></button></div></div>',
+                addQuestBtn = read == 1 ? '' : '<div class="row"><div class="addQuest"><span class="badge">@MsgUtils.Instance.Trls("Add Question")</span><button class="addQuestBtn btn btn-info btn-circle ajaxBtn"><span class="fa fa-plus"></span></button></div></div>';
+
+            $('[name="QuestSec"]').append('<div id="'+ modelForm + '" class="flexForm"></div>' + addSetBtn);
+
+            DrawQuestions();
+
+            function DrawQuestions(btn) {
+                var isNew = !btn ? model.Id == 0 : true, //if not btn -> initial (check model.Id)
+                    isQuest = btn && btn.hasClass('addQuestBtn');
+
+                defaultColumn[0].ColumnOrder = (isQuest ? getColumnOrder(btn) : 1);
+
+                var fieldSetObj = {}, formObject = [],
+                    context, setModel = {Id: model.Id}, secMarkup = '',
+                    fieldSets = !isNew ? model.FieldSets : [{ Id: 0, order: 1, Description: '', Columns: defaultColumn }];
+
+                $.each(fieldSets, function(i, fs) {
+                    var sectionObj = {};
+
+                    fieldSetObj = {Id: fs.Id, order: fs.order, LabelEditable: false, Freez: true,
+                        Sections: (isQuest ? [] : [{name: "descSec", layout: "form-inline", order: 0, Freez: true, fields: [{  HtmlAttribute: 'quest-desc', label: descTrls, name: 'Description', id: 'Description' + fs.Id, type: 'textarea' }] }]) };
+                    setModel['Description'] = fs.Description;
+
+                    if(!isQuest) { //draw fieldSet
+                        var set = flexForm.AddNewSet([fieldSetObj], setModel);
+                        context = $(set).appendTo('#' + modelForm);
+                    }
+
+                    $.each(fs.Columns, function(j, column) {
+                        var Id = column.Id, columns = getColumnsProp(Id);
+
+                        secMarkup = '';
+                        sectionObj = { Id: Id, name: "Sec" + Id, order: column.ColumnOrder, layout: "form-inline", fieldsNumber: 2, labelmd: 4, Freez: true, fields: columns };
+
+                        if(read == 1) 
+                            column.SelectionLst = column.Selections;
+
+                        //for bind data
+                        for (var c in column) {
+                            c == 'InputType' ? setModel[c + Id] = column[c] : setModel[c] = column[c];
+                        }
+
+                        //draw section
+                        secMarkup += flexForm.AddNewSection([sectionObj], setModel);
+                        if(!isQuest)
+                            context.append(secMarkup).addClass('questSet'); //fieldSet
+                        else
+                            context = $(secMarkup).insertBefore(btn.closest('.row')); //section
+
+                        //InputType
+                        context.find('[id^="InputType"]').each(function() {
+                            var inputType = $(this);
+                            FormJs.fillOptionsDynamic((read == 1 ? myForm : context), inputType.attr('id'), inputTypes, setModel);
+
+                            var value = read == 1 ? setModel[inputType.attr('id')] : inputType.val();
+                            typeChanged(inputType, value);
+                        });
+
+                        //Selections
+                        if(read != 1) {
+                            context.find('[id^="SelectionLst'+ column.Id +'"]').each(function() {
+                                if(column.Selections) {
+                                    var input = $(this), SelectionLst = column.Selections.split(',');
+
+                                    if(SelectionLst && SelectionLst.length) {
+                                        SelectionLst.push('');
+                                        input.val(SelectionLst[0]);
+                                        for (var i = 1; i < SelectionLst.length; i++) {
+                                            input = addSelections(input, SelectionLst[i]);
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
+                        //Hide hint
+                        context.find('[id^="ShowHint"]').each(function() {
+                            toggleHint($(this));
+                        });
+                    });
+
+                    ///---#done draw---
+                    if(!isQuest) context.append(addQuestBtn);
+                });
+            }
+
+
+            function getColumnOrder(btn) {
+                var max = 0, columnOrders = btn.closest('.set').find('[name="ColumnOrder"]');
+
+                for (var i = 0; i < columnOrders.length; i++) {
+                    var value = Number($(columnOrders[i]).val());
+                    if(!isNaN(value) && max < value)
+                        max = value;
+                }
+                return max + 1;
+            }
+
+            function getColumnsProp(Id) {
+                var columns = [
+                      {label: '@MsgUtils.Instance.Trls("Name")'       , name: 'Name'       , id: 'Name'        + Id, order: 1, HtmlAttribute: 'quest modelId=' + Id, type: 'text' },
+                      {label: '@MsgUtils.Instance.Trls("ColumnOrder")', name: 'ColumnOrder', id: 'ColumnOrder' + Id, order: 2, HtmlAttribute: 'quest modelId=' + Id, type: 'number' },
+                      {label: '@MsgUtils.Instance.Trls("InputType")'  , name: 'InputType'  , id: 'InputType'   + Id, order: 3, HtmlAttribute: 'quest modelId=' + Id, type: 'select' },
+                      {label: '@MsgUtils.Instance.Trls("Selections")' , name: 'SelectionLst' , id: 'SelectionLst'  + Id, order: 4, HtmlAttribute: 'quest modelId=' + Id, type: 'text'},
+                      {label: '@MsgUtils.Instance.Trls("ShowTextBox")', name: 'ShowTextBox', id: 'ShowTextBox' + Id, order: 5, HtmlAttribute: 'quest modelId=' + Id, type: 'checkbox' },
+                      {label: '@MsgUtils.Instance.Trls("ShowHint")'   , name: 'ShowHint'   , id: 'ShowHint'    + Id, order: 6, HtmlAttribute: 'quest modelId=' + Id, type: 'checkbox', md: 3 },
+                      {label: '@MsgUtils.Instance.Trls("Hint")'       , name: 'Hint'       , id: 'Hint'        + Id, order: 7, HtmlAttribute: 'quest modelId=' + Id, type: 'textarea' },
+                ];
+                return columns;
+            }
+            ///-----End Draw-----
+
+
+            //Save Data
+            myForm.on("click", "#saveChanges", function (e) {
+
+                $.post("/Flex/FlexFormDetails", { model: GetData() }, function(data) {
+                    FormJs.postSuccessFunc(myForm, $(this), data, function(result) {
+                        model = result;
+
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+            });
+
+            function GetData() {
+                var setOrder = 1, formObj = {}, setArray = [], columnArray = [];
+
+                //form
+                $('#FlexForm').find(':input[name]:not(:button, [quest], [quest-desc])').each(function(f, node) {
+                    FormJs.getColumnData(node, formObj);
+                });
+
+                $('.questSet').each(function(q, set) {
+                    columnArray = [];
+
+                    $(set).find('.section').each(function(i, sec) {
+                        var columnData = {Id: $(sec).attr('id')}, isColumn = false;
+                        SelectionLst = [];
+                        //column
+                        $(sec).find(':input:not(:button, [quest-desc])').each(function(j, node) {
+                            isColumn = true;
+                            FormJs.getColumnData(node, columnData);
+                            if(node.name == 'SelectionLst' && columnData.SelectionLst)
+                                SelectionLst.push(columnData.SelectionLst);
+                        });
+
+                        if(isColumn) { 
+                            //selections if radiosets or checkboxes
+                            if(columnData.InputType == 3 || columnData.InputType == 4) 
+                                columnData.Selections = SelectionLst.join(',');
+
+                            columnArray.push(columnData); 
+                        }
+                    });
+
+                    setArray.push({
+                        Id: $(set).attr('id'),
+                        order: setOrder++,
+                        Description: $(set).find('[id^="Description"]').val(),
+                        Columns: columnArray
+                    });
+                });
+
+                formObj.FieldSets = setArray;
+                return formObj;
+            }
+
+            myForm.on('click',"#backToIndex", function() {
+                $("#renderbody").load(oldulr);
+            });
+        });
+
+    });
+
+</script>

@@ -1,0 +1,273 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Payroll
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+
+<table class="table" style="width:60%">
+    <tr>
+        <td><div class="col-sm-2">
+    <input id="LinkTableType" />
+</div></td>
+        <td>
+            <div class="col-sm-2 col-md-2 col-lg-2 form-group">
+    <input type="button" class="btn btn-sm btn-primary" onclick="return false;" id="Draw" value="@MsgUtils.Instance.Trls("ApplyChanges")" />
+</div>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <div id="StartEndGrade" class="form-inline section row">
+                <div class="col-sm-6 col-md-6 col-lg-6 form-group">
+                    <label for="StartGrade" class="control-label col-sm-4 col-md-4 col-lg-4">
+                        <span class="lblSpan">@MsgUtils.Instance.Trls("StartGrade")</span>
+                    </label>
+                    <div class="col-sm-8 col-md-8 col-lg-8" style="width:60%">
+                        <input type="number" id="StartGrade" name="StartGrade" class="form-control k-valid" style="height: 15px;" />
+                    </div>
+                </div>
+            </div>
+        </td>
+        <td>
+        <div class="col-sm-6 col-md-6 col-lg-6 form-group">
+            <label for="EndGrade" class="control-label col-sm-4 col-md-4 col-lg-4">
+                <span class="lblSpan">@MsgUtils.Instance.Trls("DiffGrade")</span>
+            </label>
+            <div class="col-sm-8 col-md-8 col-lg-8" style="width:60%">
+                <input type="number" id="EndGrade" name="EndGrade" class="form-control k-valid" style="height: 15px;" />
+            </div>
+        </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <div id="PointValueDiv" class="form-group col-sm-6 col-md-6 col-lg-6">
+                <label for="PointValue" class="control-label col-sm-4 col-md-4 col-lg-4">
+                    <span>@MsgUtils.Instance.Trls("PointValue")</span>
+                </label>
+                <div class="col-sm-8 col-md-8 col-lg-8">
+                    <input type="number" id="PointValue" name="PointValue" class="form-control k-valid" style="height: 15px;" />
+                </div>
+            </div>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2" style="height:15px">
+            <div id="SubGradeDiv" class="form-group  col-sm-6 col-md-6 col-lg-6">
+                <label for="SubGrade" class="control-label col-sm-4 col-md-4 col-lg-4">
+                    <span>@MsgUtils.Instance.Trls("SubGrade")</span>
+                </label>
+                <div class="col-sm-8 col-md-8 col-lg-8">
+                    <input type="number" id="SubGrade" name="SubGrade" class="form-control" style="height: 15px;"/>
+                </div>
+            </div>
+        </td>
+    </tr>
+</table>
+ 
+<div id="LinkTableGridDiv" class="col-sm-12">
+   
+</div>
+
+<script>
+    var ExclCols =[];
+    var src =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Srcs));
+    var dept = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.dept));
+    var payrollDeu = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.payrollDeu));
+    var pplgrp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.pplgrp));
+    var prollgrd = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.prollgrd));
+    var job = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.job));
+    var loc = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.loc));
+    var persnType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.persnType));
+    var Perf = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Perf));
+    var Formula = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Formula));
+    var yesNoFrm = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.yesNoFrm));
+    var Credit = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Credit));
+
+
+    $(function () {
+        $("#SubGrade").closest("tr").css("display","none");
+        $("#PointValue").closest("tr").css("display","none");
+        $("#StartEndGrade").closest("tr").css("display","none");
+       var dropdown = $("#LinkTableType").kendoDropDownList({
+            valuePrimitive: true,
+            dataSource: src,
+            dataTextField: "name",
+            dataValueField: "id",
+            optionLabel: " ",
+       }).data("kendoDropDownList");
+
+       $(".salarylinks").each(function(){
+           var elem =$(this);
+           var name = elem.attr("name");
+
+           if(!elem.prop("checked")){
+               var x = $.grep(colms,function(el){ if(el.name == name) return el;});
+               if(x.length != 0)
+                   $(dropdown.items()[x[0].id]).css("display","none");
+
+               if(name == "IPoints")
+                   $(dropdown.items()[6]).css("display","none");
+           }
+       });
+
+        $(".table").on('change',"#LinkTableType",null,function(){
+            var va = $(this).data("kendoDropDownList").value();
+            if(va == 2 || va == 3){
+                $("#SubGrade").closest("tr").css("display","none");
+                $("#PointValue").closest("tr").css("display","none");
+                $("#StartEndGrade").closest("tr").css("display","");
+            }else if(va == 4){
+                $("#SubGrade").closest("tr").css("display","");
+                $("#PointValue").closest("tr").css("display","none");
+                $("#StartEndGrade").closest("tr").css("display","none");
+            }else if(va == 5 || va == 6){
+                $("#SubGrade").closest("tr").css("display","none");
+                $("#PointValue").closest("tr").css("display","");
+                $("#StartEndGrade").closest("tr").css("display","none");
+            }else
+            {
+                $("#SubGrade").closest("tr").css("display","none");
+                $("#PointValue").closest("tr").css("display","none");
+                $("#StartEndGrade").closest("tr").css("display","none");
+            }
+        });
+
+        var gridname = "'LinkTableGridDiv'";
+        function HideShow(name){
+
+            if(Gridcols.length == 0)
+                return true;
+
+            if($.inArray(name,Gridcols) == -1)
+                return true;
+            else
+                return false;
+        }
+        function Formula(){
+            if(purposeValue == 1)
+                return true;
+            else
+                return false;
+        }
+        function CaseValue(){
+            if(purposeValue == 3)
+                return true;
+            else
+                return false;
+        }
+        Grids.batchGrid({
+            read: "@Url.Action("ReadLinkTable", "SalariesDesign")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "LinkTables",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            gridName: "LinkTableGridDiv",
+            toolbar:'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            pageable:false,
+            columns : [
+                        { field: "Performance", values: Perf , hidden: HideShow("Performance") },
+                        { field: "SubGrade" , hidden: HideShow("SubGrade")  },
+                        { field: "DeptId", values: dept ,hidden: HideShow("DeptId") },
+                        { field: "FormulaId", values: Formula ,hidden : Formula()},
+                        { field: "GradeId", values: prollgrd ,hidden: HideShow("GradeId") },
+                        { field: "GroupId", values: pplgrp , hidden: HideShow("GroupId") },
+                        { field: "JobId", values: job ,hidden: HideShow("JobId") },
+                        { field: "LocationId", values: loc ,hidden: HideShow("LocationId") },
+                        { field: "Grade",hidden: HideShow("Grade")},
+                        { field: "Point" ,hidden: HideShow("Point")  },
+                        { field: "PersonType", values: persnType , hidden: HideShow("PersonType") },
+                        { field: "YesNoForm", values: yesNoFrm ,hidden : Formula()},
+                        { field: "CreditGlAccT", values: Credit },
+                        { field: "DebitGlAccT", values: Credit },
+                        { field: "PayDueId", values: payrollDeu },
+                        { field: "MinValue", hidden : CaseValue() },
+                        { field: "MaxValue", hidden : CaseValue()},
+
+            ],
+            select: [{ "DeptId": dept },{ "FormulaId": Formula },{ "GradeId": prollgrd },{ "GroupId": pplgrp },
+                     { "JobId": job },{ "LocationId": loc },{ "PayDueId": payrollDeu },{ "Performance": Performance },
+                     { "PersonType": persnType },{ "YesNoForm": yesNoFrm },{ "CreditGlAccT": Credit },{ "DebitGlAccT": Credit }
+            ]
+        });
+        
+        $(".table").on("blur","#StartGrade",null,function(){
+            var elem = $(this);
+            var value = parseInt(elem.val());
+            $("#StartGrade").removeClass("k-invalid").prop("aria-invalid", false);
+            $("#StartGrade").next("span.k-tooltip-validation").remove();
+            if(isNaN(value)|| value < 0)
+            {
+                $("#StartGrade").addClass("k-invalid").prop("aria-invalid", true);
+                $("#StartGrade").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartGrade' role='alert'>@MsgUtils.Instance.Trls("Requiredorlesszero")</span>");
+            }
+        });
+
+        $(".table").on("blur","#EndGrade",null,function(){
+            var elem = $(this);
+            var value = parseInt(elem.val());
+            var drp =  dropdown.value();
+            
+            $("#EndGrade").removeClass("k-invalid").prop("aria-invalid", false);
+            $("#EndGrade").next("span.k-tooltip-validation").remove();
+            
+            if(isNaN(value) || value < 0)
+            {
+                if(drp == "2" && isNaN(value)) return;
+                else{
+                    $("#EndGrade").addClass("k-invalid").prop("aria-invalid", true);
+                    $("#EndGrade").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndGrade' role='alert'>@MsgUtils.Instance.Trls("Requiredorlesszero")</span>");
+                }
+            }
+        });
+
+        $(".table").on("blur","#PointValue",null,function(){
+            $("#PointValue").removeClass("k-invalid").prop("aria-invalid", false);
+            $("#PointValue").next("span.k-tooltip-validation").remove();
+            var elem = $(this);
+            var value = parseInt(elem.val());
+            if(isNaN(value) || value < 0)
+            {
+                $("#PointValue").addClass("k-invalid").prop("aria-invalid", true);
+                $("#PointValue").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PointValue' role='alert'>@MsgUtils.Instance.Trls("Requiredorlesszero")</span>");
+            }
+        });
+
+        $(".table").on("blur","#SubGrade",null,function(){
+            $("#SubGrade").removeClass("k-invalid").prop("aria-invalid", false);
+            $("#SubGrade").next("span.k-tooltip-validation").remove();
+            var elem = $(this);
+            var value = parseInt(elem.val());
+            if(isNaN(value) || value < 0)
+            {
+                $("#SubGrade").addClass("k-invalid").prop("aria-invalid", true);
+                $("#SubGrade").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='SubGrade' role='alert'>@MsgUtils.Instance.Trls("Requiredorlesszero")</span>");
+            }
+        });
+
+        $(".table").on('click',"#Draw",null,function(){
+            var vl = dropdown.value();
+            var grid = $("#LinkTableGridDiv").data("kendoGrid");
+            var Stvl = $("#StartGrade").val();
+            var Edvl =$("#EndGrade").val();
+            var Povl = $("#PointValue").val();
+            var Subgd =$("#SubGrade").val();
+            if(vl != "")
+            {
+                if($(".table").find(".k-invalid").length > 0) return ;
+                $.getJSON("/SalariesDesign/ChangeDataSource",{Choose:vl,StartGrade:Stvl,EndGrade:Edvl,PointValue:Povl,SubGrade:Subgd},function(res){
+                    grid.dataSource.data(res);
+                });
+            }else{
+                toastr.error("@MsgUtils.Instance.Trls("SelectRecord")");
+            }
+        });
+
+    });
+
+
+</script>

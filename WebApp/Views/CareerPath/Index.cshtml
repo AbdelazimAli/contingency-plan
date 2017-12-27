@@ -1,0 +1,75 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Career"></div>
+
+<script>
+    var performance =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.performance));
+    var jobs =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.jobs));
+
+    var objectName = "CareerPaths";
+    var gridname="'Career'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadCareerPaths", "CareerPath")?MenuId=@Request.QueryString["MenuId"]",
+        create: "@Url.Action("CreateCareerPath", "CareerPath")",
+        update: "@Url.Action("UpdateCareerPath", "CareerPath")",
+        destroy: "@Url.Action("DeleteCareerPath", "CareerPath")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName:objectName,
+        isLocal: true,
+        parentColumnName: "CompanyId",
+        parentColumnId: "@User.Identity.GetDefaultCompany()",
+        recordName: "Name",
+        gridName: "Career",
+        detailInit: detailInit,
+        fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false},IsLocal:{editable:false}},
+        columns:[ {
+            field: "IsLocal",
+            template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsLocal\',' + gridname + ')"/>'
+        }]
+
+    });
+    function detailInit(e) {
+        var JopArr=[];
+        if(e.data.IsLocal==false)
+            for (var i = 0; i < jobs.length; i++) {
+                if(jobs[i].isLocal==false)
+                    JopArr.push(jobs[i]);
+            }
+        else
+            JopArr=jobs;
+        $("<div id='CareerJobs" + e.data.Id + "' />").appendTo(e.detailCell);
+        var gridname = "'CareerJobs" + e.data.Id + "'";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadCareerPathJobs", "CareerPath")?Id=" + e.data.Id,
+            create: "@Url.Action("CreateCareerPathJobs", "CareerPath")",
+            update: "@Url.Action("UpdateCareerPathJobs", "CareerPath")",
+            destroy: "@Url.Action("DeleteCareerPathJobs", "CareerPath")",
+            parentColumnName: "CareerId",
+            parentColumnId: e.data.Id,
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "CareerPathJobs",
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            recordName: "Name",
+            gridName: 'CareerJobs' + e.data.Id,
+            height: 650,
+            columns: [{ field: "JobId", values: JopArr }, { field: "Performance", values: performance }],
+            select: { "JobId": JopArr, "Performance": performance },
+            fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+        });
+    }
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Career" }, { "ObjectName", "CareerPaths" }, { "Functions", ViewBag.Functions } })

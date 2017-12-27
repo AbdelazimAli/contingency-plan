@@ -1,0 +1,49 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int dataLevel = 4, read = 0;
+
+}
+
+<div id="EmployementHistoryDiv">
+
+</div>
+<script>
+    var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+    var Status = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Status));
+    var columns = [ {field:"PersonType",values:PersonType},{field:"Status",values:Status}];
+    var EmployementHistorytGrid = "'EmployementHistoryDiv'"
+
+    Grids.indexGrid({
+        read: "@Url.Action("GetHitory", "People")?Id="+@ViewBag.Id,
+        del:"@Url.Action("DeleteEmploymentHistory", "People")",
+        objectName: "EmployementHistory",
+        gridName: "EmployementHistoryDiv",
+        tableName: "Employements",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: columns,
+        recordName: "Code",
+        select: {"PersonType":PersonType,"Status":Status},
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"></div><div class="btn-group"><button type="button" class="btn btn-default btn-sm  glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+EmployementHistorytGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>} <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('+EmployementHistorytGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>'+
+                '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+EmployementHistorytGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+EmployementHistorytGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+        dataBound: function (e) {
+            var name = $("#" + this.gridName);
+            var gridd = name.data("kendoGrid");
+           
+            name.find(".k-grid-Delete").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                console.log(model);
+                if (model.Status != 1)  $(this).hide(); //hide delete btn
+
+            });
+        }     
+    });
+</script>

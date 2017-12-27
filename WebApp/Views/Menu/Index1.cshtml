@@ -1,0 +1,686 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.MenuViewModel
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<script src="~/Scripts/app/tree.js"></script>
+<script src="~/Scripts/app/Icons.js"></script>
+<script src="~/Scripts/app/formula.js"></script>
+
+<style>
+    .glyphicon.k-sprite,.fa.k-sprite {
+        font-size: 12px;
+        line-height: 12px;
+        vertical-align: middle;
+    }
+
+    .dropdown-header {
+        border-width: 0 0 1px 0;
+        text-transform: uppercase;
+    }
+
+    .dropdown-header > span {
+            display: inline-block;
+            padding: 10px;
+        }
+
+   .dropdown-header > span:first-child {
+                width: 50px;
+            }
+
+    .k-list-container > .k-footer {
+        padding: 10px;
+    }
+
+    .selected-value {
+        display: inline-block;
+        vertical-align: middle;
+        width: 24px;
+        height: 24px;
+        background-size: 100%;
+        margin-right: 5px;
+        border-radius: 50%;
+    }
+
+    #Icon-list .k-item {
+        line-height: 1em;
+        min-width: 300px;
+    }
+
+    #Icon-list h3 {
+        font-size: 1.2em;
+        font-weight: normal;
+        margin: 0 0 1px 0;
+        padding: 0;
+    }
+    
+    /*.test {
+        background-color: red;
+    }*/
+    .k-rtl span.k-i-expand{
+        margin-left:auto!important;
+    }
+ .k-rtl span.k-i-collapse{
+     margin-left:auto!important;
+ }
+    .statement {
+        color: orange;
+    }
+
+    .paretheses{
+        color: green;
+    }
+
+    .operator{
+        color: blue;
+    }
+    .column{
+
+        color: black;
+    }
+    .erro{
+        color:red;
+    }
+
+
+    #editor {
+        width: 859px;
+        border: 2px solid grey;
+        height: 108px;
+        text-align: left;
+        padding: 10px;
+        background-color: white;
+        color: blue;
+        font-size: 14px;
+        font-family: monospace;
+    }
+</style>
+<div id="MenuStructure" class="row">
+    <div id="Menutreeview" style="@(rtl?"float:right":"float:left")" class="col-lg-3 col-sm-3 col-md-3 fa-align-center">
+        <div class="panel panel-primary">
+            <div class="panel-heading" style="@(rtl?"text-align:-webkit-right":"")" >
+                <h3 class="panel-title"><span class="glyphicon  glyphicon-new-window" ></span>@MsgUtils.Instance.Trls("Menu Structure")</h3>
+            </div>
+            <div class="panel-body">
+                <div id="lefttreeview">
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="MenuFormDiv" class="col-lg-9 col-sm-9 col-md-9">
+        
+    </div>
+</div>
+
+<script>
+    var icons = iconlist.icons;
+    var functions;
+    function Drop(val){
+        $("#Icon").kendoDropDownList({
+            value:val,
+            dataTextField:"text",
+            dataValueField:"value",
+            filter:"contains",
+            headerTemplate:'<span class="deropdown-header k-widget k-header">Icons</span>',
+            footerTemplate:"Total #:instance.dataSource.total()# items found",
+            valueTemplate:"<span class='selected-value  #:data.value #'></span><span>#:data.text#</span>",
+            template:'<span class="k-state-default fa #:data.value#"></span><span>&nbsp;#:data.text#</span>',
+            dataSource:icons,
+            height:400
+
+        });
+    }
+
+    function Draw(read,re,edit){
+        $("#MenuFormDiv").empty().html("<div id='AppendMenuFormDiv'></div>");
+        var model=re;
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "MenuForm";
+        var result = [{ id: 0 , name:'@MsgUtils.Instance.Trls("Menu")' },{ id: 1 , name:'@MsgUtils.Instance.Trls("Page")'}, { id: 2, name:'@MsgUtils.Instance.Trls("Page Tab")'}]
+        $.getJSON(url, { objectname: 'MenuForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Menu")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Menus";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read ==1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            $("#AppendMenuFormDiv").Forms(data, model);
+            var hiddenFields = "<input type='hidden' name='Sort' id='Sort' value='" + (model == null || model.Sort == null  ? "": model.Sort) + "'>";
+            hiddenFields += "<input type='hidden' name='Order' id='Order' value='" + (model == null || model.Order == null  ? "": model.Order) + "'>";
+            hiddenFields += "<input type='hidden' name='ParentId' id='ParentId' value='" + (model == null || model.ParentId == null  ? "": model.ParentId) + "'>";
+            hiddenFields += "<input type='hidden' name='Sequence' id='Sequence' value='" + (model == null || model.Sequence == null  ? "": model.Sequence) + "'>";
+            $("#" + formId).append(hiddenFields);
+            FormJs.fillOptionsDynamic($("#"+formId),"NodeType",result, model)
+            FormJs.fillOptionsDynamic($("#"+formId),"IFunctions",functions, model)
+
+            if(read!=1) Drop(model.Icon);
+
+            if(edit!=null && model.Id!=0)$("#MenuName").attr("readonly","");
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            if("@User.IsInRole("Developer")" == "False" && read != 1)
+                $("#IFunctions").data("kendoMultiSelect").readonly();
+
+
+        });
+    }
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        var readn = 1;
+        var re = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+        var selector = '#lefttreeview';
+        var oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        $('#lefttreeview').TreeView({
+            dragAndDrop: true,
+            showMenu:true,
+            table: "Menus",
+            titleTable:"",
+            lang: "@User.Identity.GetCulture()",
+            add: function(e){
+                var id =0;
+                $.ajax({
+                    url:"/Menu/GetModel",
+                    data:{Id:id},
+                    dataType: 'json',
+                    contentType:'application/json',
+                    success:function(res){
+                        res.Sort= e.Sort;
+                        res.Order= e.Order;
+                        res.ParentId=e.ParentId;
+                        res.NodeType=Number(e.Level)-1;
+                        Draw(0,res,null);
+                    },
+                    error:function(){
+                    }
+
+                });
+            },
+            remove: function (e) {
+                var treeview = $('#lefttreeview').data("kendoTreeView");
+                var model = treeview.dataItem(treeview.select());
+                var node = treeview.findByUid(model.uid);
+                // can't delete main pages in default company
+                if (model.CompanyId == 0 && model.Version == 0) {
+                    toastr.error("@MsgUtils.Instance.Trls("MainPagesDelete")");
+                    return;
+                }
+
+                bootbox.confirm("@MsgUtils.Instance.Trls("want to Delete")"+model.Name,function(resu){
+                    if(resu){
+                        $.ajax({
+                            url:"/Menu/Delete",
+                            data:{Sort:model.Sort},
+                            dataType: 'json',
+                            contentType:'application/json',
+                            success:function(res){
+                                if(res=="OK"){
+                                    treeview.remove(node);
+                                    toastr.success("@MsgUtils.Instance.Trls("Removed Successfully")");
+                                }else
+                                    toastr.error(res);
+                            },
+                            error:function(){
+                            }
+
+                        });
+                    }
+                });
+
+            },
+            select:function(e){
+                var treeview = $('#lefttreeview').data("kendoTreeView");
+                var model = treeview.dataItem(e.node);
+                $.ajax({
+                    url:"/Menu/GetModel",
+                    data:{Id:model.Id},
+                    dataType: 'json',
+                    contentType:'application/json',
+                    success:function(res){
+                        res.Sort= model.Sort;
+                        res.Order= model.Order;
+                        res.ParentId=model.ParentId;
+                        Draw(1,res,null);
+                    },
+                    error:function(){
+                    }
+
+                });
+            },
+            beforeDrop: function (e, tree) {
+                var source = tree.dataItem(e.sourceNode);
+                var dest = tree.dataItem(e.dropTarget);
+                if (e.dropPosition == "over") {
+                    // level = 1 -> Menu   2 -> Page  3 -> Tab  
+                    if ((source.NodeType == 2 && dest.NodeType != 1) || (source.Level == 3 && source.ParentId != dest.Id)) {
+                        e.setValid(false);
+                        console.log('Invalid Move');
+                        return false;
+                    };
+                } else if (source.NodeType != dest.NodeType || source.ParentId==null) {
+                    if(dest.NodeType <2 && source.NodeType != 2)
+                        return true;
+
+                    e.setValid(false);
+                    console.log('Invalid');
+                    return false;
+                };
+
+                return true;
+            }
+        });
+
+        $('#lefttreeview').data("kendoTreeView").beforeInsertChild = function (model) {
+
+            if (model.NodeType == 2)
+                return false;
+            model.Level += 1;
+            return true;
+        };
+
+        Draw(readn,re,null);
+
+        $("#lefttreeview").on("click","a:has(>i.fa-edit)",null,function(e){
+            var treeview = $('#lefttreeview').data("kendoTreeView");
+            var model = treeview.dataItem(treeview.select());
+            $.ajax({
+                url:"/Menu/GetModel",
+                data:{Id:model.Id},
+                dataType: 'json',
+                contentType:'application/json',
+                success:function(res){
+                    res.Sort= model.Sort;
+                    res.Order= model.Order;
+                    res.ParentId=model.ParentId;
+                    res.ParentName = model.ParentName;
+                    Draw(0,res,"edit");
+                },
+                error:function(){
+                }
+
+            });
+        });
+
+        $("#MenuFormDiv").on("click","#saveChanges",null,(function (e) {
+            FormJs.saveForm($("#MenuForm"), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+               // $("#renderbody").load(oldulr);
+            });
+        }));
+
+        $('#MenuFormDiv').on('focus',"#WhereClause",null,function (e) {
+
+            e.preventDefault();
+            $('#lblValidate').css('display', 'none');
+            $('#whereClausePopup').modal('show');
+            var availableTags = [];
+            var logicalArr = ["And", "Or", ">=", "=>", "<=","=","@@User","@@Company","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@LocationId","@@PositionId","@@SectorId","@@BranchId","@@DepartmentId"];
+            var whereclauseText =$("#WhereClause").val();
+            var ColumnsList = $("#ColumnList").val();
+
+
+            availableTags = ColumnsList.split(",");
+            availableTags.push("And", "Or", ">=", "=>", "<=", "=", "@@User", "@@Company", "(", ")","@@Date(","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@LocationId","@@PositionId","@@SectorId","@@BranchId","@@DepartmentId");
+            var tagsLowerCase = [];
+            var logicalArrLowerCase = [];
+
+            for(var i =0; i< availableTags.length; i++)
+            {
+                tagsLowerCase.push(availableTags[i].toLowerCase());
+            }
+
+            for(var x = 0; x < logicalArr.length; x++)
+            {
+                logicalArrLowerCase.push(logicalArr[x].toLowerCase());
+            }
+
+
+
+            if(whereclauseText != ""){
+
+                var word = whereclauseText.replace(/[\s]+/g, " ").trim().split(" ");
+                myfunc(word);
+            }
+
+            function split(val) {
+                return val.split(" ");
+            }
+            function extractLast(term) {
+
+                return split(term).pop();
+            }
+
+            function myfunc(word){
+
+                var newH = "";
+                $.each(word, function (index, value) {
+
+                    if ((!isNaN(value)) || (value.indexOf('\'') >= 0)) {
+
+
+                        newH += "<span class='other' style='color:brown;'>" + value + "&nbsp;</span>";
+
+                    } else if (($.inArray(value.toLowerCase(), logicalArrLowerCase) == -1) && ($.inArray(value.toLowerCase(), tagsLowerCase) >= 0)) {//here
+                        newH += "<span class='statement' style='color:black;'>" + value + "&nbsp;</span>";
+
+                    } else if (($.inArray(value.toLowerCase(), logicalArrLowerCase) >= 0) && ($.inArray(value.toLowerCase(), tagsLowerCase) >= 0)) {// here
+                        newH += "<span class='statement' style='color:blue;'>" + value + "&nbsp;</span>";
+                    }
+                    else {
+
+                        newH += "<span class='statement' style='color:red;'>" + value + "&nbsp;</span>";
+                    }
+                });
+
+                $("#editor").html(newH);
+            }
+
+            $("#editor").on("keydown keyup keydown", function (event) {
+                var result = {}; //= {isValid: true, message: ""};
+
+                var whereText = $('#editor').text();
+                Checker.InitialValues({columns: $("#ColumnList").val(), enableDateFuncs: false});
+                if(!Checker.isEmptyOrWhitespace(whereText))
+                    result = Checker.CheckFormula($('#editor').text());
+                 else
+                    result = {isValid: true, message: null};
+
+                //console.log(result);
+                $("#lblValidate").text(result.message).css("display", (!result.isValid  ? "block" : "none"));
+
+                //if (event.keyCode === $.ui.keyCode.TAB &&
+                //        $("#editor").data("autocomplete").menu.active) {
+                //    event.preventDefault();
+                //}
+
+                if (event.keyCode == 32) {
+                    var text = $(this).text().replace(/[\s]+/g, " ").trim();
+                    var word = text.split(" ");
+                    myfunc(word);
+
+                    //// Set cursor postion to end of text
+                    var child = $(this).children();
+                    var range = document.createRange();
+                    var sel = window.getSelection();
+                    range.setStart(child[child.length - 1], 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    $(this)[0].focus();
+
+
+                }
+
+                //CheckEquationDuringWriting($(this).text());
+
+
+            }).autocomplete({
+                minLength: 0,
+                source: function (request, response) {
+                    // delegate back to autocomplete, but extract the last term
+                    response($.ui.autocomplete.filter(
+                        availableTags, extractLast(request.term)));
+                },
+                focus: function () {
+                    // prevent value inserted on focus
+                    return false;
+                },
+                appendTo: "#bodyContainer",
+                select: function (event, ui) {
+                    var terms = split(ui.item.value);
+                    // remove the current input
+                    terms.pop();
+                    // add the selected item
+                    terms.push(ui.item.value);
+                    // add placeholder to get the comma-and-space at the end
+                    terms.push("");
+                    var text = $(this).text().replace(/[\s]+/g, " ").trim();
+                    var word = text.split(" ");
+                    var x = [];
+                    for (var i = 0 ; i < word.length - 1; i++) {
+                        x.push(word[i])
+                    }
+                    var valuex = ui.item.value;
+                    var newx = "";
+
+                    $.each(x, function (index, value) {
+                        if ((! isNaN(value)) || (value.indexOf('\'')>=0)) {
+                            newx += "<span class='other' style='color:brown;'>" + value + "&nbsp;</span>";
+
+                        } else if (($.inArray(value, logicalArr) == -1) && ($.inArray(value, availableTags) >= 0)) {
+                            newx += "<span class='statement' style='color:black;'>" + value + "&nbsp;</span>";
+                        } else if (($.inArray(value, logicalArr) >= 0) && ($.inArray(value, availableTags) >= 0)) {
+                            newx += "<span class='statement' style='color:blue;'>" + value + "&nbsp;</span>";
+                        }
+                        else {
+                            newx += "<span class='statement' style='color:red;'>" + value + "&nbsp;</span>";
+                        }
+                    });
+
+                    if (($.inArray(valuex, logicalArr) == -1) && ($.inArray(valuex, availableTags) >= 0)) {
+                        newx += "<span class='statement' style='color:black;'>" + valuex + "&nbsp;</span>";
+                    } else if (($.inArray(valuex, logicalArr) >= 0) && ($.inArray(valuex, availableTags) >= 0)) {
+                        newx += "<span class='statement' style='color:blue;'>" + valuex + "&nbsp;</span>";
+                    }
+
+                    $(this).html(newx);
+
+                    this.value = terms.join(" ");
+                    var child = $(this).children();
+                    var range = document.createRange();
+                    var sel = window.getSelection();
+                    range.setStart(child[child.length - 1], 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    $(this)[0].focus();
+
+
+                    return false;
+                },
+                open: function (event, ui) {
+                    var input = $(event.target),
+                        widget = input.autocomplete("widget"),
+                        style = $.extend(input.css([
+                            "font",
+                            "border-left",
+                            "padding-left"
+                        ]), {
+                            position: "absolute",
+                            visibility: "hidden",
+                            "padding-right": 0,
+                            "border-right": 0,
+                            "white-space": "pre"
+                        }),
+                        div = $("<div/>"),
+                        pos = {
+                            my: "left top",
+                            collision: "none"
+                        },
+                        offset = -7;
+                    widget.css("width", "");
+                    div
+                        .text(input.val().replace(/\S*$/, ""))
+                        .css(style)
+                        .insertAfter(input);
+                    offset = Math.min(
+                        Math.max(offset + div.width(), 0),
+                        input.width() - widget.width()
+                    );
+                    div.remove();
+
+                    pos.at = "left+" + offset + " bottom";
+                    input.autocomplete("option", "position", pos);
+
+                    widget.position($.extend({ of: input }, pos));
+                }
+            });
+
+            $("#whereClausePopup").on('click',"#saveChanges",null,function () {
+
+                var wheretext= $("#editor").text();
+                Checker.InitialValues({columns: $("#ColumnList").val(), enableDateFuncs: false});
+                var result = Checker.CheckFormula(wheretext);
+                if(result.isValid) {
+                    $("#WhereClause").val($("#editor").text());
+                    $('#whereClausePopup').modal('hide');
+                } else {
+                    $("#lblValidate").text(result.message).css("display", "block");
+
+                }
+                //$("#WhereClause").val(wheretext);
+                //$('#whereClausePopup').modal('hide');
+            });
+
+            //// Not used
+            //ColorWhereClause = function(whereText)
+            //{
+            //    // Roles
+            //    var arr = SplitBaseonOrAnd(whereText);
+            //    var newHTML = "";
+            //    var temp;
+
+            //    for(var i = 0; i < arr.length; i++)
+            //    {
+            //        temp = arr[i].toLowerCase();
+            //        if(temp == "or" || temp == "and")
+            //            newHTML += "<span class='statement'>" + arr[i] + "&nbsp;</span>";
+            //        else
+            //            newHTML += GetColoredEquation(arr[i]);
+            //    }
+            //    $("#editor").html(newHTML);
+            //}
+
+            //// Not used
+            //GetColoredEquation = function(equation)
+            //{
+            //    var equationWithoutParentheses = equation.replace(')', '');
+            //    equationWithoutParentheses = equationWithoutParentheses.replace('(', '');
+            //    var coloredEquation = "";
+            //    result = CheckEquation(equation);
+            //    if(result.isValid)
+            //    {
+            //        var arr = SplitEquationToArr(equationWithoutParentheses);
+            //        coloredEquation += "<span class='column'>" + arr[0] + "&nbsp;</span>";
+            //        coloredEquation += "<span class='operator'>" + arr[1] + "&nbsp;</span>";
+            //        coloredEquation += "<span class='statement'>" + arr[2] + "&nbsp;</span>";
+            //    }else
+            //    {
+            //    }
+            //    return coloredEquation;
+            //}
+            //EvalLogicalExpr = function(expr)
+            //{
+            //    //expr = expr.replace(/and/i, '&&');
+            //    //expr = expr.replace(/or/i, '||');
+            //    //var ColumnsList = ["x", "y", "z"];
+            //    var operators = ["*", "/", "+", "-", "%", "<", ">", ">=", "<="];
+            //    var openBracket = searchChar(expr, ')');
+            //    if(openBracket == -1)
+            //    {
+            //        if(searchChar(expr, '(') == -1)
+            //        {
+            //            // expression without any brackets
+            //            CheckGeneralEquation(expr);
+            //        }else
+            //        {
+            //            alert("There is open without closed bracket");
+            //        }
+            //    }
+            //    //var result;
+            //    //try
+            //    //{
+            //    //    result = eval(expr);
+            //    //    return result;
+            //    //}catch(error)
+            //    //{
+            //    //    console.log(error);
+            //    //}
+            //}
+
+            //// Not used
+            //$("#notUsed").on("keydown keyup", function(e){
+            //    if (e.keyCode == 32){
+            //        var text = $(this).text().replace(/[\s]+/g, " ").trim();
+            //        var word = text.split(" ");
+            //        var newHTML = "";
+            //        $.each(word, function(index, value){
+            //            switch(value.toUpperCase()){
+            //                case "AND":
+            //                case "OR":
+            //                    newHTML += "<span class='statement'>" + value + "&nbsp;</span>";
+            //                    break;
+            //                case '(':
+            //                case ')':
+            //                    newHTML += "<span class='paretheses'>" + value + "&nbsp;</span>";
+            //                    break;
+            //                case '=':
+            //                case '>':
+            //                case '<':
+            //                case '>=':
+            //                case '<=':
+            //                    newHTML += "<span class='operator'>" + value + "&nbsp;</span>";
+            //                default:
+            //                    newHTML += "<span class='other'>" + value + "&nbsp;</span>";
+            //            }
+            //        });
+            //        $(this).html(newHTML);
+            //        //// Set cursor postion to end of text
+            //        var child = $(this).children();
+            //        var range = document.createRange();
+            //        var sel = window.getSelection();
+            //        range.setStart(child[child.length - 1], 1);
+            //        range.collapse(true);
+            //        sel.removeAllRanges();
+            //        sel.addRange(range);
+            //        $(this)[0].focus();
+            //    }
+            //});
+
+        });
+    });
+
+
+
+</script>
+<div class="modal fade" id="whereClausePopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">WhereClause</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
+                <div class="ui-widget">
+                    <center>
+                    <div id="editor" contenteditable="true">
+                    </div>
+                    </center>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="text-align: center;">
+                <label id="lblValidate" style="display:none; color:red; text-align:left"></label>
+                <button type="button" class="btn btn-default" data-dismiss="modal"><span>@MsgUtils.Instance.Trls("Cancel")</span></button>
+                <button type="button" class="btn submit btn-primary" id="saveChanges"><span>@MsgUtils.Instance.Trls("SaveChanges")</span></button>
+            </div>
+
+        </div>
+    </div>
+</div>

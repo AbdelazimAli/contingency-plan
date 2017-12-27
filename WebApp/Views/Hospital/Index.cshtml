@@ -1,0 +1,142 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+
+}
+
+
+<br />
+<div style="@(rtl?"float:right":"float:left")" id="ProvList">
+    <label style="font-size:medium">@MsgUtils.Instance.Trls("Provider Name")</label>&emsp;
+    <input id="ProviderList" />
+</div>
+<br><br>
+
+
+<div id="HospitalDiv"></div>
+<script>
+
+    var rtl = @rtl.ToString().ToLower();
+    if(rtl) $("#ProvList").addClass("rtl");
+
+    var ProvList = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Prov));
+    var gridFlag = false;
+
+    $("#ProviderList").kendoDropDownList({
+        valuePrimitive: true,
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: ProvList,
+       change: function (e) {
+            pageId = this.value();
+            name = this.text();
+            $("#HospitalDiv").data("kendoGrid").dataSource.transport.options.read.url =  "@Url.Action("GetAllHospitals", "Hospital")?ProviderType="+this.value();
+           $("#HospitalDiv").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("UpdateHospital", "Hospital")?ProviderType="+this.value();
+           $("#HospitalDiv").data("kendoGrid").dataSource.transport.options.update.url = "@Url.Action("UpdateHospital", "Hospital")?ProviderType="+this.value();
+           $("#HospitalDiv").data("kendoGrid").dataSource.read();
+        }
+    });
+    var ProTypeValue = $("#ProviderList").data("kendoDropDownList").value();
+
+    var objectName = "Providers";
+
+    Grids.batchGrid({
+        read: "@Url.Action("GetAllHospitals", "Hospital")?ProviderType="+ProTypeValue,
+        update:"@Url.Action("UpdateHospital", "Hospital")?ProviderType="+ProTypeValue,
+        create:"@Url.Action("UpdateHospital", "Hospital")?ProviderType="+ProTypeValue,
+        destroy:"@Url.Action("DeleteHospital", "Hospital")",
+        admin:"@admin",
+        lang:"@User.Identity.GetCulture()",
+        objectName: "Providers",
+        recordName: "Name",
+        gridName: "HospitalDiv",
+        fields: { Code: { editable: false }, CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false } },
+
+        columns:
+       [
+           {
+               field: "Address", editor: addressEditor
+           }
+       ]
+
+    });
+     var currentItem;
+
+    function addressEditor(container, options) {
+
+        var input = $('<textarea id="addDetails" rows="3" style="width: 90%; margin-bottom: 0; background: transparent; border: none" readonly maxlength="100"></textarea>');
+
+        input.attr("name", options.field);
+
+        input.appendTo(container);
+
+        $('#addDetails').focus(function(e) {
+            e.preventDefault();
+            var url = $('#DetailsPopup').data('url');
+            var id = options.model.AddressId || 0;
+            currentItem = $("#HospitalDiv").data("kendoGrid").dataItem($(e.currentTarget).closest("tr")).uid;
+
+            $.get(url + "?Version=@Request.QueryString["Version"]", {addressId: id}, function(data) {
+                $('#bodyContainer').html(data);
+                $('#DetailsPopup').modal('show');
+
+            });
+        });
+
+    }
+
+
+    $('#DetailsPopup').on('click', '#saveAddress', null, function () {
+        FormJs.saveForm($("#AddressForm"), $(this), function(data) {
+            $('#DetailsPopup').modal('hide');
+
+            var address = data.Address1  + (data.Address2 ? ", " + data.Address2 : "") + (data.Address3 ? ", " + data.Address3 : "");
+            var row = $("#HospitalDiv [data-uid=" + currentItem + "]");
+
+            var td = $(row).find("#grid_active_cell");
+            $(td).text(address);
+            model = $("#HospitalDiv").data("kendoGrid").dataItem(row);
+            model.set("Address", address);
+            model.set("AddressId",  data.Id);
+
+            // only save grid for new records
+            if (data.Id == 0) {
+                $("#HospitalDiv").data("kendoGrid").saveChanges();
+            }
+            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+        });
+    });
+
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "gridName", "HospitalDiv" }, { "ObjectName", "Providers" }, { "Functions", ViewBag.Functions } })
+
+
+<div class="modal fade" id="DetailsPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Address</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
+
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
+
+

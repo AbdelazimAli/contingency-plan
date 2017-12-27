@@ -1,0 +1,81 @@
+﻿@using Model.Domain.Payroll
+@model InfoTable
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    var admin = ViewData["admin"].ToString();
+    var rtl = User.Identity.RTL();
+}
+<div id="LinkTableGridDiv" class="col-sm-12">
+
+</div>
+<script>
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+   
+    function Formula(){
+        if(model.Purpose == 1)
+            return true;
+        else
+            return false;
+    }
+    function CaseValue(){
+        if(model.Purpose == 3)
+            return true;
+        else
+            return false;
+    }
+    var grid = "'LinkTableGridDiv'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadTable", "SalariesDesign")?id=@Model.Id",
+        update: "@Url.Action("UpdateLinkTable", "SalariesDesign")",
+        create: "@Url.Action("CreateLinkTable", "SalariesDesign")",
+        destroy: "@Url.Action("DeleteLinkTable", "SalariesDesign")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "LinkTables",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        gridName: "LinkTableGridDiv",
+        pageable: false,
+        fields:{
+            PayDueId:{defaultValue:null},
+            Performance:{defaultValue:null},
+            DeptId:{defaultValue:null},
+            FormulaId:{defaultValue:null},
+            JobId:{defaultValue:null},
+            GradeId:{defaultValue:null},
+            LocationId:{defaultValue:null},
+            PersonType:{defaultValue:null},
+            YesNoForm:{defaultValue:null},
+            CreditGlAccT:{defaultValue:null},
+            DebitGlAccT:{defaultValue:null},
+               },
+        columns: [
+                    { field: "Performance", values: Perf, hidden: !model.IPerformance },
+                    { field: "SubGrade", hidden: !model.ISubGrade },
+                    { field: "DeptId", values: dept, hidden: !model.IDepartment },
+                    { field: "FormulaId", values: Formula, hidden: Formula() },
+                    { field: "GradeId", values: prollgrd, hidden: !model.IPayrollGrade },
+                    { field: "GroupId", values: pplgrp, hidden: !model.IPeopleGroup },
+                    { field: "JobId", values: job, hidden: !model.IJob },
+                    { field: "LocationId", values: loc, hidden: !model.ILocation },
+                    { field: "Grade", hidden: !model.IGrade },
+                    { field: "Point", hidden: !model.IPoints },
+                    { field: "PersonType", values: persnType, hidden: !model.IPersonType },
+                    { field: "YesNoForm", values: yesNoFrm, hidden: Formula() },
+                    { field: "CreditGlAccT", values: Credit },
+                    { field: "DebitGlAccT", values: Credit },
+                    { field: "PayDueId", values: payrollDeu },
+                    { field: "MinValue", hidden: CaseValue() },
+                    { field: "MaxValue", hidden: CaseValue() },
+
+        ],
+        select: [{ "DeptId": dept }, { "FormulaId": Formula }, { "GradeId": prollgrd }, { "GroupId": pplgrp },
+                 { "JobId": job }, { "LocationId": loc }, { "PayDueId": payrollDeu }, { "Performance": Performance },
+                 { "PersonType": persnType }, { "YesNoForm": yesNoFrm }, { "CreditGlAccT": Credit }, { "DebitGlAccT": Credit }
+        ],
+        save:function(e){
+            e.model.GenTableId = model.Id;
+        }
+    });
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "LinkTableGridDiv" }, { "ObjectName", "LinkTables" }, { "Functions", ViewBag.Functions } })

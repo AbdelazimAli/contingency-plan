@@ -1,0 +1,391 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    var AdminMode = ViewData["Admin"].ToString();
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string href = ViewData["AddRecord"].ToString() + "?Version=" + Request.QueryString["Version"] + "&DataLevel=" + Request.QueryString["DataLevel"] + "&RoleId=" + Request.QueryString["RoleId"];
+    var Name = ViewData["objectName"];
+    string[] function = ViewData["Functions"] as string[];
+}
+
+<script type="text/x-kendo-template" id="template">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default glyphicon glyphicon-plus ajaxify" href="@href" style="@((dataLevel < 2 || read == 1 || ((function!=null && function.Length>0)?!Array.Exists(function,f=>f=="AddUser"):true))? "display:none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-user" onclick="getusers()" style="@((function == null && function.Length <= 0)?"display:none":(Array.Exists(function,f=>f=="ImportUser"))?"":"display:none")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Import User")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (AdminMode == "True")
+                {
+                    <li><a class="glyphicon glyphicon-list-alt" onclick="permissions()"><span>&nbsp; @MsgUtils.Instance.Trls("ColumnPermissions")</span></a></li>
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }            </ul>
+        </div>
+    </div>
+
+    <div class="modal fade" id="RolesPopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">Roles</h4>
+                </div>
+                <div id="Role" class="modal-body" tabindex="0">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@MsgUtils.Instance.Trls("Close")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Importuserspopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("ImportUsers")</h4>
+                </div>
+                <div id="ImpUsers" class="modal-body" tabindex="0">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@MsgUtils.Instance.Trls("Close")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="RolePopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel2">@MsgUtils.Instance.Trls("ColumnPermissions")</h4>
+                </div>
+                <div id="ColumnPermissions" class="modal-body" tabindex="0">
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</script>
+<script>
+    $(document).ready(function () {
+
+
+        $('#RolePopup').on('hidden.bs.modal',
+           function () {
+               $(".glyphicon-plus").hover(function (e) {
+                   $(this).toggleClass("btn-default");
+                   $(this).toggleClass("btn-success");
+               });
+
+               $(".glyphicon-ok").hover(function (e) {
+                   $(this).toggleClass("btn-default");
+                   $(this).toggleClass("btn-primary");
+               });
+
+               $(".glyphicon-ban-circle").hover(function (e) {
+                   $(this).toggleClass("btn-default");
+                   $(this).toggleClass("btn-warning");
+               });
+
+               $(".glyphicon-cog").hover(function (e) {
+                   $(this).toggleClass("btn-default");
+                   $(this).toggleClass("btn-primary");
+               });
+           });
+    });
+</script>
+
+<script>
+    var RoleId = "@Request.QueryString["RoleId"]";
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#" + oldPage[2] + " a").attr("href");
+   
+    function getRols() {
+        Grids.batchGrid({
+            read: "@Url.Action("ReadRoles", "Users")?RoleId="+RoleId,
+            update: "@Url.Action("UpdateRole", "Users")",
+            create: "@Url.Action("CreateRole", "Users")",
+            destroy: "@Url.Action("DeleteRole", "Users")",
+            admin: "@AdminMode", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            objectName: "AspNetRoles",
+            recordName: "Name",
+            gridName: "Role",
+            height: 370,
+            toolbar: kendo.template($("#template4").html())
+        });
+        $('#RolesPopup').modal('show');
+    }
+
+
+
+    function getusers() {
+        var gridname = "'ImpUsers'";
+
+        Grids.batchGrid({
+            read: "@Url.Action("ImportUsers", "Users")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "ImportUsers", // name of the page or table name used to create local db key
+            gridName: "ImpUsers",
+            height: 350,
+            toolbar: kendo.template($("#template5").html()),
+            fields: {
+                Id: { type: "string", editable: false },
+                DomainName: { type: "string", editable: false },
+                Checked: { type: "boolean", editable: false },
+                Name: { type: "string", editable: false },
+                Email: { type: "string", editable: false },
+                AccountName: { type: "string", editable: true },
+            },
+            columns: [
+                         { template: '<input type="checkbox" style="width:50px;" onchange="Changed(this, ' + gridname + ')" />' },
+                         { field: "DomainName", title: "@MsgUtils.Instance.Trls("DomainName")", width: 150 },
+                    { field: "Name", title: "@MsgUtils.Instance.Trls("Name")", width: 100 },
+                    { field: "Email", title: "@MsgUtils.Instance.Trls("Email")", width: 150 },
+                    { field: "AccountName", title: "@MsgUtils.Instance.Trls("AccountName")", width: 200}
+                 ],
+            onCompleted: function () {
+                if ($('#ImpUsers').attr("haserrors") == "false") {
+                    $('#Importuserspopup').modal('hide');
+                    location.reload();
+                    $("#renderbody").load(oldulr);
+                }
+
+            },
+            readCompleted: function (e) {
+                // To remove AddNotification Button
+                $("#ImpUsers .k-header-column-menu").click(function () {
+                    $("#addNotifyMenu").remove();
+                })
+            }
+        });
+
+        $('#Importuserspopup').modal('show');
+    }
+
+    function Changed(e, name) {
+        var dataItem = $("#" + name).data("kendoGrid").dataItem($(e).closest("tr"));
+        dataItem.Checked = $(e).is(":checked");
+        dataItem.dirty= true;
+    }
+
+    function permissions() {
+        Grids.batchGrid({
+         read: "@Url.Action("ReadRoles", "Users")",
+         admin: "@AdminMode", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: "AspNetRoles", // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+        gridName: "ColumnPermissions",
+        height: 800,
+        detailInit: detailInit,
+        toolbar: kendo.template($("#template2").html()), // can copy then modified
+        onCompleted: function () {
+            if ($("#ColumnPermissions").attr("hasErrors") == "false") {
+                $('#RolePopup').modal("hide");
+                $(".modal-backdrop").remove();
+                $("#renderbody").load(ulr);
+            }
+        }
+    });
+
+    $('#RolePopup').modal('show');
+    }
+    function detailInit(e) {
+
+        var gridname = 'child' + e.data.Id;
+        var gridname1 = "'child" + e.data.Id + "'";
+        var objectName = "RoleColumns";
+
+        var columns= [
+         {
+             field:"IsVisible",
+             template: '<input class="Visible" type="checkbox" #:isVisible == true ? "checked" : "" # onchange="onChange(this, ' + gridname1 + ')" />'
+
+         },
+          {
+              field: "IsEnabled",
+              template: '<input type="checkbox" #:isEnabled == true ? "checked" :"" # onchange="onChange(this, ' + gridname1 + ')" />'
+
+          },
+
+          {
+              field: "ColumnName"
+
+          }
+        ]
+
+        $("<div id='child" + e.data.Id + "'/>").appendTo(e.detailCell);
+        Grids.batchGrid({
+        read: "../../PageEditor/ReadRoleGridColumns?RoleId="+e.data.Id + "&objectName=" + "@Name" + "&version=" + "@Request.QueryString["version"]" ,
+         update:"@Url.Action("UpdateRoleGridColumns", "PageEditor")?objectName=" + "@Name" + "&version=" + "@Request.QueryString["version"]",
+        admin: "@User.IsInRole("Admin")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        parentColumnName: "RoleId",
+        parentColumnId:e.data.Id,
+        recordName: "Name",
+        gridName: 'child' + e.data.Id,
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname1 + ')"  accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(AdminMode = false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')" ><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid") </span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+        columns: columns,
+        fields: {
+
+            RoleId: { type: "string", editable: false },
+            Id: { type: "number", editable: false },
+            IsVisible: { type: "boolean" },
+            IsEnabled: { type: "boolean" },
+            ColumnName: { type: "string" }
+        },
+    });
+
+    }
+    function GetGridData(name){
+        var grid = $('#' + name).data("kendoGrid");
+        var currentData = grid.dataSource.data();
+        var newRecords = [];
+        for (var i = 0; i < currentData.length; i++)
+            newRecords.push(Grids.toValidJson(currentData[i]));
+        return newRecords;
+    }
+
+    function MySave(name){
+        var grid = $('#' + name).data("kendoGrid");
+        $.ajax({
+            url: "@Url.Action("SaveImportUsers", "Users")?MenuId="+@Request.QueryString["MenuId"],
+            data: { models: GetGridData(name)},
+            type: "POST",
+            error: function () {
+            },
+            success: function (data) {
+                var message = "";
+                if (data.Errors) {
+                    for (var i = 0; i < data.Errors.length; i++) {
+                        for (var k = 0; k < data.Errors[i].errors.length; k++) 
+                            message +=  data.Errors[i].errors[k].field+" "+data.Errors[i].errors[k].message;
+                    }
+                }
+                if (message.length === 0){
+                    var dataChanged = $('#' + name).attr("dataChanged");
+                    if (dataChanged == "true")  Grids.TriggerChanges(name,"Data",false);
+
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    location.reload();
+                }else {
+                    message.replace('null','');
+                    toastr.error(message);
+                    var uid ="";
+                    var row;
+                    var dataItem=[];
+                    for (var i = 0; i < grid.dataSource.data().length; i++)
+                    {
+                        var item = grid.dataSource.data()[i];
+                        for (var j = 0; j < data.Data.length; j++) {
+                            if(data.Data[j].AccountName == item.AccountName){   
+                                row = $("#"+name).find('tr[data-uid="'+item.uid+'"]');
+                                dataItem.push(item);
+                                row.remove();
+                                break;
+                            }
+                        }
+                    }
+                    for (var i = 0; i < dataItem.length; i++) 
+                        grid.dataSource.remove(dataItem[i]);
+                    
+                }
+            }
+        });
+    }
+    function onChange(e, name) {
+
+        var dataItem = $("#" + name).data("kendoGrid").dataItem($(e).closest("tr"));
+        //var columnName = dataItem.ColumnName;
+        if ($(e).hasClass("Visible")) {
+            if ($(e).is(":checked")) {
+                dataItem.isVisible = true;
+                dataItem.dirty = true;
+            } else {
+                dataItem.isVisible = false;
+                dataItem.dirty = true;
+            }
+
+        } else {
+            if ($(e).is(":checked")) {
+
+                dataItem.isEnabled = true;
+                dataItem.dirty = true;
+            } else {
+
+                dataItem.isEnabled = false;
+                dataItem.dirty = true;
+            }
+        }
+    }
+
+</script>
+<script type="text/x-kendo-template" id="template4">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm glyphicon glyphicon-plus" href="\#" onclick="Grids.addNewClick('Role')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="Grids.saveClick('Role')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('Role')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+        &nbsp;
+
+    </div>
+</script>
+<script type="text/x-kendo-template" id="template5">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="MySave('ImpUsers')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('ImpUsers')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+        &nbsp;
+
+    </div>
+</script>
+<script type="text/x-kendo-template" id="template2">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="Grids.saveClick('ColumnProp')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('ColumnProp')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu2">
+                <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('ColumnProp')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+            </ul>
+        </div>
+    </div>
+</script>
+<style>
+    #ImpUsers .k-grid-content {
+        min-height: 100px;
+    }
+
+    #ColumnPermissions .k-grid-content {
+        min-height: 450px;
+    }
+    /*#RolePopup .k-grid-content {
+        min-height: 100px;
+    }*/
+</style>

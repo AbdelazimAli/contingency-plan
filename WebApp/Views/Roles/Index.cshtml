@@ -1,0 +1,332 @@
+﻿ @using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewBag.Functions as string[];
+
+}
+<style>
+    .k-hierarchy-cell {
+        height: 100%;
+    }
+</style>
+<br>
+<div id="Roles"></div>
+
+<script>
+    var re = "@MsgUtils.Instance.Trls("Read")";
+    var insert = "@MsgUtils.Instance.Trls("Insert")";
+    var inupdate = "@MsgUtils.Instance.Trls("InsertUpdate")";
+    var inupdel = "@MsgUtils.Instance.Trls("InsertUpdateDelete")";
+    var dataLevel = [{ value: 1, text: re }, { value: 2, text: insert }, { value: 3, text: inupdate }, { value: 4, text: inupdel }];
+    var objectName = "AspNetRole";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadRoles", "Roles")?MenuName=@ViewBag.IsSSRole",
+        update: "@Url.Action("UpdateRole", "Roles")",
+        create: "@Url.Action("CreateRole", "Roles")?SSRole=@ViewBag.IsSSRole",
+        destroy: "@Url.Action("DeleteRole", "Roles")",
+        admin: "@User.IsInRole("Admin")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        tableName: "AspNetRoles",
+        recordName: "Name",
+        gridName: "Roles",
+        detailInit: detailInit,
+        columns: [{
+            field: "Name", editor: function (container, options) {
+                if (checkInArray(options.model.Name))
+                    container.append('<div role="gridcell" >' + options.model.Name + '</div>');
+                else
+                    container.append('<input type="text" class="k-input k-textbox" name="Name" required="required" maxlength="256" />');
+            }
+        }, {
+            field: "CopyRole",
+            command: {
+                text: '@MsgUtils.Instance.Trls("CopyRole")', click: function (e) {
+                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                    console.log(dataItem);
+                    $.getJSON("/Roles/CopyRole", { name: dataItem.Name, id: dataItem.Id }, function (res) {
+                        if (res == "Ok") {
+                            toastr.success('@MsgUtils.Instance.Trls("CopySuccess")');
+                            $("#Roles").data("kendoGrid").dataSource.read();
+                        }
+                        else
+                            toastr.warning('@MsgUtils.Instance.Trls("CopyFailed")');
+
+                    });
+                },
+            }
+        }
+
+        ],
+        dataBound: function (e) {
+            var name = $("#" + this.gridName);
+            var gridd = name.data("kendoGrid");
+
+            name.find(".k-grid-Delete").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if (checkInArray(model.Name)) $(this).hide(); //hide delete btn
+            });
+        }
+    });
+
+    function checkInArray(name) {
+        return $.inArray(name, ["Admin", "Administrators", "Users", "Employee", "Manager", "Developer"]) != -1;
+    }
+    function valueselected(data) {
+        var val = "";
+        switch (data.DataLevelId) {
+            case 1:
+                val = re;
+                break;
+            case 2:
+                val = insert;
+                break;
+            case 3:
+                val = inupdate;
+                break;
+            case 4:
+                val = inupdel;
+                break;
+            default:
+                break;
+        }
+        return val;
+    }
+    function detailInit(e) {
+        var gridname = 'child' + e.data.Id;
+        var gridname1 = "'child" + e.data.Id + "'";
+        var objectName = "RoleMenues";
+
+        var columns = [
+             {
+                 field: "IsChecked",
+                 headerTemplate: '<input type="checkbox" id="selectAll" />',
+                 template: '<input id="#: Sort #"  class="row-checkbox" type="checkbox" #:IsChecked == true ? "checked" : ""# onchange="Changed(this,' + gridname1 + ')"/>',
+                 width: 80,
+                 sortable: false,
+             },
+        {
+            field: "Title",
+            template: "<div class='#: Icon !=null ? Icon : 'fa fa-star' #' style='@(User.Identity.RTL()==true ? " margin-right: #: MenuLevel * 10 + 10 #px": " margin-left: #: MenuLevel * 10 + 10 #px" )'><span style ='@(User.Identity.RTL()==true? "float:left; margin-right:10px;" : "float:right; margin-left:10px;")'> #: Title # </span> </div>"
+        },
+
+        {
+            field: "DataLevelId",
+            headerTemplate: '<input id="LevelsAll">',
+            sortable: false,
+            template: '<label class="row-select">#:valueselected(data)#</label>',
+            values: dataLevel
+        },
+
+        {
+            field: "FuncList", editor: function (container, options) {
+                if (options.model.FuncList.indexOf(',') > 0) options.model.FuncList = options.model.FuncList.split(',');
+                if (options.model.Sort.length == 5)
+                    input = "<select disabled multiple='multiple' data-value-primitive='true' name='FuncList' style='width: 80%; margin-bottom: 0;'>";
+                else
+                    input = "<select multiple='multiple' data-value-primitive='true' name='FuncList' style='width: 80%; margin-bottom: 0;'>";
+
+                $.ajax({
+                    async: false,
+                    url: "@Url.Action("GetRoleMenuFunction", "Roles")",
+                    data: { Id: options.model.Id },
+                    dataType: "json",
+                    success: function (result) {
+                        for (var i = 0; i < result.length; i++)
+                            input += "<option value='" + result[i].Name + "'>" + result[i].Name + "</option>";
+
+                    },
+                    error: function (result) {
+                    }
+                });
+                input += "</select>";
+
+
+                var multiSelect = $(input).appendTo(container).kendoMultiSelect({
+                    change: function (ee) {
+                        options.model.FuncList = this.value();
+                    }
+                }).data("kendoMultiSelect");
+
+            }
+        }
+        ]
+
+        $("<div id='child" + e.data.Id + "'/>").appendTo(e.detailCell);
+        GridNameAll = 'child' + e.data.Id;
+        Grids.batchGrid({
+            read: "@Url.Action("ReadRoleMenu", "Roles")?RoleId=" + e.data.Id + "&SSRole=" + e.data.SSRole,
+            update: "@Url.Action("UpdateRoleMenu", "Roles")",
+            admin: "@User.IsInRole("Admin")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            parentColumnName: "RoleId",
+            parentColumnId: e.data.Id,
+            height: 700,
+            recordName: "Title",
+            gridName: 'child' + e.data.Id,
+            pageable: false,
+            fields: { IsChecked: { editable: false, nullable: true }, CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false } },
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>'+
+                     '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                     '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            select: { "DataLevelId": dataLevel },
+            columns: columns,
+            fields: {
+                RoleId: { type: "number", editable: false },
+                Id: { type: "number", editable: false },
+                IsChecked: { type: "boolean" },
+                Title: { type: "string" },
+                MenuLevel: { type: "number" },
+                NodeType: { type: "number" },
+                HasChildern: { type: "boolean" },
+                DataLevelText: { type: "string" },
+                DataLevelId: { type: "number" },
+                FuncList: { type: "string", editable: true },
+                FuncIds: { type: "number" },
+                CreatedUser: { type: "string", editable: false },
+                ModifiedUser: { type: "string", editable: false },
+                CreatedTime: { type: "date", editable: false },
+                ModifiedTime: { type: "date", editable: false },
+            },
+            dataBound: function (e) {
+                $("#LevelsAll").kendoDropDownList({
+                    dataSource: dataLevel,
+                    dataTextField: "text",
+                    dataValueField: "value",
+                    optionLabel: " ",
+                    valuePrimitive:true
+                })
+            }
+        });
+        $("#" + GridNameAll).on('change', '#LevelsAll', function (val) {
+            e.preventDefault();
+            var val = $(this).val();
+            var text = $(this).data("kendoDropDownList").text();
+            $(".row-select").each(function (idx, item) {
+                $(this).text(text);
+                var grid = $("#" + GridNameAll).data("kendoGrid");
+                dataitem = grid.dataItem($(this).closest("tr"));
+                dataitem.DataLevelId = val;
+                dataitem.dirty = true;
+            });
+        });
+        $("#" + GridNameAll).on("click", "#selectAll", function (ev) {
+            e.preventDefault();
+            var checked = $(ev.target).is(":checked");
+            $('.row-checkbox').each(function (idx, item) {
+                if (checked) {
+                    if (!($(item).closest('tr').is('.k-state-selected'))) {
+                        $(item).attr("checked", true)
+                        var grid = $("#" + GridNameAll).data("kendoGrid");
+                        dataitem = grid.dataItem($(this).closest("tr"));
+                        dataitem.IsChecked = true;
+                        dataitem.dirty = true;
+                    }
+                }
+                if (!checked) {
+                    if (!($(item).closest('tr').is('.k-state-selected'))) {
+                        $(item).attr("checked", false)
+                        var grid = $("#" + GridNameAll).data("kendoGrid");
+                        dataitem = grid.dataItem($(this).closest("tr"));
+                        dataitem.IsChecked = false;
+                        dataitem.dirty = true;
+                    }
+                }
+
+            });
+        });
+    }
+
+
+    function Changed(e, name) {
+        var Id = $(e).attr('id');
+        var level = $("#" + name).data("kendoGrid").dataItem($("#" + Id).closest("tr")).NodeType;
+        if (level == 0) {
+            if ($(e).is(':checked')) {
+                var temp = $("input[id^='" + Id + "']").prop('checked', true);
+                for (var i = 0; i < temp.length; i++) {
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + temp[i].id).closest("tr"));
+                    //  console.log(dataItem)
+                    dataItem.IsChecked = true;
+                    dataItem.dirty = true;
+                }
+            } else {
+                var temp = $("input[id^='" + Id + "']").prop('checked', false);
+                for (var i = 0; i < temp.length; i++) {
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + temp[i].id).closest("tr"));
+                    dataItem.IsChecked = false;
+                    dataItem.dirty = true;
+                }
+            }
+        }
+        else if (level == 1) {
+            if ($(e).is(':checked')) {
+                var temp = $("input[id^='" + Id + "']").prop('checked', true);
+                for (var i = 0; i < temp.length; i++) {
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + temp[i].id).closest("tr"));
+                    dataItem.IsChecked = true;
+                    dataItem.dirty = true;
+                }
+                $("input[id='" + Id.substring(0, 5) + "']").prop('checked', true);
+                var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id.substring(0, 5)).closest("tr"));
+                dataItem.IsChecked = true;
+                dataItem.dirty = true;
+                if (Id.length > 10) {
+                    $("input[id='" + Id.substring(0, 10) + "']").prop('checked', true);
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id.substring(0, 10)).closest("tr"));
+                    dataItem.IsChecked = true;
+                    dataItem.dirty = true;
+                }
+
+            } else {
+
+                var temp = $("input[id^='" + Id + "']").prop('checked', false);
+                for (var i = 0; i < temp.length; i++) {
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + temp[i].id).closest("tr"));
+                    dataItem.IsChecked = false;
+                    dataItem.dirty = true;
+                }
+            }
+        }
+        else if (level == 2) {
+            if ($(e).is(':checked')) {
+                $("input[id='" + Id + "']").prop('checked', true);
+                var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id).closest("tr"));
+                dataItem.IsChecked = true;
+                dataItem.dirty = true;
+                $("input[id='" + Id.substring(0, 10) + "']").prop('checked', true);
+                var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id.substring(0, 10)).closest("tr"));
+                dataItem.IsChecked = true;
+                dataItem.dirty = true;
+                $("input[id='" + Id.substring(0, 5) + "']").prop('checked', true);
+                var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id.substring(0, 5)).closest("tr"));
+                dataItem.IsChecked = true;
+                dataItem.dirty = true;
+                if (Id.length > 15) {
+                    $("input[id='" + Id.substring(0, 15) + "']").prop('checked', true);
+                    var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id.substring(0, 15)).closest("tr"));
+                    dataItem.IsChecked = true;
+                    dataItem.dirty = true;
+                }
+            }
+            else {
+                $("input[id='" + Id + "']").prop('checked', false);
+                var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + Id).closest("tr"));
+                dataItem.IsChecked = false;
+                dataItem.dirty = true;
+            }
+        }
+    }
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "gridName", "Roles" }, { "ObjectName", "AspNetRoles" }, { "Functions", function } })
+

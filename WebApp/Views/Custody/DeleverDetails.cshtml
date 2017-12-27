@@ -1,0 +1,150 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<style>
+    .k-slider-horizontal {
+        width: 80% !important;
+    }
+</style>
+
+<div id="DeleverCustody"></div>
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var EmpCustody=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpCustody));
+    var locations=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+    var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var CustCategory =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CustodyCategory));
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //tabs
+        var formId = "PeopleForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+            //Send the serialized model and props to form.js
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "DeleverCustody", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("SaveDeleverCustody", "Custody")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "EmpCustodies";
+                    data.companyId = "@compantId";
+                    data.admin = '@admin';
+                    //Unique for Company
+                    data.parentColumn = "CompanyId";
+                    data.parentId = "@compantId";
+                    data.isLocal = true;
+
+                    //data.HasPanel=false;
+                    if(read == 1)
+                        data.mode = 'show';
+                    data.rtl = @rtl.ToString().ToLower();
+                    data.btns = ["back"];
+                    //Append the form to the div
+                    $("#DeleverCustody").Forms(data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "LocationId", locations, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "CustodyCatId",CustCategory, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People"});
+                    var empIdDDl= $("#" + formId).find("#EmpId").data("kendoDropDownList");
+                    empIdDDl.enable(false);
+                    //-- Slider Status Custody
+                    $("#RecvStatus").kendoSlider({
+                        min: 1,
+                        max: 100,
+                        tickPlacement:'none',
+                        value:model.RecvStatus
+                    });
+                    // disable Kendo Slider
+                    var slider=$("#RecvStatus").data("kendoSlider");
+                    slider.enable(false);
+                    $("#" + formId).find('#RecvStatus').closest(".k-widget.k-slider").after("<span class='badge badge-red'>"+model.RecvStatus+"%</span>");
+       
+                    $("#delvryStatus").kendoSlider({
+                        min: 0,
+                        max: 100,
+                        tickPlacement:'none',
+                        value:model.delvryStatus,
+                        change:function(e){
+                            $("#statusId").text(e.value+"%"); 
+                        }
+                    });
+                    $("#" + formId).find('#delvryStatus').closest(".k-widget.k-slider").after("<span id='statusId' class='badge badge-red'>"+model.delvryStatus+"%</span>");
+                    
+                    //get Employee Id
+                    function getEmpId() {
+                        var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                    }
+                    $("#"+formId).on("blur","#delvryDate",function()
+                    {
+                        var delvDate =$(this).data("kendoDatePicker").value();
+                        var recvDate = $("#RecvDate").data("kendoDatePicker").value();
+                        if (new Date(delvDate).setHours(0, 0, 0, 0) < recvDate.setHours(0, 0, 0, 0))
+                        {
+                            FormJs.addFormError(formId,"delvryDate","@MsgUtils.Instance.Trls("delverGRthanRecv")");
+                        }
+
+                    });
+                    //Translate The Button saveChanges from ColumnsTilte based on Culture
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                    $("#" + formId).find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
+                }
+
+            });
+        $('#backToIndex').click(function (e) {
+            e.stopPropagation();
+            var oldPage = localStorage.getItem("menuhigh").split(",");
+            var oldulr = $("#" + oldPage[2] + " a").attr("href");
+            $("#renderbody").load(oldulr + "&isEmp=true");
+        });
+
+            $("#"+formId).on("click","#saveChanges",function (e) {
+                if($("#" + formId).find(".k-invalid").length > 0) return ;
+                FormJs.saveForm($("#" + formId), $(this), function (res) {
+                    model = res;
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#Documents").attr("disabled", false);
+                });
+
+            });
+
+            $("#" + formId).on("click","#saveAndClose",function (e) {
+                if($("#" + formId).find(".k-invalid").length > 0) return ;
+                FormJs.saveForm($("#" + formId), $(this), function (res) {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                    //  model = res;
+                });
+            });      
+     
+    });
+
+</script>
+
+
+
+
+
+

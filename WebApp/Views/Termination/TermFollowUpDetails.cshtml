@@ -1,0 +1,139 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model TerminationFormViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+
+<div id="TermFollowUpDiv">
+
+</div>
+<div id="docWindow"></div>
+
+
+<script>
+    var model;
+
+    $(function () {
+        var Res =[
+         { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }
+        ];
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        ///---#Region Location Form
+
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Employees =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+
+        //Give Id for the form that will Show
+        var formId = "FollowUpForm";
+
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+
+        //Send the serialized model and props to form.js
+        $.getJSON(url, { objectname: 'EmpTermFollowUp', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("TermFollowUpDetails", "Termination")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Terminations";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+
+            $("#TermFollowUpDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People" });
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", Res, model);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            if(read!=1){
+                $("#ServStartDate").data("kendoDatePicker").readonly();
+                $("#PlanedDate").data("kendoDatePicker").readonly();
+                $("#RequestDate").data("kendoDatePicker").readonly();
+                $("#ActualDate").data("kendoDatePicker").readonly();
+            }
+            if(model.ApprovalStatus==5){
+                $("div[name='RejectSec']").css("display","none");
+                $("div[name='AcceptSec']").css("display","");
+            }else if(model.ApprovalStatus == 9){
+                $("div[name='RejectSec']").css("display","");
+                $("div[name='AcceptSec']").css("display","none");
+            }
+            else{
+                $("div[name='RejectSec']").css("display","none");
+                $("div[name='AcceptSec']").css("display","none");
+            }
+
+        });
+
+
+
+
+        $('#TermFollowUpDiv').on("click","#saveChanges",null,function (e) {
+            FormJs.saveForm($("#"+formId), $(this),function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            });
+        });
+
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("Termination Window")",
+            //position: {top: "10px", left: "10%"},
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+        $("#TermFollowUpDiv").on("change","#ApprovalStatus",null,function(){
+            var value = $(this).val();
+            if(value==5){
+                $("div[name='RejectSec']").css("display","none");
+                $("div[name='AcceptSec']").css("display","");
+            }else if(value == 9){
+                $("div[name='RejectSec']").css("display","");
+                $("div[name='AcceptSec']").css("display","none");
+            }
+            else{
+                $("div[name='RejectSec']").css("display","none");
+                $("div[name='AcceptSec']").css("display","none");
+            }
+
+
+        })
+
+        $('#TermFollowUpDiv').on("click", "#Documents",null, function() {
+            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=TermRequestForm&SourceId="+ @Model.Id).center().open();
+            $("#Documents").fadeOut();
+        });
+    });
+
+
+</script>
+

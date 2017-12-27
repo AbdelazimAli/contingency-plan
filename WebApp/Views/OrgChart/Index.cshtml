@@ -1,0 +1,180 @@
+﻿@using Models.Domain;
+@model Models.Domain.OrgChart
+
+<script>
+    function visualTemplate(options) {
+        var dataviz = kendo.dataviz;
+        var g = new dataviz.diagram.Group();
+        var dataItem = options.dataItem;
+
+        if (dataItem.OrgType === 1) {
+            g.append(new dataviz.diagram.Circle({
+                radius: 60,
+                stroke: {
+                    width: 2,
+                    color: dataItem.Color || "#586477"
+                },
+                fill: "#e8eff7"
+            }));
+        } else {
+            g.append(new dataviz.diagram.Rectangle({
+                width: 240,
+                height: 67,
+                stroke: {
+                    width: 0
+                },
+                fill: "#e8eff7"
+            }));
+
+            g.append(new dataviz.diagram.Rectangle({
+                width: 8,
+                height: 67,
+                fill: dataItem.Color,
+                stroke: {
+                    width: 0
+                }
+            }));
+        }
+
+        return g;
+    }
+
+    function onDataBound(e) {
+        var that = this;
+        setTimeout(function() {
+                that.bringIntoView(that.shapes);
+            },
+            0);
+    }
+
+    $(document)
+        .ready(function() {
+            $("#subtype")
+                .change(function() {
+                    $("#diagram")
+                        .getKendoDiagram()
+                        .layout({
+                            subtype: $(this).val(),
+                            type: "tree",
+                            horizontalSeparation: 30,
+                            verticalSeparation: 20
+                        });
+                });
+        });
+</script>
+
+<script id="OrgChartEdit" type="text/kendo">
+    <h3>Edit Company</h3>
+    <br />
+    @Html.HiddenFor(model => model.Id)
+    <div>
+        @Html.LabelFor(model => model.Name)
+    </div>
+    <div>
+        @Html.EditorFor(model => model.Name)
+        @Html.ValidationMessageFor(model => model.Name)
+    </div>
+    <div>
+        @Html.LabelFor(model => model.StartDate.Date)
+    </div>
+    <div>
+        @Html.Kendo().DateTimePickerFor(model => model.StartDate)
+        @Html.ValidationMessageFor(model => model.StartDate)
+    </div>
+
+</script>
+
+
+<div class="box-col">
+    <h4>Layout: </h4>
+    <select id="subtype">
+        <option value="tipover">Tipover Tree</option>
+        <option value="down">Tree Down</option>
+        <option value="up">Tree Up</option>
+        <option value="Mindmapvertical">Vertical</option>
+    </select>
+</div>
+
+<br/>
+@(Html.Kendo().Diagram<OrgChart, OrgChartConnection>()
+      .Name("diagram")
+      .DataSource(d => d
+          .ShapeDataSource()
+          .Model(m =>
+          {
+              m.Id(s => s.Id);
+              m.Field(s => s.Id).Editable(false);
+              m.Field(s => s.ParentOrgchart).Editable(false);
+              m.Field(s => s.Code);
+              m.Field(s => s.Name);
+              m.Field(s => s.StartDate.Date);
+              m.Field(s => s.EndDate);
+              m.Field(s => s.OrgType);
+              m.Field(s => s.Address);
+          })
+          .Read("ReadShapes", "OrgChart")
+          .Create("CreateShape", "OrgChart")
+          .Destroy("DestroyShape", "OrgChart")
+          .Update("UpdateShape", "OrgChart")
+      )
+      .ConnectionsDataSource(d => d
+          .Model(m =>
+          {
+              m.Id(c => c.Id);
+              m.Field(c => c.Id).Editable(false);
+              m.Field(c => c.Text).Editable(false);
+              m.From(c => c.FromShapeId);
+              m.To(c => c.ToShapeId);
+              m.FromX(c => c.FromPointX);
+              m.FromY(c => c.FromPointY);
+              m.ToX(c => c.ToPointX);
+              m.ToY(c => c.ToPointY);
+          })
+          .Read("ReadConnections", "OrgChart")
+          .Create("CreateConnection", "OrgChart")
+          .Destroy("DestroyConnection", "OrgChart")
+          .Update("UpdateConnection", "OrgChart")
+      )
+      .Events(e => e.DataBound("onDataBound"))
+      .Layout(l => l
+          .Type(DiagramLayoutType.Tree)
+          .Subtype(DiagramLayoutSubtype.Tipover)
+          .UnderneathHorizontalOffset(140)
+      )
+      .Editable(editor => editor.ShapeTemplateName("OrgChartEdit"))
+      .ShapeDefaults(sd => sd
+          .Visual("visualTemplate")
+          .Content(c => c
+              .Template("#= dataItem.Name #")
+              .FontSize(17)
+          )
+      )
+      .ConnectionDefaults(cd => cd
+          .Stroke(s => s
+              .Color("#586477")
+              .Width(2)
+          )
+      )
+      .Zoom(0.75)
+      .HtmlAttributes(new { style = "height: 600px; width: 1000px;" })
+      //.Events(events => events
+      //   .ItemRotate("onItemRotate")
+      //   .Pan("onPan")
+      //   .MouseEnter("onMouseEnter")
+      //   .MouseLeave("onMouseLeave")
+      //   .Select("onSelect")
+      //   .ZoomStart("onZoomStart")
+      //   .ZoomEnd("onZoomEnd")
+      //   .Click("onClick")
+      //   .DataBound("onDataBound")
+      //   .Edit("onEdit")
+      //   .Add("onAdd")
+      //   .Remove("onRemove")
+      //   .Cancel("onCancel")
+      //   .DragStart("onDragStart")
+      //   .Drag("onDrag")
+      //   .DragEnd("onDragEnd")
+      )
+
+
+

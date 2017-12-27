@@ -1,0 +1,45 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<div id="PrevLeaves"></div>
+<script>
+    var TransType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TransType));
+    var grid = "'PrevLeaves'";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadEmpPrevLeaves", "Leave")?empId=@ViewBag.EmpId&startDate=@ViewBag.StartDate",
+        objectName: "PrevLeaveReqs", //PrevLeaveReqs  // name of the page or table name used to create local db key
+        gridName: "PrevLeaves",
+        admin: "@admin",
+        aggregate: [{ field: "CreditQty", aggregate: "sum" }, { field: "DebitQty", aggregate: "sum" }],
+        columns: [ {field:"TransType",values:TransType},
+            {
+                field: "CreditQty", aggregates: ["sum"], //groupFooterTemplate: "sum #= sum# "
+                groupFooterTemplate: function (e) {
+                    return "@MsgUtils.Instance.Trls("Balance")"+" = " +  kendo.toString((e.CreditQty.sum - e.DebitQty.sum), '0.00');
+                }
+            }],
+        lang: "@User.Identity.GetCulture()",
+        group: { field: "LeaveType", aggregates: [{field: "CreditQty", aggregate: "sum" }, {field: "DebitQty", aggregate: "sum" }] },
+        sort: [{"field":"TransDate","dir":"asc"}, {"field":"TransType","dir":"asc"}, {"field":"Id","dir":"asc"}],
+        groupable: false,
+        sortable: false,
+        pageable: {
+            pageSize: 9999
+        },
+        select: {"TransType": TransType},
+        toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>'
+
+    });
+</script>
+@*@Html.Partial("_IndexGrid", new ViewDataDictionary { { "AddRecord",  ""},
+    { "Admin", admin}, { "GridName", "PrevLeaves" } })*@

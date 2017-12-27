@@ -1,0 +1,204 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+
+}
+
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+
+<div id="PeopleTraineDiv">
+</div>
+
+<script>
+
+
+    function changePlannedHours(record){
+        $.ajax({
+            url:"@Url.Action("GetPlanedHoure", "PeopleTrain")",
+            data:{courseId:record},
+        contentType:"application/json",
+        async:false,
+        success:function(res){
+            $("#PlannedHours").text(res);
+        },
+        error:function(){
+        }
+    });
+    }
+
+    $(function () {
+
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "PeopleTrainForm";
+
+        var CurrCode  = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CurrCode));
+        var EventId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EventId));
+        var PersonId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
+        var CourseId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CourseId));
+        var Status= [{id:0,name:"@MsgUtils.Instance.Trls("Request")"},{id:1,name:"@MsgUtils.Instance.Trls("Ingoing")"}, {id:2,name:"@MsgUtils.Instance.Trls("Completed")"}, {id:3,name:"@MsgUtils.Instance.Trls("Fail")"}];
+        var Adwarding= [{id:1,name:"@MsgUtils.Instance.Trls("Company")"}, {id:2,name:"@MsgUtils.Instance.Trls("Employee")"}, {id:3,name:"@MsgUtils.Instance.Trls("Other")"}];
+        @*var ApprovalStatus = [ { id: 1, name: '@MsgUtils.Instance.Trls("Darft")' },
+         { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 3, name: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { id: 4, name: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 6, name: '@MsgUtils.Instance.Trls("Approved")' },
+         { id: 7, name: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { id: 8, name: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];*@
+
+
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'PeopleTrains', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "PeopleTrain")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "TrainCourses";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+            $("#PeopleTraineDiv").Forms(data, model);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+            $("#EventId").attr("disabled", true);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "Status", Status, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EventId", EventId, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Adwarding", Adwarding, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "CourseId", CourseId, model, { objectName: "TrainCourse" });
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", PersonId, model,{ remoteTableName: "People"});
+            FormJs.fillOptionsDynamic($("#" + formId), "Curr", CurrCode, model);
+
+            $("#" + formId).find('#CourseEDate').on('blur', function(){
+                var valueinDays=($("#CourseSDate").data("kendoDatePicker").value()-$("#CourseEDate").data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0){
+                    if ($('#CourseEDate') && !$('#EndDate').hasClass("k-invalid")) {
+                        $('#CourseEDate').addClass("k-invalid").prop("aria-invalid", true);
+                        $('#CourseEDate').after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='CourseEDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                    }
+                }
+                if( $('#CourseSDate').hasClass("k-invalid")){
+                    $('#CourseSDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#CourseSDate').next().remove();
+                }
+
+            });
+            $("#" + formId).find('#CourseSDate').on('blur', function(){
+                var valueinDays=($("#CourseSDate").data("kendoDatePicker").value()-$("#CourseEDate").data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0 && $('#CourseEDate').val() != ""){
+                    if ($('#CourseSDate') && !$('#CourseSDate').hasClass("k-invalid")) {
+                        $('#CourseSDate').addClass("k-invalid").prop("aria-invalid", true);
+                        $('#CourseSDate').after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='CourseSDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                    }
+                }
+                if( $('#CourseEDate').hasClass("k-invalid")){
+                    $('#CourseEDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#CourseEDate').next().remove();
+                }
+
+            });
+
+            changePlannedHours(model.CourseId);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+            $("#" + formId).on( 'click', '#saveChanges', function (e) {
+                var Adwarding=$("#Adwarding").data("kendoDropDownList").value()
+                if($("#" + formId + " #Cost").val()!="" ){
+                    if(Adwarding==""){
+                        $("#Adwarding").addClass("k-invalid").prop("aria-invalid", true);
+                        $("#Adwarding").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='Adwarding' role='alert'>@MsgUtils.Instance.Trls("This field is required")</span>");
+                    }
+                }
+                else{
+                    if($('#Adwarding').hasClass("k-invalid")){
+                        $('#Adwarding').removeClass("k-invalid").prop("aria-invalid", false);
+                        $("#Adwarding").next().remove();
+                    }
+                }
+                if(!$("#" + formId + " .k-invalid").length) {
+                    FormJs.saveForm($("#" + formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#Documents").attr("disabled", false);
+                        $("#renderbody").load(oldulr);
+                    });
+                }
+            });
+
+            $("#" + formId).find('#backToIndex').on('click', function(){
+                $("#renderbody").load(oldulr);
+            });
+
+            $("#PeopleTrainForm").on("change","#CourseId",null,function(e){
+                var record= $(this).val();
+                changePlannedHours(record);
+            });
+            $("#PeopleTrainForm").on("change","#Curr",null,function(e){
+                var record= $(this).val();
+                $.ajax({
+                    url:"@Url.Action("GetMidRate", "TrainEvent")",
+                    data:{CurrCode:record},
+                    contentType:"application/json",
+                    success:function(res){
+                        $("#CurrRate").val(res);
+                        //  $('#CurrRate').val(res);
+                    },
+                    error:function(){
+                    }
+                });
+            });
+
+            $("#PeopleTrainForm").on("blur","#EventId",null,function(e){
+                var record= $(this).val();
+                $.ajax({
+                    url:"@Url.Action("CheckEvevtMaxCount", "PeopleTrain")",
+                    data:{EventId:record,PTrainId:model.Id},
+                    contentType:"application/json",
+                    success:function(res){
+                        if(res != " "){
+                            toastr.error("This event is completed");
+                            if ($('#EventId') && !$('#EventId').hasClass("k-invalid")) {
+                                $('#EventId').addClass("k-invalid").prop("aria-invalid", true);
+                                $('#EventId').after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EventId' role='alert'>@MsgUtils.Instance.Trls("This event is completed")</span>");
+                            }
+
+                        }
+                    },
+                    error:function(){
+                    }
+                });
+
+
+            });
+
+
+        });
+    });
+
+</script>
+
+
+
+
+
+

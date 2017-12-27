@@ -1,0 +1,207 @@
+﻿@using WebApp.Extensions
+@{
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    Layout = null;
+}
+
+<div id="FlexDiv"></div>
+
+<script>
+    var codesList, objectName = "@ViewBag.objectName";
+    $.ajax({
+        async: false,
+        url: "@Url.Action("GetLookUpCodesLists", "Flex")",
+        data: { objectName: objectName },
+        success: function (result) {
+            codesList = result;
+        },
+        error: function (result) {
+            console.log(result.responseText);
+        }
+    });
+
+    //-- Grid
+    var gridname = "FlexDiv";
+    var grid = "'" + gridname + "'";
+
+    function validation(model) {
+        var text = "";
+        $.each(model, function (index, item) {
+            if (typeof (model[index]) != 'object' && typeof (model[index]) != 'function' && index.indexOf("Value") < 0 && index.toLowerCase().indexOf("id") < 0) {
+                if (model[index] != undefined && model[index] != false) {
+                    if (index == "IsUnique")
+                        text += " mvcremotevalidation=" + model[index] + " data-val-remote='@MsgUtils.Instance.Trls("AlreadyExists")' data-val-remote-url='../../Pages/IsUniqueP' " +
+                                " data-val-remote-additionalfields='*.ColumnName,TableName,Value,PageId' ";
+                    else
+                        text += index + '="' + model[index] + '" ';
+                }
+            }
+        });
+        return text;
+    }
+
+    //Drow Grid
+    Grids.batchGrid({
+        read: "@Url.Action("ReadFlexData", "Flex")?id=@Model&objectName=" + objectName,
+        update: "@Url.Action("UpdateFlexData", "Flex")",
+        lang: "@culture",
+        objectName: "FlexData",
+        tableName: "FlexData",
+        gridName: gridname,
+        admin: "@admin",
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveFlexGrid(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>'+
+                '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+grid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+        columns: [
+        { field: "Title", editor: function (container, options) { $('#' + gridname).data("kendoGrid").closeCell(); } },
+        {   //Custom Value Field
+            field: "ValueText",
+            editor: function (container, options) {
+                var input, inputTypeId = options.model.InputType;
+                switch (inputTypeId) {
+                    case 2:
+                        input = '<input type="number" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;" ' + validation(options.model) + ' />';
+                        break;
+                    case 3: //select
+                        input = '<select name="Value"  style="margin-bottom: 0;" ' + validation(options.model) + ' >';
+                        var optionList = codesList;
+                        for (var i = 0; i < optionList.length; i++) {
+                            if (optionList[i].CodeName == options.model.CodeName)
+                                input += '<option id=' + optionList[i].Id + ' Value=' + optionList[i].CodeId + '>' + optionList[i].Name + '</option>';
+                        }
+                        input += '</select>';
+                        break;
+                    case 4: //Date
+                        options.model.Value = options.model.ValueText; //for bind data
+                        input = '<input type="date" name="Value" style="height: 90%; width: 70% !important; margin-bottom: 0;" ' + validation(options.model) + ' />';
+                        break;
+                    case 5: //time
+                        options.model.Value = options.model.ValueText; //for bind data
+                        input = '<input type="time" name="Value" style="width: 80% !important; margin-bottom: 0;" ' + validation(options.model) + ' />';
+                        break;
+                    case 6: //datetime
+                        options.model.Value = options.model.ValueText; //for bind data
+                        input = '<input type="datetime" name="Value" style="height: 90%; width: 80% !important; margin-bottom: 0;" ' + validation(options.model) + ' />';
+                        break;
+                    case 7: //textarea
+                        input = '<textarea rows="2" cols="40" name="ValueText" ></textarea>';
+                        break;
+                    case 8:
+                        input = '<input class="k-valid" type="checkbox"' + (options.model.ValueText == "1" ? 'checked' : '') + ' ' + validation(options.model) + ' />';
+                        break;
+                    default:
+                        input = '<input type="text" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;" ' + validation(options.model) + ' />';
+                        break;
+                }
+                $(input).appendTo(container);
+
+                //Kendo
+                $("#" + gridname + " [name='Value'][type='date']").kendoDatePicker({ culture: "@culture" });
+                $("#" + gridname + " [name='Value'][type='time']").kendoTimePicker({ culture: "@culture" });
+                $("#" + gridname + " [name='Value'][type='datetime']").kendoDateTimePicker({ culture: "@culture" });
+
+                UseDropDownList(gridname, options.model.CodeName, options.model.uid);
+            },
+            //checkbox
+            template: '#if(InputType == 8){# <input type="checkbox" name="ValueText" #:ValueText == "1" ? "checked" : ""#  /> #}else{# <div> #: ValueText ? ValueText : ""  # </div> #}#'
+        }],
+        save: function (e) {
+            if (e.model.IsUnique || (e.values.Value != undefined && e.values.Value != e.model.Value)) {
+
+                //select
+                if (e.model.InputType == 3) {
+                    var code = $.grep(codesList, function (item) {
+                        if (item.CodeName == e.model.CodeName && item.CodeId == e.values.Value)
+                            return true;
+                        return false;
+                    })[0];
+                    e.model.ValueText = code.Name;
+                    e.model.ValueId = code.Id;
+
+                }
+                //dates
+                else if (e.model.InputType == 4) {
+                    e.values.Value = kendo.toString(new Date(e.values.Value), 'd');
+                    e.model.ValueText = e.values.Value;
+                }
+                else if (e.model.InputType == 5) {
+                    e.values.Value = kendo.toString(new Date(e.values.Value), 't');
+                    e.model.ValueText = e.values.Value;
+                }
+                else if (e.model.InputType == 6) {
+                    e.values.Value = kendo.toString(new Date(e.values.Value), 'g');
+                    e.model.ValueText = e.values.Value;
+                }
+            }
+            if (e.values.ValueText != e.model.ValueText) {
+                e.model.Value = e.values.ValueText;
+            }
+        },
+
+    });
+    function UseDropDownList(gridname, codeName, uid) {
+        var field = $("#" + gridname + " select[name='Value']");
+        var params = '"' + gridname + '","' + codeName + '","' + uid + '","Value"';
+        var noData = "<div> No Data " + ('@User.Identity.GetAllowInsertCode()' == 'True' ? " <input type='button' id='fAddOption' class='k-button addOption' value='@MsgUtils.Instance.Trls("AddNewOption")'  onclick='bindAddClick(this," + params + ")' />" : "") + "</div>";
+        field.kendoDropDownList({ valuePrimitive: true, dataTextField: "Name", dataValueField: "CodeId", optionLabel: " ", filter: "contains", noDataTemplate: noData });
+    }
+
+    function bindAddClick(e, gridname, codeName, uid, field) {
+        if ('@User.Identity.GetAllowInsertCode()' == 'True') {
+            var newVal = $(e).parents(".k-nodata").prevAll(".k-list-filter").children(".k-textbox").val();
+            if (newVal != "") {
+                var formData = {};
+                formData._Name = newVal;
+
+                if (codeName != null) {
+                    formData.IsLookUp = 1;
+                    formData.SourceName = codeName;
+                    $.post('/Pages/AddOption', { model: formData }, function (data) {
+                        FormJs.postSuccessFunc($(gridname), e, data, function (savedData) {
+                            var dropDown = $("select[name = 'Value']").data("kendoDropDownList");
+                            if (dropDown) {
+                                dropDown.dataSource.add({ CodeId: savedData._Id, Name: savedData._Name });
+                                dropDown.value(savedData._Id);
+                            }
+                            codesList.push({ CodeId: savedData._Id, CodeName: codeName, Name: savedData._Name, Id: savedData.seqId });
+                            var grid = $("#" + gridname).data("kendoGrid");
+                            var row = $("#" + gridname + " [data-uid=" + uid + "]");
+                            var model = grid.dataItem(row);
+                            model["Value"] = savedData._Id;
+                            model["ValueText"] = savedData._Name;
+                            model["ValueId"] = savedData.seqId;
+
+                            model.dirty = true;
+                        });
+                    });
+                }
+            }
+        }
+    }
+
+    //Checkbox change
+    $('#' + gridname).on('change', 'input[type="checkbox"]', function (e) {
+        var dataItem = $("#" + gridname).data("kendoGrid").dataItem($(this).closest("tr"));
+        dataItem.dirty = true;
+        if ($(this).is(":checked")) {
+            dataItem.Value = "1";
+            dataItem.ValueText = "1";
+        } else {
+            dataItem.Value = "0";
+            dataItem.ValueText = "0";
+        }
+    });
+
+
+    function saveFlexGrid(name) {
+        if (objectName == 'People')
+            $.when($('#' + name).data("kendoGrid").saveChanges()).then(function() { updateEmpProgress(false); });
+        else
+            $('#' + name).data("kendoGrid").saveChanges();
+    }
+</script>

@@ -1,0 +1,97 @@
+﻿@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+    string[] function = ViewData["Functions"] as string[];
+}
+
+<div id="SchedualeDiv"></div>
+
+<script>
+    var objectName = "SchedualeNotifications";
+    var gridname = "'SchedualeDiv'";
+    function HangfireTasks(el, e) {
+        var hrefTab = el.baseURI.split('#')[0] + "hangfire";
+        e.preventDefault();
+        window.open(hrefTab, "_blank", "", true);
+    }
+        Grids.batchGrid({
+            read: "@Url.Action("ReadNotification", "Notification")?MenuId=@Request.QueryString["MenuId"]",
+            update: "@Url.Action("UpdateNotification", "Notification")",
+            admin: "@admin", // Admin role
+            lang:"@User.Identity.GetCulture()",
+            objectName: objectName,
+            tableName: 'SchedualTasks',
+            recordName: "EventName", // custom delete message
+            gridName: "SchedualeDiv",
+            fields: { LastEndDate: { editable: false, defaultValue: null }, LastStartDate: { editable: false, defaultValue: null }, LastSuccessDate: { editable: false, defaultValue: null }, Enabled: { editable: false }, StopOnError: { editable: false } },
+            toolbar: kendo.template($("#template2").html()),
+            columns: [
+                {
+                    field: "Enabled",
+                    template: '<input  type="checkbox" #:Enabled == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Enabled\',' + gridname + ')"/>'
+                }, {
+                    field: "StopOnError",
+                    template: '<input  type="checkbox" #:StopOnError == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'StopOnError\',' + gridname + ')"/>'
+                }, {
+                    field: "RunNow",
+                    command: {
+                        text: '@MsgUtils.Instance.Trls("RunNow")', click: function (e) {
+                            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+
+                            $.getJSON("/Notification/RunNow", { id: dataItem.Id, period: dataItem.PeriodInMinutes, EvenUrl: dataItem.EventUrl, Enabled: dataItem.Enabled, OnError: dataItem.StopOnError }, function (res) {
+                                if (res != "Disabled")
+                                    toastr.success('@MsgUtils.Instance.Trls("TheTaskRunningnow")');
+                                else
+                                    toastr.warning('@MsgUtils.Instance.Trls("TheTaskDisabled")');
+                            });
+                        },
+                    }
+                }],
+            dataBound: function (e) {
+                if ("@admin" == "False")
+                    $("#SchedualeDiv").data("kendoGrid").hideColumn("RunNow");
+            }
+        });
+
+  
+</script>
+
+<script type="text/x-kendo-template" id="template2">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="Grids.saveClick('SchedualeDiv')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('SchedualeDiv')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+        &nbsp;
+        @if (admin == true)
+        {
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="HangfireTasks(this,event)" accesskey="j"><span>&nbsp;@MsgUtils.Instance.Trls("Show Tasks")</span></a>
+        }
+        <div class="btn-group">
+
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin == true)
+                {
+                   <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('SchedualeDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('SchedualeDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('SchedualeDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('SchedualeDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }    
+                        </ul>
+        </div>                
+    </div>
+</script>

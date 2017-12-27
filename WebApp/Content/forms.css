@@ -1,0 +1,539 @@
+﻿.omegaform {
+    /*direction: ltr;
+    text-align: left;*/
+}
+
+    .omegaform .panel-heading {
+        margin: 0px;
+    }
+
+    .omegaform .set.panel{
+        border: 1px solid rgba(0, 0, 0, 0.07);
+        padding-bottom: 0px;
+    }
+
+    .omegaform .section {
+        margin-bottom: 15px;
+    }
+
+    .omegaform .section-title {
+        padding: 0px !important;
+    }
+
+    .omegaform input.fill {
+        width: 100% !important;
+    }
+
+    .omegaform .ui-sortable-handle {
+        -ms-touch-action: none;
+        touch-action: none;
+    }
+
+    /*.omegaform .sortable{
+        -ms-touch-action: none;
+        touch-action: none;
+    }*/
+
+    .omegaform .reorder-placeholder {
+        background-color: #dfdede;
+    }
+
+    .omegaform .panelicon {
+        font-size: 2em;
+        margin-right: 5px;
+    }
+
+    .omegaform .paneltitle {
+        font-size: 1.5em;
+    }
+
+    .omegaform .editarea {
+        padding-right: 0px;
+    }
+
+        .omegaform .editarea button {
+            float: right;
+            font-weight: bold;
+            margin-right: 12px;
+            display: none;
+        }
+
+   /* .omegaform .switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 34px;
+        float: right;
+    }
+
+        .omegaform .switch input {
+            display: none;
+        }
+
+    .omegaform .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        -webkit-transition: .4s;
+        transition: .4s;
+    }
+
+        .omegaform .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+    .omegaform input:checked + .slider {
+        background-color: #2196F3;
+    }
+
+    .omegaform input:focus + .slider {
+        box-shadow: 0 0 1px #2196F3;
+    }
+
+    .omegaform input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        -ms-transform: translateX(26px);
+        transform: translateX(26px);
+    }
+
+    .omegaform .slider.round {
+        border-radius: 34px;
+    }
+    .omegaform.rtl .radio-inline input[type="radio"]{
+        position: inherit;
+    }
+
+    .omegaform .slider.round:before {
+        border-radius: 50%;
+    }
+
+*/
+    .omedropdown-menugaform .set {
+        margin-bottom: 8px;
+    }
+
+    .omegaform .set-title {
+        margin-bottom: 15px !important;
+    }
+    .omegaform .set .set-title {
+        text-align: left;
+    }
+
+    .omegaform .set .set-title span, .omegaform .set .set-title .o-collabsebtn {
+        font-weight: bold;
+        font-size: 18px;
+    }
+
+    .omegaform .set .set-title .lblSpan {
+        float: inherit;
+    }
+    .omegaform .set .set-title .dropdown-menu span {
+        font-weight: normal;
+        font-size: 14px;
+        float: none;
+    }
+    /*inline form only*/
+    .omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
+        padding-left: 0px !important;
+    }
+
+    .omegaform .o-collabsebtn {
+        text-align: left;
+        margin-bottom: 5px;
+        width: 100%;
+    }
+
+        .omegaform .o-collabsebtn span {
+            float: right;
+        }
+
+
+    .omegaform .sections {
+        padding: 0px 8px 0px 8px;
+        transition-duration: 100ms;
+        direction: ltr;
+    }
+    .omegaform button , .omegaform input[type='button']
+    {
+        margin: 0px 3px;
+    }
+    .omegaform .move {
+        cursor: move;
+        border-style: dotted !important;
+        border-width: thin;
+        box-shadow: rgba(0, 0, 0, 0.0745098) 0px 1px 1px inset, rgba(102, 175, 233, 0.6) 0px 0px 8px !important;
+    }
+
+    .omegaform .no-move:active {
+        cursor: no-drop;
+    }
+
+    .omegaform .form-inline label {
+        line-height: 35px;
+    }
+
+    .omegaform input, .omegaform textarea, .omegaform select {
+        direction: ltr;
+        text-align: left;
+    }
+
+    .omegaform .radio, .omegaform .checkbox {
+        margin-right: 15px;
+    }
+
+    .omegaform .edit-bt {
+        display: inline !important;
+        color: black;
+        /*position: absolute;
+        z-index:1;*/
+    }
+
+    /*Start : RTL support*/
+        .omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
+        padding-right: 0px !important;
+    }
+     .omegaform.rtl input, .omegaform.rtl select, .omegaform.rtl textarea  {
+        text-align: right;
+        direction: rtl;
+        float: right;
+    }
+     /*Kendo Date Picker RTL */
+     .omegaform.rtl .k-picker-wrap.k-state-default input {
+         float: inherit;
+         /*text-align: left;*/
+     }
+     .omegaform.rtl span[role=button].k-select{
+         left:0px;
+         border-left:0;
+         border-right: 1px solid rgb(231, 231, 231);
+         border-radius: 0;
+     }
+     .omegaform.rtl .k-picker-wrap {
+         padding-left: 26px;
+         padding-right: 1.2em !important;
+     }
+
+     .omegaform.rtl .k-calendar-container {
+         margin-right: 9px !important;
+     }
+     /* End Calender RTL */
+
+
+    .omegaform.rtl {
+        text-align: right;
+        direction: rtl;
+        /*float: right;*/
+        /*width: 100% !important;*/
+    }
+
+    .omegaform.rtl [class*='col-']{
+        float: right;
+    }
+
+        .omegaform.rtl .radio , .omegaform.rtl .checkbox ,.omegaform.rtl .radio-inline{
+            padding-right: 20px;
+            margin-left: 15px;
+            direction:rtl;
+            margin-right:0px !important;
+        }
+
+            .omegaform.rtl .radio input, .omegaform.rtl .checkbox input ,.omegaform.rtl .radio-inline input{
+                margin-right: 0px;
+                margin-left: 5px;
+            }
+
+        .omegaform.rtl .form-group label {
+            text-align: right !important;
+            float:right;
+        }
+
+        .omegaform.rtl .form-inline {
+            padding-right: 0px;
+            padding-left: 60px;
+        }
+
+        .omegaform.rtl .o-collabsebtn{
+            text-align:right;
+        }
+     .omegaform.rtl .o-collabsebtn  span{
+         float:left;
+     }
+     .omegaform.rtl .editarea{
+         float:left;
+     }
+      .omegaform.rtl .editarea .switch ,.omegaform.rtl .editarea .btn{
+          float:left;
+      }
+
+    .omegaform.rtl .panel-title{
+        float:right;
+    }
+
+    .omegaform.rtl .form-inline .form-group,.omegaform.rtl .form-inline control-label  {
+        padding-right: 0px !important;
+    }
+
+    .omegaform.rtl .input-group{
+        float:right;
+    }
+
+.omegaform.rtl .set-title {
+    text-align: right;
+}
+
+.omegaform.rtl .tt-menu {
+    right: 0px !important;
+    left: inherit !important;
+}
+
+.omegaform.rtl .tt-input{
+    text-align: right !important;
+}
+
+/*.omegaform.rtl .k-widget.k-tooltip-validation {
+    left: inherit;
+}*/
+
+.omegaform.rtl [id="PopupMenu"] {
+    direction: rtl;
+}
+
+/*Template kendo DDL & AutoComplete*/
+.omegaform.rtl .myCustTemp {
+    direction: rtl;
+}
+
+.omegaform.rtl .lblSpan .btn-group {
+    direction: rtl;
+}
+
+.omegaform .k-dropdown-wrap .k-input {
+    height: 34px;
+    padding: 0px;
+}
+/*end Template kendo DDL & AutoComplete*/
+
+.omegaform .set-title {
+    text-align: left;
+}
+/*End : RTL support*/
+
+/* RTL Support*/
+/*$(context).find("div[dir='rtl'] .radio,div[dir='rtl'] .checkbox").css("padding-right", "20px");
+
+
+        $(context).find("div[dir='rtl'] .radio input,div[dir='rtl'] .checkbox input").css("margin-right", "-20px");*/
+
+
+/*-----------------*/
+    .omegaform .section.row {
+        margin-left: 0px;
+        margin-right: 0px;
+    }
+
+.omegaform .form-inline .form-control {
+    width:88%;
+}
+/*align*/
+.omegaform .form-horizontal .form-control {
+    width:89%;
+}
+
+/*for kendo dropsown*/
+.omegaform .form-horizontal .k-dropdown.form-control {
+    width:inherit;
+} /*##*/
+
+.omegaform .form-inline .form-group , .checkbox{
+    margin-bottom : 15px !important;
+}
+.omegaform .form-inline {
+    padding-right :55px;
+    height: auto;
+    padding-right: 60px;
+    padding-left: 0px;
+}
+
+.omegaform fieldset {
+    padding: 15px;
+}
+
+.omegaform .placeholder{
+    background-color: #dceffd;
+    color: #52aef7;
+}
+
+.omegaform .edit-bt{
+    margin-right: 5px;
+}
+
+.omegaform span.lblSpan {
+    padding: 5px, 3px !important;
+}
+
+.omegaform .form-group .input-group {
+    margin-bottom: 15px;
+    display: inline-table !important;
+    /*max-width: 1000px;*/
+}
+
+.omegaform .panelicon.btn{
+    height: 40px;
+}
+
+.omegaform .btn-remove {
+    z-index: 100; 
+    position:absolute;
+}
+
+.omegaform .btn-remove.btn-warning {
+    margin-top: -30px;
+    margin-left: -10px;
+}
+
+.omegaform .k-widget >.omegaform span.k-invalid,input.k-invalid{
+    border:1px solid red !important;
+}
+
+/*.omegaform .k-widget.k-tooltip-validation{
+   border-color: #e74c3c;
+    background-color: #e74c3c;
+    color: #1a242f;
+}*/
+
+.k-rtl .omegaform span.k-invalid-msg {
+    right: 0;
+ }
+
+.omegaform span.k-invalid-msg {
+    /*position:absolute;*/
+    top:100%;
+    left:0;
+    /*z-index: 1;
+    margin-left:15px !important;*/
+}
+.omegaform .k-icon.k-warning{
+    display:none;
+}
+
+.omegaform input[type=number] {
+    max-width: 10em !important;
+}
+.omegaform .k-datepicker, .omegaform .k-timepicker, .omegaform .k-datetimepicker  {
+   max-width: 16.917em !important;
+}
+
+.omegaform input.k-textbox {
+    height: 35px;
+    font-size: 15px;
+}
+
+/*Kendo DropDownList*/
+.k-list-filter>.k-icon {
+    top: 30% !important;
+}
+.k-list-scroller {
+    height: 60% !important;
+}
+.omegaform .k-dropdown-wrap.k-state-default,.omegaform .k-multiselect-wrap.k-floatwrap {
+    height: 100% !important;
+}
+
+.omegaform .k-webkit .k-rtl .k-dropdown-wrap .k-input {
+    margin-right: 7px;
+}
+
+.omegaform .k-multiselect.form-control {
+    float:inherit;
+}
+/*end Kendo DropDownList*/
+
+/* created & modified */
+.omegaform .ModifyInfo {
+    color: gray;
+    position: absolute;
+    bottom: 100px;
+    right: 70px;
+}
+
+.omegaform.rtl .ModifyInfo {
+    left: 70px;
+    right: inherit;
+    text-align: right;
+    direction: rtl;
+    float: right;
+}
+/*---*/
+
+/*Label align*/
+.omegaform .form-inline>.form-group:not(:first-of-type) .control-label {
+        text-align: end !important;
+}
+.omegaform.rtl .form-inline>.form-group:not(:first-of-type) .control-label {
+        text-align: left !important;
+}
+
+.omegaform .form-horizontal label,.omegaform .form-inline > .form-group:first-child .control-label {
+    text-align: left;
+}
+/*end Label align*/
+
+.tab-content .button {
+    min-height: 45px;
+    margin: 0px 3px;
+}
+
+.k-rtl .tab-content .button {
+    float: right;
+}
+
+
+.tab-tools {
+    background-color: #555555;
+}
+
+.tab-tools a {
+    color: #ffffff;
+}
+
+/*for mobile devices*/
+@media (max-width: 768px) {
+    .omegaform .form-control {
+        width: 100% !important;
+    }
+
+    .omegaform .form-group {
+        width: 100% !important;
+    }
+
+    .omegaform .section {
+        padding: 0px !important;
+    }
+
+    .omegaform [class*='col-'] {
+        width: inherit;
+    }
+
+    .omegaform .form-inline > .form-group:not(:first-of-type) .control-label {
+        text-align: start !important;
+    }
+
+    .omegaform.rtl .form-inline > .form-group:not(:first-of-type) .control-label {
+        text-align: right !important;
+    }
+    .omegaform.rtl :button {
+        float: none;
+    }
+}

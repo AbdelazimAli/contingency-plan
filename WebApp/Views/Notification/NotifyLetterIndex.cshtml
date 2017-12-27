@@ -1,0 +1,95 @@
+﻿
+@{
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0, Menuid = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var rtl = User.Identity.RTL();
+    string[] function = ViewData["Functions"] as string[];
+    Layout = null;
+    int.TryParse(Request.QueryString["MenuId"], out Menuid);
+}
+<div id="NotifyLetterGid"></div>
+<script>
+    var gridname = "NotifyLetterGid";
+    Grids.indexGrid({
+        read: "@Url.Action("GetEmpNotificationsLetters", "Notification")?MenuId="+@Menuid,
+        objectName: "NotificationsLetter",  // name of the page or table name used to create local db key
+        gridName: "NotifyLetterGid",
+        recordName: "Subject",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [
+            {field:"Informed",command:{
+                text:'@MsgUtils.Instance.Trls("Informed")',click:function(e){
+                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                    $.getJSON("/Notification/InformLetter",{id:dataItem.Id},function(res){
+                        if(res=="Ok")
+                            toastr.success('@MsgUtils.Instance.Trls("MessageRead")');
+                        else
+                            toastr.warning('@MsgUtils.Instance.Trls("MessagealreadyRead")');
+
+                    });
+                }
+            }
+            },{ field: "Download",command:{
+                text:'@MsgUtils.Instance.Trls("Download")',click:function(e){
+                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                    $.getJSON("/Notification/DownloadFile",{id:dataItem.Id},function(res){
+                        if(res=="Ok"){
+                            toastr.success('@MsgUtils.Instance.Trls("MessageRead")');
+                        }else
+                            toastr.warning('@MsgUtils.Instance.Trls("MessagealreadyRead")');
+
+                    });
+                }
+            }}
+        ],
+        toolbar: kendo.template($("#template").html()),
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        dataBound:function(){
+            var grid = $("#" + gridname).data("kendoGrid");;
+
+            if( "@function.Count()" != "0" && "@Array.Exists(function,f=>f == "Inform")" == "True")
+                grid.showColumn("Informed");
+            else
+                grid.hideColumn("Informed");
+            
+        }
+    });
+   
+</script>
+
+<script type="text/x-kendo-template" id="template">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('NotifyLetterGid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('NotifyLetterGid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('NotifyLetterGid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('NotifyLetterGid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+
+</script>
+
+

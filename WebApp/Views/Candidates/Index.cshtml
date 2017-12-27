@@ -1,0 +1,115 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewBag.Functions as string[];
+}
+<br /><br />
+<div id="candidate" class="omegaform">
+    <fieldset class="set">
+        <legend> @MsgUtils.Instance.Trls("JobCandidates") </legend>
+        <div class="form-group col-sm-6">
+            <label class="col-sm-2">@MsgUtils.Instance.Trls("Page")</label>
+            <div class="col-sm-10">
+                <input id="page" class="form-control" />
+            </div>
+        </div>
+        <div class="form-group col-sm-6">
+            <label class="col-sm-2">@MsgUtils.Instance.Trls("Name")</label>
+            <div class="col-sm-10">
+                <input id="name" class="form-control" />
+            </div>
+        </div>
+    </fieldset>
+</div>
+
+<div id="candidateDiv" class=""></div>
+
+<script>
+    var rtl = @rtl.ToString().ToLower();
+    if(rtl) $("#candidate").addClass("rtl");
+
+    var pagesList = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.pageDiv));
+    var namesList = [], gridFlag = false;
+
+    $("#page").kendoDropDownList({
+        valuePrimitive: true,
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: pagesList,
+        optionLabel: " ",
+        change: function (e) {
+            $.getJSON("@Url.Action("ReadRemoteList", "Pages")", {tableName: this.value(), query:""}, function(res){
+                $("#name").data("kendoDropDownList").dataSource.data(res);
+                if(gridFlag) $("#candidateDiv").data("kendoGrid").dataSource.data([]);
+            });
+        }
+    });
+    $("#name").kendoDropDownList({
+        valuePrimitive: true,
+        dataTextField: "name",
+        dataValueField: "id",
+        dataSource: namesList,
+        optionLabel: " ",
+        change: function (e) {
+            if(gridFlag) {
+                var tableName = $("#page").val(), sourceId = this.value();
+                if(sourceId == null) return;
+                var readUrl = "@Url.Action("GetCandidates", "Candidates")?tableName=" +tableName + "&sourceId=" + sourceId;
+                $("#candidateDiv").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+                $("#candidateDiv").data("kendoGrid").dataSource.read();
+            }
+            else
+                DrawGrid();
+        }
+    });
+
+    function DrawGrid() {
+        gridFlag = true;
+        var tableName = $("#page").val(), sourceId= $("#name").val();
+        var grid1 = "'candidateDiv'";
+        Grids.indexGrid({
+            read: "@Url.Action("GetCandidates", "Candidates")?tableName=" +tableName + "&sourceId=" + sourceId,
+            admin:"@admin",
+            lang:"@User.Identity.GetCulture()",
+            objectName: "Candidate",
+            gridName: "candidateDiv",
+            //height: 550,
+            detailInit:detailInit,
+            toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+grid1+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                     '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+grid1+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+grid1+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>'
+        });
+
+        function detailInit(e) {
+            $("<div id='emp" + e.data.Id + "'/>").appendTo(e.detailCell);
+            var grid2 = "'emp" + e.data.Id + "'";
+            Grids.indexGrid({
+                read: "@Url.Action("GetEmpIdentical", "Candidates")?Id=" + e.data.Id + "&tableName=" + tableName + "&sourceId=" + sourceId,
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                objectName: "EmpIdentical",
+                parentColumnName:"Id",
+                parentColumnId:e.data.Id,
+                recordName: "Name",
+                gridName: 'emp' + e.data.Id,
+                height: 400,
+                //group: { field: "EmpId", aggregates: [{ field: "ColumnName", aggregate: "count" }, { field: "Found", aggregate: "sum" }] },
+                //aggregate: [{ field: "ColumnName", aggregate: "count" }, { field: "Found", aggregate: "sum" }],
+                //columns: [{ field: "ColumnName", aggregates: ["count"], groupFooterTemplate: "Count: #=count#" }, { field: "Found", aggregates: ["sum"], groupFooterTemplate: "Employee: #=sum#" }],
+                toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+grid2+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                         '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                         '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            });
+        }
+    }
+
+</script>

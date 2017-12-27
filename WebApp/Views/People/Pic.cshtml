@@ -1,0 +1,118 @@
+﻿@{ 
+    Layout = null;
+    var rtl = User.Identity.RTL();
+}
+<!DOCTYPE html>
+<h1 class="hidden"></h1>
+        <button onclick="snapshot();" id="takeImage">@MsgUtils.Instance.Trls("Take Photo")</button>
+        <button onclick="SaveImage();" id="saveImage" class="hidden">@MsgUtils.Instance.Trls("Save")</button>
+<button class="btn btn-danger" onclick="Cancel()" id="Cancel">@MsgUtils.Instance.Trls("Cancel")</button>
+        <button onclick="retakeFun();" id="retakeImage" class="hidden">@MsgUtils.Instance.Trls("Retake Photo")</button>
+    <video onclick="snapshot(this);" width="420" height="315" id="video" autoplay></video>
+    <canvas id="myCanvas" width="420" height="315"></canvas>
+
+    <script>
+        var Error = "@MsgUtils.Instance.Trls("DeviceNotFound")";
+            navigator.getUserMedia = (navigator.getUserMedia ||
+                               navigator.webkitGetUserMedia ||
+                               navigator.mozGetUserMedia ||
+                               navigator.msGetUserMedia);
+
+            var video;
+            var webcamStream;
+            var imgsrc=@Model+".jpeg";
+            function startWebcam() {
+                if (navigator.getUserMedia) {
+                    navigator.getUserMedia(
+                       // constraints
+                       {
+                           video: true,
+                           audio: false
+                       },
+
+                       // successCallback
+                       function (localMediaStream) {
+                           video = document.querySelector('video');
+                           video.src = window.URL.createObjectURL(localMediaStream);
+                           webcamStream = localMediaStream;
+                       },
+                       function (err) {
+                           $("#takeImage").remove();
+                           $("h1").removeClass("hidden").text(Error);
+                       }
+                    );
+                } else {
+                    $("#takeImage").remove();
+                    $("h1").removeClass("hidden").text(Error);
+                }
+            }
+
+            var canvas,ctx;
+
+            function init() {
+                canvas = document.getElementById("myCanvas");
+                ctx = canvas.getContext('2d');
+                startWebcam();
+            }
+            function Cancel() {
+                $("#ProfPic").data("kendoWindow").close();
+            }
+            function snapshot() {
+
+                // Draws current image from the video element into the canvas
+                $("#video").addClass("hidden");
+                $("#Cancel").addClass("hidden")
+                $("#takeImage").addClass("hidden");
+                $("#saveImage").removeClass("hidden");
+                $("#myCanvas").removeClass("hidden");
+                $("#retakeImage").removeClass("hidden");
+                if (!$("#myimage").hasClass("hidden"))
+                    $("#myimage").addClass("hidden");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            }
+
+        function retakeFun() {
+            $("#video").removeClass("hidden");
+            $("#Cancel").removeClass("hidden")
+            $("#saveImage").addClass("hidden");
+            $("#retakeImage").addClass("hidden");
+            $("#takeImage").removeClass("hidden");
+            $("#myCanvas").addClass("hidden");
+        }
+
+        function SaveImage() {
+            $("#video").remove();
+            $("#Cancel").addClass("hidden")
+            $("#saveImage").addClass("hidden");
+            $("#retakeImage").addClass("hidden");
+            $("#takeImage").addClass("hidden");
+            $("#myCanvas").addClass("hidden");
+            webcamStream.getTracks()[0].stop();
+
+            var Pic = document.getElementById("myCanvas").toDataURL("image/jpg");
+            Pic = Pic.replace(/^data:image\/(png|jpg);base64,/, "")
+
+            $.ajax({
+                url: "/People/ConvertFile",
+                asyn:false,
+                data: { Pic: Pic,Id:@Model },
+                type: "POST",
+                success: function (res) {
+                    if (res !== undefined) {
+                        $('#myimage').attr("src", res +"?dummy=" + (new Date().getTime())).removeClass("hidden");
+                        $("#HasImage").val("true");
+                        $("#ProfPic").data("kendoWindow").close();
+
+                    }
+                }, error: function () {
+                    alert("error");
+                }
+            });
+
+
+        }
+            $(function(){
+                init();
+            });
+    </script>

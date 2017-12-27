@@ -1,0 +1,67 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Payroll
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+<style>
+    .radio{
+            display: inherit !important;
+    }
+</style>
+<div id="RangeTableDiv" class="form-inline section row">
+    <div class="form-group  col-sm-12 col-md-12 col-lg-12">
+        <label for="TableType" class="control-label col-sm-2 col-md-2 col-lg-2">
+             <span>@MsgUtils.Instance.Trls("TableType")</span>
+        </label>
+        <div class="col-sm-10 col-md-10 col-lg-10" style="width: 60%;">
+           <label class="radio">
+               <input name="TableType" checked type="radio" value="1"/>@MsgUtils.Instance.Trls("RatiosAsc")
+           </label>
+            <label class="radio">
+                <input name="TableType" type="radio" value="2" />@MsgUtils.Instance.Trls("Ratiosonf")
+            </label>
+            <label class="radio">
+                <input name="TableType" type="radio" value="3" />@MsgUtils.Instance.Trls("Valuesonf")
+            </label>
+        </div>
+    </div>
+</div>
+<br />
+<div id="RangeTableGridDiv">
+</div>
+<script>
+    $(function () {
+        var gridname = "'RangeTableGridDiv'";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadRangeTable", "SalariesDesign")",
+            objectName: "RangeTable",
+            tableName: "RangeTable",
+            admin: "@admin",
+            lang: "@User.Identity.GetLanguage()",
+            gridName: "RangeTableGridDiv",
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            pageable: false,
+            save: function (e) {
+                var tp = $("input[name='TableType']:checked").val();
+                e.model.TableType = tp;
+            }
+        });
+        
+        $("#RangeTableDiv").on("change", "input[name='TableType']", null, function () {
+            var grid = $('#RangeTableGridDiv').data("kendoGrid");
+            var its = grid.dataItems();
+            if (its.length != 0) {
+                for (var i = 0; i < its.length; i++) {
+                    console.log($(this).val());
+                    its[i].TableType = $(this).val();
+                }
+            }
+        });
+
+    });
+
+</script>

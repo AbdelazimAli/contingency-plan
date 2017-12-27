@@ -1,0 +1,95 @@
+﻿@*@using WebApp.Models
+@model SessionOffViewModel*@
+@{
+    Layout = "~/Views/Account/Hrlogin.cshtml";
+    var compantId = User.Identity.GetDefaultCompany();
+    //var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<div class="login-form">
+    <div class="login-left">
+        <div class="logo">
+            <img id="empImge" src="" alt="" />
+        </div>
+        <h1><span id="welcomeMsg"></span> <span id="localname"></span></h1>
+        <h2><span>Last Login:</span> <span id="lastLogin"></span></h2>
+
+    </div>
+    <div class="login-right">
+        <div class="sap_tabs">
+            <div id="horizontalTab">
+                <div class="resp-tabs-container">
+                    <div class="tab-1 resp-tab-content" aria-labelledby="tab_item-0">
+                        <div class="login-top">
+
+
+                            @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "lock-form pull-left", role = "form" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="__RequestVerificationToken" value="" />
+                                
+                                <div class="form-group">
+                                    <input class="text-input  email" type="text" name="UserName" id="UserName" value="@User.Identity.Name" readonly />
+                                   <span></span>
+                                </div>
+
+                                <div class="form-group">
+                                    <input class="text-input password" type="password" autocomplete="off" placeholder="Password" name="Password" id="Password" required />
+                                    <span></span>
+                               </div>
+
+
+                                <input type="text" hidden id="returnUrl" name="returnUrl" />
+                                <div class="login-bottom login-bottom1">
+                                    <div class="submit">
+                                        <input type="submit" id="Login" class="btn-submit" value="LOGIN" />
+                                    </div>
+
+                                </div>
+
+                            }
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="clear"> </div>
+</div>
+@section Lscripts{
+ <script>
+
+     $(function () {
+
+         $(document).ready(function () {
+
+             var anti = localStorage.getItem("Antiforgery");
+             $("input[name='__RequestVerificationToken']").val(anti);
+            
+             $.ajax({
+                 dataType: 'json',
+                 cache: false,
+                 async: false,
+                 url: '/Account/LogOff',
+                 success: function () {
+                 },
+                 error: function () {
+                 }
+             });
+             document.addEventListener("keyup", function (e) {
+                 if (e.keyCode == 13)
+                     $('#Login').click();
+             });
+         });
+
+     });
+
+        
+ </script>
+   
+       
+}

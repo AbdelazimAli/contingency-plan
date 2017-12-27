@@ -1,0 +1,364 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model TrainEventFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="TrainEvDiv"></div>
+<div id="bookWindow"><div id="data"></div></div>
+
+<script>
+    function changeCourse(record){
+        $.ajax({
+            url:"@Url.Action("GetCourseDesc", "TrainEvent")",
+            data:{courseId:record},
+            contentType:"application/json",
+            success:function(res){
+                if(res==null)
+                    $("#Description").text("");
+                else
+                    $("#Description").text(res);
+            },
+            error:function(){
+            }
+        });
+    }
+    function checkDate(formId){
+        $("#" + formId).on('blur','#StartBookDate', function(){
+            var elem = $(this);
+            var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndBookDate").data("kendoDatePicker").value())/(1000*3600*24);
+            if(valueinDays > 0 && $('#EndBookDate').val() != ""){
+                if (elem && !elem.hasClass("k-invalid")) {
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartBookDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                }
+            }
+            if( $('#EndBookDate').hasClass("k-invalid")){
+                $('#EndBookDate').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#EndBookDate').next().remove();
+            }
+        });
+        $("#"+formId).on('blur','#EndBookDate',function(){
+            var elem = $(this);
+            if(elem.val()!=""){
+                var valueinDays=($("#StartBookDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndBookDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                    }
+                }
+                if($('#StartBookDate').hasClass("k-invalid")){
+                    $('#StartBookDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $("#StartBookDate").next().remove();
+                }
+            }
+        });
+
+        $("#" + formId).on('blur','#TrainStartDate', function(){
+            var elem = $(this);
+            var PeiodVa=kendo.toString(elem.data("kendoDatePicker").value(), "yyyy-MM-dd");
+            $.ajax({
+                url:"@Url.Action("CheckPeriod", "TrainEvent")",
+                data:{DateVal:PeiodVa},
+                contentType:"application/json",
+                success:function(res){
+                    if(res!=0){
+                        $('#PeriodId').val(res);
+                        if( elem.hasClass("k-warning")){
+                            elem.removeClass("k-warning").prop("aria-warning", false);
+                            elem.next().remove();
+                        }
+                    }
+                    else{
+                        $('#PeriodId').val("");
+                        if (elem && !elem.hasClass("k-warning")) {
+                            elem.addClass("k-warning").prop("aria-warning", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-warning-msg' data-for='TrainStartDate' role='alert'>@MsgUtils.Instance.Trls("There is no period")</span>");
+                        }
+                    }
+                },
+                error:function(){
+                }
+            });
+            var valueinDays=(elem.data("kendoDatePicker").value()-$("#TrainEndDate").data("kendoDatePicker").value())/(1000*3600*24);
+            if(valueinDays > 0 && $('#TrainEndDate').val() != ""){
+                if (elem && !elem.hasClass("k-invalid")) {
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='TrainStartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                }
+            }
+            if( $('#TrainEndDate').hasClass("k-invalid")){
+                $('#TrainEndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#TrainEndDate').next().remove();
+            }
+            var valueinDaysBook=($("#StartBookDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+            if(valueinDaysBook > 0 && $('#StartBookDate').val() != ""){
+                if (elem && !elem.hasClass("k-invalid")) {
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='TrainStartDate' role='alert'>@MsgUtils.Instance.Trls("StartDategThanBookDate")</span>");
+                }
+            }
+        });
+        $("#"+formId).on('blur','#TrainEndDate',function(){
+            var elem = $(this);
+            if(elem.val()!=""){
+                var valueinDays=($("#TrainStartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='TrainEndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                    }
+                }
+                if($('#TrainStartDate').hasClass("k-invalid")){
+                    $('#TrainStartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $("#TrainStartDate").next().remove();
+                }
+                var valueinDaysBook=($("#EndBookDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDaysBook > 0 && $('#EndBookDate').val() != ""){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='TrainEndDate' role='alert'>@MsgUtils.Instance.Trls("EndDategThanBookDate")</span>");
+                    }
+                }
+            }
+        });
+    }
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var CostFlag= [{id:1,name:"@MsgUtils.Instance.Trls("Employee")"}, {id:2,name:"@MsgUtils.Instance.Trls("Total")"}];
+        var Adwarding= [{id:1,name:"@MsgUtils.Instance.Trls("Company")"}, {id:2,name:"@MsgUtils.Instance.Trls("Employee")"}];
+        var CourseId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CourseId));
+        var CenterId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CenterId));
+        var CurrCode  = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CurrCode));
+        var PersonId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
+        var PersonIdManger=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonIdManger));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "TrainEvForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "TrainEvents", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="TrainEvents";
+                data.FormAction = "@Url.Action("Details", "TrainEvent")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1)data.mode = 'show';
+                if(model.Id==0){
+                    model.StartBookDate=null;
+                    model.EndBookDate=null;
+                }
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                $("#TrainEvDiv").Forms(data, model);
+                $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                checkDate(formId);
+                FormJs.fillOptionsDynamic($("#" + formId), "CostFlag", CostFlag, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Adwarding", Adwarding, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "CourseId", CourseId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "CenterId", CenterId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Curr", CurrCode, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ResponsbleId", PersonId, model);
+                var additinalBtns='';
+                var result='';
+                var hidden ='';
+                var EmpIdRecord='';
+                $.ajax({
+                    url:"@Url.Action("GetMenuName", "TrainEvent")",
+                    data:{MenuId:oldPage[2].split("m_")[1]},
+                    contentType:"application/json",
+                    async:false,
+                    success:function(res){
+                        result=res;
+                    },
+                    error:function(){
+                    }
+                });
+                hidden += "<input type='hidden' id='book' name='book' value=false />";
+                EmpIdRecord += "<input type='hidden' id='PersonId' name='PersonId'/>";
+                additinalBtns += '<div class="form-group"> <input type="button" name="Booking" isvisible="true" class="btn btn-primary"  onClick="return false;" value="@MsgUtils.Instance.Trls("Booking")" id="Booking"></div>';
+                $("#" + formId).append(hidden);
+                $("#" + formId).append(EmpIdRecord);
+                $("#TrainEvDiv div[name='btnSec']").append(additinalBtns);
+                if(model.Id==0){
+                    $("#Booking").attr("disabled", true);
+                }
+                else  if(read==1 && (result == 'Employee' || result == 'Manager')){
+                    $("#Booking").attr("disabled", false);
+                }
+                else if( model.Id != 0 && read ==1){
+                    $("#Booking").attr("disabled", true);
+                }
+                else{
+                    $("#Booking").attr("disabled", false);
+                }
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+                $('#TrainEvDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+                $("#" + formId).on('click',"#SaveChanges",null, function (e) {
+                    var Adwarding=$("#Adwarding").data("kendoDropDownList").value()
+                    var CostFlag=$("#CostFlag").data("kendoDropDownList").value()
+                    if($("#" + formId + " #Cost").val()!="" ){
+                        if(Adwarding==""){
+                            $("#Adwarding").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#Adwarding").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='Adwarding' role='alert'>@MsgUtils.Instance.Trls("This field is required")</span>");
+                        }
+                        if(CostFlag==""){
+                            $("#CostFlag").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#CostFlag").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='CostFlag' role='alert'>@MsgUtils.Instance.Trls("This field is required")</span>");
+                        }
+                    }
+                    else{
+                        if($('#CostFlag').hasClass("k-invalid")){
+                            $('#CostFlag').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#CostFlag").next().remove();
+                        }
+                        if($('#Adwarding').hasClass("k-invalid")){
+                            $('#Adwarding').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#Adwarding").next().remove();
+                        }
+                    }
+                    if($("#" + formId).find(".k-invalid").length > 0) return;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+
+                $("#data").on( 'click', '#okBook', function (e) {
+                    if($("#EmpId").val()==null || $("#EmpId").val()==""){
+                        if ($("#EmpId") && !$("#EmpId").hasClass("k-invalid")) {
+                            $("#EmpId").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#EmpId").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EmpId' role='alert'>@MsgUtils.Instance.Trls("This field is required")</span>");
+                        }
+                    }else{
+                        var record=$(this)
+                        $("#" + formId + " #book").val(true);
+                        FormJs.saveForm($("#" + formId),record, function () {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            $("#bookWindow").data("kendoWindow").close();
+
+                        });
+                    }
+                });
+                var DarwWindow=function(list){
+                    if(!$("#" + formId + " .k-invalid").length) {
+                        $("#bookWindow").data("kendoWindow").center().open();
+                        var BookHtml= '<span>@MsgUtils.Instance.Trls("Employee Name") </span><div id="EmpId"> </div><br /><br /><div> <input type="button" name="ok" isvisible="true" class="btn btn-primary"  onClick="return false;" value="@MsgUtils.Instance.Trls("Ok")" id="okBook"></div>';
+                        $("#data").html(BookHtml);
+                        $("#EmpId").kendoDropDownList({
+                            valuePrimitive: true,
+                            dataTextField: "name",
+                            dataValueField: "id",
+                            dataSource: list,
+                            optionLabel: " ",
+                            change: function (e) {
+                                $("#" + formId + " #PersonId").val(this.value());
+                            }
+                        });
+                    }
+                }
+
+                $("#" + formId).on( 'click', '#Booking', function (e) {
+                    var DateBookLabel=kendo.parseDate($("#EndBookDate").text());
+                    var diff;
+                    if($('#EndBookDate').data("kendoDatePicker")== undefined)
+                        diff=(DateBookLabel-new Date())/(1000*3600*24);
+                    else
+                        diff=($("#EndBookDate").data("kendoDatePicker").value()-new Date())/(1000*3600*24)
+                    if(diff <0 ){
+                        toastr.error('@MsgUtils.Instance.Trls("This Event is not active")');
+                        return;
+                    }else {
+                        var record=$(this);
+                        $.ajax({
+                            url:"@Url.Action("CheckEvevtMaxCount", "PeopleTrain")",
+                            data:{EventId:model.Id},
+                            contentType:"application/json",
+                            success:function(res){
+                                if(res != " "){
+                                    toastr.error('@MsgUtils.Instance.Trls("This event is completed")');
+                                    if ($('#Name') && !$('#Name').hasClass("k-invalid")) {
+                                        $('#Name').addClass("k-invalid").prop("aria-invalid", true);
+                                        $('#Name').after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='Name' role='alert'>@MsgUtils.Instance.Trls("This event is completed")</span>");
+                                    }
+                                }
+                                else{
+                                    //Chech if manager or employee
+                                    if(result == 'Manager'){
+                                        DarwWindow(PersonIdManger)
+                                    }else if(result == 'Employee'){
+                                        var record=$(this)
+                                        $("#" + formId + " #book").val(true);
+                                        FormJs.saveForm($("#" + formId),record, function () {
+                                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                            $("#bookWindow").data("kendoWindow").close();
+
+                                        });
+                                    }
+                                    else{
+                                        DarwWindow(PersonId);
+                                    }
+                                }
+                            },
+                            error:function(){
+                            }
+                        });
+                    }
+                });
+                $("#TrainEvDiv").on("change","#CourseId",null,function(e){
+                    var record= $(this).val();
+                    changeCourse(record);
+                    $.get()
+                });
+                $("#TrainEvDiv").on("change","#Curr",null,function(e){
+                    var record= $(this).val();
+                    $.ajax({
+                        url:"@Url.Action("GetMidRate", "TrainEvent")",
+                        data:{CurrCode:record},
+                        contentType:"application/json",
+                        success:function(res){
+                            $("#CurrRate").val(res);
+                        },
+                        error:function(){
+                        }
+                    });
+                });
+            }
+        });
+        $("#bookWindow").kendoWindow ({
+            minWidth: "1000px",
+            width: "20%",
+            height: "20%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                //  $("#Documents").fadeIn();
+                // $("#Documents #nofdocs").text($("#bookWindow table > tbody > tr").length);
+                // $("#bookWindow").empty();
+            }
+        });
+    });
+</script>

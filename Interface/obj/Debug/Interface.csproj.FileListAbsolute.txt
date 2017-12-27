@@ -1,0 +1,12 @@
+E:\HRMS\Hr\Interface\bin\Debug\Interface.dll.config
+E:\HRMS\Hr\Interface\bin\Debug\Interface.dll
+E:\HRMS\Hr\Interface\bin\Debug\Interface.pdb
+E:\HRMS\Hr\Interface\bin\Debug\EntityFramework.dll
+E:\HRMS\Hr\Interface\bin\Debug\EntityFramework.SqlServer.dll
+E:\HRMS\Hr\Interface\bin\Debug\Model.dll
+E:\HRMS\Hr\Interface\bin\Debug\Model.pdb
+E:\HRMS\Hr\Interface\bin\Debug\EntityFramework.xml
+E:\HRMS\Hr\Interface\bin\Debug\EntityFramework.SqlServer.xml
+E:\HRMS\Hr\Interface\obj\Debug\Interface.csprojResolveAssemblyReference.cache
+E:\HRMS\Hr\Interface\obj\Debug\Interface.dll
+E:\HRMS\Hr\Interface\obj\Debug\Interface.pdb

@@ -1,0 +1,141 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model InvestigationFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<br />
+<br />
+<div id="EmpInvestigate"></div>
+<div id="docWindow"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+    var DiscplinId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DiscplinId));
+    $(function () {
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var formId = "EmpInvestigateForms";
+            model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+            //Send the serialized model and props to form.js
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "EmployeeInvestigatationForm", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveEmpInvestigation", "Discipline")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "Investigations";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = '@admin';
+                data.btns = ["back", "doc"];
+                //data.HasPanel=false;
+                if(read == 1)
+                    data.mode = 'show';
+                data.rtl = @rtl.ToString().ToLower();
+
+                //Append the form to the div
+                $("#EmpInvestigate").Forms(data, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model,{ remoteTableName: "People"});
+                FormJs.fillOptionsDynamic($("#" + formId), "ViolationId", DiscplinId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Employee", EmpId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Witness", EmpId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Judge", EmpId, model);
+                  
+                //     $("#InvestDate").data("kendoDatePicker").text(model.InvestDate)
+                //  $("#" + formId).find("#InvestDate").text(kendo.toString(model.InvestDate.substr(6))).toLocaleDateString("@User.Identity.GetCulture()") ,"yyyy-MM-dd"));
+                //  if($("#InvestDate").data("kendoDatePicker") !=undefined) 
+                if(read==1)
+                {
+                    $("#" + formId).find("#InvestDate").text(model.InvestDate);                           
+                    $("#" + formId).find("#ViolDate").text(model.ViolDate);                           
+
+                }
+
+                //Translate The Button saveChanges from ColumnsTilte based on Culture
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#Documents').val('@MsgUtils.Instance.Trls("Documents")');
+
+                $("#" + formId).on('click','#saveChanges', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;                      
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        model=res;
+                        $("#Documents").attr("disabled", false);
+                    });
+                });
+
+                $("#" + formId).on('click','#saveAndClose', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;                    
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        // res is saved company Id
+                        $("#" + formId + " #Id").val(res);
+                        model=res;
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+             
+
+                if($("#" + formId + " #Id").val() == 0) 
+                {
+                    $("#" + formId).find("#InvestDate").data("kendoDatePicker").value(new Date());
+                    $("#" + formId).find("#ViolDate").data("kendoDatePicker").value(' ');
+
+                    $("#Documents").attr("disabled", true);
+                }
+               
+               
+            }
+                    
+        });
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("CompanyWindow")",
+            //position: {top: "10px", left: "10%"},
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function()
+             {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+        $("#Documents").on('click', function() {
+            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=EmpDisciplines&SourceId="+ @Model.Id).center().open();
+              $("#Documents").fadeOut();
+        });
+    });
+
+</script>
+
+
+
+
+
+

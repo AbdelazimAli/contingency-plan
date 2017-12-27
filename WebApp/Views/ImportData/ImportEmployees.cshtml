@@ -1,0 +1,432 @@
+﻿@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    int dataLevel = 4;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    string Cu = User.Identity.GetCulture().Split('-')[0];
+    string File = MsgUtils.Instance.Trls("ExcelEmployees");
+}
+
+
+<div id="UpperDiv">
+    <div id="ImportPeople">
+        <div id="DownLoadCode" class="col-sm-12">
+            <button name="RefreshColumns" class="btn-sm btn-primary" style="@(rtl ? "float:left" : "float:right")" id="Refresh">@MsgUtils.Instance.Trls("RefreshColumns")</button>
+            &nbsp;&nbsp;
+            <button id="AddFiels">@MsgUtils.Instance.Trls("Download Excel File")</button>
+            <button id="SaveDataError" hidden>@MsgUtils.Instance.Trls("SaveCurrent")</button>
+            <button id="OpenDataError" hidden>@MsgUtils.Instance.Trls("OpenCurrent")</button>      
+            <select id="DataSent" > </select>
+        </div>
+    </div>
+    <div class="col-sm-12" style="@(rtl ? "float:right" : "float:left")">
+        <form action="Details" method="post" id="FormExcel">
+            <input type="file" name="ExcelFile" id="ExcelFile" />
+            <input type="text" hidden name="ver" value="@Request.QueryString["Version"]" />
+            <input type="text" hidden name="MenuId" value="@Request.QueryString["MenuId"]" />
+            <input type="text" hidden name="ErrorData" id="ErrorData" />
+            <input type="text" hidden name="ObjectName" id="ObjectName" value="" />
+            <input type="text" hidden name="TableName" id="TableName" value="" />
+            <input type="text" hidden name="OldObjectName" id="OldObjectName" value="" />
+        </form>
+    </div>
+    
+    <br /><br /><br />
+    
+    <div id="ExcelEmployeeGrid"></div>
+</div>
+
+<div id="waitWindow">@MsgUtils.Instance.Trls("takeWhileFor") <img id="compLoadImg" src="~/Content/Default/loading-image.gif" /></div>
+<script src="~/Scripts/cultures/timezone.js"></script>
+
+<script>
+    $(function(){
+        var arr =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ArrData));
+
+        GetHiddenFile(arr[0].name,arr[0].text);
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        $("#DataSent").kendoDropDownList({
+            valuePrimitive: true,
+            dataSource: arr,
+            dataTextField: "text",
+            dataValueField: "name",
+            filter:!arr.length?"none":"contains",
+            change:function(e){
+                $("#OldObjectName").val(this.value());
+                $("#ObjectName").val(this.text());
+                $("#SaveDataError").attr("hidden","hidden");
+                $("#ExcelEmployeeGridsplt").remove();
+                GetHiddenFile(this.value(),this.text());
+            }
+        });
+    });
+
+    function GetHiddenFile(value,name){
+        $.getJSON("/ImportData/ExistFileError",{Name:name},function(res){
+            if(res)
+                $("#OpenDataError").removeAttr("hidden");
+            else
+                $("#OpenDataError").attr("hidden","hidden");
+            $("#OldObjectName").val(value);
+            $("#ObjectName").val(name);
+        });
+    }
+
+    var timezoneSrc =JSON.stringify(timeZoneList.getTimeZone("@User.Identity.GetLanguage()","Grid"));
+    var truevalue ="@MsgUtils.Instance.Trls("true")";
+    var falsevalue ="@MsgUtils.Instance.Trls("false")";
+    var Add;
+    var currentItem;
+    var Address;
+    var waitWindow = $("#waitWindow").kendoWindow({
+        title: "@MsgUtils.Instance.Trls("Please Wait")",
+        actions: [], //to remove close btn
+        width: "40%",
+        height: "100",
+        visible: false
+    }).data("kendoWindow");
+
+
+    function SaveFile(models){
+        waitWindow.center().open();
+        var file = {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"],objectName:$("#ObjectName").val(),OldObjectName:$("#OldObjectName").val(),TableName:$("#TableName").val()};
+        var Action = "Save"+file.OldObjectName+"File";
+        $.ajax({
+            url:"/ImportData/"+Action,
+            type:"POST",
+            data:{File:file,models:models},
+            success:function(res){
+                var ok = res.substring(0,2);
+                if(ok != "Ok")
+                    toastr.error(res);
+                else{
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    if($("#ExcelEmployeeGridsplt").length !== 0)
+                        $("#ExcelEmployeeGridsplt").remove();
+                    $("#SaveDataError").attr("hidden","hidden");
+                    $("#OpenDataError").removeAttr("hidden");
+                }
+                waitWindow.close();
+
+            },error:function(err){
+            }
+        });
+    }
+
+    function AddData(MyError){
+        waitWindow.center().open();
+
+        var file = {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"],objectName:$("#ObjectName").val(),OldObjectName:$("#DataSent").val(),TableName:$("#TableName").val(),ErrorData:MyError,TimeZone:timezoneSrc};
+        $.ajax({
+            url:"/ImportData/AddFields",
+            type:"POST",
+            data:file,
+            success:function(res){
+                var ok = res.substring(0,2);
+                if(ok != "Ok")
+                    toastr.error(res);
+                else{
+                    if(!MyError)
+                        window.location = "/SpecialData/EmployeesData/"+res.substring(2,res.length)+".xlsx?dummy="+(new Date().getTime());
+                    else
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                }
+                waitWindow.close();
+            },error:function(err){
+            }
+        });
+
+    }
+    $("#AddFiels").click(function(e){
+        AddData(false);
+
+    });
+
+    $("#SaveDataError").click(function(){
+      SaveFile(GetGridData("ExcelEmployeeGrid",true));
+    })
+
+    $("#Refresh").click(function () {
+        waitWindow.center().open();
+
+        $.post("/ImportData/RefreshColumns", {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"],objectName:$("#ObjectName").val(),OldObjectName:$("#OldObjectName").val(),TableName:$("#TableName").val()},function(res){
+            var message ="";
+            if (res.Errors)
+            {
+                for (var i = 0; i < res.Errors.length; i++) {
+                    for (var k = 0; k < res.Errors[i].errors.length; k++) {
+                        message += res.Errors[i].errors[k].message;
+                    }
+                }
+                toastr.error(message);
+            }
+            else
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+            waitWindow.close();
+
+        });
+    });
+
+
+    function getColumns(arr,Obj) {
+        var res = [];
+        var input,select,Selected;
+        for(var item in arr){
+            if(item == "BirthLocation")
+                res.push({field :item,editor:function(container, options){
+                     input = "<select name='BirthLocation'></select>";
+                     Selected ;
+                    select = $(input).appendTo(container).kendoDropDownList({
+                        valuePrimitive: true,
+                        dataSource: arr.BirthLocation,
+                        dataTextField: "text",
+                        dataValueField: "text",
+                        optionLabel: " ",
+                        filter:!arr.BirthLocation.length?"none":"contains",
+                        change: function (ee) {
+                             Selected = arr.BirthLocation.find(o=>o.text == this.text());
+                            if(Selected !== undefined)
+                            {
+                                options.model.BirthCountry = Selected.value;
+                                options.model.BirthCity = Selected.id;
+                                options.model.BirthDstrct = Selected.Icon;
+                            }else
+                            {
+                                options.model.BirthCountry = null;
+                                options.model.BirthCity = null;
+                                options.model.BirthDstrct = null;
+                            }
+                        }
+                    }).data("kendoDropDownList");
+                }
+                });
+            else if(item == "TimeZone")
+                res.push({field :item,editor:function(container, options){
+
+                     input = "<select name='TimeZone'></select>";
+                     select = $(input).appendTo(container).kendoDropDownList({
+                        valuePrimitive: true,
+                        dataSource: arr.TimeZone,
+                        dataTextField: "name",
+                        dataValueField: "text",
+                        optionLabel: " ",
+                        filter:!arr.TimeZone.length?"none":"contains",
+                        change: function (ee) {
+                        }
+                    }).data("kendoDropDownList");
+                }
+                });
+            else if(item == "Curr")
+                res.push({field :item,editor:function(container, options){
+
+                    input = "<select name='Curr'></select>";
+                    select = $(input).appendTo(container).kendoDropDownList({
+                        valuePrimitive: true,
+                        dataSource: arr.Curr,
+                        dataTextField: "text",
+                        dataValueField: "name",
+                        optionLabel: " ",
+                        filter:!arr.Curr.length?"none":"contains",
+                        change: function (ee) {
+                        }
+                    }).data("kendoDropDownList");
+                }
+                });
+            else
+                res.push({ field: item, values: arr[item] });
+        }
+        res.push({field: "Address", editor: addressEditor});
+        res.push({field: "HostAddress", editor: addressEditor});
+        for (var ite in Obj) {
+            if(ite.toLowerCase().indexOf('date') != -1){
+                res.push({field:ite , template:"#:"+ite+" != null ?kendo.toString(kendo.parseDate("+ite+",'yyyy-MM-dd'),'MM/dd/yyyy'): '' #"});
+            }else if(ite.toLowerCase().indexOf('time') != -1)
+                res.push({field:ite , template:"#:"+ite+" != null ?kendo.toString(kendo.parseDate("+ite+",'yyyy-MM-dd HH:mm'),'HH:mm'): '' #"});
+            else if(typeof(Obj[ite]) =='boolean')
+                res.push({field:ite , template:"#:"+ite+" != null ?("+ite+" == true ? '"+truevalue+"':'"+falsevalue+"'): '"+falsevalue+"' #"});
+        }
+        return res;
+    }
+
+    function addressEditor(container, options) {
+
+        var input = $('<textarea id="addDetails" rows="3" style="width: 90%; margin-bottom: 0; background: transparent; border: none" readonly maxlength="100"></textarea>');
+
+        input.attr("name", options.field);
+
+        input.appendTo(container);
+
+        $('#addDetails').focus(function(e) {
+            e.preventDefault();
+            var url = $('#DetailsPopup').data('url');
+             Add = options.field == "Address"?"AddressId":"HoAddressId";
+            var id = options.model[Add] || 0;
+            currentItem = $("#ExcelEmployeeGrid").data("kendoGrid").dataItem($(e.currentTarget).closest("tr")).uid;
+             Address = Add == "AddressId"?options.model.Address :options.model.HostAddress ;
+             $.get(url + "?Version=@Request.QueryString["Version"]", {addressId: id}, function(data) {
+                 $('#bodyContainer').html(data);
+                 $('#DetailsPopup').modal('show');
+                 $('#DetailsPopup').ajaxSuccess(function(){
+                     if(id==0 && Address != "")
+                         $('#AddressForm').find("#Address1").val(Address);
+                 });
+             });
+        });
+    }
+
+    $('#DetailsPopup').on('click', '#saveAddress', null, function () {
+        FormJs.saveForm($("#AddressForm"), $(this), function(data) {
+            $('#DetailsPopup').modal('hide');
+
+            var address = data.Address1  + (data.Address2 ? ", " + data.Address2 : "") + (data.Address3 ? ", " + data.Address3 : "");
+            var row = $("#ExcelEmployeeGrid [data-uid=" + currentItem + "]");
+
+            var td = $(row).find("#grid_active_cell");
+            $(td).text(address);
+            model = $("#ExcelEmployeeGrid").data("kendoGrid").dataItem(row);
+            model.set(Add =="AddressId"?"Address":"HostAddress", address);
+            model.set(Add =="AddressId"?"AddressId":"HoAddressId",  data.Id);
+
+            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+        });
+    });
+
+    $("#OpenDataError").click(function(){
+        UploadFile(true);
+    });
+
+    $("#ExcelFile").change(function () {
+        UploadFile(false);
+    });
+
+    function UploadFile(MyError){
+        waitWindow.center().open();
+        $("#ErrorData").val(MyError);
+        
+        if($("#ExcelEmployeeGridsplt").length !== 0)
+            $("#ExcelEmployeeGridsplt").remove();
+
+        //var div = '<div id="ExcelEmployeeGrid"></div>';
+       
+        $("#ExcelEmployeeGrid").remove();
+        $("#UpperDiv").append('<div id="ExcelEmployeeGrid"></div>');
+
+        var File = new FormData($('form').get(0));
+        File.append('TimeZone',timezoneSrc);
+        $.ajax({
+            url: "/ImportData/ImportDataInformation",
+            type: 'POST',
+            cache: false,
+            processData: false,
+            contentType: false,
+            data:File,
+            success: function (res) {
+                if (res.Errors.length == 0) {
+                    //$("ExcelEmployeeGrid").removeClass("hidden");
+                    var gridname = "'ExcelEmployeeGrid'";
+                    Grids.batchGrid({
+                        dataSource :res.data,
+                        admin: "@admin", // Admin role
+                        lang: "@User.Identity.GetCulture()",
+                        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="MySave(this,' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right");@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
+                        objectName: "Import"+$("#DataSent").val(),
+                        tableName: $("#DataSent").val(),
+                        gridName: "ExcelEmployeeGrid",
+                        columns: getColumns(res.Selected,res.data[0]),
+                        pageable:{pageSizes:false}
+                    });
+
+                    $("#SaveDataError").removeAttr("hidden");
+                } else{
+                    toastr.error(res.Errors[0].errors[0].message);
+                    $("#SaveDataError").attr("hidden","hidden");
+                }
+                $("#ExcelFile").val("");
+                if(MyError)
+                    $("#OpenDataError").attr("hidden","hidden");
+                waitWindow.close();
+            },
+            error: function (err) {
+                console.log('error', err);
+            }
+        });
+    }
+
+    function GetGridData(name,onError){
+        var grid = $('#' + name).data("kendoGrid");
+        var currentData = grid.dataSource.data();
+        var newRecords = [];
+        for (var i = 0; i < currentData.length; i++) {
+            var item = currentData[i];
+            for (var it in item) {
+                if(it.toLowerCase().indexOf('date') >= 0){
+                    if(item[it] != null && typeof(item[it]) == "string")
+                        item[it] = kendo.toString(new Date(parseInt(item[it].substr(6))), "yyyy-MM-dd");
+                }
+            }
+            newRecords.push(Grids.toValidJson(item));
+        }
+        return newRecords;
+    }
+
+    function MySave(elem,name) {
+        waitWindow.center().open();
+        $(elem).attr('onclick','return false;');
+        var grid = $('#' + name).data("kendoGrid");
+        $.ajax({
+            url: "/ImportData/SaveImport"+$("#DataSent").val(),
+            data: { models: GetGridData(name,false)},
+            type: "POST",
+            error: function () {
+            },
+            success: function (data) {
+                var message = "";
+                if (data.Errors) {
+                    for (var i = 0; i < data.Errors.length; i++) {
+                        for (var k = 0; k < data.Errors[i].errors.length; k++) {
+                                message +=  data.Errors[i].errors[k].field+" "+data.Errors[i].errors[k].message;
+                        }
+                    }
+                }
+
+                if (message.length === 0){
+                    var dataChanged = $('#' + name).attr("dataChanged");
+                    if (dataChanged == "true")  Grids.TriggerChanges(name,"Data",false);
+
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                    $("#SaveDataError").attr("hidden","hidden");
+                }else {
+                    toastr.error("@MsgUtils.Instance.Trls("erroroccurred")");
+                    var parms = { data: data.Data, errors: data.Errors };
+                    grid.dataSource.data(data.Data);
+                    Grids.setErrors(parms, "#"+name);
+                    grid.refresh();
+                }
+
+                waitWindow.close();
+                
+                $(elem).attr('onclick','MySave(this,"ExcelEmployeeGrid")')
+            }
+        });
+    }
+
+
+</script>
+<div class="modal fade" id="DetailsPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Address")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
+            </div>           
+        </div>
+    </div>
+</div>

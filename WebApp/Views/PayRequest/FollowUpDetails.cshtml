@@ -1,0 +1,245 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Payroll.PayRequestViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<style>
+    #DeptsTree {
+        min-height: 150px;
+        max-height: 250px;
+    }
+</style>
+
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+<link href="~/Content/forms.css" rel="stylesheet" />
+<script src="~/Scripts/app/tree.js"></script>
+
+<script>
+    FormJs.DrawTabs("pageTabs");
+
+    $("#t_Workflow").click(function(){
+        $('#tab_Workflow').load("@Url.Action("WorkFlow", "Log")"+"?Source=Pay&SourceId=@User.Identity.GetDefaultCompany()&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_AudiLog").click(function(){
+        $('#tab_AudiLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=PayRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GeneralInfo").click(function () {
+        $("#tab_GeneralInfo").html("<div id='payDiv'></div>");
+        PayRequestForm();
+    });
+
+    $("#t_GeneralInfo").click();
+
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    function PayRequestForm() {
+        var ApprovalStatus = [{ id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },{ id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },{ id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+        var PayMethod = [{id: 1, name: '@MsgUtils.Instance.Trls("Cash")'}, {id: 2, name: '@MsgUtils.Instance.Trls("Cheque")'}, {id: 3, name: '@MsgUtils.Instance.Trls("Bank Transfer")'}];
+        var EmpSelect = [{id: 1, name: '@MsgUtils.Instance.Trls("Specific departments")'}, {id: 2, name: '@MsgUtils.Instance.Trls("Specific employees")'}];
+        var PaySelect = [{id: 1, name: '@MsgUtils.Instance.Trls("Payroll group")'}, {id: 2, name: '@MsgUtils.Instance.Trls("Payroll")'}, {id: 3, name: '@MsgUtils.Instance.Trls("Specific salary items")'}, {id: 4, name: '@MsgUtils.Instance.Trls("Formula")'}];
+
+        var BankIds = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BankId));
+
+        var Payroll = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payroll)),
+            SalaryItems = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SalaryItems)),
+            Formula = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Formula)),
+            model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")", read = "@Request.QueryString["Read"]";
+        var formId = "payRequestForm", selectedDepts = [], EmpList = [];
+
+        $.getJSON(url, { objectname: 'PayFollowUpDetails', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("FollowUpDetails", "PayRequest")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "PayRequests";
+            data.companyId = "@compantId";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+            if(read == 1) data.mode = 'show';
+
+            if(model.Id != 0) {
+                if(model.Employees) model.EmployeesIds = model.Employees.split(',');
+                if(model.Departments) selectedDepts = model.Departments.split(',');
+                if(model.SalaryItems) model.SalaryItemsIds = model.SalaryItems.split(',');
+            }
+            $("#payDiv").Forms(data, model);
+            var myForm = $("#" + formId);
+
+            FormJs.fillOptionsDynamic(myForm, "PayMethod", PayMethod, model, {hasFilter: false});
+            FormJs.fillOptionsDynamic(myForm, "EmpSelect", EmpSelect, model, {hasFilter: false});
+            FormJs.fillOptionsDynamic(myForm, "PaySelect", PaySelect, model, {hasFilter: false});
+            FormJs.fillOptionsDynamic(myForm, "ApprovalStatus", ApprovalStatus, model, {hasFilter: false});
+            FormJs.fillOptionsDynamic(myForm, "PayrollId", Payroll, model);
+            FormJs.fillOptionsDynamic(myForm, "FormulaId", Formula, model);
+            FormJs.fillOptionsDynamic(myForm, "SalaryItemsIds", SalaryItems, model);
+            if(read != 1)
+                FormJs.fillOptionsDynamic(myForm, "EmployeesIds", EmpList, model);
+
+            myForm.find("#Departments").parent().append("<div id='DeptsTree'><div>");
+            myForm.find("#Departments").remove();
+
+            myForm.find("#EmployeesIds").closest('.form-group').hide();
+            myForm.find("#DeptsTree").closest('.form-group').hide();
+
+            var hidden = "<input type='hidden' id='submit' name='submit' value='false' /> <input  type='hidden' id='Employees' name='Employees' " + (model.Employees ? " value='" + model.Employees + "'" : "") + " /> "+
+                "<input type='hidden' id='SalaryItems' name='SalaryItems' " + (model.SalaryItems ? " value='" + model.SalaryItems + "'" : "") + "  /> <input  type='hidden' id='Departments' name='Departments' " + (model.Departments ? " value='" + model.Departments + "'" : "") + " />";
+            myForm.append(hidden);
+
+            myForm.find('.section[name="rejectSec"]').closest('.set').hide();
+            myForm.find("#ApprovalStatus").change(function() {
+                var approvalVal = $(this).val();
+                if(approvalVal == 9)
+                    myForm.find('.section[name="rejectSec"]').closest('.set').show();
+                else
+                    myForm.find('.section[name="rejectSec"]').closest('.set').hide();
+            });
+
+            myForm.find('[name="paySec"]').find('#PayrollGroup, #PayrollId , #FormulaId').closest("div").css("width", "51.5%");
+
+            //---------change PaySelect---------
+            function PaySelectChange() {
+                var val = (read == 1 ? model.EmpSelect + "": myForm.find('#PaySelect').val());
+                switch (val) {
+                    case '1': //PayrollGroup
+                        hideColumns("PayrollGroup"); break;
+                    case '2': //PayrollId
+                        hideColumns("PayrollId"); break;
+                    case '3': //SalaryItems
+                        hideColumns("SalaryItemsIds"); break;
+                    case '4': //FormulaId
+                        hideColumns("FormulaId"); break;
+                    default:
+                        hideColumns(); break;
+                }
+
+                function hideColumns(showColumn) {
+                    myForm.find('[name="paySec"]').find('#PayrollGroup, #PayrollId ,#SalaryItemsIds, #FormulaId').not('#' + showColumn).closest('.form-group').hide();
+                    myForm.find("#" + showColumn).closest('.form-group').show();
+                }
+            }
+
+            //---------change EmpSelect---------
+            function EmpSelectChange() {
+                var val = (read == 1 ? model.EmpSelect+ "" : myForm.find('#EmpSelect').val());
+                switch (val) {
+                    case '1':  //1.Specific departments
+                        showDepartments(); break;
+                    case '2': //2.Specific employees
+                        showEmployees(); break;
+                    default:
+                        myForm.find("#EmployeesIds").closest('.form-group').hide();
+                        myForm.find("#DeptsTree").closest('.form-group').hide();
+                        break;
+                }
+            }
+
+            //if EmpSelect == 2. Employee
+            function showEmployees() {
+                myForm.find("#EmployeesIds").closest('.form-group').show();
+                myForm.find("#DeptsTree").closest('.form-group').hide();
+
+                if(EmpList == undefined || EmpList.length == 0) {
+                    $.get("@Url.Action("GetEmployees", "PayRequest")", null, function(list) {
+                        if(read == 1)
+                            FormJs.fillOptionsDynamic(myForm, "EmployeesIds", list, model);
+                        else {
+                            var empMultiSelect = myForm.find("#EmployeesIds").data("kendoMultiSelect");
+                            empMultiSelect.dataSource.data(list);
+                            empMultiSelect.value(model.EmployeesIds);
+                        }
+                    });
+                }
+            }
+
+            //if EmpSelect == 1. Departments
+            function showDepartments() {
+                myForm.find("#EmployeesIds").closest('.form-group').hide();
+                myForm.find("#DeptsTree").closest('.form-group').show();
+
+                var deptsDiv = myForm.find("#DeptsTree");
+                if(myForm.find("#DeptsTree").data("kendoTreeView") == undefined) {
+                    myForm.find("#DeptsTree").TreeView({
+                        dragAndDrop: false,
+                        table: "CompanyStructures",
+                        root: "Company",
+                        lang: "@culture",
+                        checkboxes: { checkChildren: true },
+                        dataBound: function (e) {
+                            var treeView = deptsDiv.data("kendoTreeView");
+                            treeView.expand(".k-item");
+                            if (e.node) {
+                                $(e.node).find('.k-group input, .k-checkbox').prop("disabled",true);
+                                bindChecked([treeView.dataItem(e.node)], selectedDepts);
+                            }
+                        }
+                    });
+                }
+            }
+
+            //-------Grid-------
+            myForm.find(".section[name='empGridSec']").append("<div id='EmpGrid'></div>");
+            if(myForm.find("#EmpGrid").data("kendoGrid") == undefined) {
+                var gridname = "'EmpGrid'";
+
+                Grids.indexGrid({
+                    read: "@Url.Action("GetDeptsEmployees", "PayRequest")?requestId=" + model.Id + "&Emps=&Depts=",
+                    admin: "@admin",
+                    lang: "@culture",
+                    objectName: 'PayRequestEmployees',
+                    gridName: "EmpGrid",
+                    columns: [{ field: "BankId", values: BankIds }, { field: "Stopped", template: '<input id="#:Id#" type="checkbox" #:Stopped == true ? "checked" : ""# disabled />' }],
+                    pageable: false,
+                    toolbar:'<div><div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname+ ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li><li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li><li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+                });
+            }
+
+            PaySelectChange();
+            EmpSelectChange();
+            //----------------------------------
+
+            myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            myForm.on('click', '#saveChanges', function(e) {
+                FormJs.saveForm(myForm, $(this), function (res) {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(ulr);
+                });
+            });
+
+        }); //end get form
+    }
+
+    //Open window when click
+    $("#Documents").on('click', function() {
+        $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=PayRequest&SourceId=" + @Model.Id).center().open();
+        $("#Documents").fadeOut();
+    });
+
+    //----Documents----
+    $("#docWindow").kendoWindow ({
+        title: "@MsgUtils.Instance.Trls("Pay Request")",
+        minWidth: "1000px",
+        width: "80%",
+        height: "80%",
+        actions: ["Minimize", "Maximize", "Close"],
+        visible: false,
+        close: function() {
+            $("#Documents").fadeIn();
+            $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+            $("#docWindow").empty();
+        }
+    });
+
+</script>
+

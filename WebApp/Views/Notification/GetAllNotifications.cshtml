@@ -1,0 +1,123 @@
+﻿
+@{
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0, Menuid = 12395;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var rtl = User.Identity.RTL();
+    Layout = null;
+    string[] function = ViewData["Functions"] as string[];
+    int.TryParse(Request.QueryString["MenuId"],out Menuid);
+}
+<div id="NotificationsGrid"></div>
+<script>
+        var gridname = "NotificationsGrid";
+        Grids.indexGrid({
+            read: "@Url.Action("GetNotification", "Notification")?MenuId="+@Menuid,
+            objectName: "NotificationsTable",  // name of the page or table name used to create local db key
+            gridName: "NotificationsGrid",
+            recordName: "Subject",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: [
+                {
+                    field: "ShowMessage", command: {
+                        text: '@MsgUtils.Instance.Trls("ShowMessage")', click: function (e) {
+                            var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                            $("#NotificationsMsgs").data("kendoWindow").refresh("/Notification/GetNotify?id=" + dataItem.Id).center().open();
+                        },
+                    }
+                },{field:"MarkAsRead",command:{
+                    text:'@MsgUtils.Instance.Trls("MarkAsRead")',click:function(e){
+                        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                        $.getJSON("/Notification/MarkAsRead",{id:dataItem.Id},function(res){
+                            if(res=="Ok"){
+                                toastr.success('@MsgUtils.Instance.Trls("MessageRead")');
+                                MarkReadnotify(dataItem.Id);
+                            }else
+                                toastr.warning('@MsgUtils.Instance.Trls("MessagealreadyRead")');
+
+                        });
+                        }
+                    }
+                },{ field: "Message", template: "<div class='MyBody'>#: Message #</div>" }],
+            toolbar: kendo.template($("#template").html()),
+            serverPaging: true,
+            serverFiltering: true,
+            serverSorting: true,
+            dataBound:function(){
+                var grid = this.gridName;
+                $("#" + grid).find(".MyBody").each(function () {
+                    var row = $(this).closest("tr");
+                    var model = $("#" + grid).getKendoGrid().dataItem(row);
+                    model.set("Message", decodeHtml(model.Message))
+                });
+            },
+            pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] }
+
+        });
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        var bodyTxt = txt.value.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, '');
+        return bodyTxt.toString();
+    }
+    function MarkReadnotify(Id){
+        var notfynvbr = $("#header_notification_bar");
+        var vl = notfynvbr.find('.badge-default').text();
+        if(Id != null){
+            notfynvbr.find('ul.dropdown-menu-list > li').each(function(i,el){
+                if($(el).attr("id") == Id){
+                    $(el).css('background-color','');
+                    notfynvbr.find('.badge-default').text(--vl);
+                }
+            });
+        }else
+        {
+            notfynvbr.find('ul.dropdown-menu-list > li').css('background-color','');
+            notfynvbr.find('.badge-default').text('0');
+        }
+    }
+    function ReadAll(){
+        $.getJSON("/Notification/ReadAll",{},function(res){
+            if(res=="Ok"){
+                toastr.success('@MsgUtils.Instance.Trls("AllMsgsRead")');
+                MarkReadnotify(null);
+            }else
+                toastr.warning('@MsgUtils.Instance.Trls("MsgsAlreadyRead")');
+        })
+    }
+</script>
+
+<script type="text/x-kendo-template" id="template">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default"  accesskey="a" onclick="ReadAll()"><span>&nbsp;@MsgUtils.Instance.Trls("MarkAllAsRead")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('NotificationsGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('NotificationsGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('NotificationsGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('NotificationsGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }    
+            </ul>
+        </div>
+    </div>
+
+</script>
+       
+        

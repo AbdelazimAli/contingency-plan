@@ -1,0 +1,55 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "Location" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Messages" } })
+<div id="messageDiv"></div>
+
+<script>
+    var addUrl = "@Url.Action("Details", "Message")";
+    RequestFilters.ApplayAllFilters([], {}, "Location", "@Url.Action("GetMessage", "Message")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var Emp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var grid = "'EmpMessages'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetMessage", "Message")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "Message")",
+        edit: "@Url.Action("Details", "Message")",
+        del: "@Url.Action("DeleteMessage", "Message")",
+        objectName: "EmpMessages",  // name of the page or table name used to create local db key
+        gridName: "messageDiv",
+        recordName: "Title",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{ field: "FromEmpId", values: Emp },{field:"Body",template:"<div class='MyBody'>#: Body #</div>"}],
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                    '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                    '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        //columns: (e.data.Protected == true ? [{ field: "Delete", input: "none"}]: undefined),
+        select: { "FromEmpId": Emp },
+        dataBound: function (e) {
+            var grid= this.gridName;
+            $("#"+grid).find(".MyBody").each(function(){
+                var row = $(this).closest("tr");
+                var model = $("#"+grid).getKendoGrid().dataItem(row);
+                model.set("Body",decodeHtml(model.Body))
+            });
+        }
+    });
+    function decodeHtml(html)
+    {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        var bodyTxt=txt.value.replace(/<[^>]*>/g,'').replace(/&nbsp;/gi,'');
+        return bodyTxt.toString();
+    }
+</script>

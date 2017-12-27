@@ -1,0 +1,101 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var admin = @User.IsInRole("Admin");
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Grades"></div>
+<script>
+    var objectName = "PayrollGrades";
+    var gridname="'Grades'"
+    var points;
+    Grids.batchGrid({
+        read: "@Url.Action("ReadPayrollGrades", "PayRollGrades")?MenuId=@Request.QueryString["MenuId"]",
+        create: "@Url.Action("CreatePayrollGrades", "PayRollGrades")",
+        update: "@Url.Action("UpdatePayrollGrades", "PayRollGrades")",
+        destroy: "@Url.Action("DeletePayrollGrades", "PayRollGrades")",
+        admin: "@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: "PayrollGrades",
+        recordName: "Name", // custom delete message
+        gridName: "Grades",
+        save: function (e) {
+            var arr=[];
+            var arrresult=[];
+            var grid =  $("#Grades").data("kendoGrid");
+            var row = $("#Grades [data-uid=" +e.model.uid + "]");
+            var model = grid.dataItem(row);
+            if(e.values.PointName=="")
+                model.set("Point",undefined);
+            else
+                if(e.values.PointName&& e.values.PointName!= e.model.PointName){
+                    $.ajax({
+                        async: false,
+                        url: "@Url.Action("GetPoints", "PayRollGrades")",                     
+                        dataType: "json",
+                        success: function (result) {
+                            arr=result;
+                        },
+                        error: function (result) {
+                        }
+                    });
+                    e.model.PointName= e.values.PointName; 
+                    var pointarr=e.model.PointName.split(',')
+                    if(pointarr.length>0){
+                        for (var i = 0; i < pointarr.length; i++) {
+                            arrresult.push( arr.find(a=>a.text==pointarr[i]).value);
+                        }
+                        e.model.Point = arrresult;
+                        model.set("Point", arrresult);
+                    }
+                }
+            },
+        fields: { Code: { defaultValue: @ViewBag.Code },IsLocal:{editable:false}}, 
+        columns: [{
+            field: "IsLocal",
+            template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsLocal\',' + gridname + ')"/>'
+        },
+            {
+                field: "PointName",editor: function (container, options) {                   
+                    if(options.model.PointName!=null)
+                        if (options.model.PointName.indexOf(',') > 0)
+                            options.model.PointName = options.model.PointName.split(',');
+                    
+                    input = "<select multiple='multiple' data-value-primitive='true' name='PointName' style='width: 80%; margin-bottom: 0;'>";                
+                    $.ajax({
+                        async: false,
+                        url: "@Url.Action("GetPoints", "PayRollGrades")",                     
+                        dataType: "json",
+                        success: function (result) {
+
+                            for (var i = 0; i < result.length; i++) {
+                                input += "<option value='" + result[i].text + "'>" + result[i].text + "</option>";
+                            }
+                        },
+                        error: function (result) {
+                        }
+                    });
+                    input += "</select>";
+                    var multiSelect = $(input).appendTo(container).kendoMultiSelect({
+                        change: function (ee) {                         
+                            options.model.PointName = this.value();
+                        }
+                    }).data("kendoMultiSelect");
+                }
+            }
+        ]
+    })
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Grades" }, { "ObjectName", "PayrollGrades" }, { "Functions", ViewBag.Functions } })
+
+

@@ -1,0 +1,73 @@
+﻿@using WebApp.Extensions
+
+@{
+
+    ViewBag.Title = "Index";
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    string[] function = ViewData["Functions"] as string[];
+}
+<br>
+<style>
+    .customClass {
+        background-color: red;
+    }
+</style>
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "Users" }, { "HasDepts", "false" }, { "HasRange", "false" },{ "Functions", function }, { "TableName", "AspNetUsers" } })
+<div id="Users"></div>
+<script>
+    var addUrl = "@Url.Action("Details", "Users")";
+    RequestFilters.ApplayAllFilters([], {}, "Users", "@Url.Action("ReadUsers", "Users")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var grid = "'AspNetUsers'";
+    var objectName = "AspNetUsers";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadUsers", "Users")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("Details","Users")",
+        del: "@Url.Action("DeleteUser", "Users")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName, // name of the page or table name used to create local db key
+        recordName: "UserName", // custom delete message
+        gridName: "Users",
+        admin: "@admin",
+        columns: [{ field: "LastLogin", template: "#= kendo.toString((LastLogin == null ? '' : kendo.parseDate(LastLogin, 'yyyy-MM-dd hh:mm', '" + "@User.Identity.GetCulture()" + "')), 'dd/MM/yyyy hh:mm') #" },
+            {
+                field: "Delete", command: {
+                    text: '@MsgUtils.Instance.Trls("Delete")', click: function (e) {
+                        var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+
+                        if (dataItem.UserName == "@User.Identity.Name" || dataItem.UserName == "hradmin")
+                            toastr.error("@MsgUtils.Instance.Trls("CantDeletUser")");
+                        else {
+                            bootbox.confirm(("@MsgUtils.Instance.Trls("PermanentlyDeleted")").replace("{0}", dataItem.UserName), function (result) {
+                                if (result) {
+                                    $.getJSON("/Users/DeleteUser", { Id: dataItem.Id }, function (res) {
+                                        if (res == "OK") {
+                                            toastr.success("@MsgUtils.Instance.Trls("SuccessfullyDeleted")")
+                                            $('#' + $("#Users").attr("id")).data("kendoGrid").dataSource.remove(dataItem);
+                                            $("#Users").data("kendoGrid").dataSource.read();
+                                            $('#Users').attr("hasErrors", "false");
+                                            var dataChanged = $('#Users').attr("dataChanged");
+                                            if (dataChanged == "true") Grids.TriggerChanges("Users", "Data", false);
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
+                    },
+                }
+            }],
+        dataBound: function (e) {
+            dataView = $("#Users").data("kendoGrid").dataSource.data();
+            for (var i = 0; i <dataView.length; i++) {
+                if (dataView[i].Locked == true) {
+                    var uid = dataView[i].uid;
+                    $("#Users tbody").find("tr[data-uid=" + uid + "]").addClass("customClass");
+                }
+            }
+        },
+          toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                  '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                  '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+    });
+</script>

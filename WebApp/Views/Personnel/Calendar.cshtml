@@ -1,0 +1,214 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<style>
+    #calendar {
+        margin: 20px;
+    }
+    #weekend .weekDiv label{
+        margin: 2px 10px;
+    }
+    .weekDiv {
+        margin-bottom: 20px;
+    }
+    #customH, #standardH , #weekend{
+        margin: 20px;
+    }
+</style>
+
+
+<div class="omegaform">
+    <form action="@Url.Action("SaveCalendar", "Personnel")" id="calendarForm" >
+        <div class="row">
+            <div class="col-sm-5" id="grids">
+                <h4>@MsgUtils.Instance.Trls("Standard Holidays")</h4>
+                <div class="row" id="standardH"></div>
+                <br /><br />
+                <h4>@MsgUtils.Instance.Trls("Custom Holidays")</h4>
+                <div class="row" id="customH"></div>
+            </div>
+            <div class="col-sm-7">
+                <div class="row" id="weekend">
+                    <div class="weekDiv">
+                        <label class="control-label">@MsgUtils.Instance.Trls("Weekend1")</label> <input name="Weekend1" id="Weekend1" /><br /><br />
+                        <label class="control-label">@MsgUtils.Instance.Trls("Weekend2")</label><input name="Weekend2" id="Weekend2" /><br />
+                    </div>
+        
+                </div>
+                <div id="calendar"></div>
+                <div>
+                    <button id="save" class="btn btn-sm submit">@MsgUtils.Instance.Trls("SaveChanges")</button>
+                    <button id="refresh" class="btn btn-sm ajaxBtn">@MsgUtils.Instance.Trls("Refresh")</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+    <script>
+        var rtl = @rtl.ToString().ToLower();
+        if(rtl) $(".omegaform").addClass("rtl");
+
+        var sholiday, choliday;
+        var ajaxCompleted = 0;
+
+        //Disabled Date
+        function disableFunc(date) {
+            var isDisabled;
+
+            //WeekEnds
+            if (weekend && (date.getDay() == weekend.Weekend1 || date.getDay() == weekend.Weekend2))
+                isDisabled = true;
+
+            //Custom Holidays
+            for (var i = 0; i < choliday.length; i++) {
+                var holiDate = new Date(choliday[i].HoliDate);
+                if (holiDate.getYear() == date.getYear() && holiDate.getMonth() == date.getMonth() && holiDate.getDate() == date.getDate()) {
+                    isDisabled = true;
+                    break;
+                }
+            }
+
+            //Standard Holidays
+            for (var i = 0; i < sholiday.length; i++) {
+                if ((date.getMonth() + 1) == sholiday[i].SMonth && date.getDate() == sholiday[i].SDay) {
+                    isDisabled = true;
+                    break;
+                }
+            }
+
+            return isDisabled;
+        }
+
+        ///#region Grids
+        ///--Standered Holydays
+        var standardGrid = "'standardH'";
+        Grids.batchGrid({
+            read: "@Url.Action("GetStanderedHolidays", "Personnel")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "StandardHolidays", // name of the page or table name used to create local db key
+            tableName: "Holidays",
+            gridName: "standardH",
+            admin: "@admin",
+            height: 300,
+            fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-xs glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + standardGrid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-xs btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + standardGrid + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;</div>&nbsp;<div class="btn-group"><button type="button" class="btn btn-xs btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+standardGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+               '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+standardGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+standardGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+            columns: [{ field: "IsLocal", template: '<input value="IsLocal" type="checkbox" #:IsLocal == true ? "checked" : ""# />' }], //onchange="Changed(this,' + gridname1 + ')"
+            readCompleted: function(e) {
+                sholiday = $("#standardH").data("kendoGrid").dataSource.data();
+                drawCalendar();
+            },
+            save: function(e) {
+                if ((e.values.SDay && e.values.SDay != e.model.SDay) || (e.values.SMonth && e.values.SMonth != e.model.SMonth)) {
+                    sholiday = $("#standardH").data("kendoGrid").dataSource._data;
+                }
+            }
+        });
+
+        ///--Custom Holydays
+        var customGrid = "'customH'";
+        Grids.batchGrid({
+            read: "@Url.Action("GetCustomHolidays", "Personnel")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "CustomHolidays", // name of the page or table name used to create local db key
+            tableName: "Holidays",
+            gridName: "customH",
+            admin: "@admin",
+            height: 300,
+            fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-xs glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + customGrid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-xs btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + customGrid + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;</div>&nbsp;<div class="btn-group"><button type="button" class="btn btn-xs btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+customGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+customGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+customGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+            columns: [{ field: "IsLocal", template: '<input value="IsLocal" type="checkbox" #:IsLocal == true ? "checked" : ""# />' }],
+            readCompleted: function(e) {
+                choliday = $("#customH").data("kendoGrid").dataSource.data();
+                drawCalendar();
+            },
+            save: function (e) {
+                if (e.values.HoliDate && e.values.HoliDate != e.model.HoliDate) {
+                    choliday = $("#customH").data("kendoGrid").dataSource._data;
+                }
+            }
+        });
+
+        //Checkbox change
+        $('#grids').on('change', 'input[type="checkbox"]', function (e) {
+            var gridName = $(e.currentTarget).parents(".k-grid").attr("id");
+            var dataItem = $("#" + gridName).data("kendoGrid").dataItem($(this).closest("tr"));
+            dataItem.dirty = true;
+            if ($(this).is(":checked"))
+                dataItem.IsLocal = true;
+            else
+                dataItem.IsLocal = false;
+        });
+
+        ///#endregion Grids
+
+        $("#save").click(function (e) {
+            e.preventDefault();
+
+            FormJs.saveForm($("#calendarForm"), this, function() {
+                $("#calendarForm .submit").attr("disabled", false);
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                ajaxCompleted = 0;
+                $("#standardH").data("kendoGrid").dataSource.read();
+                $("#customH").data("kendoGrid").dataSource.read();
+
+            }, Grids.sendData("standardH"), Grids.sendData("customH"));
+        });
+
+        $("#refresh").click(function(e) {
+            e.preventDefault();
+            if($("#calendar").data("kendoCalendar"))
+                $("#calendar").data("kendoCalendar").destroy();
+            drawCalendar();
+        });
+
+        function drawCalendar() {
+            ajaxCompleted += 1;
+
+            if (ajaxCompleted >= 2) {
+                ///calendar
+                $("#calendar").empty();
+
+                $("#calendar").kendoCalendar({
+                    culture: "@culture",
+                    disableDates: disableFunc,
+                    delay: 100
+                });
+            }
+        }
+        var weekDays = [{id: 0, name: "@MsgUtils.Instance.Trls("Sunday")" }, {id: 1, name: "@MsgUtils.Instance.Trls("Monday")" }, {id: 2, name: "@MsgUtils.Instance.Trls("Tuesday")" }, {id: 3, name: "@MsgUtils.Instance.Trls("Wednesday")" }, {id: 4, name: "@MsgUtils.Instance.Trls("Thursday")" }, {id: 5, name: "@MsgUtils.Instance.Trls("Friday")" }, {id: 6, name: "@MsgUtils.Instance.Trls("Saturday")" }];
+        var weekend = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.weekend));
+
+        $("#Weekend1").kendoDropDownList({
+            dataSource: weekDays,
+            dataTextField: "name",
+            dataValueField: "id",
+            value: ((weekend != undefined && weekend.Weekend1 != undefined) ? weekend.Weekend1 : ""),
+            change: function(e) {
+                weekend.Weekend1 = e.sender.value()
+            }
+        });
+
+        $("#Weekend2").kendoDropDownList({
+            dataSource: weekDays,
+            dataTextField: "name",
+            dataValueField: "id",
+            optionLabel: " ",
+            value: ((weekend != undefined && weekend.Weekend2 != undefined) ? weekend.Weekend2 : ""),
+            change: function(e) {
+                weekend.Weekend2 = e.sender.value()
+            }
+        });
+
+</script>

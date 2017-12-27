@@ -1,0 +1,41 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var admin = @User.IsInRole("Admin");
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Account"></div>
+<script>
+    var objectName = "Accounts";
+    var gridname="'Account'";
+    var AccType = [{ value: 1, text: "@MsgUtils.Instance.Trls("GL Account")" }, { value: 2, text: "@MsgUtils.Instance.Trls("App Account")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Cost Center")" }];
+    Grids.batchGrid({
+        read: "@Url.Action("ReadAccount", "PayRollGrades")?MenuId=@Request.QueryString["MenuId"]",
+        create: "@Url.Action("CreateAccount", "PayRollGrades")",
+        update: "@Url.Action("UpdateAccount", "PayRollGrades")",
+        destroy: "@Url.Action("DeleteAccount", "PayRollGrades")",
+        admin: "@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: "Accounts",
+        recordName: "Name", // custom delete message
+        gridName: "Account",      
+        fields: { Code: { defaultValue: @ViewBag.Code },IsLocal:{editable:false}},
+        columns : [{
+            field: "IsLocal",
+            template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsLocal\',' + gridname + ')"/>'
+        },{field:"AccType",values:AccType}],
+        select: { "AccType": AccType }
+    })
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Account" }, { "ObjectName", "Accounts" }, { "Functions", ViewBag.Functions } })
+
+

@@ -1,0 +1,139 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+<style>
+    .k-chart {
+        padding: 5px;
+        margin: 10px 0px;
+        border: thin solid rgba(222, 222, 222, 0.40);
+    }
+
+    .noData {
+        opacity: .4;
+        filter: alpha(opacity=60);
+        text-align: center;
+        top: 50%;
+        position: absolute;
+        width: 100%;
+    }
+
+    #Leave .titleLbl {
+        text-align: center;
+        /*font-size: 18px;*/
+        margin-top: 4px;
+        font-weight: bold;
+    }
+</style>
+<link href="~/Content/kendo.metro.min.css" rel="stylesheet" />
+
+<br />
+<div>
+    <div class="row">
+        <div>
+            @*<button class="btn-xs btn-primary" onclick="Grids.ExportChart('Leave')">@MsgUtils.Instance.Trls("ExportImage")</button>*@
+            <div id="Leave"></div>
+        </div>
+        <div class="col-md-4"><div id="LeaveGrid"></div></div>
+    </div> 
+
+    <div class="col-md-6">
+        <button class="btn-xs btn-primary" onclick="Grids.ExportChart('YearTasks')">@MsgUtils.Instance.Trls("ExportImage")</button>
+        <div id="YearTasks"></div>
+    </div>
+    <div class="col-md-5">
+        <button class="btn-xs btn-primary" onclick="Grids.ExportChart('MonthesTasks')">@MsgUtils.Instance.Trls("ExportImage")</button>
+        <div id="MonthesTasks"></div>
+    </div>
+</div>
+
+<script>
+    var YearTasks =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.YearTasks));
+    var MonthesTasks = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.MonthesTasks));
+    var AnnualLeave = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AnnualLeave));
+    var colors = ['#42a7ff', '#797979', '#d54c7e', '#ededed', '#B0D877', '#FFD700'];
+    var gaugeColors = ['#B0D877', '#ededed', '#d54c7e'];
+
+    //------------------------Leave-------------------------
+    for(var i=0; i < AnnualLeave.length; i++) {
+        var range = [], total = AnnualLeave[i].Days + AnnualLeave[i].Balance;
+        if(total != 0) {
+            $("#Leave").append("<div class='col-md-4'><div id='Leave"+ AnnualLeave[i].TypeId +"'></div><div class='titleLbl'>"+ AnnualLeave[i].Name +"</div>"+
+                "<div class='titleLbl'><button type-id="+ AnnualLeave[i].TypeId +" period-id="+ AnnualLeave[i].PeriodId +" class='detailsBtn btn btn-xs'>@MsgUtils.Instance.Trls("Show Details")</button></div></div>");
+            
+            for(var j=0; j<3; j++)
+                range.push({from: total/3 * j, to: total/3 * (j+1), color: gaugeColors[j]});
+
+            $("#Leave" + AnnualLeave[i].TypeId).kendoRadialGauge({
+                pointer: {value: AnnualLeave[i].Days},
+                scale: {max: total, ranges: range }
+            });
+        }
+    }
+
+    $('#Leave').on('click', '.detailsBtn', function(e) {
+        var leaveGrid = $("#LeaveGrid").data("kendoGrid"),
+            readUrl = "@Url.Action("EmpPeriodLeavesGrid", "Dashboard")?LeaveType=" + $(this).attr("type-id") + "&Period=" + $(this).attr("period-id");
+
+        if(leaveGrid) {
+            leaveGrid.dataSource.transport.options.read.url = readUrl;
+            leaveGrid.dataSource.read();
+        } else {
+            Grids.indexGrid({
+                read: readUrl,
+                objectName: "LeavePeriodRequestDB",
+                gridName: "LeaveGrid",
+                admin: "@admin",
+                lang: "@culture",
+                height: 388,
+                groupable: false,
+                pageable: false,
+                toolbar: '<div></div>'
+            });
+        }
+
+    });
+
+    //------------------------Tasks-------------------------
+    //Year Tasks
+    $("#YearTasks").kendoChart({
+        dataSource: { data: YearTasks },
+        title: {text: '@MsgUtils.Instance.Trls("Period Tasks") ',align:"center"},
+        legend: {position: 'bottom'},
+        series: [{type: 'pie', data: YearTasks}],
+        seriesDefaults: {
+            labels: {
+                visible: true,
+                background: 'transparent',
+                template: '${ value } - ${ category }'
+            }},
+        tooltip:{
+            visible:true,
+            template: '${ value } @MsgUtils.Instance.Trls("Tasks") ${ category }'
+        },
+        dataBound: function(e) {
+            var view = e.sender.dataSource.view();
+            (view.length === 0 ? $(this.element).after("<div class='noData'>@MsgUtils.Instance.Trls("No data available")</div>") :$(this.element).next('.noData').remove());
+        }
+    });
+
+    //Monthes Tasks
+    $("#MonthesTasks").kendoChart({
+        dataSource: {data: MonthesTasks, group: {field: "category"}, sort: [{ field: "category", dir: "asc" }, { field: "myGroup", dir: "asc" }] },
+        //seriesColors: colors,
+        series: [{field: "value", categoryField: "myGroup" }], //, colorField: "color"
+        seriesDefaults: {type: "column", stack: true, data: MonthesTasks, labels: {visible:false, background:"transparent"}},
+        title: {align:"center", text:'@MsgUtils.Instance.Trls("SubPeriod Tasks") '},
+        legend: {visible:true},
+        tooltip: {visible:true, format:"{0}", template:"#:value# @MsgUtils.Instance.Trls("Tasks") #:category#"},
+        dataBound: function(e) {
+            var view = e.sender.dataSource.view();
+            (view.length === 0 ? $(this.element).after("<div class='noData'>@MsgUtils.Instance.Trls("No data available")</div>") :$(this.element).next('.noData').remove());
+        }
+    });
+
+</script>

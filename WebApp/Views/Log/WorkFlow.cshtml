@@ -1,0 +1,42 @@
+﻿@using WebApp.Extensions
+@model Model.ViewModel.Personnel.WorkFlowGridViewModel
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+}
+<br>
+<div id="WorkFlow"></div>
+<script>
+    var approvalStatus = [
+         { value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' },
+         { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+         { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }
+    ];
+
+    var gridname = "'WorkFlow'";
+
+    Grids.indexGrid({
+        read: "@Url.Action("ReadWorkFlow", "Log")?Source=@Model.Source&SourceId=@Model.SourceId&DocumentId=@Model.DocumentId",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "WorkFlow",
+        gridName: "WorkFlow",
+        admin: "@admin",
+        columns: [{ field: "ApprovalStatus", values: approvalStatus }],
+        select: { "ApprovalStatus": approvalStatus },
+        toolbar: '<div><div class="btn-group"><button type="button" class="btn btn-default btn-sm fa fa-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="fa fa-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>'
+    });
+</script>
+
+
+
+
+
+
+

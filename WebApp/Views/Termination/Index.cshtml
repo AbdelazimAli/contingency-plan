@@ -1,0 +1,74 @@
+﻿@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Terminations" } })
+
+<div id="TerminationRequestGrid"></div>
+
+<script>
+    var addUrl = "@Url.Action("Details", "Termination")";
+    RequestFilters.ApplayAllFilters([], {}, "TerminationRequestGrid", "@Url.Action("GetRequests", "Termination")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    function Exist(data) {
+        if (data.HasImage)
+            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
+        else
+            return "url(/SpecialData/Photos/noimage.jpg)"
+    }
+    var ApprovalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' },
+         { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+         { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }];
+
+    var columns = [{
+                        field: "Service",
+                        template: "<div>#:ServYear# @MsgUtils.Instance.Trls("Year")</div>"
+                    },
+                    {
+                        field: "Employee",
+                        template: "<div class='k-people-photo' " +
+                                        "style='background-image: #:Exist(data)# '></div>" +
+                                        "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>",
+                        locked:true
+                    }, { field: "ApprovalStatus", values: ApprovalStatus }];
+
+    var TermReqGrid = "'TerminationRequestGrid'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetRequests", "Termination")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "Termination")",
+        edit: "@Url.Action("Details", "Termination")",
+        del: "@Url.Action("DeleteRequest", "Termination")",
+        objectName: "TermRequest",
+        tabeName: "Terminations",
+        recordName: "Employee",
+        gridName: "TerminationRequestGrid",
+        admin: "@admin",
+        columns: columns,
+        toolbar:'<div></div>',
+        lang: "@User.Identity.GetCulture()",
+        select: {"ApprovalStatus": ApprovalStatus },
+        dataBound: function (e) {
+            var gridName = this.gridName;
+            $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                var row = $(this).closest("tr");
+                var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 1) $(this).toggle(); //hide delete btn
+                else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+            });
+        }
+    });
+</script>

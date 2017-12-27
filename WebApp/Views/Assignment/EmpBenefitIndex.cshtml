@@ -1,0 +1,112 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<br>
+<div id="EmpBenefitDiv"></div>
+<script>
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+    var BeneficiaryId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BeneficiaryId));
+    var benefitId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.benefitId));
+    BeneficiaryId.unshift({value:null, text:'@MsgUtils.Instance.Trls("Employee")'});
+    var result='';
+    var objectName = "EmpBenefits";
+    var EmpBenGrid="'EmpBenefitDiv'";
+    var BenfitGrid = "'EmpBenefitDiv'";
+
+    Grids.batchGrid({
+        read: "@Url.Action("GetEmpBenefit", "Assignment")?EmpId="+id,
+        update:"@Url.Action("UpdateEmpBenefit", "Assignment")",
+        create:"@Url.Action("CreateEmpBenefit", "Assignment")?EmpId="+id,
+        destroy:"@Url.Action("DeleteEmpBenefit", "Assignment")",
+        admin:"@admin",
+        lang:"@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "EmpBenefitDiv",
+        columns: [
+                { field:"BenefitId",values:benefitId},
+                { field:"BeneficiaryId",values: BeneficiaryId},
+                 { field:"BenefitPlanName", editor: function (container, options) {
+                     $.ajax({
+                         url:"@Url.Action("GetBenfitPlan", "Assignment")",
+                         type: "POST",
+                         data:{BenId:options.model.BenefitId},
+                         success:function(res){
+                             var input='<select name="BenefitPlanId" id="BenefitPlanId" style="width: 80%; margin-bottom: 0; ">';
+                             $(input).appendTo(container);
+                             $("#BenefitPlanId").kendoDropDownList({
+                                 valuePrimitive: true,
+                                 dataTextField: "text",
+                                 dataValueField: "value",
+                                 value: options.model.BenefitPlanId,
+                                 dataSource: res,
+                                 select: function() {
+                                     var ddl =$("#BenefitPlanId").data("kendoDropDownList");
+                                     options.model.set("BenefitPlanId", ddl.value());
+
+                                     options.model.set("BenefitPlanName", ddl.text());
+                                 }
+                             });
+                         },
+                         error:function(){
+                         }
+                     });
+                 }
+                 }
+            ],
+        select: { "BenefitId":benefitId,"BeneficiaryId":BeneficiaryId},
+        fields:{EndDate: { defaultValue: null }, StartDate: { defaultValue: new Date(2010, 0) },CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+      //  toolbar: '<div><div style="@(rtl ? "float: left" : "float: right")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + BenfitGrid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveClick()" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + BenfitGrid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a></div><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+BenfitGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+BenfitGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+        save:function(e){
+            if (e.values.BenefitId && e.values.BenefitId != e.model.BenefitId) {
+                e.model.BenefitId = e.values.BenefitId;
+                var mode= $("#EmpBenefitDiv").data("kendoGrid").dataSource.data();
+                var obj = [];
+                    for (var i = 0; i < mode.length; i++) {
+                        obj.push(mode[i].BenefitId);
+                    }
+                $.ajax({
+                    url:"@Url.Action("GetBenfitClass", "Assignment")",
+                    type: "POST",
+                    data:{Ids:obj,BenId:e.values.BenefitId},
+                    success:function(res){
+                        if(res=="Error"){
+                            var grid =  $("#EmpBenefitDiv").data("kendoGrid");
+                            var columnsArray=grid.dataSource.data();
+                            grid.table.find(".errorCell").each(function () {
+                                $(this).removeClass("errorCell k-invalid");
+                            });
+                            $(e.container[0]).addClass("k-invalid errorCell");
+                            $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.BenefitId+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("This Benfite Is Completed")<div class="k-callout k-callout-n"></div></div>'));
+                        }
+                        else
+                            $(e.container[0]).removeClass("k-invalid errorCell");
+                    },
+                    error:function(){
+                    }
+                });
+            }}
+    });
+    function saveClick() {
+        if($("#EmpBenefitDiv").find(".errorCell").length>0)return;
+         else  $("#EmpBenefitDiv").data("kendoGrid").saveChanges();
+    }
+</script>
+
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "EmpBenefitDiv" }, { "ObjectName", "EmpBenefits" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+

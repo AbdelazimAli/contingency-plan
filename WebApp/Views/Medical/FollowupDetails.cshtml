@@ -1,0 +1,257 @@
+﻿
+@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model BenefitRequestFollowUp
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var companyId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<br />
+<br />
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+
+
+<script>
+    var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+
+    FormJs.DrawTabs("pageTabs");
+
+    $("#t_MedicalWorkFollow").click(function(){
+        $('#tab_MedicalWorkFollow').load("@Url.Action("WorkFlow", "Log")?Source=Medical&SourceId=@companyId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=ComplaintReqFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_MedicalAuditLog").click(function(){
+        $('#tab_MedicalAuditLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=MedicalReqFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GenralMedicalInfo").click(function () {
+        $("#tab_GenralMedicalInfo").html("<div id='medicalFollowupDiv'></div>");
+        FollowUpForm();
+    });
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var formId = "FollowUpForm";
+
+    function FollowUpForm()
+    {
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var RejectReason = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RejectReason));
+        var Currency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Currency));
+        var Services = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Services));
+        var Providers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Providers));
+        var Beneficiary = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Beneficiary));
+        var BenefitId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BenefitId));
+        var ApprovalStatus = [{ id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },{ id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },{ id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.getJSON(url, { objectname: 'MedicalReqFollowUpForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("SaveFollowupDetails", "Medical")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "MedicalRequests";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+
+            $("#medicalFollowupDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", ApprovalStatus, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "RejectReason", RejectReason, model);
+            FormJs.fillOptionsDynamic($("#"+formId),"Curr",Currency,model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", Services, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ProviderId", Providers, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", Beneficiary, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "BenefitId", BenefitId, model);
+
+            $("#" + formId).find("div[name='PaidBySec']").css("display","none");
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            if(read != 1) {
+                $("#"+ formId + " #RequestDate").data("kendoDatePicker").readonly();
+                $("#"+ formId + " #EmpId").data("kendoDropDownList").readonly();
+            }
+            if(model.ApprovalStatus == 9)
+            {
+                $("#" + formId).find("#CancelDesc").parents(".form-group").css("display","");
+                $("#" + formId).find("#CancelReason").parents(".form-group").css("display","");
+            }else
+            {
+                $("#" + formId).find("#CancelDesc").parents(".form-group").css("display","none");
+                $("#" + formId).find("#CancelReason").parents(".form-group").css("display","none");
+            }
+            if(model.ApprovalStatus==5)
+            {
+                $("#"+ formId + " div[name='DateSec']").parents(".set").css("display","")
+            }else
+            {
+                $("#"+ formId + " div[name='DateSec']").parents(".set").css("display","none")
+            }
+
+
+            if(model.ApprovalStatus != 9) $("#" + formId + " div[name='rejectSec']").parents(".set").css("display","none");
+
+            $("#medicalFollowupDiv").on("click","#saveChanges",null,function (e) {
+                if(!$("#" + formId + " .k-invalid").length) {
+                    FormJs.saveForm($("#"+formId), $(this),function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(ulr);
+                    });
+                }
+            });
+
+            $("#medicalFollowupDiv").on("change","#ApprovalStatus",null,function(){
+                var value = $(this).val();
+               if( value == 9)
+               {
+                   $("#"+ formId + " div[name='DateSec']").parents(".set").css("display","none");
+                   $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","");
+
+               }else if(value == 5)
+               {
+
+                   $("#IssueDate").data("kendoDatePicker").value(new Date());
+                   $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none");
+                   $("#"+ formId + " div[name='DateSec']").parents(".set").css("display","");
+
+               }else
+               {
+                
+                   $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none")
+                   $("#"+ formId + " div[name='DateSec']").parents(".set").css("display","none")
+
+               }
+               // value != 5 ? $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none") : $("div[name='rejectSec']").parents(".set").css("display","");
+
+            });
+            $("#" + formId).on('blur','#IssueDate', function(){
+                var elem = $(this);
+                var valueinDays=(elem.data("kendoDatePicker").value()-$("#ExpiryDate").data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0 && $('#ExpiryDate').val() != ""){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='IssueDate' role='alert'>@MsgUtils.Instance.Trls("IssueDateLThanExpiryDate")</span>");
+                    }
+                }
+                else{
+
+                    $('#ExpiryDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#ExpiryDate').next("span.k-tooltip-validation").remove();
+                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                    elem.next("span.k-tooltip-validation").remove();
+                }
+
+            });
+
+            $("#"+formId).on('blur','#ExpiryDate',function(){
+                var elem = $(this);
+                if(elem.val()!=""){
+                    var valueinDays=($("#IssueDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ExpiryDate' role='alert'>@MsgUtils.Instance.Trls("ExpiryDateMustGTIssueDate")</span>");
+                        }
+                    }
+                    else
+                    {
+
+                        $('#IssueDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#IssueDate').next("span.k-tooltip-validation").remove();
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+                    }
+
+                }
+            });
+
+            //validation ServStartDate must be less than or equal ServEndDate
+            $("#" + formId).on('blur','#ServStartDate', function(){
+                var elem = $(this);
+                var valueinDays=(elem.data("kendoDatePicker").value()-$("#ServEndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0 && $('#ServEndDate').val() != ""){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ServStartDate' role='alert'>@MsgUtils.Instance.Trls("IssueDateLThanExpiryDate")</span>");
+                    }
+                }
+                else{
+
+                    $('#ExpiryDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#ExpiryDate').next("span.k-tooltip-validation").remove();
+                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                    elem.next("span.k-tooltip-validation").remove();
+                }
+
+            });
+
+            $("#"+formId).on('blur','#ServEndDate',function(){
+                var elem = $(this);
+                if(elem.val()!=""){
+                    var valueinDays=($("#ServStartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ServEndDate' role='alert'>@MsgUtils.Instance.Trls("ExpiryDateMustGTIssueDate")</span>");
+                        }
+                    }
+                    else
+                    {
+
+                        $('#IssueDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#IssueDate').next("span.k-tooltip-validation").remove();
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+                    }
+
+                }
+            });
+
+            var additinalBtns=''; //'<input type="button" name="Documents" isvisible="true" class="btn btn-info back button" value="@MsgUtils.Instance.Trls("Documents")" id="Documents">';
+            if(read != 1)  additinalBtns += '<button name="SaveChanges" isvisible="true" class="btn btn-primary submit button"  onClick="return false;"  id="saveChanges">@MsgUtils.Instance.Trls("SaveChanges")</button>';
+            //additinalBtns += '<input type="button" name="backToIndex" isvisible="true" class="btn btn-default back button" value="@MsgUtils.Instance.Trls("backToIndex")" id="backToIndex">';
+            $("#medicalFollowupDiv").append(additinalBtns);
+            var subPeriodId = model.SubPeriodId == undefined ? 0 :model.SubPeriodId;
+            var  hiddenPeriodId = "<input type='hidden' id='BenefitPlanId' name='PeriodId' value="+subPeriodId+" />";
+            $("#medicalFollowupDiv").append(hiddenPeriodId);
+
+
+            $("#Documents").on("click", function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Medical&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+        });
+
+
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("medicalFollowup")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+    }
+
+    $("#t_GenralMedicalInfo").click();
+
+
+</script>
+

@@ -1,0 +1,52 @@
+﻿
+@using System.Web.Script.Serialization
+@using Model.Domain.Payroll
+@model InfoTable
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+@if (Model.Purpose != 2)
+{
+    <script>
+        var dept = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.dept));
+        var payrollDeu = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.payrollDeu));
+        var pplgrp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.pplgrp));
+        var prollgrd = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.prollgrd));
+        var job = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.job));
+        var loc = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.loc));
+        var persnType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.persnType));
+        var Perf = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Perf));
+        var Formula = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Formula));
+        var yesNoFrm = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.yesNoFrm));
+        var Credit = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Credit));
+
+    </script>
+
+    <div>
+        @Html.Partial("_LinkTable",Model, new ViewDataDictionary { { "admin", admin } })
+    </div>
+}else
+{
+    <div>
+        @Html.Partial("_RangeTable", Model,new ViewDataDictionary { { "admin", admin } })
+    </div>
+}
+<br />
+<div id="MyDiv">
+    <button id="backToIndex" name="backToIndex" onclick="return false;" class="btn btn-sm btn-warning back button " accesskey="b">@MsgUtils.Instance.Trls("backToIndex")</button>
+</div>
+<script>
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    $("#MyDiv").on('click',"#backToIndex",null,function(){
+        $("#renderbody").load(oldulr);
+    });
+</script>

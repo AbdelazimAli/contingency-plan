@@ -1,0 +1,159 @@
+﻿@using WebApp.Extensions
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var Culture = User.Identity.GetCulture();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<script type="text/x-kendo-template" id="templateRole">
+    <div>
+        
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="saveClick('FormColumnProp-@Model')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('FormColumnProp-@Model')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+
+        <div class="btn-group" style="@(rtl ? "float: left" : "float: right")">
+            <button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")" id="toolsMenu2">
+                <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('FormColumnProp-@Model')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+            </ul>
+        </div>
+    </div>
+</script>
+<script>
+    $("#InfoPopupForm-@Model #FormModalLabel").text("@MsgUtils.Instance.Trls("ColumnPermissions")");
+
+        Grids.batchGrid({
+            read: "@Url.Action("ReadRoles", "Users")",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            objectName: "AspNetRoles", // name of the page or table name used to create local db key
+            recordName: "Name", // custom delete message
+            gridName: "FormColumnProp-@Model",
+            height: 750,
+            toolbar: kendo.template($("#templateRole").html()),
+            detailInit: detailInit
+        });
+
+    //Function Cascade Role Columns Grid
+    function detailInit(e) {
+
+        var gridname = 'child' + e.data.Id;
+        var gridname1 = "'child" + e.data.Id + "'";
+        var objectName = "RoleColumns";
+
+        var columns= [
+         {
+             field:"IsVisible",
+             template: '<input class="Visible" type="checkbox" #:isVisible == true ? "checked" : "" # onchange="Changed(this, ' + gridname1 + ')" />'
+
+         },
+          {
+              field: "IsEnabled",
+              template: '<input type="checkbox" #:isEnabled == true ? "checked" :"" # onchange="Changed(this, ' + gridname1 + ')" />'
+
+          },
+
+          {
+            field: "ColumnName"
+
+            }
+                  ]
+
+    $("<div id='child" + e.data.Id + "'/>").appendTo(e.detailCell);
+    Grids.batchGrid({
+    read: "../../Pages/ReadRoleFormColumns?RoleId="+e.data.Id + "&objectName=" + "@Model" + "&version=" + "@Request.QueryString["version"]" ,
+    update:"@Url.Action("UpdateRoleFormColumns", "Pages")?objectName=" + "@Model" + "&version=" + "@Request.QueryString["version"]",
+    admin: "@User.IsInRole("Admin")",
+    lang: "@User.Identity.GetCulture()",
+    objectName: objectName,
+    parentColumnName: "RoleId",
+    parentColumnId:e.data.Id,
+    recordName: "Name",
+    gridName: 'child' + e.data.Id,
+    toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveClick(' + gridname1 + ')"  accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')" ><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid") </span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+    columns: columns,
+    fields: {
+
+          RoleId: { type: "string", editable: false },
+          Id: { type: "number", editable: false },
+          IsVisible: { type: "boolean" },
+          IsEnabled: { type: "boolean" },
+          ColumnName: { type: "string" }
+         },
+    });
+
+    }
+
+    function Changed(e, name) {
+
+        var dataItem = $("#" + name).data("kendoGrid").dataItem($(e).closest("tr"));
+        //var columnName = dataItem.ColumnName;
+        if ($(e).hasClass("Visible")) {
+            if ($(e).is(":checked")) {
+                dataItem.isVisible = true;
+                dataItem.dirty = true;
+            }else
+            {
+                dataItem.isVisible = false;
+                dataItem.dirty = true;
+            }
+
+        } else {
+            if ($(e).is(":checked")) {
+
+                dataItem.isEnabled = true;
+                dataItem.dirty = true;
+            }else
+            {
+
+                dataItem.isEnabled = false;
+                dataItem.dirty = true;
+            }
+        }
+      }
+
+
+    $('#InfoPopupForm-@Model').modal('show');
+    function saveClick(name) {
+        $("#"+name).data("kendoGrid").saveChanges();
+        if ($("#FormColumnProp-@Model").attr("hasErrors") == "false") {
+            $('#InfoPopuprole').modal('hide');
+            $('.modal-backdrop').remove();
+            $("#renderbody").load(ulr);
+        }
+    }
+    $('#InfoPopupForm-@Model').on('hidden.bs.modal', function () {
+        $(".glyphicon-plus").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-success");
+        });
+
+        $(".glyphicon-ok").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-primary");
+        });
+
+        $(".glyphicon-ban-circle").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-warning");
+        });
+        $(".glyphicon-cog").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-primary");
+        });
+    });
+</script>
+<style>
+    
+
+     [id ^= 'FormColumnProp'] .k-grid-content {
+        min-height: 450px;
+    }
+
+</style>
+

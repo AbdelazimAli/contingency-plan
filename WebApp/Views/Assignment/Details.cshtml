@@ -1,0 +1,481 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model AssignmentFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<div id="FormAssignmentDiv"></div>
+<script>
+    function changeEmpTask(record){
+        if(record==2)
+        {
+            $("[name='PeopleGroups']").css("display","");
+            $("[name='Jobs']").css("display","");
+            $("[name='CompanyStuctures']").css("display","");
+            $("[name='PayrollGrades']").css("display","");
+        }
+        else{
+            $("[name='PeopleGroups']").css("display","none");
+            $("[name='Jobs']").css("display","none");
+            $("[name='CompanyStuctures']").css("display","none");
+            $("[name='PayrollGrades']").css("display","none");
+        }
+    }
+    var Assignmentmodel;
+    var Position=[];
+    $(function () {
+        var alreadytaken = "@MsgUtils.Instance.Trls("Already Taken before")";
+        var jobnotSuitable = "@MsgUtils.Instance.Trls("Job Not suitable")";
+        var overHeadCount = "@MsgUtils.Instance.Trls("OverHeadCount")";
+        var saveComplete = "@MsgUtils.Instance.Trls("SaveComplete")";
+        var And = "@MsgUtils.Instance.Trls("And")";
+
+        function check(val,name,checked){
+            if(val!=""){
+                $.ajax({
+                    type: 'get',
+                    dataType: 'json',
+                    url: '/Assignment/CheckManager',
+                    data:{assid:Assignmentmodel.Id,DepId:val},
+                    success: function (res) {
+                        if(checked== true){
+                            if(res.IsDepManager!=true){
+                                if(!($("#IsDepManager").hasClass("k-invalid"))){
+                                    $("#IsDepManager").removeClass("k-valid").addClass("k-invalid");
+                                    $("#IsDepManager").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='IsDepManager' role='alert'>"+name+" "+alreadytaken+"</span>")
+                                }
+                                toastr.error(name+" "+alreadytaken);
+                            }else{
+                                $("#IsDepManager").removeClass("k-invalid").addClass("k-valid");
+                                $("#IsDepManager").next("span.k-tooltip-validation").remove();
+                            }
+                        }
+                        var valueEmp =  $("#BranchName").text().split("-")[0];
+                        var BranchName = res.CreatedUser != null ? valueEmp +" - "+ res.CreatedUser : valueEmp;
+                        $("#BranchName").text(BranchName);
+                        $("#SectorId").val(res.SectorId);
+                        $("#BranchId").val(res.BranchId);
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+
+        function AssignFlexPosError(TableName,elem,EmpId,HeadCount,Type){
+            $.ajax({
+                type: 'get',
+                dataType: 'json',
+                url: '/Assignment/AssignFlexPos',
+                data:{tableName:TableName,SourceId:elem.val(),EmpId:EmpId,HeadCount:HeadCount},
+                success: function (res) {
+                    var msg="";
+                    if(res.AssResult != "" && res.Grt == false)
+                        msg= res.AssResult+" "+And+" "+overHeadCount;
+                    else if(res.AssResult != "")
+                        msg=res.AssResult;
+                    else if(res.Grt == false)
+                        msg = overHeadCount;
+                    if(msg != ""){
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PositionId' style='"+(Type==1?'background-color:orange':'background-color:red')+"' role='alert'>"+msg+"</span>");
+                    }
+                },
+                error: function () {
+                }
+            });
+        }
+
+        function PosError(elem,HeadCount,Type){
+            $.ajax({
+                type: 'get',
+                dataType: 'json',
+                url: '/Assignment/PosError',
+                data:{SourceId:elem.val(),HeadCount:HeadCount},
+                success: function (res) {
+                    var msg="";
+                    if(res==false)
+                        msg=overHeadCount;
+
+                    if(msg != ""){
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PositionId' style='"+(Type==1?'background-color:orange':'background-color:red')+"' role='alert'>"+msg+"</span>");
+                    }
+                },
+                error: function () {
+                }
+            });
+        }
+
+        function AssignData(tableName,elem,EmpId,AssignData){
+            elem.removeClass("k-invalid").addClass("k-valid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(elem.val() !=""){
+                $.ajax({
+                    url:"/Assignment/FlexDataCheck",
+                    data:{tableName:tableName,SourceId:elem.val(),EmpId:EmpId},
+                    success:function(res){
+                        if(res!=""){
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='JobId' style='"+(AssignData==1?'background-color:orange':'background-color:red')+"' role='alert'>"+res+"</span>");
+                        }
+                    },
+                    error:function(){
+
+                    }
+                });
+            }
+        }
+
+        function JobDocWarningsAndFlex(TableName,elem,EmpId,JobFlex){
+
+            elem.removeClass("k-invalid").addClass("k-valid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+
+            var arr=  $('#FormAssignmentDiv').find("#PositionId");
+
+            var DeptId = $("#DepartmentId").val();
+            $.ajax({
+                type: 'get',
+                dataType: 'json',
+                url: '/Assignment/GetPositions',
+                data:{JobId:elem.val(),DeptId:DeptId,EmpId:Assignmentmodel.EmpId,tableName:TableName},
+                success: function (res) {
+                    Position = res.Positions;
+
+                    $("#PositionId").data("kendoDropDownList").dataSource.data(res.Positions);
+                    EmptyMangersList();
+
+                    if(res.Check == false || res.Result != ""){
+                        var msg="";
+
+                        if(res.Check == false && res.Result != "")
+                            msg = res.Result+" "+And+" "+jobnotSuitable;
+                        else if(res.Result != "")
+                            msg = res.Result;
+                        else if(res.Check == false)
+                            msg = jobnotSuitable;
+                        if(msg != ""){
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='JobId' style='"+(JobFlex==1?'background-color:orange':'background-color:red')+"' role='alert'>"+msg+"</span>");
+                        }
+                    }
+                },
+                error: function () {
+                }
+            });
+        }
+
+        function JobDocWarnings(elem,jobDocRe,tablename,EmpId){
+
+            var arr=  $('#FormAssignmentDiv').find("#PositionId");
+            var DeptId = $("#DepartmentId").val();
+            if(arr.length>0)
+            {
+                $.ajax({
+                    type: 'get',
+                    dataType: 'json',
+                    url: '/Assignment/GetPositions',
+                    data:{JobId:elem.val(),DeptId:DeptId,EmpId:EmpId,tableName:tablename},
+                    success: function (res) {
+                        Position = res.Positions;
+                        $("#PositionId").data("kendoDropDownList").dataSource.data(res.Positions);
+                        EmptyMangersList();
+
+
+                        elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").addClass("k-valid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+
+                        if(res.Check == false){
+                            var msg="";
+                            msg=jobnotSuitable;
+                            if(msg != ""){
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='JobId' style='"+(jobDocRe==1?'background-color:orange':'background-color:red')+"' role='alert'>"+msg+"</span>");
+                            }
+                        }
+                     
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+
+        function GetJobPositions(elem,EmpId,TableName){
+            var DeptId = $("#DepartmentId").val();
+            if(elem.val() != ""){
+                $.ajax({
+                    type: 'get',
+                    dataType: 'json',
+                    url: '/Assignment/GetPositions',
+                    data:{JobId:elem.val(),DeptId:DeptId,EmpId:EmpId,tableName:TableName},
+                    success: function (res) {
+                        Position = res.Positions;
+                        $("#PositionId").data("kendoDropDownList").dataSource.data(res.Positions);
+                        EmptyMangersList();
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+
+        function EmptyMangersList(){
+          var mangers =  $("#ManagerId").data("kendoDropDownList");
+          mangers.dataSource.data([]);
+        }
+   
+        function GetManagers(positionId){
+            $.getJSON('/Assignment/GetManagers',{PostionId:positionId},function(res){
+                var mangers =  $("#ManagerId").data("kendoDropDownList");
+                mangers.dataSource.data(res);
+                if(res.length > 0)
+                    mangers.value(res[0].id);
+            });
+        }
+
+        var formId = "AssignmentForm";
+        var Loc =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LocationId));
+        var job =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.job));
+        var Dept=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Dept));
+        var Payroll =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payroll));
+        Position=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Position));
+        var PeopleGroup=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroup));
+        var PayrollGrad=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrad));
+        var AssignStatus=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignStatus));
+
+        var CareerPath =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CareerPath));
+        var manager =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ManagerId));
+        var JobDocReq = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.JobDoc));
+        var AssignFlex = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignFlex));
+        Assignmentmodel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var CompanyId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyId));
+
+        var EmpTasks= [{id:1,name:"@MsgUtils.Instance.Trls("Employee whose direct managed")"}, {id:2,name:"@MsgUtils.Instance.Trls("Use eligibility criteria")"}];
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "AssignmentsForm", version:"@version", roleId: "@Request.QueryString["RoleId"]",MenuId:"@Request.QueryString["MenuId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("Details", "Assignment")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "Assignments";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = '@admin';
+
+                if(read == 1)
+                    data.mode = 'show';
+
+                data.rtl = @rtl.ToString().ToLower();
+
+                $("#FormAssignmentDiv").Forms(data, Assignmentmodel);
+                changeEmpTask(Assignmentmodel.EmpTasks);
+
+                FormJs.fillOptionsDynamic($("#" + formId), "LocationId",Loc,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "JobId",job,Assignmentmodel,{objectName:"Job"});
+                FormJs.fillOptionsDynamic($("#" + formId), "DepartmentId",Dept,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "PayrollId",Payroll,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "PositionId",Position,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "GroupId",PeopleGroup,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "PayGradeId",PayrollGrad,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "CareerId",CareerPath,Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "ManagerId",manager, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpTasks",EmpTasks, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "AssignStatus",AssignStatus, Assignmentmodel);
+
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payroll, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", job, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroup, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", Dept, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Position, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrad, Assignmentmodel);
+                FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Loc, Assignmentmodel);
+
+
+                $("#" + formId).find('#Correct').val('@MsgUtils.Instance.Trls("Correct")');
+                $("#" + formId).find('#Update').val('@MsgUtils.Instance.Trls("Update")');
+
+                var hiddenFields = "<input type='hidden' name='EmpId' id='EmpId' value="+Assignmentmodel.EmpId+">";
+                //hiddenFields +="<input type='hidden' id='CompanyId' name='CompanyId' value='"+CompanyId+"'>";
+                hiddenFields +="<input type='hidden' id='BranchId' name='BranchId' value='"+(Assignmentmodel.BranchId != null ? Assignmentmodel.BranchId : "")+"'>";
+                hiddenFields +="<input type='hidden' id='SectorId' name='SectorId' value='"+(Assignmentmodel.SectorId != null ? Assignmentmodel.SectorId : "")+"'>";
+                $("#" + formId).append(hiddenFields);
+
+                $("#"+formId).on('click','#Correct',function (e) {
+                    if($("#"+formId).find(".k-invalid").length > 0) return ;
+                    $("#"+formId).attr("action","/Assignment/CorrectDetails/"+Assignmentmodel.Id);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        Assignmentmodel = res;
+                        toastr.success(saveComplete);
+                        updateEmpProgress(false);
+                        updateDocProgress();
+                    });
+
+                });
+
+                if(Assignmentmodel.Id==0)
+                    $("#" + formId).find('#Correct').css("display","none").removeAttr("accesskey");
+                else
+                    $("#" + formId).find('#Correct').css("display","").attr("accesskey","s");
+
+                $("#"+formId).on('click','#Update',function (e) {
+                    if($("#"+formId).find(".k-invalid").length > 0) return ;
+
+                    $("#"+formId).attr("action","/Assignment/UpdateDetails/"+Assignmentmodel.Id);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        $("#Update").css("disabled",true);
+                        Assignmentmodel = res;
+                        toastr.success(saveComplete);
+                        updateEmpProgress(false);
+                        updateDocProgress();
+                    });
+
+                });
+            }
+        });
+
+        $('#DepartmentId').change(function(){
+            var elem=$(this);
+            if(AssignFlex==1){
+                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                elem.next("span.k-tooltip-validation").remove();
+                AssignData("CompanyStructures",elem,Assignmentmodel.EmpId,1);
+            }
+            GetJobPositions($("#JobId"),Assignmentmodel.EmpId,"Jobs");
+            var ch=$("#IsDepManager").prop("checked");
+            check(elem.val(),elem.getKendoDropDownList().text(),ch);
+
+        });
+
+        $('#DepartmentId').blur(function(){
+            var elem=$(this);
+           
+
+            if(AssignFlex==2){
+                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                elem.next("span.k-tooltip-validation").remove();
+                AssignData("CompanyStructures",$(this),Assignmentmodel.EmpId,2);
+            }
+        });
+
+        $('#IsDepManager').blur(function(){
+            var ch=$(this).prop("checked");
+            var Deptvalue=$("#DepartmentId").val();
+            var name = $('#DepartmentId').getKendoDropDownList().text();
+            if(ch == true)
+                check(Deptvalue,name,ch);
+
+        });
+        $('#IsDepManager').change(function(){
+            $(this).blur();
+        });
+        $('#JobId').blur(function(){
+            var elem =$(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(JobDocReq ==2 && AssignFlex == 2)
+                JobDocWarningsAndFlex("Jobs",elem,Assignmentmodel.EmpId,2);
+            else{
+                if(JobDocReq==2)
+                    JobDocWarnings(elem,2,"Jobs",Assignmentmodel.EmpId);
+
+                if(AssignFlex==2)
+                    AssignData("Jobs",elem,Assignmentmodel.EmpId,2);
+
+                if(JobDocReq ==0 && AssignFlex == 0)
+                    GetJobPositions(elem,Assignmentmodel.EmpId,"Jobs");
+            }
+        });
+
+        $('#JobId').change(function(){
+            var elem = $(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(JobDocReq ==1 && AssignFlex == 1)
+                JobDocWarningsAndFlex("Jobs",elem,Assignmentmodel.EmpId,1);
+            else{
+                if(JobDocReq==1)
+                    JobDocWarnings(elem,1,"Jobs",Assignmentmodel.EmpId);
+
+                if(AssignFlex==1)
+                    AssignData("Jobs",elem,Assignmentmodel.EmpId,1);
+            }
+
+        });
+
+        $("#LocationId").change(function(){
+            var elem = $(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(AssignFlex==1)
+                AssignData("Locations",elem,Assignmentmodel.EmpId,1);
+        });
+
+        $("#LocationId").blur(function(){
+            var elem = $(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(AssignFlex==2)
+                AssignData("Locations",elem,Assignmentmodel.EmpId,2);
+        });
+
+        $('[name="EmpTasks"]').change(function(e){
+             e.stopPropagation();
+             var elem = $(this).val();
+             changeEmpTask(elem);
+        });
+
+        $('#PositionId').blur(function(){
+            var elem = $(this);
+            elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(elem.val()!=""){
+                var Pos = $.grep(Position,function(el){return el.id ==elem.val()});     
+                if(Pos[0] != null && Pos[0].ErrorMes == 2 && AssignFlex==2){
+                    AssignFlexPosError("Positions",elem,Assignmentmodel.EmpId,Pos[0].HeadCount,2);
+                }else if(AssignFlex==2)
+                    AssignData("Positions",elem,Assignmentmodel.EmpId,2);
+                else if(Pos[0] != null && Pos[0].ErrorMes == 2)
+                    PosError(elem,Pos[0].HeadCount,2);
+            }
+
+        });
+
+        $('#PositionId').change(function(){
+            var elem=$(this);
+            elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(elem.val()!=""){
+                var Pos = $.grep(Position,function(el){return el.id ==elem.val()});
+                GetManagers(elem.val());
+                if(Pos[0] != null && Pos[0].ErrorMes == 1 && AssignFlex==1){
+                    AssignFlexPosError("Positions",elem,Assignmentmodel.EmpId,Pos[0].HeadCount,1);
+                }else if(AssignFlex==1)
+                    AssignData("Positions",elem,Assignmentmodel.EmpId,1);
+                else if(Pos[0] != null && Pos[0].ErrorMes ==1)
+                    PosError(elem,Pos[0].HeadCount,1);
+            }
+            else EmptyMangersList();
+
+        });
+    });
+</script>
+
+
+
+

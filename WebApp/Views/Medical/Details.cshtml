@@ -1,0 +1,230 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.MedicalRequestViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+
+<br />
+<br />
+<div id="Medical"></div>
+<div id="docWindow"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var Providers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Providers));
+    var Currency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Currency));
+    var BeneficiaryId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BeneficiaryId));
+    var Service = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Services));
+    var BenefitId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BenefitId));
+
+
+    $(function () {
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //tabs
+        var formId = "MedicalForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+            //Send the serialized model and props to form.js
+        $.ajax({
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "MedicalRequestsForm", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                    data.FormAction = "@Url.Action("SaveMedical", "Medical")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "MedicalRequests";
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = '@admin';
+                    data.btns = ["back", "doc"];
+                    //data.HasPanel=false;
+                    if(read == 1)
+                        data.mode = 'show';
+                    data.rtl = @rtl.ToString().ToLower();
+                    //Append the form to the div
+                    $("#Medical").Forms(data, model);
+                    //Translate The Button saveChanges from ColumnsTilte based on Culture
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                    $("#" + formId).find('#submitRequest').val('@MsgUtils.Instance.Trls("submitRequest")');
+                FormJs.fillOptionsDynamic($("#" + formId), "Curr", Currency, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", Service, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "BenefitId", BenefitId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model, { remoteTableName: "People" });
+                FormJs.fillOptionsDynamic($("#" + formId), "ProviderId", Providers, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", BeneficiaryId, model);
+                    //$("#" + formId).find('#ServCost').attr("disabled",true);
+                    //$("#" + formId).find('#CompanyCost').attr("disabled",true);
+                    //$("#" + formId).find('#EmpCost').attr("disabled",true);
+                    //$("#" + formId).find('#CurrRate').attr("disabled",true);
+                    if(BeneficiaryId !=null)
+                    {
+                        BeneficiaryId.unshift({id:"", name:'@MsgUtils.Instance.Trls("Employee")'});
+                        FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", BeneficiaryId, model);
+                         $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").select("");
+
+                    }
+                //Get benefiecinary
+                    $("#" + formId).on('blur','#EmpId', function(){
+                        var elem = getEmpId();
+                      //  var benfitClass = $("#" + formId).find("#BenefitClass").data("kendoDropDownList").value();
+                        var benfitClass = $("#" + formId).find("#BenefitId").val();
+                            $.ajax({
+                                url:"@Url.Action("GetBeneficiary", "Medical")",
+                                data:{EmpId:elem,BenefitClass:benfitClass},
+                                contentType:"application/json",
+                                success:function(res){
+                                    if($("#" + formId).find("#BeneficiaryId").val() == 0)
+                                        FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res.serv, model);
+                                    res.Ben.unshift({id:"", name:'@MsgUtils.Instance.Trls("Employee")'});
+                                    FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", res.Ben, model);
+                                  //  $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").select(1);
+
+                                },
+                                error:function(){
+                                }
+                            });
+                    });
+                    $("#" + formId).on('change','#BeneficiaryId', function(){
+                        // var elem = $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").value();
+                        var elem = $("#" + formId).find("#BeneficiaryId").val();
+                        var empId = getEmpId();
+                       // var benfitClass=$("#" + formId).find("#BenefitId").data("kendoDropDownList").value();
+                        var benfitClass = $("#" + formId).find("#BenefitId").val();
+                        if(elem != "")
+                        {
+                            $.ajax({
+                                url:"@Url.Action("GetBeneficiaryService", "Medical")",
+                                data:{BeneficiaryId:elem , EmpId:empId,BenefitClass:benfitClass},
+                                contentType:"application/json",
+                                success:function(res){
+                                    FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res, model);
+                                },
+                                error:function(){
+                                }
+                            });
+                        }
+                        else if(elem == "")
+                        {
+                        
+                          $.ajax({
+                                url:"@Url.Action("GetBeneficiaryService", "Medical")",
+                                data:{BeneficiaryId:0 , EmpId:empId,BenefitClass:benfitClass},
+                                contentType:"application/json",
+                                success:function(res){
+                                    FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res, model);
+                                },
+                                error:function(){
+                                }
+                            });
+
+                        }
+                    });
+
+                    $("#" + formId).on('change','#ServiceId', function(){
+                     //   var elem = $("#" + formId).find("#ServiceId").data("kendoDropDownList").value();
+                        var elem = $("#" + formId).find("#ServiceId").val();
+                        if(elem != "")
+                        {
+                            $.ajax({
+                                url:"@Url.Action("SetCurrency", "Medical")",
+                                data:{ServiceId:elem},
+                                contentType:"application/json",
+                                success:function(res){
+                                    if(res != null)
+                                    {
+                                        $("#" + formId).find("#Curr").data("kendoDropDownList").value(res.Currency.Curr);
+                                        $("#" + formId).find('#ServCost').val(res.Currency.Cost);
+                                        $("#" + formId).find('#CompanyCost').val(res.CompanyCost);
+                                        $("#" + formId).find('#EmpCost').val(res.EmployeeCost);
+                                        $("#" + formId).find('#CurrRate').val(res.Currency.rate);
+                                        var hiddenId ="<input type='hidden' name='ParentId' id='ParentId' value='" + res.Currency.ParentId+ "'>";
+                                        $("#" + formId).append(hiddenId);
+                                    }
+                                },
+                                error:function(){
+                                }
+                            });
+                        }
+                    });
+
+                    function getEmpId() {
+                        var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                    }
+
+                    var hidden = "<input type='hidden' id='submit' name='submit' value=false />";
+                    $("#" + formId).append(hidden);
+                    var hiddenPlanId = "<input type='hidden' id='BenefitPlanId' name='BenefitPlanId' value='"+model.BenefitPlanId+"' />";
+                    $("#" + formId).append(hiddenPlanId);
+                //BenefitPlanId
+
+                    //submitRequest
+                    $("#" + formId).on( 'click', '#saveChanges, #submitRequest', function (e) {
+                        if(!$("#" + formId + " .k-invalid").length) {
+                            var submit = $(this).attr("id") == "submitRequest";
+                            $("#" + formId + " #submit").val(submit);
+                            if(model.Id == 0) $("#" + formId + " #Id").val(0);
+
+                            FormJs.saveForm($("#" + formId), $(this), function () {
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                $("#Documents").attr("disabled", false);
+                                $("#renderbody").load(oldulr);
+                            });
+                        }
+                    });
+
+                if($("#" + formId + " #Id").val() == 0) $("#Documents").attr("disabled", true);
+
+                    $("#Documents").on('click', function() {
+                        $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=ComplainRequests&SourceId="+ @Model.Id).center().open();
+                        $("#Documents").fadeOut();
+                    });
+                }
+
+            });
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("medicalFollowup")",
+            //position: {top: "10px", left: "10%"},
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function(){
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+    });
+
+</script>
+
+
+
+
+

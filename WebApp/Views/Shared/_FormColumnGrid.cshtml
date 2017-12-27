@@ -1,0 +1,283 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+<script type="text/x-kendo-template" id="templateColProp">
+    <div>
+        @{
+            var admin = User.IsInRole("Admin");
+            var rtl = User.Identity.RTL();
+            var Culture = User.Identity.GetCulture();
+        }
+
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="saveClick('FormColumnProp-@Model')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('FormColumnProp-@Model')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+
+        <div class="btn-group" style="@(rtl ? "float: left" : "float: right")">
+            <button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")" id="toolsMenu2">
+                <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('FormColumnProp-@Model')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+            </ul>
+        </div>
+    </div>
+</script>
+
+<style>
+    [id ^= 'FormColumnProp'] .k-grid-content {
+        height: 450px !important;
+    }
+</style>
+
+<script>
+    $("#InfoPopupForm-@Model #FormModalLabel").text("@MsgUtils.Instance.Trls("ColumnProperties")");
+
+    var ColumnTypes = [{ value: "number", text: "number" }, { value: "string", text: "string" },
+            { value: "email", text: "email" }, { value: "url", text: "url" }, { value: "button", text: "button" }, { value: "percent", text: "percent" },
+            { value: "boolean", text: "boolean" }, { value: "date", text: "date" }];
+    var types =[{ value: "", text: "@MsgUtils.Instance.Trls("default")" }, { value: "text", text: "@MsgUtils.Instance.Trls("text")" }, { value: "number", text: "@MsgUtils.Instance.Trls("number")" }, { value: "percent", text: "@MsgUtils.Instance.Trls("percent")" }, { value: "textarea", text: "@MsgUtils.Instance.Trls("textarea")" },
+           { value: "select", text: "@MsgUtils.Instance.Trls("select")" }, { value: "multiselect", text: "@MsgUtils.Instance.Trls("multiselect")" }, { value: "autocomplete", text: "@MsgUtils.Instance.Trls("autocomplete")" }, { value: "radioset", text: "@MsgUtils.Instance.Trls("radioset")"},
+           { value: "password", text: "@MsgUtils.Instance.Trls("password")" }, { value: "checkbox", text: "@MsgUtils.Instance.Trls("checkbox")" },
+           { value: "url", text: "@MsgUtils.Instance.Trls("url")" }, { value: "email", text: "@MsgUtils.Instance.Trls("email")" }, { value: "file", text: "@MsgUtils.Instance.Trls("file")" }, { value: "date", text: "@MsgUtils.Instance.Trls("date")" }, { value: "time", text: "@MsgUtils.Instance.Trls("time")" }, { value: "datetime", text: "@MsgUtils.Instance.Trls("datetime")"},
+           { value: "maskedtextbox", text: "@MsgUtils.Instance.Trls("maskedtextbox")" }, { value: "button", text: "@MsgUtils.Instance.Trls("button")" }, { value: "label", text: "@MsgUtils.Instance.Trls("label")" }, { value: "hidden", text: "@MsgUtils.Instance.Trls("hidden")" }];
+
+    var CodeName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CodeName))
+    Grids.batchGrid({
+        read: "../../Pages/ReadFormColumnInfo?objectName=" + "@Model" + "&version=" + "@Request.QueryString["version"]",
+        update: "@Url.Action("UpdateFormColumnInfo", "Pages")",
+        admin: "@admin",
+        lang: "@Culture",
+        objectName: "FormPropreties", // name of the page or table name used to create local db key
+        toolbar: kendo.template($("#templateColProp").html()), // can copy then modified
+        height: 580,
+        gridName: "FormColumnProp-@Model",
+        columns: [{
+            field: "maxLength", editor: function (container, options) {
+                if ($.inArray(options.model.ColumnType, ['string', 'email', 'url']) >= 0) {
+                    var input = $('<input name="maxLength" type="number" min="1" validationMessage="@MsgUtils.Instance.Trls("LengthGreaterThanZero")" style ="width: 90%; margin-bottom: 0"/>');
+                    input.appendTo(container);
+                }
+            }
+        }, {
+            field: "minLength", editor: function (container, options) {
+                if ($.inArray(options.model.ColumnType, ['string', 'email', 'url']) >= 0) {
+                    var input = $('<input name="minLength" type="number" min="0" validationMessage="@MsgUtils.Instance.Trls("LengthGreaterEqualZero")" style="width: 90%; margin-bottom: 0"/>');
+                    input.appendTo(container);
+                }
+            }
+        },
+        {
+            field: "UniqueColumns", editor: function (container, options) {
+                if (options.model.isunique == true) {
+                    var input = $('<input name="UniqueColumns" type="text" style="width: 90%; margin-bottom: 0"/>');
+                    input.appendTo(container);
+                }
+            }
+        },
+        {
+            field: "max", editor: function (container, options) {
+                if (options.model.type == "number" || options.model.type == "percent") {
+                    var input = $('<input name="max" type="number" style="width: 90%; margin-bottom: 0"/>');
+                    input.appendTo(container);
+                }
+            }
+        }, {
+            field: "min", editor: function (container, options) {
+                if (options.model.type == "number" || options.model.type == "percent") {
+                    var input = $('<input name="min" type="number" style="width: 90%; margin-bottom: 0"/>');
+                    input.appendTo(container);
+                }
+            }
+        },
+        { field: "CodeName", values: CodeName, editor: function (container, options) {
+            //select only if 'Select' in InputType
+            var type = options.model.type;
+            if (type == "select" || type == "autocomplete" || type == "radioset" || type == "multiselect") {
+                var input = '<select name="CodeName" style="width: 80%; margin-bottom: 0;">';
+                input += '<option></option>';
+                    for (var i = 0; i < CodeName.length; i++)
+                        input += '<option value="' + CodeName[i].value + '">' + CodeName[i].text + '</option>';
+                    input += '</select>';
+                    $(input).appendTo(container);
+                }
+            }
+        },
+        { field: "ColumnType", values: ColumnTypes },
+        { field: "type", values: types }
+        ],
+        select: {
+            "ColumnType": ColumnTypes,
+            "type": types
+        },
+        save: function (e) {
+            var type = e.values.type;
+            if (e.values.type && e.values.type != e.model.type) {
+                //if not 'Select' -> empty CodeName
+                if (type != "select" && type != "autocomplete" && type != "radioset" && type != "multiselect") {
+                    e.model.CodeName = null;
+                    e.values.CodeName = null;
+                }
+            }
+        },
+        fields: {
+            label:{ editable: false },
+            @*ColumnType: {
+                    validation: {
+                        customColumnType: function (input) {
+                            var dataItem = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr"));
+                            var oldValue = dataItem.OrgColumnType;
+                            var newValue = $(input).val();
+
+                            if (oldValue == "") {
+                                if (newValue == dataItem.ColumnType)
+                                    return true;
+
+                                $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("CantChangeType")");
+                                return false;
+                            }
+
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("CantChangeValue")".replace('{0}', oldValue).replace('{1}', newValue));
+
+                            if (oldValue == "date")
+                                return false;
+
+                            if ($.inArray(oldValue, ['number', 'boolean']) >= 0 && $.inArray(newValue, ['string', 'date', 'email', 'url']) >= 0)
+                                return false;
+
+                            return true;
+                        }
+                    }
+                },*@
+            InputType: {
+                validation: {
+                    customInputType: function (input) {
+                        var oldValue = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr")).OrgInputType;
+                        var newValue = $(input).val();
+
+                        if (oldValue == undefined || oldValue == '' || oldValue == 'null') oldValue = 'default';
+
+                        if ($.inArray(oldValue, ['select', 'radio', 'autocomplete']) >= 0 && $.inArray(newValue, ['select', 'radio', 'hidden', 'autocomplete']) == -1) {
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("SelectToRadioOnly")");
+                            return false;
+                        }
+
+                        if ($.inArray(oldValue, ['select', 'radio', 'hidden', 'autocomplete']) == -1 && $.inArray(newValue, ['select', 'radio', 'autocomplete']) >= 0) {
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("ChangeToSelect")".replace('{0}', oldValue));
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            },
+            Required: {
+                validation: {
+                    customRequired: function (input) {
+                        var oldValue = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr")).OrgRequired;
+                        var newValue = $(input).is(":checked");
+                        if (oldValue == true && newValue == false) {
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("Required")");
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            },
+            maxLength: {
+                validation: {
+                    customMaxLength: function (input) {
+                        console.log(input);
+                        var oldValue = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr")).OrgMaxLength;
+                        console.log(oldValue);
+                        var newValue = $(input).val();
+                        if (newValue > oldValue) {
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("MaxLengthExceed")".replace('{0}', oldValue));
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            },
+            minLength: {
+                validation: {
+                    customMinLength: function (input) {
+                        var oldValue = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr")).OrgMaxLength;
+                        var newValue = $(input).val();
+                        if (newValue > oldValue) {
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("MinLengthExceed")".replace('{0}', oldValue));
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+            },
+            UniqueColumns: {
+                validation: {
+                    customMinLength: function (input) {
+                        if ($(input).val().length > 0) {
+                            var data = $("#FormColumnProp-@Model").data("kendoGrid").dataSource._data;
+                            var current = $("#FormColumnProp-@Model").data("kendoGrid").dataItem($(input).closest("tr")).ColumnName;
+                            var array = [];
+                            for (var i = 0; i < data.length; i++) {
+                                array[i] = data[i].ColumnName;
+                            }
+
+                            var fields = $(input).val().split(",");
+                            for (var i = 0; i < fields.length; i++) {
+                                var field = fields[i].trim();
+                                if (field == current) {
+                                    $(input).attr("validationMessage", field + " @MsgUtils.Instance.Trls("IsMainField")");
+                                    return false;
+                                }
+                                if ($.inArray(field, array) == -1) {
+                                    $(input).attr("validationMessage", field + " @MsgUtils.Instance.Trls("NotValidField")");
+                                    return false;
+                                }
+                            }
+                        }
+
+                        return true;
+                    }
+                }
+            }
+        }
+    });
+
+    $('#InfoPopupForm-@Model').modal('show');
+    // }
+    function saveClick() {
+        var myModal = $('#InfoPopupForm-@Model');
+        $("#FormColumnProp-@Model").data("kendoGrid").saveChanges();
+        if (myModal.find("#FormColumnProp-@Model").attr("hasErrors") == "false") {
+            myModal.modal('hide');
+            $('.modal-backdrop').remove();
+            $("#renderbody").load(ulr);
+        }
+    }
+
+    $('#InfoPopupForm-@Model').on('hidden.bs.modal', function () {
+        $(".glyphicon-plus").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-success");
+        });
+
+        $(".glyphicon-ok").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-primary");
+        });
+
+        $(".glyphicon-ban-circle").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-warning");
+        });
+
+        $(".glyphicon-cog").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-primary");
+        });
+    });
+
+</script>

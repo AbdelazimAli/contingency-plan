@@ -1,0 +1,46 @@
+﻿@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Benefits" } })
+<div id="BenfitDiv"></div>
+<script>
+    var addUrl = "@Url.Action("Details", "Benefit")";
+    RequestFilters.ApplayAllFilters([], {}, "BenfitDiv", "@Url.Action("ReadBenefits", "Benefit")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var objectName = "Benefits";
+   Grids.indexGrid({
+       read: "@Url.Action("ReadBenefits", "Benefit")?MenuId=@Request.QueryString["MenuId"]",
+       edit: "@Url.Action("Details", "Benefit")",
+       del: "@Url.Action("Delete", "Benefit")",
+       show: "@Url.Action("Details", "Benefit")",
+       lang: "@User.Identity.GetCulture()",
+       objectName: objectName,
+       toolbar:'<div></div>',
+        recordName: "Name",
+        gridName: "BenfitDiv",
+        admin: "@admin",
+          });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

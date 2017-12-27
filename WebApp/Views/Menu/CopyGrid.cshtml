@@ -1,0 +1,252 @@
+﻿@using WebApp.Extensions
+@{
+    Layout = null;
+}
+<br />
+
+<div class="row">
+
+    <div class="col-md-8">
+        <div class="alert alert-info" role="alert"><h4><span class="glyphicon glyphicon-alert"></span> Draggable your desired menus</h4></div>
+        <br />
+        <div class="col-md-4">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title" style="font-family:Lucida Console"><span class="glyphicon glyphicon-map-marker"></span> Drag to Copy Items</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="lefttreeview">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-5">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h3 class="panel-title"><span class="glyphicon  glyphicon-new-window"></span> Drag to reorder Items</h3>
+                </div>
+                <div class="panel-body">
+                    <div id="righttreeview">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+    </div>
+</div>
+<style>
+    .glyphicon.k-sprite, .glyphicon.k-sprite::before {
+        font-size: 12px;
+        line-height: 12px;
+        vertical-align: middle;
+    }
+</style>
+<script src="~/Scripts/app/tree.js"></script>
+<script type="text/javascript">
+
+
+
+    $(function () {
+
+
+
+        $(document).ready(function () {
+
+
+            var source = new kendo.data.HierarchicalDataSource({
+                transport: {
+
+                    read: {
+                        url: "/Menu/GetTree",
+                        dataType: "json"
+                    }
+                },
+                schema: {
+
+                    model: {
+                        id: "Id",
+                        icon: "Icon"
+                    }
+                }
+
+            });
+
+            var desitnation = new kendo.data.HierarchicalDataSource({
+
+                transport: {
+
+                    read: {
+                        url: "/Pages/GetTree?table=Menus",
+                        dataType: "json"
+                    }
+                },
+                schema: {
+
+                    model: {
+                        id: "Id",
+                        icon: "Icon"
+                    }
+                }
+
+            });
+
+
+
+            $('#lefttreeview').kendoTreeView({
+                dragAndDrop: true,
+                dataSource: source,
+                dataTextField: "Title",
+                dataSpriteCssClassField: "Icon",
+                drop: function (e) {
+
+                    var source = this.dataItem(e.sourceNode);
+                    var dest = this.dataItem(e.dropTarget);
+
+                    //if (e.dropPosition == "over") {
+                    //    if (source.MenuLevel == 0 ||
+                    //        (source.MenuLevel == 1 && dest.MenuLevel != 0) ||
+                    //        (source.MenuLevel == 2 && source.ParentId != dest.Id)) {
+                    //        e.setValid(false);
+                    //        return;
+                    //    };
+                    //} else if (source.MenuLevel != dest.MenuLevel) {
+                    //    e.setValid(false);
+                    //    return;
+                    //};
+
+                    var leftTree = $('#lefttreeview').data('kendoTreeView');
+                    var copy = this.dataItem(e.sourceNode).toJSON();
+                    var dist = $(e.destinationNode);
+
+                   //  e.preventDefault();
+
+                    //var nw = {};
+                    //if (e.dropPosition == "over") {
+                    //    leftTree.append(copy, dist);
+
+                    //    nw.ParentId = dest.Id;
+                    //    nw.Order = 1;
+                    //    nw.Sort = dest.Sort;
+
+                    //}
+                    //else if (e.dropPosition == "before") {
+                    //    leftTree.insertBefore(copy, dist);
+                    //    nw.ParentId = dest.ParentId;
+                    //    nw.Order = (Number(dest.Order) > 1 ? Number(dest.Order) : 2) - 1;
+                    //    nw.Sort = dest.Sort.substring(0, dest.Sort.length - 5);
+
+                    //}
+                    //else if (e.dropPosition == "after") {
+                    //    leftTree.insertAfter(copy, dist);
+
+                    //    nw.ParentId = dest.ParentId;
+                    //    nw.Order = Number(dest.Order) + 1;
+                    //    nw.Sort = dest.Sort.substring(0, dest.Sort.length - 5);
+
+                    //}
+
+
+                    var Title = copy.Title;
+                    var action = '  <a class="glyphicon glyphicon-edit" style="color : royalblue"></a>  <a class="glyphicon glyphicon-remove" style="color : darkred"></a>'
+
+                    $('a[class="glyphicon glyphicon-remove"]').click(function () {
+                        $(this).parent().parent().remove();
+
+                    })
+
+
+                    $('a').click(function () {
+
+                        if ($(this).hasClass('glyphicon glyphicon-edit')) {
+
+
+                            var name = $(this).prev().text();
+                            icon = $(this).prev().children().first("span").attr("class");
+                            var iconspan = "<span class='" + icon + "'></span>";
+                            iconspan += "<input type='text' value='" + name + "'></input>";
+                            div = $(this).parent();
+                            $(this).prev().remove();
+                            $(this).before(iconspan);
+                            $(this).removeClass('glyphicon-edit').addClass('glyphicon-ok');
+
+
+                        }
+                        else if ($(this).hasClass('glyphicon glyphicon-ok')) {
+
+                            var myres = $(this).prev().val();
+                            var span = "<span class='k-in'><span class='" + icon + "'></span>" + myres + "</span>";
+                            $(this).prev().remove();
+                            $(this).prev().remove();
+                            $(this).before(span);
+                            $(this).removeClass('glyphicon glyphicon-ok').addClass('glyphicon glyphicon-edit');
+
+                            //var newcopy = {};
+
+                            //newcopy.MenuLevel = copy.MenuLevel;
+                            //newcopy.ParentId = nw.ParentId;
+                            //newcopy.Sort = nw.Sort;
+                            //newcopy.CompanyId = copy.CompanyId;
+                            //newcopy.Name = myres;
+                            //newcopy.Order = nw.Order;
+                            //newcopy.Url = copy.Url;
+                            //newcopy.Icon = copy.Icon;
+
+
+                          //  $("#renderbody").load(localStorage.getItem("ulr"));
+
+                        }
+
+                    })
+
+                }
+
+
+            });
+
+           var tree = $('#righttreeview').TreeView({
+                dragAndDrop: true,
+                table: "Menus",
+                showMenu: true,
+                root: "Company",
+                lang: "@User.Identity.GetCulture()",
+                add: function(e){
+                },
+                remove: function (e) {
+                    var treeview = $('#righttreeview').data("kendoTreeView");
+                    var model = treeview.dataItem(treeview.select());
+                    var node = treeview.findByUid(model.uid);
+                    //treeview.remove(node);
+                },
+                beforeDrop: function (e, tree) {
+                    var source = tree.dataItem(e.sourceNode);
+                    var dest = tree.dataItem(e.dropTarget);
+
+                    if (e.dropPosition == "over") {
+                        if (source.MenuLevel == 0 ||
+                            (source.MenuLevel == 1 && dest.MenuLevel != 0) ||
+                            (source.MenuLevel == 2 && source.ParentId != dest.Id)) {
+                            e.setValid(false);
+                            return false;
+                        };
+                    } else if (source.MenuLevel != dest.MenuLevel) {
+                        e.setValid(false);
+                        return false;
+                    };
+
+                    return true;
+                }
+           });
+
+
+
+
+
+        });
+    });
+
+
+</script>               

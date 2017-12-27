@@ -1,0 +1,139 @@
+﻿@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+
+<style type="text/css">
+    .k-company-photo {
+        display: inline-block;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        background-size: 128px 131px;
+        background-position: center center;
+        vertical-align: middle;
+        line-height: 128px;
+        box-shadow: inset 0 0 1px #999, inset 0 0 10px rgba(0, 0, 0, .2);
+        margin-left: 5px;
+        /*margin-right:10px;*/
+        
+    }
+
+    .k-company-name {
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 32px;
+        padding-left: 3px;
+       
+    }
+
+    /*.k-input {
+                width: 91% !important
+            }*/
+</style>
+<br />
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "grid" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Companies" } })
+<div id="grid"></div>
+    <script>
+        var addUrl = "@Url.Action("Details", "Company")";
+        RequestFilters.ApplayAllFilters([], {}, "grid", "@Url.Action("GetCompanies", "Company")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+        function Exist(data) {
+                 if (data.Attachement != null)
+                    return 'data:image/jpg;base64,' + data.Attachement;
+                else
+                     return "/Content/Photos/systemnoimage.jpg";
+
+        }
+
+    var columns = [
+                    {
+                        field: "SearchName",
+                        template: "<div class='k-company-photo' ><img  src=#:Exist(data)# style='width: inherit; height: inherit;' /></div>" +
+                            "&nbsp;&nbsp;&nbsp;<div class='k-company-name'>#: SearchName #</div>",
+                        locked: true
+                    },
+
+                    {
+                        field: "Purpose",
+                        filterable: { multi: true, search: true, dataSource: new kendo.data.DataSource({ transport: { read: "../Company/PurposeList" } }) }
+                    },
+                    {
+                        field: "Delete", command: {
+                            text: '@MsgUtils.Instance.Trls("Delete")', click: function (e) {
+                                var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                                if (dataItem.Id == 0)
+                                    toastr.error("@MsgUtils.Instance.Trls("Defaultcannotdeleted")");
+                                else {
+                                    bootbox.confirm(("@MsgUtils.Instance.Trls("PermanentlyDeleted")").replace("{0}", dataItem.Name), function (result) {
+                                        if (result) {
+                                            $.post("/Company/DeleteCompany", { id: dataItem.Id }, function (res) {
+                                                if (!res.Errors || res.Errors.length == 0) {
+                                                    toastr.success("@MsgUtils.Instance.Trls("SuccessfullyDeleted")")
+                                                    $('#' + $("#grid").attr("id")).data("kendoGrid").dataSource.remove(dataItem);
+                                                    $("#grid").data("kendoGrid").dataSource.read();
+                                                    $('#grid').attr("hasErrors", "false");
+                                                    var dataChanged = $('#grid').attr("dataChanged");
+                                                    if (dataChanged == "true") Grids.TriggerChanges("grid", "Data", false);
+                                                } else {
+                                                    var message = "";
+                                                    if (res.Errors) {
+                                                        for (var i = 0; i < res.Errors.length; i++) {
+                                                            for (var k = 0; k < res.Errors[i].errors.length; k++) {
+                                                                message += res.Errors[i].errors[k].message;
+                                                            }
+                                                        }
+                                                    }
+                                                    toastr.error(message);
+                                                }
+                                            });
+                                        }
+                                    });
+                                }
+
+                            },
+                        }
+                    }
+
+    ];
+
+        var grid = "'Companies'";
+        var editUrl = "@Url.Action("Details", "Company")";
+
+    Grids.indexGrid({
+        read: "@Url.Action("GetCompanies", "Company")?MenuId=@Request.QueryString["MenuId"]",
+        show:"@Url.Action("Details", "Company")",
+        edit: editUrl,
+        del: "@Url.Action("DeleteCompany", "Company")",
+        objectName: "Companies",  // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                    '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                    '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        gridName: "grid",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: columns,
+        resizable:true
+    });
+
+        $('#AddRecord').unbind("click");
+        $('#AddRecord').click(function (e) {
+            e.preventDefault();
+            updateHistory(editUrl + '/-1?Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]');
+        });
+
+    </script>       
+
+
+
+
+
+

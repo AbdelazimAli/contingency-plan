@@ -1,0 +1,118 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.EmpTasksViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="docWindow"></div>
+<div id="pageTabs"></div>
+
+
+<script>
+    FormJs.DrawTabs("pageTabs");
+    var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    $("#t_AudiLog").click(function(){
+        $('#tab_AudiLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=EmpTasksForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GeneralInfo").click(function () {
+        $("#tab_GeneralInfo").html("<div id='empTasksDiv'></div>");
+        EmpTaskForm();
+    });
+
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    function EmpTaskForm() {
+
+        var taskStatus = [{ id: 0, name: '@MsgUtils.Instance.Trls("Darft")' }, { id: 1, name: '@MsgUtils.Instance.Trls("AssignedTo")' }, { id: 2, name: '@MsgUtils.Instance.Trls("Done")' },{ id: 3, name: '@MsgUtils.Instance.Trls("Canceled")' },{ id: 4, name: '@MsgUtils.Instance.Trls("NotDone")' }];
+        var units = [{id:0, name:  '@MsgUtils.Instance.Trls("Minute")'},{id:1, name:  '@MsgUtils.Instance.Trls("Hour")'},{id:2, name:  '@MsgUtils.Instance.Trls("Day")'},{id:3, name:  '@MsgUtils.Instance.Trls("Week")'},{id:4, name:'@MsgUtils.Instance.Trls("Month")'}];
+        var formId = "empTasksForm";
+
+        var Emps = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Emps));
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.getJSON(url, { objectname: 'EmpTasksForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Tasks")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "EmpTasks";
+            data.companyId = "@compantId";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+
+            if(read == 1 ) data.mode = 'show';
+
+            if(model.Id != 0)
+            {
+                model.StartTime =  ParseDate(model.StartTime);
+                model.EndTime =  ParseDate(model.EndTime);
+            }
+            $("#empTasksDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Emps, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Status", taskStatus, model, {hasFilter: false});
+            FormJs.fillOptionsDynamic($("#" + formId), "Unit", units, model, {hasFilter: false});
+
+            $("#" + formId).on('change', '#Status', function() {
+                var assignedTime = $("#" +formId + " #AssignedTime").data("kendoDateTimePicker");
+
+                if($(this).val() == 1 && assignedTime.value() == null)
+                    $("#" +formId + " #AssignedTime").data("kendoDateTimePicker").value(new Date());
+            });
+
+            $("#" + formId).append("<input type='hidden' id='ChangeEmployee' name='ChangeEmployee' value=false />");
+
+
+            $("#" + formId).on("click","#saveChanges, #changeEmp",null,function (e) {
+                $("#ChangeEmployee").val($(this).attr("id") == "changeEmp");
+
+                FormJs.saveForm($("#"+formId), $(this),function (res) {
+                    $("#Documents").attr("disabled", false);
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    model = res;
+                });
+            });
+            $("#Documents").on("click", function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=EmpTasksForm&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#changeEmp').val('@MsgUtils.Instance.Trls("Change Employee")');
+
+            if($("#" + formId + " #Id").val() == 0) {
+                $("#Documents").attr("disabled", true);
+                $("#changeEmp").hide();
+            }
+        });
+
+        function ParseDate(date) {
+            if (date && date.indexOf('/Date') != -1) return kendo.toString(new Date(parseInt(date.substring(date.indexOf('(') + 1, date.indexOf(')')))), 'g')
+        }
+
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("Tasks")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+    }
+
+    $("#t_GeneralInfo").click();
+</script>

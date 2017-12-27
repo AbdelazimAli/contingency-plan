@@ -1,0 +1,461 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<script src="~/Scripts/app/tree.js"></script>
+<script src="~/Scripts/app/Icons.js"></script>
+
+<script src="~/Scripts/starwars.js"></script>
+<link href="~/Content/starwars.css" rel="stylesheet" />
+
+<style>
+.fa.k-sprite{
+    font-size: 12px;
+    line-height: 12px;
+    vertical-align: middle;
+    }
+.dropdown-header{
+    border-width:0 0 1px 0;
+    text-transform:uppercase;
+}
+.dropdown-header > span{
+    display : inline-block;
+    padding:10px;
+}
+.dropdown-header > span:first-child{
+    width:50px;
+}
+.k-list-container > .k-footer{
+    padding:10px;
+}
+.selected-value{
+    display:inline-block;
+    vertical-align : middle;
+    width : 24px;
+    height : 24px;
+    background-size : 100% ;
+    margin-right : 5px;
+    border-radius : 50% ;
+}
+#Icon-list .k-item{
+    line-height : 1em;
+    min-width : 300px;
+}
+#Icon-list h3{
+    font-size : 1.2em;
+    font-weight : normal ;
+    margin : 0 0 1px 0 ;
+    padding : 0;
+}
+.k-colorpicker{
+    vertical-align:top;
+    margin:20px 0;
+}
+ .k-rtl span.k-i-expand{
+        margin-left:auto!important;
+    }
+ .k-rtl span.k-i-collapse{
+     margin-left:auto!important;
+ }
+</style>
+<div id="pageTabs"></div>
+<script>
+    var icons = iconlist.icons;
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    function preview(e){
+        $("#ColorName").val(e.value);
+    }
+    function Drop(model){
+        $("#Icon").kendoDropDownList({
+            dataTextField:"text",
+            dataValueField:"value",
+            filter:"contains",
+            headerTemplate:'<span class="deropdown-header k-widget k-header">Icons</span>',
+            footerTemplate:"Total #:instance.dataSource.total()# items found",
+            valueTemplate:"<span class='selected-value  #:data.value #'></span><span>#:data.text#</span>",
+            template:'<span class="k-state-default fa #:data.value#"></span><span>&nbsp;#:data.text#</span>',
+            dataSource:icons,
+            height:400
+
+        });
+        $("#ColorName").kendoColorPicker({
+            value:model.ColorName,
+            buttons:false,
+            select:preview
+        });
+    }
+
+    function GetTree(){
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        $('#lefttreeview').TreeView({
+            dragAndDrop: true,
+            showMenu:true,
+            table: "CompanyStructures",
+            titleTable:"",
+            lang: "@User.Identity.GetCulture()",
+            add: function(e){
+                var id =0;
+                $.ajax({
+                    url:"/CompanyStructure/GetModel",
+                    data:{Id:id},
+                    dataType: 'json',
+                    contentType:'application/json',
+                    success:function(res){
+                        res.Sort= e.Sort;
+                        res.Order= e.Order;
+                        res.ParentId=e.ParentId;
+                        Draw(0,res);
+
+                    },
+                    error:function(){
+                    }
+
+                });
+            },
+            remove: function (e) {
+                var treeview = $('#lefttreeview').data("kendoTreeView");
+                var model = treeview.dataItem(treeview.select());
+                var node = treeview.findByUid(model.uid);
+                bootbox.confirm("@MsgUtils.Instance.Trls("want to Delete")"+model.Name,function(resu){
+                    if(resu){
+                        $.ajax({
+                            url:"/CompanyStructure/Delete",
+                            data:{Sort:model.Sort},
+                            dataType: 'json',
+                            contentType:'application/json',
+                            success:function(res){
+                                if(res=="OK"){
+                                    treeview.remove(node);
+                                    toastr.success("@MsgUtils.Instance.Trls("Removed Successfully")");
+                                }
+                                else
+                                    toastr.error(res);
+                            },
+                            error:function(){
+                            }
+
+                        });
+                    }
+                });
+
+            },
+            select:function(e){
+                var model = $('#lefttreeview').data("kendoTreeView").dataItem($(e.node));
+
+                $.ajax({
+                    url:"/CompanyStructure/GetModel",
+                    data:{Id:model.Id},
+                    dataType: 'json',
+                    contentType:'application/json',
+                    success:function(res){
+                        res.Sort= model.Sort;
+                        res.Order= model.Order;
+                        res.ParentId=model.ParentId;
+                        Draw(1,res);
+                    },
+                    error:function(){
+                    }
+
+                });
+            }
+        });
+
+        $("#lefttreeview").on("click","a:has(>i.fa-edit)",null,function(e){
+            var treeview = $('#lefttreeview').data("kendoTreeView");
+            var model = treeview.dataItem(treeview.select());
+            $.ajax({
+                url:"/CompanyStructure/GetModel",
+                data:{Id:model.id},
+                dataType: 'json',
+                contentType:'application/json',
+                success:function(res){
+                    res.Sort= model.Sort;
+                    res.Order= model.Order;
+                    res.ParentId=model.ParentId;
+                    //res.ParentName = model.ParentName;
+                    Draw(0,res);
+                },
+                error:function(){
+                }
+
+            });
+        });
+
+        $("#CompanystructureformDiv").on("click","#SaveChanges",null,function (e) {
+            if($("#CompanystructureformDiv").find(".k-invalid").length > 0) return ;
+
+            FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            });
+
+            // if($("#LvPlanvDiv").find(".errorCell").length>0) return;
+
+            //var Obj=Grids.sendData("LvPlanvDiv");
+            //var gridDel= $("#LvPlanvDiv").data("kendoGrid");
+            //var NewArr=[];
+            //for (var i = 0; i <Obj.inserted.length; i++) {
+            //    NewArr.push(Obj.inserted[i])
+            //}
+            //for (var i = 0; i <Obj.updated.length; i++) {
+            //    NewArr.push(Obj.updated[i])
+            //}
+            //for (var i = 0; i <gridDel.dataSource._destroyed.length; i++) {
+            //    if (gridDel.dataSource._destroyed[i])
+            //        NewArr.push(Grids.toValidJson(gridDel.dataSource._destroyed[i]));
+            //}
+
+            @*if(NewArr.length >0 )
+                $.ajax({
+                    url:"@Url.Action("CheckLeavRequest", "CompanyStructure")",
+                    data:{model:NewArr },
+                    type: "POST",
+                    success: function (res) {
+                        if(res != "OK"){
+                            bootbox.confirm(("@MsgUtils.Instance.Trls("Find Request")"),function(con){
+                                if(con== true)
+                                    FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
+                                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                        $("#renderbody").load(oldulr);
+                                    },Grids.sendData("LvPlanvDiv"));
+                                else
+                                    return;
+                            });
+                        }
+                        else
+                            FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                $("#renderbody").load(oldulr);
+                            },Grids.sendData("LvPlanvDiv"));
+                    }
+                });
+            else*@
+
+
+        });
+    }
+
+
+    function Draw(read,model){
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "CompanyStructureForm";
+        var Type = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.StructType));
+        $.getJSON(url, { objectname: 'CompanyStructure', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "CompanyStructure")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "CompanyStructures";
+            data.companyId = "@compantId";
+            data.admin = '@admin';
+
+            if(read ==1){
+                data.mode = 'show';
+                //$("#Leaveyear").text(new Date().getFullYear());
+            }
+            //Unique for Company
+            data.parentColumn = "CompanyId";
+            data.parentId = "@compantId";
+
+            data.rtl = @rtl.ToString().ToLower();
+            $("#CompanystructureformDiv").Forms(data, model);
+            //$("#Leaveyear").val(new Date().getFullYear());
+
+            var hiddenFields = "<input type='hidden' name='Sort' id='Sort' value='" + (model == null || model.Sort == null  ? "": model.Sort) + "'>";
+            hiddenFields += "<input type='hidden' name='Order' id='Order' value='" + (model == null || model.Order == null  ? "": model.Order) + "'>";
+            hiddenFields += "<input type='hidden' name='ParentId' id='ParentId' value='" + (model == null || model.ParentId == null  ? "": model.ParentId) + "'>";
+            $("#" + formId).append(hiddenFields);
+            $("#ColorName").text(model.ColorName);
+            FormJs.fillOptionsDynamic($("#" + formId), "NodeType", Type , model);
+            if(read!=1)Drop(model);
+
+            $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            var allSections = $("#" + formId).find(".set .section");
+            //Leave Plan
+            //drawGrid(model.Id,read);
+            //$("#Leaveyear").keydown(function(e){
+            //    if(e.keyCode==13)
+            //        drawGrid(model.Id,read);
+            //});
+
+            $("#" + formId).on('blur','#StartDate', function(){
+                var elem = $(this);
+                var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                if(valueinDays > 0 && $('#EndDate').val() != ""){
+                    if (elem && !elem.hasClass("k-invalid")) {
+                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                    }
+                }
+                else{
+                    $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#EndDate').next("span.k-tooltip-validation").remove();
+                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                    elem.next("span.k-tooltip-validation").remove();
+                }
+            });
+
+            $("#"+formId).on('blur','#EndDate',function(){
+                var elem = $(this);
+                $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#StartDate').next("span.k-tooltip-validation").remove();
+                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                elem.next("span.k-tooltip-validation").remove();
+
+                if(elem.val()!=""){
+                    var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                        }
+                    }
+                }
+
+
+            });
+        });
+    }
+    @*function drawGrid(Id,read){
+        var Job = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Job));
+        var YearVal=$("#Leaveyear").val();
+        $("div[name=GridSec]").html('<div id="LvPlanvDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+
+        var Columns = [
+       { field: "MinAllowPercent",template:'#=kendo.format("{0:p0}",MinAllowPercent/100)#'},
+     {field:"Stars",
+     template:"<div id='#:uid#' class='rate_row' value='#:Stars#' ></div>"
+     }];
+        var gridname="'LvPlanvDiv'";
+        if($("#LvPlanvDiv").data("kendoGrid"))
+        {
+            $("#LvPlanvDiv").data("kendoGrid").dataSource.transport.options.read.url = "@Url.Action("GetLvPlanv", "CompanyStructure")?year="+YearVal+"&DeptId="+Id;
+            $("#LvPlanvDiv").data("kendoGrid").dataSource.read();
+        }
+        else
+            Grids.batchGrid({
+                read: "@Url.Action("GetLvPlanv", "CompanyStructure")?year="+YearVal+"&DeptId="+Id,
+                admin:"@admin",
+                lang:"@User.Identity.GetCulture()",
+                objectName: "LeavePlanDept",
+                tableName: "DeptLeavePlans",
+                recordName: "MinAllowPercent",
+                gridName: "LvPlanvDiv",
+                detailInit:detailInit,
+                height:400,
+                columns:Columns,
+                fields:{Stars:{editable:false}},
+                toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                dataBound: function (e) {
+                    $("#" + this.gridName).find(".rate_row").each(function (index, element) {
+                        $(".rate_row#"+ $(element).attr("id")).starwarsjs({
+                            stars : 5,
+                            count : 1,
+                            default_stars: ($(element).attr("value") > 5 ? 5 : $(element).attr("value")),
+                            on_select:function(data,id){
+                                star=data;
+                                var record=$("#LvPlanvDiv").data("kendoGrid").dataItem($("#" +id).closest("tr"));
+                                record.Stars=data;
+                                record.dirty = true;
+                            }
+                        });
+
+                    });
+                },
+                save:function(e){
+                    var grid = $("#LvPlanvDiv").data("kendoGrid");
+                    e.model.LeaveYear=YearVal;
+                    if (e.values.FromDate && e.values.FromDate != e.model.FromDate) {
+                        var fromDate=new Date(e.values.FromDate).getFullYear()
+                        if(fromDate != YearVal) {
+                            var columnsArray=grid.dataSource.data();
+                            grid.table.find(".errorCell").each(function () {
+                                $(this).removeClass("errorCell k-invalid");
+                            });
+                            $(e.container[0]).addClass("k-invalid errorCell");
+                            $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.FromDate+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("Must Equal LeaveYear")<div class="k-callout k-callout-n"></div></div>'));
+                        }
+                        else $(e.container[0]).removeClass("k-invalid errorCell");
+                    }
+                }
+            });
+        function detailInit(e) {
+            var objectName = "DeptJobLvPlan";
+            $("<div id='JobLvPlan" + e.data.Id + "'/>").appendTo(e.detailCell);
+            var gridname = "'JobLvPlan" + e.data.Id + "'";
+            Grids.batchGrid({
+                read:"@Url.Action("ReadDeptJobLvPlan","Personnel")?LvPlanId="+e.data.Id,
+                create:"@Url.Action("CreateDeptJobLvPlan","Personnel")",
+                update:"@Url.Action("UpdateDeptJobLvPlan","Personnel")",
+                destroy:"@Url.Action("DeleteDeptJobLvPlan","Personnel")",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                objectName: "DeptJobLvPlan",
+                tableName: "DeptJobLvPlans",
+                parentColumnName:"DeptPlanId",
+                parentColumnId:e.data.Id,
+                recordName: "JobId",
+                gridName: 'JobLvPlan' + e.data.Id,
+                height: 650,
+                toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                columns: [{field: "JobId", values: Job},{ field: "MinAllowPercent",template:'#=kendo.format("{0:p0}",MinAllowPercent/100)#'},],
+                select: { "JobId": Job  },
+            });
+        }
+
+    }*@
+    $(function () {
+
+        FormJs.DrawTabs("pageTabs"); // "CompanyStructure"
+
+        var read = 1;
+        $("#t_CompanyStructureDiagram").click(function (){
+            $('#tab_CompanyStructureDiagram').css("margin-right","28px").load("@Url.Action("Diagram", "CompanyStructure")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_CompanySFlex").click(function(){
+            $('#tab_CompanySFlex').empty();
+            $('#tab_CompanyStructureDiagram').empty();
+            var tree= $('#lefttreeview').data("kendoTreeView");
+            var selectNode =tree.select();
+            var model = tree.dataItem(selectNode);
+            if(model)
+                $('#tab_CompanySFlex').load("@Url.Action("FlexData", "Flex")?id="+model.Id+"&objectName=CompanyStructure&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+            else
+                toastr.error("@MsgUtils.Instance.Trls("SelectCompany")");
+        });
+        $("#t_CompanyStructure").click(function (){
+            $('#tab_CompanyStructureDiagram').empty();
+            $("#tab_CompanyStructure").html('<div id="Menutreeview" style="@(rtl?"float:right":"float:left")" class="col-lg-3  col-sm-3 col-md-3 fa-align-center"><div class="panel panel-primary"><div class="panel-heading" style="@(rtl?"text-align:-webkit-right":"")"><h3 class="panel-title"><span class="glyphicon  glyphicon-new-window"></span>@MsgUtils.Instance.Trls("Company Structure")</h3></div><div class="panel-body"><div id="lefttreeview"></div></div></div></div><div id="CompanystructureformDiv" class="col-lg-9 col-sm-9 col-md-9"></div>');
+            $.ajax({
+                url:"/CompanyStructure/GetFirstmodel",
+                dataType: 'json',
+                contentType:'application/json',
+                success:function(res){
+                    GetTree();
+                    Draw(1,res);
+
+                },
+                error:function(){
+                }
+
+            });
+        });
+
+        $("#t_CompanyStructure").click();
+
+    });
+
+
+
+</script>

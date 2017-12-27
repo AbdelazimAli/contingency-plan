@@ -1,0 +1,109 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+
+}
+<br />
+
+<div id="HrLettersGrid">
+
+</div>
+<script>  
+    var Columns = [{ field: "LetterTempl", template: "<div class='upFile'><input type='file'  class='upload' name='files'/><span>#:LetterTempl#</span></div>" },
+        {
+            field: "Download",
+            command: {
+                text: '@MsgUtils.Instance.Trls("Download")', click: function (e) {
+                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                    $.post("/Letters/DownloadLetter", { ObjectName :dataItem.ObjectName, Language:dataItem.Culture, LetterName: dataItem.LetterTempl }, function (res) {
+                        if (res.Exist || res.Path != "")
+                            location.href = res.Path;
+                    });
+                }
+            }
+        }];
+    Grids.batchGrid({
+        read: "@Url.Action("GetEmpLettersData","Letters")",
+        create: "@Url.Action("CreateEmpLetter", "Letters")",
+        update: "@Url.Action( "UpdateEmpLetter", "Letters")",
+        admin: "@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: "EmpHrLetters",
+        toolbar: kendo.template($("#template2").html()),
+        recordName: "Name",
+        dataBound: function (e) {
+            var gridName = "HrLettersGrid";
+            var grid = $("#" + gridName).data("kendoGrid");
+            grid.tbody.find(".upload").kendoUpload({
+                multiple: false,
+                async: {
+                    saveUrl: "/Letters/UploadFile"
+                },
+                validation: {
+                    allowedExtensions: [".doc", ".docx"]
+                },
+                upload: function (e) {
+                    var item = grid.dataItem(this.element.closest("tr"));
+                    e.data = { id: item.Name }
+                }, error: function (e) {
+                    console.log(e);
+                },
+                success: function (e) {
+                    var FileName = e.response.FileName;
+                    var Item = grid.dataItem(this.element.closest("tr"));
+                    this.element.closest("div.upFile").children("span").text(FileName);
+                    Item.LetterTempl = FileName;
+                    Item.dirty = true;
+                }
+            });
+        },
+        fields: { LetterTempl: { editable: false }, Name: { editable: false }, Language: { editable: false } },
+        columns: Columns,
+        gridName: "HrLettersGrid",
+    });
+
+</script>
+<script type="text/x-kendo-template" id="template2">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ok" href="\#" onclick="Grids.saveClick('HrLettersGrid')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" href="\#" onclick="Grids.cancelClick('HrLettersGrid')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>
+        &nbsp;
+        <div class="btn-group">
+
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin == true)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('HrLettersGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('HrLettersGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('HrLettersGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('HrLettersGrid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+</script>

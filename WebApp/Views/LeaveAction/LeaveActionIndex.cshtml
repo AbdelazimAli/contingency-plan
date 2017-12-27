@@ -1,0 +1,48 @@
+﻿
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<div id="pageTabs"></div>
+
+<script>
+    // draw tabs
+    FormJs.DrawTabs("pageTabs");
+    $("#t_MoneyOpenBalance").append("<span class='fa fa-money'></span>");
+    $('#tab_FirstOpenBalance').load("@Url.Action("FirstOpenBalance", "LeaveAction")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+
+    //رصيد أول مدة
+    $("#t_FirstOpenBalance").click(function () {
+        $("#tab_MoneyOpenBalance").empty();
+        $('#tab_LeaveActionsTab').empty();
+        $('#tab_FirstOpenBalance').load("@Url.Action("FirstOpenBalance", "LeaveAction")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+    });
+    // استبدال رصيد ببدل نقدي
+    $("#t_MoneyOpenBalance").click(function () {
+        $("#tab_FirstOpenBalance").empty();
+        $('#tab_LeaveActionsTab').empty();
+        $('#tab_MoneyOpenBalance').load("@Url.Action("MoneyOpenBalance", "LeaveAction")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+    });
+
+    //تسويات
+    $("#t_LeaveActionsTab").click(function () {
+        $("#tab_FirstOpenBalance").empty();
+        $('#tab_MoneyOpenBalance').empty();
+        $('#tab_LeaveActionsTab').load("@Url.Action("LeaveCreditBalance", "LeaveAction")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+    });
+    //رصيد بدل راحه
+    @*$("#t_AddOpenBalance").click(function () {
+        $("#tab_FirstOpenBalance").empty();
+        $("#tab_AddOpenBalance").empty();
+        $('#tab_MoneyOpenBalance').empty();
+        $('#tab_LeaveActionsTab').empty();
+        $('#tab_AddOpenBalance').load("@Url.Action("LeaveRestCredit", "LeaveAction")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });*@
+</script>

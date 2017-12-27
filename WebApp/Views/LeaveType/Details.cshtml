@@ -1,0 +1,571 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="LeaveTypeDiv" >
+</div>
+<div id="FlowWindow"></div>
+
+
+<script>
+
+    function ImportsaveAsXsl(objectName,TableName,Id){
+        var file = {MenuId:"@Request.QueryString["MenuId"]",objectName:"@MsgUtils.Instance.Trls("LeaveRanges")",OldObjectName:objectName,TableName:TableName,ErrorData:false,Id:Id,PageType:"Grid"};
+        $.ajax({
+            url:"/ImportData/AddFields",
+            type:"POST",
+            data:file,
+            success:function(res){
+                var ok = res.substring(0,2);
+                if(ok != "Ok")
+                    toastr.error(res);
+                else
+                    window.location = "/SpecialData/EmployeesData/"+res.substring(2,res.length)+".xlsx?dummy="+(new Date().getTime());
+
+
+            },error:function(err){
+            }
+        });
+    }
+
+    function insertItem(){
+        $("#LeaveRangeDiv").data("kendoGrid").addRow();
+        $(".k-grid-edit-row").appendTo("#LeaveRangeDiv tbody");
+    }
+
+    $(function () {
+        //var AccrualBalVal;
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model, leaveCalendar, formId = "LeaveTypeForm";
+
+
+        function changeYearStartDt(valuem){
+            if(valuem==1)
+            {
+                $("#StartDay").closest("div.section").css("display","");
+                $("#StartMonth").closest("div.section").css("display","");
+            }
+            else{
+                $("#StartDay").closest("div.section").css("display","none");
+                $("#StartMonth").closest("div.section").css("display","none");
+            }
+        }
+        function changePostOpt(valuem){
+            if(valuem==0){
+                $("#MinLeaveDays").closest("div.section").css("display","none");
+                $("#DiffDaysOpt").closest("div.section").css("display","none");
+            }
+            if(valuem==1)
+            {
+                $("#MinLeaveDays").closest("div.section").css("display","");
+                $("#DiffDaysOpt").closest("div.section").css("display","none");
+
+            }
+
+            else if(valuem==2)
+            {
+                $("#MinLeaveDays").closest("div.section").css("display","");
+                $("#DiffDaysOpt").closest("div.section").css("display","");
+                $("#MaxPercent").parent().parent().parent().css("display","none");
+                $("#MaxNofDays").parent().parent().css("display","");
+            }
+            else if(valuem==3)
+            {
+                $("#MinLeaveDays").closest("div.section").css("display","");
+                $("#DiffDaysOpt").closest("div.section").css("display","");
+                $("#MaxNofDays").parent().parent().css("display","none");
+                $("#MaxPercent").parent().parent().parent().css("display","");
+            }
+
+            else{
+                $("#MinLeaveDays").closest("div.section").css("display","none");
+                $("#DiffDaysOpt").closest("div.section").css("display","none");
+            }
+        }
+
+        function changeAccBalDays(valuem){
+            if(valuem==1 )
+            {
+                $("div[name='LeaveRangeGrid']").css("display","none");
+                $("#NofDays").closest(".form-group").show();
+                $("#WorkServMethod").closest(".form-group").hide();
+                $('#MonthOrYear').closest('.form-group').hide();
+            }
+            else if(valuem==2)
+            {
+                $("#NofDays").closest(".form-group").hide();
+                $("div[name='LeaveRangeGrid']").css("display","");
+                $("#WorkServMethod").closest(".form-group").show();
+
+                $('#NofDays').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#NofDays').next("span.k-tooltip-validation").remove();
+
+                $('#MonthOrYear').closest('.form-group').show();
+            }
+            else {
+                $("div[name='LeaveRangeGrid']").css("display","none");
+                $("#NofDays").closest(".form-group").hide();
+                $("#WorkServMethod").closest(".form-group").hide();
+                $('#NofDays').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#NofDays').next("span.k-tooltip-validation").remove();
+                $('#MonthOrYear').closest('.form-group').hide();
+            }
+        }
+
+        function validateNofDaysAndAcc() {
+            //Required AccBalDays if (HasAccrualPlan)
+            if($('#HasAccrualPlan').is(':checked') && !$('#AccBalDays').val())
+                FormJs.addFormError(formId, 'AccBalDays', "@MsgUtils.Instance.Trls("Required")");
+
+            //Required if Accural Balace = (1) Fixed Days
+            if($("#AccBalDays").val() == 1 && !$('#NofDays').val())
+                FormJs.addFormError(formId, 'NofDays', "@MsgUtils.Instance.Trls("Required")");
+
+            //Required NofDays50 if Balanace 50 is Checked
+            if($("#Balanace50").is(':checked')) {
+                if(!$('#NofDays50').val()) FormJs.addFormError(formId, 'NofDays50', "@MsgUtils.Instance.Trls("Required")");
+                if(!$('#Age50').val()) FormJs.addFormError(formId, 'Age50', "@MsgUtils.Instance.Trls("Required")");
+            }else
+            {
+                if(!$('#NofDays50').val()) FormJs.removeFormError(formId, 'NofDays50', "@MsgUtils.Instance.Trls("Required")");
+                if(!$('#Age50').val()) FormJs.removeFormError(formId, 'Age50', "@MsgUtils.Instance.Trls("Required")");
+            }
+        }
+
+        function ValidateIncludContinu() {
+            var minDays = $('#MinLeaveDays').val(), continu =  $('#IncludContinu').val();
+            if(continu != undefined) {
+                if(Number(continu) > Number(minDays))
+                    FormJs.addFormError(formId, 'IncludContinu', "@MsgUtils.Instance.Trls("CantGreaterThan") " + minDays);
+            }
+        }
+
+        function changeAllowNegBal(valume){
+            if(valume==false)
+                $("#Percentage").parent().parent().parent().css("display","none")
+            else
+                $("#Percentage").parent().parent().parent().css("display","")
+
+        }
+
+        function changeAssignStat(valume){
+            if(valume==false){
+                $("#AssignStatus").closest("div.form-group").css("display","none");
+                $("#AutoChangStat").closest("div.form-group").css("display","none");
+            }
+            else{
+                $("#AssignStatus").closest("div.form-group").css("display","");
+                $("#AutoChangStat").closest("div.form-group").css("display","");
+            }
+
+        }
+        function changeHasAccrualPlan(valume){
+            var frqDDL = $("#FrequencyId").data('kendoDropDownList'),
+                openDDL = $("#OpenCalendarId").data('kendoDropDownList')
+            if(frqDDL) frqDDL.value("");
+            if(openDDL) openDDL.value("");
+
+            if(valume==false){
+                $('#NofDays').removeClass("k-invalid").prop("aria-invalid", false);
+                $('#NofDays').next("span.k-tooltip-validation").remove();
+                $("#MaxDaysInPeriod, #OpenCalendarId").closest('.form-group').show();
+                $("#AccBalDays").closest("fieldset").hide();
+            }
+            else{
+                $("#MaxDaysInPeriod, #OpenCalendarId").closest('.form-group').hide();
+                $("#AccBalDays").closest("fieldset").show();
+            }
+        }
+
+        function changeBalanace50(valume){
+            if(valume==false){
+                $("#Age50").closest("div.section").css("display","none");
+                $("#NofDays50").closest("div.section").css("display","none");
+            }
+            else{
+                $("#Age50").closest("div.section").css("display","");
+                $("#NofDays50").closest("div.section").css("display","");
+            }
+        }
+
+        function validateCalendar() {
+            var openCalendarId = $("#OpenCalendarId").val(), frequencyId = $("#FrequencyId").val(),
+                hasAccBal = $("#HasAccrualPlan").is(":checked");
+
+            FormJs.removeFormError(formId,'OpenCalendarId');
+            FormJs.removeFormError(formId,'FrequencyId');
+
+            if(!hasAccBal && !openCalendarId)
+                FormJs.addFormError(formId,'OpenCalendarId', '@MsgUtils.Instance.Trls("Required")');
+            else if(hasAccBal && !frequencyId )
+                FormJs.addFormError(formId,'FrequencyId', '@MsgUtils.Instance.Trls("Required")');
+        }
+        console.log('v')
+        function validatePostOptVal() {
+            var postOptVal = $("#PostOpt").val();
+
+            if(postOptVal == 2 || postOptVal == 3) {
+                FormJs.removeFormError(formId, 'MaxNofDays');
+                FormJs.removeFormError(formId, 'MaxPercent');
+
+                if(!$('#DiffDaysOpt').val())
+                    FormJs.addFormError(formId, 'DiffDaysOpt', '@MsgUtils.Instance.Trls("Required")');
+
+                if(postOptVal == 2 && $("#MaxNofDays").val() == "")
+                    FormJs.addFormError(formId, 'MaxNofDays', '@MsgUtils.Instance.Trls("Required")');
+                else if(postOptVal == 3 && $("#MaxPercent").val() == "")
+                    FormJs.addFormError(formId, 'MaxPercent', '@MsgUtils.Instance.Trls("Required")');
+            }
+            else
+            {
+                FormJs.removeFormError(formId, 'DiffDaysOpt');
+                FormJs.removeFormError(formId, 'MaxNofDays');
+                FormJs.removeFormError(formId, 'MaxPercent');
+            }
+        }
+
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Payrolls = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payrolls));
+        var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
+        var PeopleGroups = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroups));
+        var CompanyStuctures = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyStuctures));
+        var Positions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Positions));
+        var PayrollGrades = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrades));
+        var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+        var Nationality = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Nationality));
+        @*var MaritalStat = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.MaritalStat));*@
+        @*var AssignStatus = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignStatus));*@
+        var OpenCalendar = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.OpenCalendar));
+        @*var HRCalendar = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.HRCalendar));*@
+
+        var YearStartDt = [{id:1,name:"@MsgUtils.Instance.Trls("Specific Date")"}, {id:2,name:"@MsgUtils.Instance.Trls("Employee Join Date")"}];
+        @*var AccrualBal = [{id:1,name:"@MsgUtils.Instance.Trls("Every Year")"}, {id:2,name: "@MsgUtils.Instance.Trls("Every Month")"}];*@
+        var AccBalDays = [{id:1,name:"@MsgUtils.Instance.Trls("Fixed days")"},{id:2,name:"@MsgUtils.Instance.Trls("AccordWorkingserviceduraon")"}];
+        var WorkServMethod = [{id:1,name:"@MsgUtils.Instance.Trls("From join date")"}, {id:2,name:"@MsgUtils.Instance.Trls("From Experience date")"}, {id:3,name:"@MsgUtils.Instance.Trls("From Last employment date")"},{id:4,name:"@MsgUtils.Instance.Trls("From Last assignment date")"}, {id:5,name:"@MsgUtils.Instance.Trls("All active employments")"},{id:6,name:"@MsgUtils.Instance.Trls("All active assignments")"}];
+        var PostOpt = [{id:0,name:"@MsgUtils.Instance.Trls("No Posting")"}, {id:1,name:"@MsgUtils.Instance.Trls("Post all days")"}, {id:2,name:"@MsgUtils.Instance.Trls("maximumpostedbalancedays")"},{id:3,name:"@MsgUtils.Instance.Trls("maximumpercentageofopenbalance")"}];
+        var DiffDaysOpt = [{id:1,name:"@MsgUtils.Instance.Trls("generatetimecompensationtrans")"}, {id:2,name:"@MsgUtils.Instance.Trls("posemployeandadderrorposlog")"}];
+        var AutoChangStat = [{id:1,name:"@MsgUtils.Instance.Trls("Autreturnoriginalstatusble")"}, {id:2,name: "@MsgUtils.Instance.Trls("Returnoriginalsattendance")"},{id:3,name: "@MsgUtils.Instance.Trls("Manually update status")"}];
+        var FreqList = [{id:1,name:"@MsgUtils.Instance.Trls("Year")"}, { id: 2, name: "6 @MsgUtils.Instance.Trls("months")" }, { id: 3, name: "4 @MsgUtils.Instance.Trls("months")" }, { id: 4, name: "3 @MsgUtils.Instance.Trls("months")" }, { id: 6, name: "2 @MsgUtils.Instance.Trls("Month")" }, { id: 12, name: "@MsgUtils.Instance.Trls("Month")" }]; //@*, { id: 24, name: "@MsgUtils.Instance.Trls("Half Month")" },{ id: 26, name: "26" }, { id: 52, name: "52" }*@
+        var MonthOrYearlst = [{id:1,name:"@MsgUtils.Instance.Trls("Month")"},{id:2,name: "@MsgUtils.Instance.Trls("Year")"}];
+
+        var PayrollId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollId));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+
+        //Send the serialized model and props to form.js
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "LeaveType", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="LeaveTypes";
+                data.FormAction = "@Url.Action("Details", "LeaveType")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1)
+                    data.mode = 'show';
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                //Unique for Company
+                data.parentColumn = "CompanyId";
+                data.parentId = "@compantId";
+                data.isLocal = true;
+
+                $("#LeaveTypeDiv").Forms(data, model);
+                // ChangeCasualLeave(model.AbsenceType,model.HasAccrualPlan)
+
+                changeYearStartDt(model.YearStartDt);
+                if(read != 1)  changeAccBalDays(model.AccBalDays);
+                changePostOpt((model.Id == 0) ? 0: model.PostOpt);
+                changeBalanace50(model.Balanace50);
+                changeAssignStat(model.ChangAssignStat);
+                changeAllowNegBal(model.AllowNegBal);
+                changeHasAccrualPlan(model.HasAccrualPlan);
+                if(model.Id==0)
+                {
+                    $('#ApprovalWorkFlow').attr("disabled","disabled");
+                    $("#AssignStatus").closest("div.form-group").css("display","none");
+                    $("#CalendarId").val("");
+                }
+                else {
+                    $("#HasAccrualPlan:checked").attr("disabled","disabled");
+                }
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#GenerateBtn').val('@MsgUtils.Instance.Trls("GenerateBtn")');
+                $("#" + formId).find('#ApprovalWorkFlow').val('@MsgUtils.Instance.Trls("WorkFlow")');
+                $("#" + formId).find("div[name='VerifyFraction']").css("display","none");
+
+
+                $("#" + formId).on('blur', "#EndDate",function(){
+                    var elem = $(this);
+                    if($('#StartDate').val() != ""){
+                        $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#StartDate').next("span.k-tooltip-validation").remove();
+                    }
+                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                    elem.next("span.k-tooltip-validation").remove();
+
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                    }
+                });
+                $("#" + formId).on('blur','#StartDate', function(){
+
+                    var elem = $(this);
+
+                    if(elem.val() != ""){
+                        var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0 && $('#EndDate').val() != ""){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                            }
+                        }
+                        else{
+
+                            $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#EndDate').next("span.k-tooltip-validation").remove();
+                            elem.removeClass("k-invalid").prop("aria-invalid", false);
+                            elem.next("span.k-tooltip-validation").remove();
+                        }
+                    }
+                });
+
+                //Leave Range Grid
+                $("div[name=LeaveRangeGrid]").prepend('<div id="LeaveRangeDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                var gridname = "'LeaveRangeDiv'";
+                var MonthOrYear = [{ value: "1", text: "@MsgUtils.Instance.Trls("Month")" },{ value: "2", text: "@MsgUtils.Instance.Trls("Year")" }];
+                var columns = [ {field: "MonthOrYear", values: MonthOrYear}];
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadLeaveRange", "LeaveType")?LeaveTypeId=" +model.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "ImportLeaveRanges",
+                    admin: "@admin", // Admin role
+                    lang: "@User.Identity.GetCulture()",
+                    toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float:right; direction:rtl;" : "float:left; direction:ltr;")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick=insertItem() accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp; <input type="file" name="ExcelFile" id="file" />&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn ajaxBtn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li>'+
+                        '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="ImportsaveAsXsl(\'LeaveRanges\',\'LeaveRanges\','+model.Id+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                        '</ul></div></div></div>',
+                    recordName: "FromPeriod",
+                    select: {"MonthOrYear": MonthOrYear},
+                    gridName: "LeaveRangeDiv",
+                    columns: (read == 1 ? [{ field: "Delete", input: "none"}] : columns ),
+                    sort: [{"field":"FromPeriod","dir":"asc"}],
+                    sortable: false
+                });
+
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payrolls, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "MonthOrYear", MonthOrYearlst,model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroups, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", CompanyStuctures, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Positions, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrades, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Locations, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Nationality", Nationality, model,{objectName:"Countries"});
+                FormJs.fillOptionsDynamic($("#" + formId), "YearStartDt", YearStartDt, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "AccBalDays", AccBalDays, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "WorkServMethod", WorkServMethod, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PostOpt", PostOpt, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "DiffDaysOpt", DiffDaysOpt, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PayrollId", PayrollId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "AutoChangStat", AutoChangStat, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "OpenCalendarId", OpenCalendar, model);
+                if(model.Id && model.FrequencyId) $("#" + formId + " #FrequencyId").attr('disabled', true);
+                FormJs.fillOptionsDynamic($("#" + formId), "FrequencyId", FreqList, model);
+
+                //remove option label and set defaults
+                function setDefaultDDL(name, value) {
+                    var DDL = $('#' + name).data("kendoDropDownList");
+                    if(DDL) {
+                        DDL.setOptions({ optionLabel: "" });
+                        DDL.refresh();
+                        if(model.Id == 0) DDL.value(value);
+                    }
+                }
+
+                setDefaultDDL('PostOpt', 0); //no posting
+                setDefaultDDL('MonthOrYear', 2); //year
+
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+
+                if($('#ExWorkflow').is(':checked')) $("#ApprovalWorkFlow").closest('.form-group').hide();
+            }
+        });
+
+       
+        $("#LeaveTypeForm").on("change","#file", importRangeExcel);
+
+        $("#LeaveTypeForm").on("change","#AccBalDays",null,function(e){
+            var record= $(this).val();
+            changeAccBalDays(record);
+        });
+
+        $("#LeaveTypeForm").on("change","#PostOpt",null,function(e){
+            var record= $(this).val();
+            changePostOpt(record);
+        });
+        $("#LeaveTypeForm").on("change","#Balanace50",null,function(e){
+            var record=$(this).prop("checked");
+            changeBalanace50(record);
+        });
+
+        $("#LeaveTypeForm").on("change","#AllowNegBal",null,function(e){
+            var record=$(this).prop("checked");
+            changeAllowNegBal(record);
+        });
+        $("#LeaveTypeForm").on("change","#ChangAssignStat",null,function(e){
+            var record=$(this).prop("checked");
+            changeAssignStat(record);
+        });
+
+        $("#LeaveTypeForm").on("change","#HasAccrualPlan",null,function(e){
+            var record=$(this).prop("checked");
+            $("#CalendarId").val("");
+            changeHasAccrualPlan(record);
+            //var AbsenceType=$('#AbsenceType').val();
+            //ChangeCasualLeave(AbsenceType,record);
+            //validateCalendar();
+
+        });
+
+        $("#LeaveTypeForm").on("change", "#ExWorkflow", function(e){
+            if($(this).is(':checked'))
+                $("#ApprovalWorkFlow").closest('.form-group').hide();
+            else
+                $("#ApprovalWorkFlow").closest('.form-group').show();
+        });
+
+        $("#LeaveTypeForm").on("change","#AbsenceType",null,function(e){
+            var record= $(this).val();
+            var CheckBal=$('#HasAccrualPlan').prop("checked");
+
+            //validateCalendar();
+            //ChangeCasualLeave(record,CheckBal);
+        });
+        $("#LeaveTypeForm").on("change","#FrequencyId", function(e) {
+            $("#CalendarId").val(0);
+        });
+        $("#LeaveTypeForm").on("change","#OpenCalendarId", function(e) {
+            $("#CalendarId").val($(this).val());
+        });
+        $("#LeaveTypeForm").on("blur","#OpenCalendarId, #FrequencyId", validateCalendar);
+        $("#LeaveTypeForm").on("blur","#DiffDaysOpt, #MaxNofDays, #MaxPercent", validatePostOptVal);
+        $("#LeaveTypeForm").on("blur","#IncludContinu, #MinLeaveDays", ValidateIncludContinu);
+
+        $('#LeaveTypeDiv').on('click',"#backToIndex",null, function(){
+            $("#renderbody").load(oldulr);
+        });
+        $("#LeaveTypeDiv").on('click',"#saveChanges",null, function (e) {
+            validateNofDaysAndAcc();
+            validateCalendar();
+            validatePostOptVal();
+
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+            FormJs.saveForm($("#"+formId), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            },Grids.sendData("LeaveRangeDiv"));
+        });
+        $('#NofDays, #NofDays50, #Age50, #AccBalDays').blur(validateNofDaysAndAcc);
+
+        var windowSize = localStorage.getItem("window-FlowWindow-LeaveTypeDiv");
+        if(windowSize != null) windowSize = JSON.parse(windowSize);
+
+        $("#FlowWindow").kendoWindow ({
+            @*title: "@MsgUtils.Instance.Trls("Approval WorkFlow Window ")",*@
+            width: windowSize ? windowSize.width : "50%",
+            height: windowSize ? windowSize.height : "70%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#FlowWindow").empty();
+                FormJs.saveWindowSize("FlowWindow", "LeaveTypeDiv");
+            }
+        });
+
+        $("#ApprovalWorkFlow").on('click', function() {
+            $("#FlowWindow").data("kendoWindow").refresh("/LeaveType/WorkFlowIndex?LeaveTypeId="+@Model.Id+"&version=@version&RoleId=@Request.QueryString["RoleId"]").center().open();
+        });
+        //$("input[name='CalcMethod']").change(function(){
+        //    var value = $("input[name='CalcMethod']:checked").val();
+        //    editCalcsMethod(value);
+        //})
+
+        function importRangeExcel() {
+            var grid = $('#LeaveRangeDiv').data("kendoGrid");
+            var File = new FormData($("form").get(0));
+            File.append('OldObjectName', 'LeaveRanges');
+            File.append('TableName', 'LeaveRanges');
+            File.append('ObjectName', 'LeaveRanges');
+            $.ajax({
+                url: "/ImportData/ImportDataInformation",
+                type: 'POST',
+                cache: false,
+                processData: false,
+                contentType: false,
+                data:File,
+                success: function (data) {
+                    var message = "";
+                    if (data.Errors) {
+                        for (var i = 0; i < data.Errors.length; i++) {
+                            for (var k = 0; k < data.Errors[i].errors.length; k++) {
+                                message +=  data.Errors[i].errors[k].field+" "+data.Errors[i].errors[k].message;
+                            }
+                        }
+                    }
+
+                    if (message.length === 0)
+                        grid.dataSource.data(data.data);
+                    else {
+                        toastr.error(message.replace(/;/g, "<br/>"));
+                        var parms = { data: data.data, errors: data.Errors };
+                        grid.dataSource.data(data.data);
+                        Grids.setErrors(parms, "#LeaveRangeDiv");
+                        grid.refresh();
+                    }
+                    $("#file").val("");
+                }
+            })
+        }
+
+    });
+
+</script>
+
+
+

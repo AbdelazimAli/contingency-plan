@@ -1,0 +1,65 @@
+﻿@using WebApp.Extensions
+
+@{ 
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+<br>
+<div id="PayrollTableDiv"></div>
+
+<script>
+    var gridname1 = "'PayrollTableDiv'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetAllDesignes", "SalariesDesign")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("DetailsDesigne", "SalariesDesign")",
+        edit: "@Url.Action("DetailsDesigne", "SalariesDesign")",
+        del: "@Url.Action("DeleteDesign", "SalariesDesign")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "InfoTable",
+        recordName: "Name",
+        gridName: "PayrollTableDiv",
+        admin: "@admin",
+        toolbar: kendo.template($("#template").html())
+    });
+</script>
+<script type="text/x-kendo-template" id="template">
+    <div>
+
+        <div style="@(rtl ? "float: right" : "float: left")">
+            &nbsp;
+            <div class="btn-group">
+
+                <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" id="toolsMenu">
+                    @if (admin == true)
+                    {
+                        <li><a class="glyphicon glyphicon-align-justify" onclick="permissions()"><span>&nbsp; @MsgUtils.Instance.Trls("ColumnPermissions")</span></a></li>
+                        <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('PayrollTableDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                    }
+
+                    <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('PayrollTableDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                    @if (function != null && function.Length > 0)
+                    {
+                        if (Array.Exists(function, f => f == "ExportExcel"))
+                        {
+                             <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                        }
+                        if (Array.Exists(function, f => f == "ExportPdf"))
+                        {
+                            <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</script>

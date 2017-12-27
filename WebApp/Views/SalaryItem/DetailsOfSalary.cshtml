@@ -1,0 +1,243 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+<link href="~/Content/forms.css" rel="stylesheet" />
+
+<div id="SalaryVDiv"></div>
+<div id="EmpWindow"></div>
+<script>
+
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Curr = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Curr));
+        var PayrollId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollId));
+        var SalItemId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SalItemId));
+        var EmpSalary=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpSalary));
+        var PayPeriodId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayPeriodId));
+        var Status= [{value:0,text:"@MsgUtils.Instance.Trls("Darft")"}, {value:1,text:"@MsgUtils.Instance.Trls("Approved")"}, {value:2,text:"@MsgUtils.Instance.Trls("Deleted")"}];
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "SalaryVarForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "SalaryVar", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="SalaryVar";
+                data.FormAction = "@Url.Action("SaveSalaryVar", "SalaryItem")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                if(read == 1) data.mode = 'show';
+                $("#SalaryVDiv").Forms(data, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Curr", Curr, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PayrollId", PayrollId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "SalItemId", SalItemId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PayPeriodId", PayPeriodId, model);
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#approved').val('@MsgUtils.Instance.Trls("Approved")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#ExportFromExcel').val('@MsgUtils.Instance.Trls("ExportFromExcel")');
+                $("#" + formId).find('#EligibilityCriteria').val('@MsgUtils.Instance.Trls("EligibilityCriteria")');
+
+                //.sets-container
+                $("#" + formId).find('[name="btnSec"]').append("<input type='file' id='choose' name='File'><div><a href='/SpecialData/SalaryVariable/@(culture.Split('-')[0])Salaries.xlsx' >@MsgUtils.Instance.Trls("DownloadSample")</a></div>");
+                // $("#" + formId).find('#ExportFromExcel').parent().after("<div><a href='/SpecialData/SalaryVariable/Salaries.xlsx' >@MsgUtils.Instance.Trls("DownloadSample")</a></div>")
+
+                $("#" + formId).find("#Curr").parents(".form-group").css("display","none");
+                var reference = model.Reference ;
+                var Payroll = model.Payroll;
+                var PayPeriod = model.PayPeriod;
+                var SalItem = model.SalItem;
+
+                var hidden = "<input type='hidden' id='submit' name='submit' value=false />";
+                $("#" + formId).append(hidden);
+
+                $('#SalaryVDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+                $("#"+formId).on('change',"#choose",null,function(){
+                    var elem =$(this);
+                    var file = new FormData($('form').get(0));
+                    $.ajax({
+                        url:"/SalaryItem/ChecksalaryDocs",
+                        type:'POST',
+                        cache:false,
+                        processData:false,
+                        contentType:false,
+                        data: file,
+                        success:function(res){
+                            if(res.Errors.length != 0)
+                            {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='File' role='alert'>@MsgUtils.Instance.Trls("MustbeExcelFile")</span>");
+                            }
+                            else
+                            {
+                                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                                elem.next("span.k-tooltip-validation").remove();
+                            }
+                            $("#choose").val("");
+                        }
+                        ,error:function(){
+
+                        }
+                    });
+
+                });
+
+                $("#"+formId).on('click',"#ExportFromExcel",null,function(){
+                    var value = $("#choose").val();
+                    if(value != ""){
+                        $.getJSON("/SalaryItem/ImportSalariesGrid",null,function(res){
+                            var grid = $("#GridEmpSalaryDiv").data("kendoGrid");
+                            for (var i = 0; i < res.Data.length; i++)
+                                grid.dataSource.data().push(res.Data[i]);
+                        });
+                    }else
+                        toastr.error("@MsgUtils.Instance.Trls("SelectFile")")
+                });
+
+                $("#SalaryVDiv").on("change","#PayrollId",null,function(e){
+                    var payrollId = $("#" + formId).find("#PayrollId").val();
+                    if(payrollId !="")
+                    {
+                        $.ajax({
+                            //async: false,
+                            url: "@Url.Action("GetSubPeriods", "SalaryItem")",
+                            data: { payrollId: payrollId },
+                            dataType: "json",
+                            success: function (result) {
+                                FormJs.fillOptionsDynamic($("#" + formId), "PayPeriodId", result, model);
+                            }
+                        });
+                    }
+                });
+                $("#SalaryVDiv").on("change","#SalItemId",null,function(e){
+                    var SalItem = $("#" + formId).find("#SalItemId").val();
+                    for(var i =0; i< SalItemId.length; i++)
+                    {
+                        if(SalItemId[i].id == SalItem)
+                        {
+                            var UMeasure = SalItemId[i].UMeasure;
+
+                            switch(UMeasure)
+                            {
+                                case 1:
+                                    $("#" + formId).find("#Curr").parents(".form-group").css("display","");
+                                    $("#" + formId).find("#unitLbl").remove();
+                                    $("#" + formId).find("#dayLbl").remove();
+                                    $("#" + formId).find("#hourLbl").remove();
+                                    break;
+                                case 2:
+                                    $("#" + formId).find("#Amount").after('<label id="unitLbl">&nbsp;&nbsp;@MsgUtils.Instance.Trls("Unit")</label>');
+                                    $("#" + formId).find("#Curr").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#hourLbl").remove();
+                                    $("#" + formId).find("#dayLbl").remove();
+                                    break;
+                                case 3:
+                                    $("#" + formId).find("#Amount").after('<label id="hourLbl">&nbsp;&nbsp;@MsgUtils.Instance.Trls("Hour")</label>');
+                                    $("#" + formId).find("#Curr").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#unitLbl").remove();
+                                    $("#" + formId).find("#dayLbl").remove();
+
+                                    break;
+                                default:
+                                    $("#" + formId).find("#Amount").after('<label id="dayLbl">&nbsp;&nbsp;@MsgUtils.Instance.Trls("Day")</label>');
+                                    $("#" + formId).find("#Curr").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#unitLbl").remove();
+                                    $("#" + formId).find("#hourLbl").remove();
+                            }
+
+                        }
+                    }
+                });
+                $("div[name=EmpSalaryVarSec]").prepend('<div id="GridEmpSalaryDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                var gridname = "'GridEmpSalaryDiv'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadEmpSalaryVar", "SalaryItem")?reference="+reference,
+                    update: "@Url.Action("UpdateEmpSalaryVar", "SalaryItem")",
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "EmpSalaryVar",
+                    tableName : "SalaryVars",
+                    admin: "@admin", // Admin role
+                    lang: "@User.Identity.GetCulture()",
+                    recordName: "Name",
+                    gridName: "GridEmpSalaryDiv",
+                    toolbar:read==1? '<div></div>':'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    height:250,
+                    columns: [{field:"EmpId",values:EmpSalary},{field:"Status",values:Status}],
+                    select: { "EmpId":EmpSalary,"Status":Status},
+                    dataBound:function(e)
+                    {
+                        var data =$("#GridEmpSalaryDiv").data('kendoGrid').dataSource.data();
+                        $(data).each(function(){
+                            if(this.Amount == 0)
+                            {
+                                this.set("Amount",$("#" + formId).find('#Amount').val());
+                            }
+                        })
+
+                    }
+                });
+                $("#EmpWindow").kendoWindow ({
+                    title: "@MsgUtils.Instance.Trls("EmployeesSalaryVar")",
+                    minWidth: "500px",
+                    width: "70%",
+                    height: "86%",
+                    actions: ["Minimize", "Maximize", "Close"],
+                    visible: false,
+                    close: function() {
+                        $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
+                        $("#EmpWindow").empty();
+                    }
+                });
+
+                $("#SalaryVDiv").on('click',"#EligibilityCriteria",null, function (e) {
+                    $("#EmpWindow").data("kendoWindow").refresh("/SalaryItem/SaveCriteria?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+                    $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+                });
+
+                $("#SalaryVDiv").on('click',"#saveChanges",null, function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    var submit = $(this).attr("id") == "approved";
+                    $("#" + formId + " #submit").val(submit);
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    },Grids.sendData("GridEmpSalaryDiv"));
+                });
+
+                $("#" + formId).find('#approved').on('click', function (e) {
+                    var submit = $(this).attr("id") == "approved";
+                    $("#" + formId + " #submit").val(submit);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("ApprovedCompleted")");
+                        $("#" + formId).find('#saveChanges').attr("disabled",false);
+                        var readUrl ="@Url.Action("ReadEmpSalaryVar", "SalaryItem")?reference="+res.Reference;
+                        $("#GridEmpSalaryDiv").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+                        $("#GridEmpSalaryDiv").data("kendoGrid").dataSource.read();
+                        $("#GridEmpSalaryDiv").data("kendoGrid").refresh();
+                    },Grids.sendData("GridEmpSalaryDiv"));
+
+                });
+            }
+        });
+    });
+
+</script>

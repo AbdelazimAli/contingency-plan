@@ -1,0 +1,423 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.LeaveReqViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var ssMenu = ViewBag.isSSMenu;
+}
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+<div id="prevLeavesWindow"></div>
+
+
+@Html.Partial("_LeavesFunc")
+
+<script>
+    $(function(){
+        FormJs.DrawTabs("pageTabs"); // "LeaveRequests"
+
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var Progress = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Progress));
+
+        $("#t_WorkFlow").click(function(){
+            $('#tab_WorkFlow').load("@Url.Action("WorkFlow", "Log")"+"?Source=Leave&SourceId=" + model.TypeId + "&DocumentId=" + model.Id + "&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_AudiLog").click(function(){
+            $('#tab_AudiLog').load("@Url.Action("Log", "Log")?id="+model.Id+"&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_GeneralInfo").click(function () {
+            $("#tab_GeneralInfo").html("<div id='leaveReqDiv'></div>");
+            LeaveRequesForm();
+        });
+
+        $("#t_GeneralInfo").click();
+
+        var formId = "leaveReq", picker = "kendoDatePicker";
+
+        function getStartDate() {
+            var startDate = $("#" + formId +" #StartDate").data(picker).value();
+            if(!startDate) startDate = $("#" + formId +" #RequestDate").data("kendoDatePicker").value();
+            return startDate ? kendo.toString(new Date(startDate), "yyyy-MM-dd") : startDate;
+        }
+
+        function parseLeaveDate(date) {
+            if (date && date.indexOf('/Date') != -1) return kendo.toString(new Date(parseInt(date.substr(6))), "yyyy-MM-dd"); //.toLocaleDateString();
+            else return date;
+        }
+
+        //----ProgressBar----
+        function drawLeaveProgress(AnnualLeave) {
+            $("#balChart").empty();
+
+            $("#balChart").kendoChart({
+                dataSource: { data: AnnualLeave },
+                title: { text: '@MsgUtils.Instance.Trls("Balance")', align: "center" },
+                chartArea: { width:400, height:300 },
+                series: [{ type: 'pie', field: 'Balance', categoryField: 'Name' }],
+                seriesColors: ['#42a7ff', '#797979', '#d54c7e', '#ededed', '#B0D877', '#FFD700'],
+                seriesDefaults: { labels: { visible: true, background: 'transparent', template: '${ value } - ${ category }' } },
+                tooltip: { visible: true, template: '${ value } @MsgUtils.Instance.Trls("day") ${ category }' },
+                dataBound: function(e) {
+                    var view = e.sender.dataSource.view();
+                    $(this.element).nextAll('.noData').remove();
+
+                    if(view.length === 0 && $(this.element).find(".noData").length === 0)
+                        $(this.element).after("<div class='noData'>@MsgUtils.Instance.Trls("No data available")</div>");
+                },
+                seriesClick: function(e) {
+                    var typeDDL = $("#TypeId").data('kendoDropDownList');
+                    if(typeDDL) {
+                        typeDDL.value(e.dataItem.TypeId);
+                        $("#TypeId").trigger('change');
+                    }
+                }
+            });
+        }
+
+        //----end ProgressBar----
+
+        function ChangEmployee(empId) {
+            var startDate = getStartDate();
+            $.get("/Leave/ChangEmployee", {EmpId : empId}, function (result) {
+                FormJs.fillOptionsDynamic($("#" + formId), "TypeId", result.types, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ReplaceEmpId", result.replaceEmps, model);
+
+                if(empId && startDate)
+                    $.get("/Leave/GetProgress", {EmpId : empId, StartDate: startDate }, function (progress) {
+                        Progress = progress;
+                        drawLeaveProgress(progress);
+                    });
+            });
+        }
+
+        function LeaveRequesForm() {
+            //Employees
+            var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees))
+            var RepEmps = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RepEmps))
+            var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes))
+            var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender))
+            var calcOptions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CalcOptions))
+            var fractions = [{id: 0, name: ""}, {id: 1, name: "@MsgUtils.Instance.Trls("0.25 start day")"}, {id: 2, name: "@MsgUtils.Instance.Trls("0.5 start day")"}, {id: 3, name: "@MsgUtils.Instance.Trls("0.25 end day")"}, {id: 4, name: "@MsgUtils.Instance.Trls("0.50 end day")"}];
+            var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+            var ApprovalStatus = ['@MsgUtils.Instance.Trls("Darft")', '@MsgUtils.Instance.Trls("Submit")', '@MsgUtils.Instance.Trls("AprovalEmployeeReview")', '@MsgUtils.Instance.Trls("ManagerReview")', '@MsgUtils.Instance.Trls("Accepted")' ,'@MsgUtils.Instance.Trls("Approved")' ,'@MsgUtils.Instance.Trls("Cancel before accepted")' , '@MsgUtils.Instance.Trls("Cancel after accepted")'  , '@MsgUtils.Instance.Trls("Rejected")'];
+            @*var ReqStatus = [{id: 2, name: "@MsgUtils.Instance.Trls("Confirmed")" }, {id: 1, name: "@MsgUtils.Instance.Trls("Planned")"}];*@
+
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var read = "@Request.QueryString["Read"]";
+            var isShow = read == 1 || (model.ApprovalStatus != 1 && model.ApprovalStatus != 3);
+
+            $.getJSON(url, { objectname: 'LeaveRequest', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+                data.FormAction = "@Url.Action("Details", "Leave")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "LeaveRequests";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@compantId";
+                data.btns = ["back", "doc"];
+
+                var startDateShow;
+                if(isShow) {
+                    data.mode = 'show';
+                    startDateShow = parseLeaveDate(model.StartDate);
+                }
+                model.Approval = model.ApprovalStatus;
+
+                if(model.Id == 0)
+                    model.ApprovalStatus = ApprovalStatus[0];
+                else {
+                    var approval = model.ApprovalStatus - 1;
+                    model.ApprovalStatus = ApprovalStatus[approval];
+                }
+                data.reqbtns = ['Send'];
+
+                if(funs && funs.length >0)
+                {
+                    if($.inArray('Download',funs) >= 0)
+                        data.reqbtns.push('Download');
+                    if($.inArray('Upload',funs) >= 0)
+                        data.reqbtns.push('Upload');
+                }
+                $("#leaveReqDiv").Forms(data, model);
+                model.ApprovalStatus = model.Approval;
+
+                if(model.Approval != 9) $("#" + formId + " [name='rejectSec']").closest(".set").remove();
+
+                if(model.Id == 0) $("#" + formId + " input").not(":button, #Id, #CompanyId, #RequestDate, #EmpId").val("");
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People" });
+
+                //FormJs.fillOptionsDynamic($("#" + formId), "ReplaceEmpId", Employees, model,{ remoteTableName: "People" });
+                FormJs.fillOptionsDynamic($("#" + formId), "ReplaceEmpId", RepEmps, model);
+
+                //.FormJs.fillOptionsDynamic($("#" + formId), "ReqStatus", ReqStatus, model, {hasFilter: false});
+                FormJs.fillOptionsDynamic($("#" + formId), "TypeId", LeaveTypes, model);
+
+                //----append dynamic elements----
+                $("#" + formId).find("#TypeId").closest(".form-group").after('<a class="ajaxBtn" id="prevLeaveBtn" >@MsgUtils.Instance.Trls("PervLeaves")</a>');
+                if(!model.EmpId && "@ssMenu" != "True") $('#prevLeaveBtn').hide();
+
+                $("#" + formId).find("#EmpId").closest(".sections").addClass("col-md-8").after("<div class='col-md-4'><div id='balChart'><div><div>");
+                $("#" + formId).find(".section[name='tasksSec']").append("<div id='empTasksGrd'></div>");
+
+                //$("#" + formId).find("#NofDays, #DayFraction").closest(".form-group.col-md-4").removeClass("col-md-4 col-lg-4").addClass("col-md-3 col-lg-3");
+
+                if(model.DayFraction == 0) $("#" + formId).find("#DayFraction").closest(".form-group").hide();
+
+                FormJs.fillOptionsDynamic($("#" + formId), "DayFraction", fractions, model);
+
+                var fractionDDL = $('#DayFraction').data("kendoDropDownList");
+                if(fractionDDL) fractionDDL.setOptions({ optionLabel: "" });
+
+                if(model.Id > 0 || "@ssMenu" == "True") {
+                    drawLeaveProgress(Progress);
+                }
+
+                if(model.Id > 0) {
+                    LeaveRequestJs.DrawEmpTasks("empTasksGrd", model.EmpId, (isShow ? startDateShow : model.StartDate));
+                }
+
+                //----end append dynamic elements----
+                function Initialize(isReInitial) {
+                    var settings = {calender: calender, calcOptions: calcOptions, myForm: $("#" + formId), picker: picker};
+                    var inputs = {StartDate: "StartDate", EndDate: "EndDate", ReturnDate: "ReturnDate", NofDays: "NofDays"};
+                    isReInitial ? LeaveRequestJs.SetValues(settings) : LeaveRequestJs.SetValues(settings, inputs);
+                }
+                Initialize(false);
+
+                LeaveRequestJs.DrawStars("prevLeaveBtn", true, model.Stars); //Stars  isShow
+
+                function allowFraction() {
+                    if(calcOptions && calcOptions.AllowFraction) {
+                        $("#" + formId).find("#DayFraction").closest(".form-group").show();
+                        LeaveRequestJs.ConvertDateTime("#StartDate, #EndDate, #ReturnDate", true); //true
+                        //picker = "kendoDateTimePicker";
+                    }
+                    else {
+                        $("#" + formId).find("#DayFraction").closest(".form-group").hide().val(0);
+                        LeaveRequestJs.ConvertDateTime("#StartDate, #EndDate, #ReturnDate", false);
+                        //picker = "kendoDatePicker";
+                    }
+
+                    Initialize(true);
+                }
+
+                function disableFraction() {
+
+                    if($("#DayFraction").val() != 0)
+                        $("#" + formId).find("#NofDays").attr("disabled", true).val(0);
+                    else
+                        $("#" + formId).find("#NofDays").attr("disabled", false);
+
+                    var ddl = $("#" + formId).find("#DayFraction").data("kendoDropDownList");
+                    if(ddl) ddl.enable(($("#NofDays").val() == 0));
+                }
+
+                disableFraction();
+                $("#" + formId).find("#NofDays, #DayFraction").change(disableFraction);
+
+                if(!isShow && model.Id != 0) allowFraction();
+
+                function getEmpId() {
+                    if(isShow) return model.EmpId;
+
+                    var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                    return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                }
+
+                function empChanged() {
+                    var empId = getEmpId();
+                    if(empId) $('#prevLeaveBtn').show();
+                    ChangEmployee(empId);
+
+                    if($("#empTasksGrd").data("kendoGrid")) $("#empTasksGrd").data("kendoGrid").dataSource.data([]);
+
+                    $("#" + formId).find("#StartDate, #NofDays, #EndDate, #ReturnDate").val("");
+                    $("#" + formId).find("lable[name='AllowedDays'],lable[name='ReservedDays'],lable[name='BalBefore'],lable[name='BalAfter']").val("");
+                    $("#" + formId +" #NofDays").removeClass("k-invalid");
+                    $("#"+ formId +" .k-invalid-msg[data-for='NofDays']").remove();
+
+                    $(".rate_star[data-value]").removeClass("checked");
+                    $("#Stars").val(0);
+                }
+
+                //for emp change (select & autocomplete)
+                if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', empChanged);
+                else $("#" + formId).on('change',  "#EmpId", empChanged);
+
+                $("#" + formId + " #TypeId").change(function(e) {
+                    var typeId = $(this).val(), empId = getEmpId(),
+                        reqDate =  kendo.toString(new Date($("#" + formId +" #RequestDate").data("kendoDatePicker").value()), "yyyy-MM-dd");
+
+                    if(typeId) {
+                        $.get("/Leave/GetCalcOptions", {typeId: typeId, empId: empId, requestDate: reqDate, requestId: $("#" + formId + " #Id").val()}, function(result) {
+                            calcOptions = result.type;
+                            var days = result.days;
+                            if(days) {
+                                $("#" + formId + " #AllowedDays").val(days.AllowedDays);
+                                $("#" + formId + " #ReservedDays").val(days.ReservedDays);
+                            }
+                            allowFraction();
+                            $("#" + formId).find("#StartDate, #NofDays, #EndDate, #ReturnDate").val("");
+                        });
+                    }
+                    $("#" + formId).find("#StartDate, #NofDays, #EndDate, #ReturnDate").val("");
+                    $("#" + formId).find("lable[name='AllowedDays'],lable[name='ReservedDays'],lable[name='BalBefore'],lable[name='BalAfter']").val("");
+                    $("#" + formId +" #NofDays").removeClass("k-invalid");
+                    $("#"+ formId +" .k-invalid-msg[data-for='NofDays']").remove();
+                });
+
+                //Dates
+                $("#" + formId).on("blur", "#NofDays, #DayFraction, #StartDate", LeaveRequestJs.ValidateNofDays);
+                $("#" + formId).on("blur", "#ReqReason", validateReqReason);
+
+                var msg;
+                $("#" + formId + " #ReplaceEmpId").blur(function() {
+                    FormJs.removeFormError(formId, "ReplaceEmpId");
+                    if(msg) FormJs.addFormError(formId, "ReplaceEmpId", msg);
+                });
+
+                $("#" + formId).on('change', "#ReplaceEmpId", function () {
+                    var field = $("#"+ formId + " #ReplaceEmpId"), //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        replaceEmp = (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+
+                    var StartDate = $("#" + formId + " #StartDate").data(picker).value(),
+                        EndDate = $("#" + formId + " #EndDate").data(picker).value();
+
+                    if(replaceEmp && StartDate && EndDate) {
+                        StartDate = kendo.toString(new Date(StartDate), "yyyy-MM-dd");
+                        EndDate = kendo.toString(new Date(EndDate), "yyyy-MM-dd");
+                        $.get("/Leave/ChangeReplaceEmp", {replaceEmp: replaceEmp, StartDate: StartDate, EndDate: EndDate }, function(res) { msg = res; });
+                    }
+                });
+
+                function validateReqReason() {
+                    FormJs.removeFormError(formId, 'ReqReason');
+                    var val = $("#ReqReason").val();
+
+                    if(calcOptions && calcOptions.MustAddCause && !val)
+                        FormJs.addFormError(formId, 'ReqReason', '@MsgUtils.Instance.Trls("Required")');
+                }
+
+
+                $("#" + formId + " #StartDate").blur(function() {
+                    LeaveRequestJs.ValidateNofDays();
+
+                    var name = $(this).attr("name"), field = $("#" + formId + " #" + name),
+                        label = field.closest('.form-group').find('label .lblSpan').text(),
+                        date = field.data("kendoDatePicker");
+
+                    if(!date) date = field.data(picker);
+
+                    if(date && date.value()) {
+                        var requsetDate = kendo.parseDate(parseLeaveDate(model.RequestDate));
+                        if(calcOptions && calcOptions.AbsenceType == 8 && date.value() < requsetDate )  //8.Casual
+                            FormJs.addFormError(formId, name, label + " @MsgUtils.Instance.Trls("CantLessThanToday")");
+                        else if(calcOptions && calcOptions.AbsenceType != 8 && date.value() <= requsetDate)
+                            FormJs.addFormError(formId, name, label + " @MsgUtils.Instance.Trls("CantLessThanOrEqualToday")");
+                    }
+                });
+
+                if(!isShow) {
+                    $("#" + formId +" #EndDate").data(picker).readonly();
+                    $("#" + formId +" #ReturnDate").data(picker).readonly();
+                }
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+                var hidden = "<input type='hidden' id='submit' name='submit' value='false' />";
+                $("#" + formId).append(hidden);
+
+                //submitRequest
+                $("#" + formId).on( 'click', '#saveChanges, #submitRequest', function (e) {
+                    validateReqReason();
+                    var submit = $(this).attr("id") == "submitRequest";
+                    $("#" + formId + " #submit").val(submit);
+
+                    if($('#DayFraction').val() == "") $('#DayFraction').val(0);
+
+                    var defer =  LeaveRequestJs.ValidateNofDays();
+                    if(defer) {
+                        defer.then(function(d) {
+                            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                                $("#Documents").attr("disabled", false);
+                                if(res && res.model) {
+                                    model = res.model;
+                                    $("#" + formId + " #Id").val(res.model.Id);
+                                    $("#Documents").attr("disabled", false);
+                                    res.error ? toastr.error(res.error) : toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                    if(submit) {
+                                        if(model.Stars) toastr.warning("@MsgUtils.Instance.Trls("UsedStars")".replace('{0}', model.Stars));
+
+                                        var oldPage = localStorage.getItem("menuhigh").split(",");
+                                        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+                                        $("#renderbody").load(oldulr);
+                                    }
+                                } else
+                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            });
+                        });
+                    }
+                });
+
+                if($("#" + formId + " #Id").val() == 0) $("#Documents").attr("disabled", true);
+
+                //Open window when click
+                $("#Documents").on('click', function() {
+                    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveRequest&SourceId=" + model.Id).center().open();
+                    $("#Documents").fadeOut();
+                });
+
+                $('#prevLeaveBtn').click(function(e) {
+                    e.preventDefault();
+                    var startDate = isShow ? startDateShow : getStartDate();
+
+                    if(startDate) {
+                        $("#prevLeavesWindow").data("kendoWindow").refresh("/Leave/PrevEmpLeaves?empId=" + getEmpId() + "&startDate=" + startDate).center().open();
+                        $("#prevLeaveBtn").fadeOut();
+                    }
+                });
+
+            }); //end get form
+        }
+
+
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("LeaveRequestWindow")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+        //----Prev Employee Leave Requests----
+        $("#prevLeavesWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("PervLeaves")",
+            //minWidth: "1000px",
+            width: "50%",
+            height: "70%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#prevLeaveBtn").fadeIn();
+                $("#prevLeavesWindow").empty();
+            }
+        });
+
+
+    });
+
+</script>
+@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "leaveReq" } })

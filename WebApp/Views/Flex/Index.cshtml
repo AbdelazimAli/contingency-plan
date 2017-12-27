@@ -1,0 +1,159 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+}
+<div style="@(rtl?"float:right":"float:left")"><label style="font-size:medium">@MsgUtils.Instance.Trls("Page Name")</label>&emsp;<input id="pageDiv" /></div>
+
+
+<br><br>
+
+<div id="Flex"></div>
+
+<script>
+
+    var result =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Result));;
+    var objflex;
+    $("#pageDiv").kendoDropDownList({
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: result,
+        change: function (e) {
+            var vl = this.value();
+            for (var i = 0; i < result.length; i++) {
+                if(result[i].value == vl){
+                    objflex = result[i];
+                    break;
+                }
+            }
+            var readUrl = "@Url.Action("ReadFlexColumns", "Flex")?pageId=" + objflex.value + "&name=" + objflex.title;
+            $("#Flex").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+            $("#Flex").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("CreateFlexColumns", "Flex")?pageId=" + objflex.value ;
+            $("#Flex").data("kendoGrid").dataSource.transport.options.update.url = "@Url.Action("UpdateFlexColumns", "Flex")?pageId=" + objflex.value;           $("#Flex").data("kendoGrid").dataSource.read();
+        }
+    });
+    var objectName = "FlexColumns";
+    var inputTypes= @Html.Raw((new JavaScriptSerializer().Serialize(ViewBag.InputTypes)));
+
+    var CodeName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CodeName));
+    if(result.length > 0){
+        var Id = $("#pageDiv").val();
+        for (var i = 0; i < result.length; i++) {
+            if(result[i].value == Id){
+                objflex = result[i];
+                break;
+            }
+        }
+        var gridname="'Flex'"
+        Grids.batchGrid({
+            read: "@Url.Action("ReadFlexColumns", "Flex")?pageId=" + Id +"&name="+objflex.title,
+            create: "@Url.Action("CreateFlexColumns", "Flex")?pageId=" + Id,
+            update: "@Url.Action("UpdateFlexColumns", "Flex")?pageId=" + Id,
+            destroy: "@Url.Action("DeleteFlexColumns", "Flex")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "ColumnName",
+            gridName: "Flex",
+            save:function(e){
+               // console.log(objflex);
+                if (e.values.InputType && e.values.InputType != e.model.InputType) {
+                    if(e.values.InputType!=3)
+                    {
+                        e.model.CodeName=null;
+                    }
+                }
+                var grid =  $("#Flex").data("kendoGrid");
+                var row = $("#Flex [data-uid=" +e.model.uid + "]");
+                var model = grid.dataItem(row);
+                model.set("TableName",objflex.title);
+            },
+            columns: [ {
+                field: "IsUnique",
+                template: '<input  type="checkbox" #:IsUnique == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsUnique\',' + gridname + ')"/>'
+            },{
+                field: "isVisible",
+                template: '<input  type="checkbox" #:isVisible == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'isVisible\',' + gridname + ')"/>'
+            },{
+                field: "Required",
+                template: '<input  type="checkbox" #:Required == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Required\',' + gridname + ')"/>'
+            },
+             {field: "InputType", values: inputTypes},
+             { field: "CodeName", editor: function (container, options) {
+                 var type = options.model.InputType;
+                 if (type == 3) {
+                     var input = '<input name="CodeName"/>';
+                     $(input).appendTo(container).kendoDropDownList({
+                         valuePrimitive:true,
+                         dataTextField: "text",
+                         dataValueField: "value",
+                         dataSource:CodeName
+                     });
+                 }
+             }},{field:"Max",editor:function (container, options){
+                 var type=options.model.InputType;
+                 if (type == 1 || type==7)
+                 {
+                     input='<input type="number" max="250"  name="Max" style="width: 90%; margin-bottom: 0"/>';
+                     $(input).appendTo(container);
+                 }
+                 else
+                 {
+                     input='<input type="number" name="Max" style="width: 90%; margin-bottom: 0"/>';
+                     $(input).appendTo(container);
+                 }
+             }
+
+             }],
+            select: { "InputType": inputTypes, "CodeName": CodeName},
+            fields: {Required:{editable:false},isVisible:{editable:false},IsUnique:{editable:false},
+                UniqueColumns: {
+                    validation: {
+                        customUniqueColumns: function (input) {
+                            if ($(input).val().length > 0) {
+                                var data = $("#Flex").data("kendoGrid").dataSource._data;
+
+                                var current = $("#Flex").data("kendoGrid").dataItem($(input).closest("tr")).ColumnName;
+                                var array = [];
+                                for (var i = 0; i < data.length; i++) {
+                                    array[i] = data[i].ColumnName;
+                                }
+
+                                var fields = $(input).val().split(",");
+                                for (var i = 0; i < fields.length; i++) {
+                                    var field = fields[i].trim();
+                                    if (field == current) {
+                                        $(input).attr("validationMessage", field + " @MsgUtils.Instance.Trls("IsMainField")");
+                                        return false;
+                                    }
+                                    if ($.inArray(field, array) == -1) {
+                                        $(input).attr("validationMessage", field + " @MsgUtils.Instance.Trls("NotValidField")");
+                                        return false;
+                                    }
+                                }
+                            }
+
+                            return true;
+                        }
+                    }
+                },
+                isVisible: { defaultValue: true }
+            }
+        });
+    }
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Flex" }, { "ObjectName", "FlexColumns" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+

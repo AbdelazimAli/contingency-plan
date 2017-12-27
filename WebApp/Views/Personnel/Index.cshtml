@@ -1,0 +1,353 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="pageTabs"></div>
+<div id="FlowWindow"></div>
+<div id="ContractWindow"></div>
+<div id="PurgeData"></div>
+<script>
+
+    $(function () {
+        function CalculateServicDuration(record,Level){
+
+            $("div[name=TermDurationSec]").html('<div id="TermDurationDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+            var gridname = "'TermDurationDiv'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadTermDur", "Personnel")?TermSysCode=" +record +"&CompanyId="+@Model.Id,
+                create: "@Url.Action("CreateTermDur", "Personnel")" ,
+                update: "@Url.Action("UpdateTermDur", "Personnel")",
+                destroy: "@Url.Action("DeleteTermDur", "Personnel")",
+                lang: "@User.Identity.GetCulture()",
+                height: 300,
+                objectName: "TermDurations",
+                admin: "@admin",
+                columns: (Level == 1 ? [{ field: "Delete", input: "none"}]: [{ field: "Delete", input: ""}]),
+                toolbar:Level==1 ? '<div></div>' :'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+
+                gridName: "TermDurationDiv",
+                save:function(e){
+                    var grid =  $("#TermDurationDiv").data("kendoGrid");
+                    var row = $("#TermDurationDiv [data-uid=" +e.model.uid + "]");
+                    var model = grid.dataItem(row);
+                    model.set("CompanyId",@Model.Id);
+                    model.set("TermSysCode",record);
+                    flage=true;
+                },
+
+            });
+        }
+        function WorkFlowGrid(Level){
+            // Work flow Grid
+            $("div[name=WorkFlowSec]").html('<div id="WorkFlowDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+            var gridname = "'WorkFlowDiv'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadWorkFlow", "Personnel")",
+                update: "@Url.Action("UpdateWorkFlow", "Personnel")",
+                lang: "@User.Identity.GetCulture()",
+                height: 300,
+                fields:{DbSource:{editable:false}},
+                columns:[ {field: "IsRequired",
+                template: '<input  type="checkbox" #:IsRequired == true ? "checked" : ""#  onchange="CheckBoxChange(this,\'IsRequired\',' + gridname + ')"/>'}],
+                objectName: "WorkflowObject",
+                admin: "@admin",
+                toolbar: Level==1 ? '<div></div>' :'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                gridName: "WorkFlowDiv",
+                dataBound: function (e) {
+                    var name = $("#" + this.gridName);
+                    var gridd = name.data("kendoGrid");
+                    name.find(".k-grid-TerminationFlow").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                        {
+                            if(model.IsRequired == true)
+                            {
+                                $(this).closest("tr").find(".k-grid-TerminationFlow").attr("disabled",false);
+                            }
+                            else
+                            {
+                                $(this).closest("tr").find(".k-grid-TerminationFlow").attr("disabled",true);
+                            }
+                            $(this).click(ClickTerminationFlow);
+                            $(this).attr("Source", model.Source);
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("WorkFlow")");
+                        }
+                    });
+                }
+            });
+
+        }
+        
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        FormJs.DrawTabs("pageTabs"); // "PersonnelSetting"
+
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+
+        $("#t_Calendar").click(function () {
+            $("#tab_Settings").empty();
+            $('#tab_Calendar').empty();
+            $('#tab_LeavePlan').empty();
+            $('#tab_PayrollTab').empty();
+            $('#tab_AccountSetup').empty();
+            $('#tab_Calendar').load("@Url.Action("Calendar", "Personnel")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_LeavePlan").click(function () {
+            $("#tab_Settings").empty();
+            $('#tab_Calendar').empty();
+            $('#tab_Upcoming').empty();
+            $('#tab_AccountSetup').empty();
+            $('#tab_LeavePlan').load("@Url.Action("LeavePlanIndex", "Personnel")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_PayrollTab").click(function () {
+            $("#tab_Settings").empty();
+            $('#tab_Calendar').empty();
+            $('#tab_LeavePlan').empty();
+            $('#tab_AccountSetup').empty();
+            $('#tab_PayrollTab').load("@Url.Action("PayrollDetails", "Personnel")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_Upcoming").click(function () {
+            $('#tab_Calendar').empty();
+            $('#tab_LeavePlan').empty();
+            $('#tab_PayrollTab').empty();
+            $("#tab_Settings").empty();
+            $('#tab_AccountSetup').empty();
+            $('#tab_Upcoming').load("@Url.Action("Upcoming", "Personnel")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_AccountSetup").click(function () {
+            $('#tab_Calendar').empty();
+            $('#tab_LeavePlan').empty();
+            $('#tab_PayrollTab').empty();
+            $("#tab_Settings").empty();
+            $('#tab_Upcoming').empty();
+            $('#tab_AccountSetup').load("@Url.Action("AccountSetUp", "Personnel")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_PurgeData").click(function () {
+            $('#tab_Calendar').empty();
+            $('#tab_LeavePlan').empty();
+            $('#tab_PayrollTab').empty();
+            $("#tab_Settings").empty();
+            $('#tab_Upcoming').empty();
+            $('#tab_AccountSetup').empty();
+            $('#tab_PurgeData').load("@Url.Action("Purge", "Personnel")");
+        });
+
+
+
+        $("#t_Settings").click(function () {
+            $('#tab_Calendar').empty();
+            $("#tab_Settings").html("<div id='PersonnelDiv'></div>");
+
+            var Language = lang.getList("@culture");
+            var CurrencyCode=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CurrencyCode));
+            var TermSysCode=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TermSysCode));
+            @*var QualGroups=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.QualGroups));*@
+
+            var CodeGeneration = [{id:1,name:"@MsgUtils.Instance.Trls("Auto")"},{id:2,name:"@MsgUtils.Instance.Trls("Manually Entered")"}, {id:3,name:"@MsgUtils.Instance.Trls("NationalIdResidentId")"}];
+            @*var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+           var WaitAction =[{value:1,text:"@MsgUtils.Instance.Trls("Back to requester")"}, {value:2,text:"@MsgUtils.Instance.Trls("Back to previous step")"}, {value:3,text:"@MsgUtils.Instance.Trls("Foreword to next step")"}];*@
+            //var WorkFlowList =[{id:"Termination",name:"@MsgUtils.Instance.Trls("Termination")"},{id:"Medical",name:"@MsgUtils.Instance.Trls("Medical")"}, {id:"Complaint1",name:"@MsgUtils.Instance.Trls("Complaint Against Employee")"}, {id:"Complaint2",name:"@MsgUtils.Instance.Trls("Complaint Against Manager")"}, {id:"Complaint3",name:"@MsgUtils.Instance.Trls("Complaint Against Procedure")"}, {id:"Complaint4",name:"@MsgUtils.Instance.Trls("Complaint Against Decision")"}, {id:"Complaint5",name:"@MsgUtils.Instance.Trls("Complaint Against Other")"} ,{id:"Training",name:"@MsgUtils.Instance.Trls("Training")"}, {id:"Pay", name:"@MsgUtils.Instance.Trls("Pay")"},{id:"AssignOrder1",name:"@MsgUtils.Instance.Trls("AssignOrder1")"},{id:"AssignOrder2",name:"@MsgUtils.Instance.Trls("AssignOrder2")"}];
+            var EmploymentDoc=[{id:0,name:"@MsgUtils.Instance.Trls("No Action")"}, {id:1,name:"@MsgUtils.Instance.Trls("Warning Message")"}, {id:2,name:"@MsgUtils.Instance.Trls("Error Message")"}];
+            var JobDoc=[{id:0,name:"@MsgUtils.Instance.Trls("No Action")"}, {id:1,name:"@MsgUtils.Instance.Trls("Warning Message")"}, {id:2,name:"@MsgUtils.Instance.Trls("Error Message")"}];
+            var AssignFlex=[{id:0,name:"@MsgUtils.Instance.Trls("No Action")"}, {id:1,name:"@MsgUtils.Instance.Trls("Warning Message")"}, {id:2,name:"@MsgUtils.Instance.Trls("Error Message")"}];
+            var WorkServMethod=[{id:1,name:"@MsgUtils.Instance.Trls("From join date")"},{id:2,name:"@MsgUtils.Instance.Trls("From employment date")"}];
+            var calender=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.calender)) ;
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var formId = "PersonnelSettingForm";
+            var read = "@Request.QueryString["Read"]";
+            var dataLevel= "@Request.QueryString["DataLevel"]";
+
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'PersonnelSetting', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" },
+                success: function (data) {
+                    data.FormId = formId;
+                    data.TableName ="Personnels";
+                    data.FormAction = "@Url.Action("CreatePersonnel", "Personnel")";
+                    data.Culture = "@User.Identity.GetCulture()";
+                    data.rtl = @rtl.ToString().ToLower();
+                    if(dataLevel  == 1) data.mode = 'show';
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = "@admin";
+
+                    $("#PersonnelDiv").Forms(data, model);
+                    CalculateServicDuration(model.TermSysCode , dataLevel);
+                    WorkFlowGrid(dataLevel);
+                    if(model.TermSysCode==null)
+                        $("div[name='TermDurationSec']").css("display","none");
+                    else
+                        $("div[name='TermDurationSec']").css("display","");
+                    $("#" + formId).find('#ContractTempl').after("<span>"+(model.ContractTempl != null ? model.ContractTempl : " ")+"</span>");
+
+                    $("#" + formId).find('#Contracts').val('@MsgUtils.Instance.Trls("Contracts")');
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#TerminationFlow').val('@MsgUtils.Instance.Trls("WorkFlow")');
+                    if(model.Id==-1)
+                        $('#TerminationFlow').attr("disabled","disabled");
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "TermSysCode", TermSysCode, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "WorkServMethod", WorkServMethod, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "LocalCurrCode", CurrencyCode, model,{ objectName: "Currencies" });
+                    FormJs.fillOptionsDynamic($("#" + formId), "GenEmpCode", CodeGeneration, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "GenWorkCode", CodeGeneration, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "GenAppCode", CodeGeneration, model);
+                   // FormJs.fillOptionsDynamic($("#" + formId), "WorkFlowList", WorkFlowList, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmploymentDoc", EmploymentDoc, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "JobDoc", JobDoc, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "AssignFlex", AssignFlex, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "TaskPeriodId", calender, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "BudgetPeriodId", calender, model);
+                    //FormJs.fillOptionsDynamic($("#" + formId), "QualGroupId", QualGroups, model);
+
+                    var sets = $("#" + formId).find(".set");
+                    for(var i=0; i<sets.length; i++){
+                        if($(sets[i]).children(".sections").children().length == 0)
+                            $(sets[i]).remove();
+                    }
+                },
+                error: function (data) {
+                }
+            });
+
+            //Grid
+
+
+
+            $('#PersonnelDiv').on('click',"#backToIndex",null, function(){
+                $("#renderbody").load(oldulr);
+            });
+
+            $("#PersonnelDiv").on('click',"#Contracts",null, function () {
+                $("#ContractWindow").data("kendoWindow").refresh("/Personnel/ContractFiles").center().open();
+            });
+
+            $("#PersonnelDiv").on('click',"#saveChanges",null, function (e) {
+                FormJs.saveForm($("#"+formId), $(this), function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    saveClick("TermDurationDiv");
+                    //$('#WorkFlowDiv').data('kendoGrid').dataSource.read();
+                    //$('#WorkFlowDiv').data('kendoGrid').refresh();
+                    $("#renderbody").load(oldulr);
+                },Grids.sendData("WorkFlowDiv"));
+            });
+            $("#PersonnelDiv").on("change","#TermSysCode",null,function(e){
+                var record= $(this).val();
+                if(record !=null){
+                    $("div[name='TermDurationSec']").css("display","");
+                    saveClick("TermDurationDiv");
+                    CalculateServicDuration(record,dataLevel);
+
+                }
+                else
+                    $("div[name='TermDurationSec']").css("display","none");
+            });
+            function saveClick(name) {
+                $('#' + name).data("kendoGrid").saveChanges();
+            }
+
+            $("#"+formId).on("change","#ContractTempl",function(event){
+                var elem = $(this);
+                var  file = new FormData($('form').get(0));
+                $.ajax({
+                    url:"/Job/CheckDocs",
+                    type:'POST',
+                    cache:false,
+                    processData:false,
+                    contentType:false,
+                    data: file,
+                    success:function(data){
+                        if(data.Exist != "NoData"){
+                            if(!data.Move){
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ContractTempl' role='alert'>@MsgUtils.Instance.Trls("MustbeWordFile")</span>");
+                            }else
+                            {
+                                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                                elem.next("span.k-tooltip-validation").remove();
+                            }
+                        }else
+                            toastr.error("@MsgUtils.Instance.Trls("No Files Uploaded")")
+                    }
+                    ,error:function(){
+
+                    }
+                });
+            });
+        });
+        $("#t_Settings").click();
+        $("#t_PurgeData").css("display", "@(admin ? "" :"none")")
+
+        var windowSize = localStorage.getItem("window-FlowWindow-PersonnelDiv");
+        if(windowSize != null) windowSize = JSON.parse(windowSize);
+
+        $("#FlowWindow").kendoWindow ({
+            @*title: "@MsgUtils.Instance.Trls("WorkFlow Window")",*@
+            width:  windowSize ? windowSize.width : "50%",
+            height: windowSize ? windowSize.height : "70%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#FlowWindow").empty();
+                FormJs.saveWindowSize("FlowWindow", "PersonnelDiv");
+            }
+        });
+
+        $("#ContractWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("Contracts")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+
+        });
+        // function  click button to add work flow
+        function ClickTerminationFlow(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var Source=$(this).attr("Source");                   
+            $("#FlowWindow").data("kendoWindow").refresh("/Personnel/WorkFlowIndex?TerminateId="+@Model.Id+"&Source="+Source+"&version=@version&RoleId=@Request.QueryString["RoleId"]").center().open();                   
+        }
+    });
+
+    //Check Require Change in Work flow Grid
+    function CheckBoxChange(el, columnName, gridName) {
+        var dataItem = $("#" + gridName).data("kendoGrid").dataItem($(el).closest("tr"));
+        dataItem[columnName] = $(el).is(':checked');
+        dataItem.dirty = true;
+
+        if($(el).is(':checked') == false)
+        {
+            $(el).closest("tr").find(".k-grid-TerminationFlow").attr("disabled",true);
+        }
+        else
+        {
+            $(el).closest("tr").find(".k-grid-TerminationFlow").attr("disabled",false);
+        }
+    }
+
+</script>
+
+
+
+

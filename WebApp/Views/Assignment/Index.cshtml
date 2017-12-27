@@ -1,0 +1,55 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+<div id="AssignmentDiv"></div> 
+
+<script>
+    var QualRank = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.QualificationId));
+    var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+    var columns = [{
+        field: "Employee",
+        template: "<div class='k-people-photo' " +
+                        "style='background-image: url(/SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/#:PicUrl#); '></div>" +
+                        "&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<div class='k-people-name'>#: Employee #</div>",
+                        locked:true
+    },
+    {field:"Qualification",values:QualRank},
+                    {field:"PersonType",values:PersonType},];
+
+    Grids.indexGrid({
+        read: "@Url.Action("GetAssignment", "Assignment")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "People")",
+        edit: "@Url.Action("Details", "People")",
+        del: "@Url.Action("Delete", "People")",
+        objectName: "Assignments",
+        recordName: "Employee",
+        gridName: "AssignmentDiv",
+        dataBound: onLoad,
+        admin: "@admin",
+        columns: columns,
+        lang: "@User.Identity.GetCulture()",
+        select: { "Qualification": QualRank ,"PersonType":PersonType}
+
+    });
+
+    var empstatus = ["@MsgUtils.Instance.Trls("Not employee yet")", "@MsgUtils.Instance.Trls("Active")", "@MsgUtils.Instance.Trls("Suspended")", "@MsgUtils.Instance.Trls("Terminated")", "","","","","","","","@MsgUtils.Instance.Trls("In Leave")", "@MsgUtils.Instance.Trls("New Employee")"];
+
+    function onLoad(e){
+        $('#AssignmentDiv > div.k-grid-content-locked > table > tbody > tr > td > i').each(function () {
+            $(this).attr("data-toggle", "tooltip");
+            $(this).attr("data-placement", "bottom");
+            $(this).attr("title", empstatus[e.sender.dataItem($(this).closest("tr")).EmpStatus]);
+            $(this).tooltip();
+        });
+    }
+</script>
+  @Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "People") },
+    { "Admin", admin}, { "GridName", "AssignmentDiv" }, {"Functions",ViewBag.Functions} })

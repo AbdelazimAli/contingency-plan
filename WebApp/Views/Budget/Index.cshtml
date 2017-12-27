@@ -1,0 +1,132 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+<div id="budgetupper">
+    <div class="form-inline section row">
+        <div class="form-group col-md-4 col-lg-4">
+            <label for="PeriodName" class="control-label col-sm-4 col-md-4 col-lg-4">
+                <span class="lblSpan">@MsgUtils.Instance.Trls("PeriodNames")</span>
+            </label>
+            <div class="col-md-8 col-lg-8 col-sm-8">
+                <input id="PeriodName" name="PeriodName" class="form-control" style="width:inherit" />
+            </div>
+        </div>
+        <div class="form-group col-md-4 col-lg-4">
+            <label for="Periods" class="control-label col-sm-4 col-md-4 col-lg-4">
+                <span class="lblSpan">@MsgUtils.Instance.Trls("Periods")</span>
+            </label>
+            <div class="col-md-8 col-lg-8 col-sm-8">
+                <input id="Periods" name="Periods" class="form-control" style="width:inherit" />
+            </div>
+        </div>
+        <input type="button" class="btn btn-success button" id="retrive" value="@MsgUtils.Instance.Trls("ShowData")" />
+    </div>
+    <br>
+    <div id="BudgetDiv"></div>
+</div>
+<script>
+    var periodNames = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodNames));
+    var BudgetItems = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BudgetItems));
+    var Periods = [];
+    var Change = false;
+    $("#PeriodName").kendoDropDownList({
+        dataTextField: "name",
+        dataValueField:"id",
+        optionLabel: " ",
+        dataSource: periodNames,
+        change: function (e) {
+            Id = this.value();
+            $.getJSON("/Budget/GetPeriods",{Id : Id},function(res){
+                $("#Periods").data("kendoDropDownList").dataSource.data(res);
+            });
+            Change = true;
+        },
+       
+    });
+    $("#Periods").kendoDropDownList({
+        dataTextField: "name",
+        dataValueField:"id",
+        optionLabel: " ",
+    });
+
+    $("#retrive").click(function(){
+        var Columns = [];
+
+        if($("#BudgetDivsplt").length !== 0){
+            $("#BudgetDivsplt").remove();
+            var div = '<div id="BudgetDiv"></div>';
+            $("#budgetupper").append(div);
+        }
+        $.ajax({
+            url:"/Budget/DrawGrid",
+            data:{periodId : $("#Periods").val()},
+            async:false,
+            success:function(res){
+                Columns = res.columns;
+                var source  = [];
+                for (var i = 0; i < res.d.length; i++) {
+                    var x = JSON.parse(res.d[i]);
+                    source.push(x);
+                }
+               
+                Grids.batchGrid({
+                    dataSource:source,
+                    admin : "@admin",
+                    gridName : "BudgetDiv",
+                    toolbar:kendo.template($("#template").html()),
+                    lang:"@User.Identity.GetCulture()",
+                    columns:res.columns,
+                    objectName:"PeriodsName"
+                });
+            },
+            error:function(){
+
+            }
+        });
+       
+
+    });
+
+
+
+</script>
+<script type="text/x-kendo-template" id="template">
+    <div>
+        <div style="@(rtl ? "float: right" : "float: left")">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" id="toolsMenu">
+                    @if (admin == true)
+                    {
+                        <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('BudgetDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                    }
+                    <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('BudgetDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                    @if (function != null && function.Length > 0)
+                    {
+                        if (Array.Exists(function, f => f == "ExportExcel"))
+                        {
+                            <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('BudgetDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                        }
+                        if (Array.Exists(function, f => f == "ExportPdf"))
+                        {
+                            <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('BudgetDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                        }
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</script>
+

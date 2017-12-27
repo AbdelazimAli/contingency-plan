@@ -1,0 +1,155 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@using Model.Domain
+@model IEnumerable<ManagerEmployeeDiagram>
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br />
+
+<br />
+<button class="btn-xs btn-primary" onclick="Grids.ExportDiagram('diagram')">@MsgUtils.Instance.Trls("ExportImage")</button>
+    <div id="diagram"></div>
+    <div>
+    <span style="@(rtl?"float:right":"float:left")">@MsgUtils.Instance.Trls("note:diagram")</span>
+</div>
+<script>
+    
+    function visualTemplate(options)
+    {
+
+        var dataviz=kendo.dataviz;
+        var g= new dataviz.diagram.Group();
+        var dataItem= options.dataItem;
+       
+        g.append(new dataviz.diagram.Rectangle({
+            width:300,
+            height:75,
+            stroke:{
+                width:0
+            },
+            fill:{
+                gradient:{
+                    type:"linear",
+                    stops:[{
+                        color:dataItem.colorSchema,
+                        offset:0,
+                        opacity:0.5
+                    },
+                        {
+                            color:dataItem.colorSchema,
+                            offset:1,
+                            opacity:1
+                        }]
+                }
+            }
+        }));
+        g.append(new dataviz.diagram.TextBlock({
+            text:dataItem.PositionName == null ?"":dataItem.PositionName,
+            x:85,
+            y:40,
+            fill:"#fff"
+        }));
+        g.append(new dataviz.diagram.TextBlock({
+            text:dataItem.Name,
+            width:90,
+            fontStyle:"Bold",
+            x:85,
+            y:8,
+            fill:"#fff"
+        }));
+        g.append(new dataviz.diagram.Image({
+            source:"/SpecialData/Photos/"+@User.Identity.GetDefaultCompany()+"/"+(dataItem.HasImage == false?"noimage.jpg": dataItem.Id+".jpeg"),
+            x:3,
+            y:3,
+            width:68,
+            height:68
+        }));
+        
+       
+        return g;
+
+
+    }
+
+    $(function () {
+        var item = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+  
+        $("#diagram").kendoDiagram({
+
+            dataSource:new kendo.data.HierarchicalDataSource({
+                data: item,
+                schema: {
+                    model: {
+                        children: "Children"
+                    }
+                }
+            }),
+            layout: {
+                type:"layered"
+            },
+            shapeDefaults: {
+                visual:visualTemplate
+            },
+            editable:false,
+            connectionDefaults:{
+                stroke:{
+                    color:"#979797",
+                    width:0
+                }
+            }
+
+
+        });
+
+        /* RENDER LINES CORRECTLY */
+        var diagram = $("#diagram").getKendoDiagram();
+        diagram.bringIntoView(diagram.shapes);
+        var numConnections = diagram.connections.length;
+        for(var i = 0; i < numConnections; i++) {
+            var shape1 = diagram.connections[i].from;
+            var shape2 = diagram.connections[i].to;
+
+            var posShape1 = shape1.getPosition("bottom");
+            var posShape2 = shape2.getPosition("top");
+
+            var point1 = {
+                x: posShape1.x,
+                y: posShape1.y + ((posShape2.y - posShape1.y) / 2)
+            };
+
+            var point2 = {
+                x: posShape2.x,
+                y: point1.y
+            };
+
+            diagram.connect(shape1.connectors[1], shape2.connectors[0], {
+                stroke: {
+                    width: 1
+                },
+                points: [point1,point2]
+            });
+        }
+        /* END */
+
+    });
+
+  
+
+
+</script>
+
+
+
+
+
+
+
+

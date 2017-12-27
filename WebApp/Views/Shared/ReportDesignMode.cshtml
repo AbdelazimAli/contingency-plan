@@ -1,0 +1,65 @@
+﻿@model WebApp.Models.ReportDesignViewModel
+
+@{
+    ViewBag.Title = "Report Designer";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    .img {
+        background-image: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxzdHlsZT4uc3Qwe2ZpbGw6IzNEM0QzRDt9PC9zdHlsZT48cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTggNmwtNC00djRoNHpNMTQgMThoMmw4LTgtMi0yLTggOHoiLz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTIgMjB2LTRsNi02VjhoLTZWMkgwdjIwaDE4di00bC0yIDJoLTR6bS02LTRjLTIuMiAwLTQtMS44LTQtNHMxLjgtNCA0LTQgNCAxLjggNCA0LTEuOCA0LTQgNHoiLz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNNiAxMGMtMS4xIDAtMiAuOS0yIDJzLjkgMiAyIDIgMi0uOSAyLTJINnYtMnoiLz48L3N2Zz4=);
+        display: block;
+        background-position: center center;
+        background-size: 24px 24px;
+        background-repeat: no-repeat;
+    }
+</style>
+
+
+ <script type="text/javascript">
+    function CustomizeMenuActions(s, e) {
+        var actions = e.Actions;
+        actions.push({
+            container: "toolbar",
+            imageClassName: "img ",
+            text: "Custom ",
+            disabled: ko.observable(false),
+            visible: true,
+            hasSeparator: true,
+            clickAction: function (report) {
+                window.location.href = "@Url.Action("ReportViewMode", Model.Controller, new { id = Model.ReportId, name = Model.ReportName, icon = Model.Icon, controller = Model.Controller })";
+            }
+        });
+        
+    }
+
+     function ExitDesigner(s, e) {
+         var loc = window.location.href.split("@Model.Controller")[0];
+         window.location = loc;
+
+     }
+</script>
+
+@{ 
+    var designer = Html.DevExpress().ReportDesigner(settings =>
+    {
+        settings.ClientSideEvents.ExitDesigner = "ExitDesigner";
+        settings.Name = "ReportDesigner";
+        settings.ClientSideEvents.CustomizeMenuActions = "CustomizeMenuActions";
+    });
+
+
+    if (Model.ReportId == 0)
+    {
+        designer.Bind(Model.Report).GetHtml();
+    }
+    else
+    {
+       
+        //designer.BindToUrl(Model.ReportId.ToString()).GetHtml();
+
+        designer.Bind(Model.Report).GetHtml();
+    }
+    //designer.Bind(Model.Report).GetHtml();
+}
+

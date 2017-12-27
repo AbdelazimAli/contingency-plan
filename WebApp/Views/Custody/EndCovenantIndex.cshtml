@@ -1,0 +1,99 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+<br />
+<style>
+    .omegaform input:checked + .slider {
+        background-color: green;
+    }
+
+    .omegaform .slider {
+        height: 25px;
+    }
+
+    .left-switch {
+        position: absolute;
+        padding-right: 4%;
+    }
+
+    .right-button {
+        float: right;
+    }
+
+    .sliderProgress {
+        width: 95%;
+        top: 10px;
+    }
+</style>
+  <div id="CustodyDiv"></div>
+@{
+    var admin = User.IsInRole("Admin");
+}
+
+<script>
+            var columns = [{ field: "Status", template: "<div class='sliderProgress'></div>" }, { field: "Name", locked: true }];
+            var grid = "'CustodyDiv'";
+            Grids.indexGrid({
+                read: "@Url.Action("ReadCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]",
+                edit: "@Url.Action("EndDetails", "Custody")",
+                objectName: "Custodies",  // name of the page or table name used to create local db key
+                recordName: "Name", // custom delete message
+                gridName: "CustodyDiv",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                columns: columns,
+                toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                  '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                  '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+                dataBound: function (e) {
+                    var name = $("#" + this.gridName);
+                    var gridd = name.data("kendoGrid");
+                    name.find(".k-grid-Delever").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                        $(this).hide();
+                    });
+                    name.find(".k-grid-Delete").each(function (e) {
+                        $(this).hide();
+                    });
+                    name.find(".k-grid-EditRecieve").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                        $(this).hide();
+                    });
+                    name.find(".sliderProgress").each(function () {
+                        var td = $(this).parent("td");
+                        if (td.css("display") != "none") {
+                            td.attr("style", "padding: 0");
+                            var model = e.sender.dataItem($(this).closest("tr"));
+                            if (model != null) {
+                                $(this).kendoProgressBar({
+                                    value: model.Status,
+                                    type: "percent",
+                                    max: 100,
+                                    animation: {
+                                        duration: 2000
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });      
+</script>
+
+
+
+
+
+
+
+

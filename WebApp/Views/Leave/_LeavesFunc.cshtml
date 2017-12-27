@@ -1,0 +1,375 @@
+﻿@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var allawEditStars = !User.Identity.IsSelfServiceUser();
+}
+
+<style>
+    .omegaform .rate_row {
+        display: inline-block;
+        margin-left: 30px;
+    }
+
+    .omegaform.rtl .rate_row {
+        margin-right: 30px;
+        margin-left: 0px;
+    }
+
+    .titleLbl {
+        text-align: center;
+        margin-bottom: 10px;
+    }
+</style>
+
+<script src="~/Scripts/starwars.js"></script>
+<link href="~/Content/starwars.css" rel="stylesheet" />
+
+<script>
+    var LeaveRequestJs = function () {
+
+        //Draw EmpTasks Grid for leave subperiod
+        function DrawEmpTasks(name, empId, startDate) {
+            if ($("#" + name).length) {
+                var Res = [{ value: 0, text: '@MsgUtils.Instance.Trls("Darft")' }, { value: 1, text: '@MsgUtils.Instance.Trls("AssignedTo")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Done")' }, { value: 3, text: '@MsgUtils.Instance.Trls("Canceled")' }, { value: 4, text: '@MsgUtils.Instance.Trls("NotDone")' }],
+                grid = $("#" + name).data("kendoGrid"), gridname = "'" + name + "'",
+                readUrl = "/Leave/ReadLeaveEmpTasks?EmpId=" + empId + "&StartDate=" + startDate;
+
+                if (grid) {
+                    grid.dataSource.transport.options.read.url = readUrl;
+                    grid.dataSource.read();
+                }
+                else {
+                    Grids.indexGrid({
+                        read: readUrl,
+                        objectName: "LeaveEmpTasks",
+                        gridName: name,
+                        admin: "@admin",
+                        lang: "@culture",
+                        //columns: [{ field: "Status", values: Res }], //select
+                        select: { "Status": Res },
+                        toolbar: '<div>&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li><li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+                        dataBound: function (e) {
+                            var data = e.sender.dataSource.data();
+                            if (data && typeof (data[0]) == "string") toastr.error(data[0]);  //error
+                        }
+                    });
+                }
+            }
+        }
+
+        var myForm, calender, calcOptions, picker;
+        var StartDateTxt, EndDateTxt, ReturnDateTxt, NofDaysTxt;
+
+        function SetValues(settings, inputs) {
+            if (settings) {
+                myForm = settings.myForm;
+                calender = settings.calender;
+                calcOptions = settings.calcOptions;
+                picker = settings.picker;
+            }
+
+            if (inputs) {
+                StartDateTxt = inputs.StartDate;
+                EndDateTxt = inputs.EndDate;
+                ReturnDateTxt = inputs.ReturnDate;
+                NofDaysTxt = inputs.NofDays;
+            }
+        }
+
+
+        function DrawStars(NofDays, isShow, ReqStars) {
+            var allawEdtStars = "@allawEditStars";
+            ("@rtl" == "True" ? myForm.find("#" + NofDays).before('<div class="rate_row"></div>') : myForm.find("#" + NofDays).after('<div class="rate_row"></div>'));
+
+            myForm.find(".rate_row").starwarsjs({ stars: 5, count: 1, default_stars: ReqStars, disable: (!isShow && allawEdtStars == "True" ? 5 : 0) });  // 0=disabled
+            $(".rate_row .get_rate").attr("name", "Stars").attr("id", "Stars");
+            $(".rate_star").on('dblclick', function () { //to clear stars
+                $(".rate_star").removeClass("checked");
+                $(".rate_row .get_rate").attr("default-stars", 0).val(0);
+            });
+        }
+
+
+        //-----------AllowFraction-----------
+        function ConvertDateTime(selector, toTime) {
+            @*var field = myForm.find(selector), container = $(field).closest("div");
+            for (var i = 0; i < field.length; i++) {
+                var options = { culture: "@culture", disableDates: $(field[i]).data(picker).options.disableDates, parseFormats: ["yyyy-MM-ddTHH:mm:ss", "yyyy-MM-dd"] };
+                if (field[i].attributes.value) $(field[i]).val(kendo.toString(field[i].attributes.value.nodeValue, (toTime ? "yyyy-MM-ddTHH:mm:ss" : "yyyy-MM-dd")));
+
+                $(field[i]).removeAttr("data-role");
+                $(container[i]).empty();
+                $(container[i]).append(field[i]);
+
+                (toTime ? $(field[i]).kendoDateTimePicker(options) : $(field[i]).kendoDatePicker(options));
+            }*@
+        }
+        //-----------End AllowFraction-----------
+
+
+        //-----------Validate Number of Days  Calculate Dates-----------
+        function getEmpId(empId) {
+            empId = empId ? empId : "#EmpId";
+            var field = myForm.find(empId); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+            return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+        }
+
+        function getNofDays() {
+            var nofDays = myForm.find("#" + NofDaysTxt).val(), fraction = myForm.find("#DayFraction").val();
+            switch (fraction) {
+                case "1": nofDays = 0.25; break;
+                case "2": nofDays = 0.50; break;
+                case "3": nofDays = -0.25; break;
+                case "4": nofDays = -0.50; break;
+            }
+            return nofDays;
+        }
+
+        function ValidateNofDays() {
+            var nofDays = getNofDays(), empId = getEmpId(), typeId = myForm.find("#TypeId").val();
+            var startDate = myForm.find("#" + StartDateTxt).data(picker).value();
+            nofDays = nofDays < 0 && nofDays > -1 ? nofDays * -1 : nofDays; //for fraction end date
+            if(nofDays && startDate && typeId && empId)
+            {
+                startDate = kendo.toString(new Date(startDate), "yyyy-MM-dd"); //yyyy-MM-ddTHH:mm:ss
+                calcDates();
+                var endDate = kendo.toString(new Date(myForm.find("#" + EndDateTxt).data(picker).value()), "yyyy-MM-dd"); //yyyy-MM-ddTHH:mm:ss
+                var replaceEmp = getEmpId("#ReplaceEmpId");
+                return $.get("@Url.Action("CheckLeave", "Leave")", { TypeId: typeId, EmpId: empId, NofDays: nofDays, StartDate: startDate, EndDate: endDate, ReqId: myForm.find("#Id").val(), replaceEmp: replaceEmp }, function (res) {
+                    if(res) {
+                        DrawEmpTasks("empTasksGrd", empId, startDate);
+
+                        var field = myForm.find("#" + NofDaysTxt);
+                        field.removeClass("k-invalid");
+                        field.nextAll(".k-invalid-msg[data-for='" + NofDaysTxt + "']").remove();
+
+                        if(res.Message)
+                        {
+                            var msg = res.Message.replace(/;/g, "<br/>");
+                            if (field && !field.hasClass("k-invalid")) {
+                                field.addClass("k-invalid").prop("aria-invalid", true);
+                                field.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + NofDaysTxt + "' role='alert'>" + msg + "</span>");
+                            }
+                            toastr.error(msg);
+                        }
+                        if(res.Warning) toastr.warning(res.Warning.replace(/;/g, "<br/>"));
+                        if (res.Stars == 0) {
+                            myForm.find(".rate_star[data-value]").removeClass("checked");
+                            myForm.find('#Stars').val(0);
+                        }
+                        else
+                            myForm.find(".rate_star[data-value=" + (res.Stars > 5 ? 5 : res.Stars) + "]").click();
+
+                        myForm.find("#AllowedDays").val(kendo.toString(res.AllowedDays, '0.00'));
+                        myForm.find("#ReservedDays").val(kendo.toString(res.ReservedDays, '0.00'));
+                        myForm.find("#BalBefore").val(kendo.toString(res.BalBefore, '0.00'));
+                        myForm.find("#BalAfter").val(kendo.toString(res.BalAfter, '0.00'));
+                        if(calcOptions == undefined) calcOptions={};
+                        calcOptions.MinDays = res.MinDays;
+                        calcOptions.MaxDays = res.MaxDays;
+                        calcOptions.ExDayOff = res.ExDayOff;
+                        calcOptions.ExHolidays = res.ExHolidays;
+                    }
+                });
+            }
+        }
+
+        function calcDates() {
+
+            var startField = myForm.find("#" + StartDateTxt);
+            var startHours, startMin, startDate = startField.data(picker).value(),
+                endDateTime = startField.data(picker).value(), startDateTime = startField.data(picker).value();
+            var NofHours, NofDays = Number.parseFloat(getNofDays());
+
+            //startField.removeClass("k-invalid");
+            //myForm.find(".k-invalid-msg[data-for='"+ StartDateTxt +"']").remove();
+
+            //----Allow Fraction
+            var hasFraction = (calcOptions && calcOptions.AllowFraction && (!Number.isInteger(NofDays)));
+            if (hasFraction) {
+                NofHours = NofDays; //(Number.parseInt(NofDays) != 0 ? NofDays % Number.parseInt(NofDays) : NofDays); //check for div by 0
+                //if (calender.WorkHours != undefined) NofHours *= calender.WorkHours;
+            }
+
+            @*if (hasFraction) {
+                NofHours = NofDays; //(Number.parseInt(NofDays) != 0 ? NofDays % Number.parseInt(NofDays) : NofDays); //check for div by 0
+                if (calender.WorkHours != undefined) NofHours *= calender.WorkHours;
+
+                if (calender.WorkStartTime) {
+                    if (calender.WorkStartTime.indexOf('/Date') != -1) {
+                        startHours = new Date(parseInt(calender.WorkStartTime.substr(6))).getHours();
+                        startMin = new Date(parseInt(calender.WorkStartTime.substr(6))).getMinutes();
+                        startDateTime = new Date(startDateTime.setHours(startHours));
+                        startDateTime = new Date(startDateTime.setMinutes(startMin));
+                        if (calender.WorkHours && NofHours < 0) {
+                            startHours += calender.WorkHours;
+                            endDateTime.setHours(startHours);
+                        }
+                    }
+                    else {
+                        if (startField && !startField.hasClass("k-invalid")) {
+                            startField.addClass("k-invalid").prop("aria-invalid", true);
+                            startField.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + StartDateTxt + "' role='alert'>" + "@MsgUtils.Instance.Trls("RequiredTime")" + "</span>");
+                        }
+                        else
+                            startField.find(".k-invalid-msg[data-for='" + StartDateTxt + "']'").append("<br> @MsgUtils.Instance.Trls("RequiredTime")");
+                    }
+                }
+            }*@
+
+            if(startDate && !isNaN(NofDays)) {
+                var endDate = new Date(startDate), returnDate = new Date(startDate);
+
+                if (!hasFraction) {
+                    endDate = addDays(startDate, Number(NofDays)),
+                    returnDate = addDays(startDate, (Number(NofDays) + 1));
+                }
+                else {
+                    //end of day
+                    if (NofHours < 0) returnDate = addDays(startDateTime, 2);
+
+                    //if Start of day -> returnDate = endDate
+                    //else if End of day -> returnDate = next day
+                    //var NofMin = (Number.parseInt(NofHours) != 0 ? NofHours % Number.parseInt(NofHours) : NofHours);
+
+                    //if (NofHours < 0) { //end of day
+                    //    returnDate = addDays(startDateTime, 2);
+
+                    //    startDateTime = (new Date(startDateTime)).setHours(startHours + NofHours);
+                    //    startDateTime = new Date((new Date(startDateTime)).setMinutes(startMin + (NofMin * 60)));
+                    //}
+                    //else { //start of day
+                    //    endDateTime = (new Date(endDateTime)).setHours(startHours + NofHours);
+                    //    endDateTime = new Date((new Date(endDateTime)).setMinutes(startMin + (NofMin * 60)));
+                    //    returnDate = new Date(endDateTime);
+                    //}
+
+                    //if (myForm.find('#StartTime').length <= 0) {
+                    //    var hidden = "<input type='hidden' id='StartTime' name='StartTime' />"
+                    //        + "<input type='hidden' id='EndTime' name='EndTime' /><input type='hidden' id='ReturnTime' name='ReturnTime' />";
+                    //    myForm.append(hidden);
+                    //}
+                    //myForm.find('#StartTime').val(kendo.toString(startDateTime, 'yyyy-MM-ddTHH:mm:ss'));
+                    //myForm.find('#EndTime').val(kendo.toString(endDateTime, 'yyyy-MM-ddTHH:mm:ss'));
+                    //myForm.find('#ReturnTime').val( kendo.toString(returnDate, 'yyyy-MM-ddTHH:mm:ss'));
+                }
+
+                myForm.find("#" + EndDateTxt).data(picker).value(endDate);
+                if (ReturnDateTxt) myForm.find("#" + ReturnDateTxt).data(picker).value(returnDate);
+            }
+        }
+
+        function addDays(date, days) {
+            var count = 0, result = new Date(date);
+            days--;
+            if (calender && calcOptions) {
+                while (count < days) {
+                    result.setDate(result.getDate() + 1);
+                    var isholiday = false;
+
+                    if (calcOptions.ExDayOff && (result.getDay() == calender.weekend1 || result.getDay() == calender.weekend2))
+                        isholiday = true;
+                    if (calcOptions.ExHolidays) {
+                        for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                            var custDate = new Date(parseInt(calender.CustomHolidays[i].substr(6)));
+                            if (custDate.getYear() == result.getYear() && custDate.getMonth() == result.getMonth() && custDate.getDate() == result.getDate())
+                                isholiday = true;
+                        }
+                        for (var i = 0; i < calender.StanderdHolidays.length; i++) {
+                            if (calender.StanderdHolidays[0].SMonth == (result.getMonth() + 1) && calender.StanderdHolidays[0].SDay == result.getDate())
+                                isholiday = true;
+                        }
+                    }
+                    if (!isholiday) count++;
+                }
+            } else
+                result.setDate(result.getDate() + days);
+            return kendo.toString(result, "yyyy-MM-ddTHH:mm:ss");
+        }
+        //-----------End Calculate EndDateTxt-----------
+
+
+        //-----------Calculate NofDays (Break Leave)-----------
+        function CalcNofDays() {
+            var startDate = myForm.find("#" + StartDateTxt).data(picker).value(),
+                returnDate = myForm.find("#" + ReturnDateTxt).data("kendoDatePicker").value(),
+                actualNofDays = getNofDays();
+
+            if (startDate && returnDate) {
+                startDate = new Date(startDate);
+                returnDate = new Date(returnDate);
+                var endDate = returnDate;
+
+                ////Allow Fraction
+                //var hasFraction = (calcOptions && calcOptions.AllowFraction && (!Number.isInteger(actualNofDays)));
+
+                var nofDays = subDates(startDate, returnDate); //Calc NofDays
+
+                if (nofDays >= 0 && nofDays < actualNofDays) {
+                    endDate = addDays(startDate, nofDays); // Calc EndDate for weekends & holidays
+
+                    myForm.find("#" + EndDateTxt).data("kendoDatePicker").value(endDate);
+                }
+                else
+                    myForm.find("#" + EndDateTxt).data("kendoDatePicker").value("");
+
+                return nofDays;
+            }
+        }
+
+        function subDates(startDate, returnDate) {
+            var nofDays = 0, diffDays = 0, isholiday,
+                endDate = returnDate;
+
+            if (calender && calcOptions) {
+                endDate.setDate(returnDate.getDate() - 1);
+                diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+
+                if (diffDays < -1) return -1;
+
+                while (diffDays >= 0) {
+                    isholiday = false;
+
+                    if (calcOptions.ExDayOff && (endDate.getDay() == calender.weekend1 || endDate.getDay() == calender.weekend2))
+                        isholiday = true;
+                    if (calcOptions.ExHolidays) {
+                        for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                            var custDate = new Date(parseInt(calender.CustomHolidays[i].substr(6)));
+                            if (custDate.getYear() == endDate.getYear() && custDate.getMonth() == endDate.getMonth() && custDate.getDate() == endDate.getDate())
+                                isholiday = true;
+                        }
+                        for (var i = 0; i < calender.StanderdHolidays.length; i++) {
+                            if (calender.StanderdHolidays[0].SMonth == (endDate.getMonth() + 1) && calender.StanderdHolidays[0].SDay == endDate.getDate())
+                                isholiday = true;
+                        }
+                    }
+                    if (!isholiday) nofDays++;
+
+                    endDate.setDate(endDate.getDate() - 1);
+                    diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+                }
+            }
+
+            return nofDays;
+        }
+        //-----------End Calculate NofDays (Break Leave)-----------
+
+
+        return {
+            DrawEmpTasks: DrawEmpTasks,
+            DrawStars: DrawStars,
+
+            SetValues: SetValues,
+            ValidateNofDays: ValidateNofDays,
+            ConvertDateTime: ConvertDateTime,
+            addDays: addDays,
+
+            CalcNofDays: CalcNofDays,
+        }
+    }();
+
+</script>

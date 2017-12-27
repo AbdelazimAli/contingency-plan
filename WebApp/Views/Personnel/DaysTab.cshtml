@@ -1,0 +1,111 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model DeptPlanFormDaysViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<style>
+  .omegaform .rate_row {
+        display: inline-block;
+        margin-left: 30px;
+    }
+
+    .omegaform.rtl .rate_row {
+        margin-right: 30px;
+        margin-left: 0px;
+    }
+    #DaysForm input[type=text]
+    {
+        max-width:95px !important;
+        padding:1px 1px !important;
+    }
+    #DaysForm input[type=number]
+    {
+        max-width:95px !important;
+        padding:1px 1px !important;
+    }
+   #DaysForm input[type=radio]
+   {
+       margin-top :10px;
+   }
+</style>
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+
+<div id="DaysTab"></div>
+
+<br />
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<script>
+
+    $(function () {
+        var model;
+        var everyMonth = [{id:0, name: "@MsgUtils.Instance.Trls("Every Weak")"}, {id: 1, name: "@MsgUtils.Instance.Trls("FirstOfMonth")"}, {id: 2, name: "@MsgUtils.Instance.Trls("lastOfMonth")"}];
+        var weekDays = [{id: 0, name: "@MsgUtils.Instance.Trls("Sunday")" }, {id: 1, name: "@MsgUtils.Instance.Trls("Monday")" }, {id: 2, name: "@MsgUtils.Instance.Trls("Tuesday")" }, {id: 3, name: "@MsgUtils.Instance.Trls("Wednesday")" }, {id: 4, name: "@MsgUtils.Instance.Trls("Thursday")" }, {id: 5, name: "@MsgUtils.Instance.Trls("Friday")" }, {id: 6, name: "@MsgUtils.Instance.Trls("Saturday")" }];
+        var formId = "DaysForm";
+            ///---#Region Emp Form
+        var Language = lang.getList("@culture");
+            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var read = "@Request.QueryString["Read"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'LeavePlanDays', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("", "")";
+                    data.FormId = formId;
+                    data.HasPanel = false;
+                    data.HasEditControls = false;
+                    data.Culture = '@culture';
+                    data.TableName = "DeptLeavePlans";
+                    data.admin = '@admin';
+                    data.rtl = @rtl.ToString().ToLower();
+                    $("#DaysTab").Forms(data, model);
+                    //fill ddl
+                    FormJs.fillOptionsDynamic($("#" + formId), "Day", weekDays, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "Every", everyMonth, model);
+                    //style Columns
+                    $("#"+formId).find("#Every").closest(".col-md-8.col-lg-8").removeClass("col-md-10 col-lg-10").addClass("col-md-5 col-lg-5");
+                    $("#"+formId).find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-4 col-lg-4");
+                    $("#"+formId).find("Label[for='Every']").css("display","none");
+                    $("#" + formId).find('#cancelChanges').val('@MsgUtils.Instance.Trls("Cancel")');
+                    $("#"+formId).find(".radio").addClass("radio-inline");
+                    //stars
+                    var StarsContainer = $('#Stars').parent();
+                    $('#Stars').remove();
+                    StarsContainer.append('<div class="rate_row"><div>');
+                    $("#"+formId).find(".rate_row").starwarsjs({ stars: 5, count: 1, default_stars: model.Starts });
+                    $(".rate_row .get_rate").attr("name", "Stars").attr("id", "Stars");
+                    //btn Sec
+                    $("#"+ formId).on('click','#cancelChanges',function()
+                    {
+                        $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
+                        $("#RepeatWindow").data("kendoWindow").close();
+                    });
+                    $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).on('click','#SaveChanges', function (e) {
+                        FormJs.saveForm($("#" + formId), $(this), function (res) {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            //$('#MoneyBalnaceDiv').data('kendoGrid').dataSource.read();
+                            //$('#MoneyBalnaceDiv').data('kendoGrid').refresh();
+                            //$("#AdjustWindow").data("kendoWindow").close();
+                        });
+                    });
+                }
+            });
+        });
+</script>
+
+
+
+
+

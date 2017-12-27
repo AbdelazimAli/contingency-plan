@@ -1,0 +1,175 @@
+﻿`@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model TerminationFormViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+
+<div id="TermReqFormDiv">
+
+</div>
+<div id="docWindow"></div>
+
+
+<script>
+    var model;
+
+    function ChangeDate(elem){
+
+        var field = $("#TermForm #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+        var empId = (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+
+        var datepiker= $("#ServStartDate").data("kendoDatePicker");
+        var termval = $("#TermReason").val();
+        if(empId!=""){
+            $.ajax({
+                url:"/Termination/GetJoined",
+                data:{Id:empId,LeveId:termval},
+                success:function(res){
+                    datepiker.value(new Date(parseInt((res.date).substr(6))));
+                    $("#BonusInMonths").val(res.bouns);
+                    $("#ServYear").val(res.ServYear);
+                    $("#PersonType").kendoDropDownList({
+                        valuePrimitive: true,
+                        dataSource:res.EmpStatus,
+                        dataTextField: "name",
+                        dataValueField: "id",
+                    });
+                },
+                error:function(){}
+            })
+        }else
+            datepiker.value(new Date());
+    }
+    $(function () {
+        var Res =[
+        { id: 1, name: '@MsgUtils.Instance.Trls("Darft")' },
+         { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 3, name: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { id: 4, name: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 6, name: '@MsgUtils.Instance.Trls("Approved")' },
+         { id: 7, name: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { id: 8, name: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }
+        ];
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+
+        ///---#Region Location Form
+
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Employees =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        @*//var TermCause =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TermCause));*@
+        var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employment));
+        var AssignStatus = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignStatus));
+        var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+
+        //Give Id for the form that will Show
+        var formId = "TermForm";
+
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+        //Send the serialized model and props to form.js
+        $.getJSON(url, { objectname: 'TermRequestForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Termination")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Terminations";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1 || (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+            data.reqbtns = ['Send'];
+
+            if(funs && funs.length >0)
+            {
+                if($.inArray('Download',funs) >= 0)
+                    data.reqbtns.push('Download');
+                if($.inArray('Upload',funs) >= 0)
+                    data.reqbtns.push('Upload');
+            }
+            //Append the form to the div
+            $("#TermReqFormDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People" });
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", Res, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "PersonType", PersonType, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "AssignStatus", AssignStatus, model);
+
+
+            $("#" + formId).find('#Submit').val('@MsgUtils.Instance.Trls("Submit")');
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#"+formId).append("<input type='hidden' name='ApprovalStatus' id='ApprovalStatus' value='2'>");
+            if(model.Id==0)
+                $("#" + formId).find('#Documents').remove();
+            if(read != 1 && (model.ApprovalStatus == 1 || model.ApprovalStatus == 3))
+                $("#ServStartDate").data("kendoDatePicker").readonly();
+
+
+            //for emp change (select & autocomplete)
+            if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', ChangeDate);
+            else $("#" + formId).on('change',  "#EmpId", ChangeDate);
+
+            $("#TermReqFormDiv").on("change","#TermReason",null,function(){
+                ChangeDate($("#EmpId"));
+            });
+
+            $('#TermReqFormDiv').on("click","#Submit",null,function (e) {
+                FormJs.saveForm($("#"+formId), $(this),function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                });
+            });
+            $('#TermReqFormDiv').on("click","#saveChanges",null,function (e) {
+                $('#ApprovalStatus').val('1');
+                FormJs.saveForm($("#"+formId), $(this),function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                });
+            });
+
+            $("#docWindow").kendoWindow ({
+                title: "@MsgUtils.Instance.Trls("Termination Window")",
+                //position: {top: "10px", left: "10%"},
+                minWidth: "1000px",
+                width: "80%",
+                height: "80%",
+                actions: ["Minimize", "Maximize", "Close"],
+                visible: false,
+                close: function() {
+                    $("#Documents").fadeIn();
+                    $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                    $("#docWindow").empty();
+                }
+            });
+
+
+            $('#TermReqFormDiv').on("click", "#Documents",null, function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=TermRequestForm&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+        });
+
+
+    });
+</script>
+@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "TermForm" } })

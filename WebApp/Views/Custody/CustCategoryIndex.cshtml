@@ -1,0 +1,78 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+
+}
+<div id="CategoryDiv"></div>
+
+<script>
+    var objectName = "CustodyCategory";
+    var gridname = "'CategoryDiv'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadCustCategory", "Custody")",
+        create: "@Url.Action("CreateCustCategory", "Custody")",
+        update: "@Url.Action("UpdateCustCategory", "Custody")",
+        destroy: "@Url.Action("DeleteCustCategory", "Custody")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "CategoryDiv",
+        columns: [
+                {
+                    field: "Prefix",
+                    editor: function (container, options) {
+                        if (options.model.id > 0) {
+                            $('#CategoryDiv').data("kendoGrid").closeCell();
+
+                        }else {
+                            var input = $('<input name="Prefix" type="text" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                },
+                {
+                    field: "CodeLength",
+                    editor: function (container, options) {
+                        if (options.model.id > 0) {
+                            $('#CategoryDiv').data("kendoGrid").closeCell();
+
+                        } else {
+                            var input = $('<input name="CodeLength" type="number" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                },
+                {                    
+                    field: "Disposal",
+                    template: '<input  type="checkbox" #:Disposal == true ? "checked" : ""# #:Id == 0 ? "" : "disabled"# onchange="Grids.CheckBoxChanged(this,\'Disposal\',' + gridname + ')"/>',
+                    editor: function (container, options) {
+                        if (options.model.id > 0) {
+                            $('#CategoryDiv').data("kendoGrid").closeCell();
+
+                        } else {
+                            var input = $('<input name="Disposal" type="checkbox" ' + (options.model.Disposal ? 'checked' : '') + ' onchange="Grids.CheckBoxChanged(this,\'Disposal\',' + gridname + ')"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }
+        ]
+    });
+   
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "CategoryDiv" }, { "ObjectName", "CustodyCategory" }})
+
+
+
+
+
+
+
+
+
+

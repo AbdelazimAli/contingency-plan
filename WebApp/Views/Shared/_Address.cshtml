@@ -1,0 +1,112 @@
+﻿@model Model.Domain.Address
+@using System.Web.Script.Serialization
+@{
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<style>
+    .onoffswitch {
+    position: relative; width: 90px;
+    -webkit-user-select:none; -moz-user-select:none; -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+    display: none;
+}
+.onoffswitch-label {
+    display: block; overflow: hidden; cursor: pointer;
+    border: 2px solid #999999; border-radius: 0px;
+}
+.onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block; float: left; width: 50%; height: 30px; padding: 0; line-height: 26px;
+    font-size: 14px; color: white; font-family: Trebuchet, Arial, sans-serif; font-weight: bold;
+    box-sizing: border-box;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+.onoffswitch-inner:before {
+    content: "Online";
+    padding-left: 10px;
+    background-color: #2E8DEF; color: #FFFFFF;
+}
+.onoffswitch-inner:after {
+    content: "Offline";
+    padding-right: 10px;
+    background-color: #CCCCCC; color: #333333;
+    text-align: right;
+}
+.onoffswitch-switch {
+    display: block; width: 25px; margin: 0px;
+    background: #000000;
+    position: absolute; top: 0; bottom: 0;
+    right: 65px;
+    transition: all 0.3s ease-in 0s; 
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px; 
+}
+</style>
+
+<div id="AddressDiv"></div>
+
+<script >
+    $.getScript("/Scripts/typeahead.bundle.min.js");
+
+    $(function () {
+        var location = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.location))
+        var LocationList = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LocationList))
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+
+        $(".submit").attr('disabled', false);
+
+        $.getJSON("@Url.Action("ReadFormInfo", "Pages")", { objectname: 'Addresses', version: "@Request.QueryString["Version"]" }, function (data) {
+            var formId = "AddressForm";
+            data.FormAction = "@Url.Action("PostAddress", "Company")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Addresses";
+            data.companyId = "@compantId";
+            data.rtl = @rtl.ToString().ToLower();
+            data.admin = "@admin";
+
+            model.Location = location;
+
+            $("#AddressDiv").Forms(data, model);
+            //Hidden Fields for values of AutoComplete for Model
+            var hiddenFields = "<input type='hidden' name='CountryId' id='myCountry' value='" + (model.CountryId != null ? model.CountryId : "") + "'>";
+            hiddenFields += "<input type='hidden' name='CityId' id='CityId' value='" + (model.CityId != null ? model.CityId : "") + "'>";
+            hiddenFields += "<input type='hidden' name='DistrictId' id='DistrictId' value='" + (model.DistrictId != null ? model.DistrictId : "") + "'>";
+            $("#" + formId + " #Location").parents(".form-group").append(hiddenFields);
+
+            FormJs.fillOptionsDynamic($("#"+ formId), "Location", LocationList, model, {remoteTableName : 'World'});
+            $("#" + formId).find("#Location").typeahead('val', location);
+
+            $("#" + formId).find('#saveAddress').attr("accesskey", "c");
+            $("#" + formId).find('#saveAddress').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#Close').val('@MsgUtils.Instance.Trls("Close")');
+
+            //Override on select function to customize AutoComplete select event
+            $("#" + formId + " #Location").on("typeahead:select",
+                function (e, location) {
+                    $('#myCountry').val(location.country);
+                    $('#CityId').val(location.city);
+                    $('#DistrictId').val(location.dist);
+                });
+        });
+    });
+
+    $('#DetailsPopup').on('shown.bs.modal', function () {
+        $('#Address1').focus();
+    });
+
+</script>
+
+

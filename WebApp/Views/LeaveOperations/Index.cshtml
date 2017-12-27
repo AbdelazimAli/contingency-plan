@@ -1,0 +1,117 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+<br />
+<div id="leaveOperations"></div>
+
+<script>
+    var grid = "'leaveOperations'";
+
+    function Exist(data) {
+        if (data.HasImage)
+            return "url(../SpecialData/Photos/" +@User.Identity.GetDefaultCompany().ToString() +"/" + data.EmpId + ".jpeg?dummy=" + (new Date().getTime()) + ")"
+        else
+            return "url(/SpecialData/Photos/noimage.jpg)"
+    }
+
+    var columns = [
+          {
+              field: "Employee",
+              template: "<div class='k-people-photo' " +
+                              "style='background-image: #:Exist(data)# '></div>" +
+                              "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>"
+          },
+          //leave isStarted ? yellow : green
+          { field: "isStarted", template: "<i class='isStarted ace-icon fa fa-circle stat#:(isStarted ? 12 : 1)#' ></i>", locked: true }
+    ];
+
+    Grids.indexGrid({
+        read: "@Url.Action("ReadLeaveGrid", "LeaveOperations")?MenuId=@Request.QueryString["MenuId"]",
+        objectName: "LeaveOperations",
+        gridName: "leaveOperations",
+        recordName: "Name",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        recordName: "Employee",
+        columns: columns,
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                 '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                 '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        dataBound: function () {
+            var gridName = this.gridName;
+
+            $("#" + gridName).find('table > tbody > tr').each(function (index, item) {
+                var model = $("#" + gridName).getKendoGrid().dataItem(item);
+
+                //------- tool tip -------
+                var started = $(item).find('.isStarted');
+                started.attr("data-toggle", "tooltip");
+                started.attr("data-placement", "bottom");
+                started.attr("title", model.isStarted ? "@MsgUtils.Instance.Trls("Started")" : "@MsgUtils.Instance.Trls("Didnt Start")");
+                started.tooltip();
+
+
+                //------- Edit & Break Btn -------
+                //isBreaked: if break once, prevent any operations
+                var btn = $(item).find('.k-grid-edit');
+                if (model.isBreaked)
+                    btn.remove();
+                else if (model.isStarted) { //break
+                    if (model.ActualNofDays <= 1) btn.remove();
+                    else {
+                        btn.attr("btntype", 3);
+                        btn.prop("innerHTML", "<span class='k-icon fa fa-stop'></span> @MsgUtils.Instance.Trls("break")");
+                    }
+                }
+                else { //edit
+                    if (model.ActualNofDays <= 1) btn.remove();
+                    else {
+                        btn.attr("btntype", 1);
+                        btn.prop("innerHTML", "<span class='k-icon fa fa-calendar'></span> @MsgUtils.Instance.Trls("edit")");
+                    }
+                }
+                btn.attr("modelid", model.Id);
+                btn.click(BtnsClick);
+                $(".k-link").first().text('');
+
+
+                //------- Cancel Btn -------
+                var cancelBtn = $(item).find(".k-grid-cancel");
+                if (model.isStarted || model.isBreaked)
+                    cancelBtn.remove();
+                else {
+                    cancelBtn.prop("innerHTML", "<span class='k-icon k-i-cancel'></span> @MsgUtils.Instance.Trls("cancel leave")");
+                    cancelBtn.attr("btntype", 2);
+                    cancelBtn.attr("modelid", model.Id);
+                    cancelBtn.click(BtnsClick);
+                }
+            });
+        }
+
+    });
+
+    function BtnsClick (e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var btn = $(this).attr("btntype"), modelId = $(this).attr("modelid"),
+            isDisabled = $(this).closest("li").hasClass("disabled");
+
+        if (!isDisabled)
+            $("#renderbody").load("/LeaveOperations/Details?Id=" + modelId + "&Btn=" + btn + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    }
+
+</script>
+

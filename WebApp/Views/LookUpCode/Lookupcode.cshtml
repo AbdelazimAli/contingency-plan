@@ -1,0 +1,59 @@
+﻿    
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "DisplayLookUpCode";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var CodeName = ViewBag.name;
+}
+<br>
+<div id="Codes"></div>
+
+<script>
+    var objectName = "LookUpCode";
+ Grids.batchGrid({
+    read: "@Url.Action("GetLookUpCode", "LookUpCode")",
+    create: "@Url.Action("CreateLookUpCode", "LookUpCode")",
+    update: "@Url.Action("UpdateLookUpCode", "LookUpCode")",
+    destroy: "@Url.Action("DeleteLookUpCode", "LookUpCode")",
+    admin: "@admin",
+    lang: "@User.Identity.GetCulture()",
+     objectName: objectName,
+     tableName: 'Lookupcode',
+    recordName: "Title",
+    gridName: "Codes",
+    detailInit: detailInit
+    });
+    function detailInit(e) {
+        $("<div id='code" + e.data.CodeName + "'/>").appendTo(e.detailCell);
+        var gridname = "'code" + e.data.CodeName + "'";
+       
+        Grids.batchGrid({
+            read: "@Url.Action("GetLookUpCodes", "LookUpCode")?Id=" + e.data.CodeName,
+            create: "@Url.Action("CreateLookUpCodes", "LookUpCode")",
+            update: "@Url.Action("UpdateLookUpCodes", "LookUpCode")",
+            destroy: "@Url.Action("DeleteLookUpCodes", "LookUpCode")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            tableName: "Lookupcode",
+            objectName: "LookupCodes",
+            parentColumnName: "CodeName",
+            parentColumnId: e.data.CodeName,
+            recordName: "Name",
+            gridName: 'code' + e.data.CodeName,
+            columns: (e.data.Protected == true ? [{ field: "Delete", input: "none"}]: undefined),
+            fields: { EndDate: { defaultValue: null }, StartDate: { defaultValue: new Date(2010, 0) }, CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false }, CodeId: { editable: !e.data.Protected }, Name: { editable: !e.data.Protected } },
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="' + ("@(dataLevel < 2 || read == 1)" == "True" || e.data.Protected == true ? "display: none" : "") + '" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            height: 650
+        });
+              
+    }
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Codes" }, { "ObjectName", "LookUpCode" }, { "Functions", ViewBag.Functions } })

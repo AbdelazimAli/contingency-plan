@@ -1,0 +1,100 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Notification
+@model EmailAccountFormViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="emailDiv"></div>
+
+<script>
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var formId = "EmailAccountForm";
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'EmailAccountForm', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveEmailAccount", "Notification")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "EmailAccounts";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                $("#emailDiv").Forms(data, model);
+
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('[name="SendSec"]').append("<button class='btn btn-info AjaxBtn' id='sendEmail'> @MsgUtils.Instance.Trls("SendTestEmail")</button>");
+                $("#" + formId).find('[name="SendSec"]').append("<button class='btn btn-info AjaxBtn' id='testSms'> @MsgUtils.Instance.Trls("SendTestSMS")</button>");
+                $("#" + formId).find('[name="SendSec"]').append("<img id='loading' style='display:none;' alt='Sending Email ...' src='/Content/img/loading-image.gif'/>");
+                $("#sendEmail").on('click',function(e){
+                e.preventDefault();
+                var file = new FormData($('form').get(0));
+                $("#loading").show();
+                    $.ajax({
+                        url:"/Notification/SendTestEmail",
+                        type:'POST',
+                        cache:false,
+                        processData:false,
+                        contentType:false,
+                        data: file,
+                        success: function (data) {
+                            toastr.success("@MsgUtils.Instance.Trls("SuccessSendEmail")");
+                            $("#loading").hide();
+
+                        },
+                        error: function (result) {
+                            toastr.error("@MsgUtils.Instance.Trls("FailSendEmail")");
+                            $("#loading").hide();
+                        }
+
+                    });
+                });
+
+                $("#testSms").on('click',function(e){
+                    $.ajax({
+                        url:"/Notification/SendSMS",
+                        type:'POST',
+                        cache:false,
+                        processData:false,
+                        contentType:false,
+                        success: function (data) {
+
+                        },
+                        error: function (result) {
+
+                        }
+
+                    });
+                });
+                $("#" + formId).on('click','#saveChanges', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+                $("#" + formId).on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+            }
+        });
+    });
+</script>

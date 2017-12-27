@@ -1,0 +1,160 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];   
+}
+
+@*<div class="omegaform @(rtl ? "rtl" : "")">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="row">
+                <div class="left-switch">
+                    <label class="switch">
+                        <input id="switchDesign" type="checkbox" />
+                        <div class="slider round"></div>
+                        <span></span>
+                    </label>
+                    <span id="own" class="badge badge-default" style="margin-top:17px"></span>
+                </div>
+                <div class="right-button">
+                    <a id="AddRecord" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" class="btn btn-warning btn-circle btn-lg"><span class="fa fa-plus"></span></a>
+                </div>
+            </div>
+    </div>
+</div>*@
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "CustodyDiv" }, { "HasDepts", "false" }, { "Functions", function }, { "TableName", "Custody" } })
+
+
+
+<div id="divChange">  <div id="CustodyDiv"></div> </div>
+@{
+    var admin = User.IsInRole("Admin");
+}
+
+<script>
+    var addUrl = "@Url.Action("ConsumeDetails", "Custody")";
+    RequestFilters.ApplayAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadConsumeCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+    $('#filterDiv #addDiv').after('<div class="col-md-3"><div class="switch"><input id="switchDesign" type="checkbox" />' +
+        '<div class="slider round"></div><span></spam></div><span id="own" class="badge badge-default" ></span></div>');
+    $("#own").text("@MsgUtils.Instance.Trls("in Company")");
+    CompanyCustody();
+    function CompanyCustody() {
+        var columns = [{ field: "Status", template: "<div class='sliderProgress'></div>" }, { field: "Name", locked: true }];
+        var grid = "'CustodyDiv'";
+        Grids.indexGrid({
+            read: "@Url.Action("ReadConsumeCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]",
+            edit: "@Url.Action("ConsumeDetails", "Custody")",
+            del: "@Url.Action("DeleteConsumedCustody", "Custody")",
+            objectName: "ConsumeCustody",  // name of the page or table name used to create local db key
+            recordName: "Name", // custom delete message
+            gridName: "CustodyDiv",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: columns,
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            dataBound: function (e) {
+                var name = $("#" + this.gridName);
+                var gridd = name.data("kendoGrid");
+                name.find(".k-grid-Recieve").each(function (e) {
+                    var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                    {
+                        $(this).click(ClickRecieve);
+                        $(this).attr("modelid", model.Id);
+                        $(this).attr("modelStartDate", model.StartDate);
+                        $(this).attr("modelEndDate", model.EndDate);
+                        $(this).attr("modelRestQty", model.RestQty);
+                        $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("Recieve")");
+                    }
+                });
+            }
+        });
+    }
+    function EmployeeCustody() {
+        var columns = [{ field: "Status", template: "<div class='sliderProgress'></div>" }, { field: "Name", locked: true }];
+        var grid = "'CustodyDiv'";
+        Grids.indexGrid({
+            read: "@Url.Action("ReadEmpConsumeCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]",
+            del: "@Url.Action("DeleteEmpConsumedCustody", "Custody")",
+            objectName: "ConsumeEmpCustody",  // name of the page or table name used to create local db key
+            recordName: "Name", // custom delete message
+            gridName: "CustodyDiv",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: columns,
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            dataBound: function (e) {
+                var name = $("#" + this.gridName);
+                var gridd = name.data("kendoGrid");
+                name.find(".k-grid-Delever").each(function (e) {
+                    $(this).hide();
+                });
+                name.find(".k-grid-edit").each(function (e) {
+                    $(this).hide();
+                });
+                name.find(".k-grid-Delete ").each(function (e) {
+                    var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                    {
+
+                        $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("DeleteEmployee")");
+                    }
+                });
+            }
+        });
+    }
+    $("#switchDesign").on("change", function (e) {
+        $("#divChange").empty();
+        $("#divChange").append("<div id='CustodyDiv'></div>");
+        if ($("#switchDesign").is(':checked'))
+        {
+            EmployeeCustody();
+            $("#NicePen").hide();
+            $("#own").text("@MsgUtils.Instance.Trls("With Employee")");
+        }
+        else
+        {
+            CompanyCustody();
+            $("#NicePen").show();
+            $("#own").text("@MsgUtils.Instance.Trls("in Company")");
+
+        }
+    });
+    function ClickRecieve(e) {
+        e.stopPropagation();
+        e.preventDefault();
+        var modelId = $(this).attr("modelid");
+        var modelStartDate = $(this).attr("modelStartDate");
+        var modelEndDate = $(this).attr("modelEndDate");
+        var modelRestQty = $(this).attr("modelRestQty");
+        if (new Date(modelStartDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0)) {
+            toastr.error("@MsgUtils.Instance.Trls("todayLessStart")");
+            return;
+        }
+        if (new Date(modelEndDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0)) {
+            toastr.error("@MsgUtils.Instance.Trls("todaygreaterEnd")");
+            return;
+        }
+        $('#renderbody').load("@Url.Action("RecieveConsumedCustody", "Custody")?Id=" + modelId + "&RestQty=" + modelRestQty + "&MenuId=@Request.QueryString["MenuId"]&Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]");
+    }
+</script>
+
+
+
+
+
+
+
+

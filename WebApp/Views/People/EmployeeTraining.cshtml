@@ -1,0 +1,46 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "DisplayLookUpCode";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var CodeName = ViewBag.name;
+}
+<br>
+<div id="TrainingDiv"></div>
+
+<script>
+    var Person = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
+    var Course = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CourseId));
+    var Status= [{value:1,text:"@MsgUtils.Instance.Trls("Ingoing")"}, {value:2,text:"@MsgUtils.Instance.Trls("Completed")"}, {value:3,text:"@MsgUtils.Instance.Trls("Fail")"}];
+    var Adwarding= [{value:1,text:"@MsgUtils.Instance.Trls("Company")"}, {value:2,text:"@MsgUtils.Instance.Trls("Employee")"}, {value:3,text:"@MsgUtils.Instance.Trls("Other")"}];
+    var objectName = "PeopleTraining";
+    var empId="@TempData["Id"]";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadEmployeeTraining", "People")?Id="+empId,
+        create: "@Url.Action("CreateEmpTraining", "People")",
+        update: "@Url.Action("UpdateEmpTraining", "People")",
+        destroy: "@Url.Action("DeleteEmpTraining", "People")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        tableName: "PeopleTrain",
+        recordName: "Name",
+        gridName: "TrainingDiv",
+        save:function(e){
+            var grid =  $("#TrainingDiv").data("kendoGrid");
+            var row = $("#TrainingDiv [data-uid=" +e.model.uid + "]");
+            var model = grid.dataItem(row);
+            model.set("PersonId",empId);
+        },
+        columns: [{ field: "PersonId", values: Person },{field:"CourseId",values:Course},{field:"Status",values:Status},{field:"Adwarding",values:Adwarding}],
+        select: { "PersonId": Person,"CourseId": Course ,"Status":Status,"Adwarding":Adwarding}
+    });
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "TrainingDiv" }, { "ObjectName", "PeopleTraining" }, { "Functions", ViewBag.Functions } })

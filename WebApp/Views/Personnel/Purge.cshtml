@@ -1,0 +1,279 @@
+﻿
+@{
+    ViewBag.Title = "Burge Data";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Burge</title>
+</head>
+<body>
+    <div id="example">
+        <div class="demo-section k-content">
+            <div id="panelbar"></div>
+        </div>
+
+        <script id="panelbar-template" type="text/kendo-ui-template">
+            #: item.text #
+            # if (!item.items) { #
+            <a class='k-icon k-i-close-outline' href='\#'></a>
+            # } #
+        </script>
+
+        <script>
+            var selectedCompany = $("#Usercompanies option:selected").text() || "Default Company";
+            var del = '@MsgUtils.Instance.Trls("Delete")' +" ";
+            var forAll = '@MsgUtils.Instance.Trls(" for all companies")' + " "; 
+            var dataSource = [{
+                id: 0, text:'@MsgUtils.Instance.Trls("Purge data for")' + " "+ selectedCompany, expanded: true, spriteCssClass: "rootfolder", items: [
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("messages")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 1, text: del +'@MsgUtils.Instance.Trls("Employee Messages")' , table: "MsgEmployees", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 2, text: del + '@MsgUtils.Instance.Trls("messages")', table: "Messages", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Benfits")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 3, text: del + '@MsgUtils.Instance.Trls("Employee Benefits")', table: "EmpBenefits", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 4, text: del + '@MsgUtils.Instance.Trls("Benefit Requests")', table: "BenefitRequests", hasCompany: true, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 5, text: del + '@MsgUtils.Instance.Trls("Benefit Services")'  + forAll, table: "BenefitServs", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 6, text: del + '@MsgUtils.Instance.Trls("Benefits")' , table: "Benefits", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 7, text: del + '@MsgUtils.Instance.Trls("Benefits")' + forAll, table: "Benefits", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Check List and Tasks")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 9, text: del + " " +'@MsgUtils.Instance.Trls("Employee Tasks")', table: "EmpTasks", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 10, text: del + " "+'@MsgUtils.Instance.Trls("Employee CheckLists")' , table: "EmpChkLists", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 11, text: del + " " +'@MsgUtils.Instance.Trls("CheckLists")' , table: "CheckLists", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                           // { id: 12, text: del + "CheckLists" + forAll, table: "CheckLists", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Terminations")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 13, text: del + '@MsgUtils.Instance.Trls("Terminations")', table: "Terminations", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 14, text: del + '@MsgUtils.Instance.Trls("Calulation Period Methods")', table: "TermDurations", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                        ]
+                    },
+                    {
+                        id: 0, text: '@MsgUtils.Instance.Trls("Custodies")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 15, text: del + '@MsgUtils.Instance.Trls("Employees Custodies")', table: "EmpCustodies", hasCompany: false, hasEmployee: true, spriteCssClass: "image" }
+                          //  { id: 16, text: del + "Custodies" + forAll, table: "Custody", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Complains")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 17, text: del + '@MsgUtils.Instance.Trls("Complain Requests")', table: "ComplainRequests", hasCompany: true, hasEmployee: true, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Training")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 18, text: del + '@MsgUtils.Instance.Trls("People Trainings")', table: "PeopleTrain", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 19, text: del + '@MsgUtils.Instance.Trls("People Qualifications")', table: "PeopleQuals", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 20, text: del + '@MsgUtils.Instance.Trls("Training Events")' + forAll, table: "TrainEvents", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 21, text: del + '@MsgUtils.Instance.Trls("Training Paths")', table: "TrainPaths", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 22, text: del + '@MsgUtils.Instance.Trls("Training Paths")' + forAll, table: "TrainPaths", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 23, text: del + '@MsgUtils.Instance.Trls("Training Courses")', table: "TrainCourses", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                           // { id: 24, text: del + "Training Courses" + forAll, table: "TrainCourses", hasCompany: false, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text: '@MsgUtils.Instance.Trls("Disciplines")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 25, text: del +'@MsgUtils.Instance.Trls("Employee Points")' , table: "EmpPoints", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 26, text: del +'@MsgUtils.Instance.Trls("Employee Disciplines")' , table: "EmpDisciplines", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 27, text: del + '@MsgUtils.Instance.Trls("Investigations")', table: "Investigations", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 28, text: del +'@MsgUtils.Instance.Trls("Disciplines List")' , table: "Disciplines", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                           // { id: 29, text: del + "Disciplines List" + forAll, table: "Disciplines", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                          //  { id: 30, text: del + "Disciplines Periods" + forAll, table: "DisplinPeriods", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Leave")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 31, text: del +'@MsgUtils.Instance.Trls("Group Leaves")' , table: "GroupLeaves", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 32, text: del + "Leave Transations", table: "LeaveTrans", hasCompany: false, hasEmployee: false, spriteCssClass: "image" },
+                            //{ id: 33, text: del + "Leave Actions", table: "LeaveActions", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            //{ id: 34, text: del + "Leave Postings", table: "LeavePostings", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            //{ id: 35, text: del + "Leave Requests", table: "LeaveRequests", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 36, text: del +'@MsgUtils.Instance.Trls("Leave Types")' , table: "LeaveTypes", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                           // { id: 37, text: del + "Leave Types" + forAll, table: "LeaveTypes", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text: '@MsgUtils.Instance.Trls("Positions")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 38, text: del + '@MsgUtils.Instance.Trls("Assignments")', table: "Assignments", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 39, text: del +'@MsgUtils.Instance.Trls("Positions")' , table: "Positions", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Work Flow")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 40, text: del + '@MsgUtils.Instance.Trls("Work flow Transactions")', table: "WfTrans", hasCompany: true, hasEmployee: true, spriteCssClass: "image" }
+                         //   { id: 41, text: del + "Work flows" + forAll, table: "RequestWf", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Diagrams")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 42, text: del +'@MsgUtils.Instance.Trls("Diagrams")' , table: "Diagrams", hasCompany: true, hasEmployee: true, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Jobs")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 43, text: del + '@MsgUtils.Instance.Trls("Employements")', table: "Employements", hasCompany: true, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 44, text: del + '@MsgUtils.Instance.Trls("Career Paths")', table: "CareerPaths", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 45, text: del + '@MsgUtils.Instance.Trls("Career Paths")' + forAll, table: "CareerPaths", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 46, text: del + '@MsgUtils.Instance.Trls("Job Classes")', table: "JobClasses", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                         //   { id: 47, text: del + "Job Classes" + forAll, table: "JobClasses", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 48, text: del +'@MsgUtils.Instance.Trls("Company Documents")'  , table: "CompanyDocuments", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 49, text: del + '@MsgUtils.Instance.Trls("Jobs")' , table: "Jobs", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                           // { id: 50, text: del + "Jobs" + forAll, table: "Jobs", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Company Structure")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 52, text: del +'@MsgUtils.Instance.Trls("Department Leave Plans")' , table: "DeptLeavePlans", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 53, text: del + '@MsgUtils.Instance.Trls("Department Budgets")', table: "DeptBudgets", hasCompany: false, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 54, text: del +'@MsgUtils.Instance.Trls("Company Structures")' , table: "CompanyStructures", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Notifications")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 55, text: del +'@MsgUtils.Instance.Trls("Notifications Logs")' , table: "Notifications", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 56, text: del + '@MsgUtils.Instance.Trls("Notification Definations")', table: "NotifyConditions", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Employees")', expanded: false, spriteCssClass: "folder", items: [
+                            { id: 8, text: del +'@MsgUtils.Instance.Trls("Employee Relatives")' , table: "EmpRelatives", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 57, text: del + '@MsgUtils.Instance.Trls("HR Letters Logs")', table: "HRLetterLogs", hasCompany: false, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 58, text: del + '@MsgUtils.Instance.Trls("HR Letters")' + forAll, table: "HRLetters", hasCompany: false, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 43, text: del + '@MsgUtils.Instance.Trls("Employements")', table: "Employements", hasCompany: true, hasEmployee: true, spriteCssClass: "image" },
+                            { id: 38, text: del +'@MsgUtils.Instance.Trls("Assignments")' , table: "Assignments", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 59, text: del + '@MsgUtils.Instance.Trls("People")' + forAll, table: "People", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 60, text: del + '@MsgUtils.Instance.Trls("People Groups")' + forAll, table: "PeopleGroups", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 61, text: del +'@MsgUtils.Instance.Trls("Kafeel")'  + forAll, table: "Kafeel", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 62, text: del + '@MsgUtils.Instance.Trls("Providers")' + forAll, table: "Providers", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 63, text: del + '@MsgUtils.Instance.Trls("Schools")' + forAll, table: "Schools", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Budgets")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 64, text: del +'@MsgUtils.Instance.Trls("Budgets")' , table: "Budgets", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 65, text: del +'@MsgUtils.Instance.Trls("Budget Items")'  + forAll, table: "BudgetItems", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Periods")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 66, text: del +'@MsgUtils.Instance.Trls("Due Periods")' , table: "PeriodNames", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 67, text: del + '@MsgUtils.Instance.Trls("Holidays")', table: "Holidays", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 68, text: del + '@MsgUtils.Instance.Trls("Fiscal Years")' + forAll, table: "FiscalYears", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Adminstratrion")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 69, text: del + '@MsgUtils.Instance.Trls("User Logs")' , table: "UserLogs", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 70, text: del + '@MsgUtils.Instance.Trls("Audit Trails")' , table: "AudiTrails", hasCompany: true, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Roles and Users")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 71, text: del + '@MsgUtils.Instance.Trls("Users Roles")' + forAll, table: "AspNetRoles", hasCompany: false, hasEmployee: false, spriteCssClass: "html" },
+                            { id: 72, text: del + '@MsgUtils.Instance.Trls("Users")' + forAll, table: "AspNetUsers", hasCompany: false, hasEmployee: false, spriteCssClass: "html" }
+                        ]
+                    },
+                    {
+                        id: 0, text:'@MsgUtils.Instance.Trls("Company")' , expanded: false, spriteCssClass: "folder", items: [
+                            { id: 73, text: del + '@MsgUtils.Instance.Trls("Company Locations")', table: "Locations", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 74, text: del + '@MsgUtils.Instance.Trls("Company Branches")', table: "CompanyBranches", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 75, text: del + '@MsgUtils.Instance.Trls("Company Partners")' , table: "CompanyPartners", hasCompany: true, hasEmployee: false, spriteCssClass: "image" },
+                            { id: 76, text: del + '@MsgUtils.Instance.Trls("Company")', table: "Companies", hasCompany: false, hasEmployee: false, spriteCssClass: "image" }
+                        ]
+                    }
+                ]
+            }];
+
+        $("#panelbar").kendoPanelBar({
+            template: kendo.template($("#panelbar-template").html()),
+            select: onSelect,
+           dataSource: dataSource
+        });
+
+        function onSelect(e) {
+            var item = $(e.item),
+            panelElement = item.closest(".k-panelbar"),
+            dataItem = this.options.dataSource,
+            index = item.parentsUntil(panelElement, ".k-item").map(function () {
+                return $(this).index();
+            }).get().reverse();
+
+            index.push(item.index());
+
+            for (var i = -1, len = index.length; ++i < len;) {
+                dataItem = dataItem[index[i]];
+                dataItem = i < len - 1 ? dataItem.items : dataItem;
+            }
+
+            if (dataItem.id > 0) {
+                var tableName = dataItem.text.substr(dataItem.text.indexOf(' '));
+                bootbox.confirm("Are you sure to delete all data in " + tableName,
+                   function (result) {
+                       if (result) {
+                           $.post("@Url.Action("DropTable", "Personnel")", {table: dataItem.table, hasCompany: dataItem.hasCompany, hasEmployee: dataItem.hasEmployee}, function (data) {
+                               if (isNaN(data) === false)
+                                   toastr.success(data + ' record(s) deleted');
+                               else
+                                   toastr.error(data);
+                           });
+                       }
+                   });
+            }
+        }
+
+        </script>
+
+        <style>
+            #panelbar .k-sprite {
+                background-image: url("../content/img/coloricons-sprite.png");
+            }
+
+            span.k-sprite.image{
+                margin-right: 10px !important;
+            }
+
+            span.k-sprite.html{
+                margin-right: 10px !important;
+            }
+
+            span.k-link.k-header {
+                text-align: justify;
+            }
+
+            .k-panel {
+                text-align: justify;
+            }
+
+            .rootfolder {
+                background-position: 0 0;
+            }
+
+            .folder {
+                background-position: 0 -16px;
+            }
+
+            .pdf {
+                background-position: 0 -32px;
+            }
+
+            .html {
+                background-position: 0 -48px;
+            }
+
+            .image {
+                background-position: 0 -64px;
+            }
+            
+        </style>
+    </div>
+</body>
+</html>

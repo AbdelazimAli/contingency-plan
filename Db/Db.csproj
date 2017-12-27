@@ -1,0 +1,1607 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7C617E64-5781-42CB-8E61-FAAC6DF3895E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Db</RootNamespace>
+    <AssemblyName>Db</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EPPlus, Version=4.1.0.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.4.1.0\lib\net40\EPPlus.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Host.SystemWeb, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.Host.SystemWeb.3.1.0\lib\net45\Microsoft.Owin.Host.SystemWeb.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.Infrastructure, Version=1.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Web.Infrastructure.1.0.0.0\lib\net40\Microsoft.Web.Infrastructure.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=10.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.10.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Runtime.Caching" />
+    <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Mvc, Version=5.2.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.Razor.3.2.3\lib\net45\System.Web.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Deployment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Deployment.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web.WebPages.Razor, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Migrations\201612050809354_SetCompyIdToNullInLocation.cs" />
+    <Compile Include="Migrations\201612050809354_SetCompyIdToNullInLocation.designer.cs">
+      <DependentUpon>201612050809354_SetCompyIdToNullInLocation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612050816300_AddLocations.cs" />
+    <Compile Include="Migrations\201612050816300_AddLocations.designer.cs">
+      <DependentUpon>201612050816300_AddLocations.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612060755130_PersonnelAndGetcolumnTitle.cs" />
+    <Compile Include="Migrations\201612060755130_PersonnelAndGetcolumnTitle.designer.cs">
+      <DependentUpon>201612060755130_PersonnelAndGetcolumnTitle.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612061836555_AddCompanyStructure.cs" />
+    <Compile Include="Migrations\201612061836555_AddCompanyStructure.designer.cs">
+      <DependentUpon>201612061836555_AddCompanyStructure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612061921077_AddjobClass.cs" />
+    <Compile Include="Migrations\201612061921077_AddjobClass.designer.cs">
+      <DependentUpon>201612061921077_AddjobClass.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612071228003_AddSystemCode.cs" />
+    <Compile Include="Migrations\201612071228003_AddSystemCode.designer.cs">
+      <DependentUpon>201612071228003_AddSystemCode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612071232089_AlterSystemCode.cs" />
+    <Compile Include="Migrations\201612071232089_AlterSystemCode.designer.cs">
+      <DependentUpon>201612071232089_AlterSystemCode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612071237195_AlterSystemCode2.cs" />
+    <Compile Include="Migrations\201612071237195_AlterSystemCode2.designer.cs">
+      <DependentUpon>201612071237195_AlterSystemCode2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612071724422_RenameMenuOrder.cs" />
+    <Compile Include="Migrations\201612071724422_RenameMenuOrder.designer.cs">
+      <DependentUpon>201612071724422_RenameMenuOrder.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612091938016_AlterJobClassCompanyStr.cs" />
+    <Compile Include="Migrations\201612091938016_AlterJobClassCompanyStr.designer.cs">
+      <DependentUpon>201612091938016_AlterJobClassCompanyStr.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612112126137_ManyTablesCreate.cs" />
+    <Compile Include="Migrations\201612112126137_ManyTablesCreate.designer.cs">
+      <DependentUpon>201612112126137_ManyTablesCreate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612120737579_AddIconToCompanyStructure.cs" />
+    <Compile Include="Migrations\201612120737579_AddIconToCompanyStructure.designer.cs">
+      <DependentUpon>201612120737579_AddIconToCompanyStructure.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612121258265_Job.cs" />
+    <Compile Include="Migrations\201612121258265_Job.designer.cs">
+      <DependentUpon>201612121258265_Job.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612130806177_AlterCareerPath.cs" />
+    <Compile Include="Migrations\201612130806177_AlterCareerPath.designer.cs">
+      <DependentUpon>201612130806177_AlterCareerPath.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612130907512_AddCompanyDocAttr.cs" />
+    <Compile Include="Migrations\201612130907512_AddCompanyDocAttr.designer.cs">
+      <DependentUpon>201612130907512_AddCompanyDocAttr.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612130920264_AlterCompanyDocAttr.cs" />
+    <Compile Include="Migrations\201612130920264_AlterCompanyDocAttr.designer.cs">
+      <DependentUpon>201612130920264_AlterCompanyDocAttr.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612130922593_AlterCompanyDocAttr2.cs" />
+    <Compile Include="Migrations\201612130922593_AlterCompanyDocAttr2.designer.cs">
+      <DependentUpon>201612130922593_AlterCompanyDocAttr2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612130933261_AlterJobs.cs" />
+    <Compile Include="Migrations\201612130933261_AlterJobs.designer.cs">
+      <DependentUpon>201612130933261_AlterJobs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612131057443_AlterCompanyDocAttr3.cs" />
+    <Compile Include="Migrations\201612131057443_AlterCompanyDocAttr3.designer.cs">
+      <DependentUpon>201612131057443_AlterCompanyDocAttr3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612132148512_ManyTablesCreate1.cs" />
+    <Compile Include="Migrations\201612132148512_ManyTablesCreate1.designer.cs">
+      <DependentUpon>201612132148512_ManyTablesCreate1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612180806500_AddQualification.cs" />
+    <Compile Include="Migrations\201612180806500_AddQualification.designer.cs">
+      <DependentUpon>201612180806500_AddQualification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612181409438_AddIdToLookUpCode.cs" />
+    <Compile Include="Migrations\201612181409438_AddIdToLookUpCode.designer.cs">
+      <DependentUpon>201612181409438_AddIdToLookUpCode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612200734374_AddPersonTable.cs" />
+    <Compile Include="Migrations\201612200734374_AddPersonTable.designer.cs">
+      <DependentUpon>201612200734374_AddPersonTable.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612200808346_AddHasCustomColumns.cs" />
+    <Compile Include="Migrations\201612200808346_AddHasCustomColumns.designer.cs">
+      <DependentUpon>201612200808346_AddHasCustomColumns.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612212101598_AddSortIndex.cs" />
+    <Compile Include="Migrations\201612212101598_AddSortIndex.designer.cs">
+      <DependentUpon>201612212101598_AddSortIndex.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612220639542_AddValueId.cs" />
+    <Compile Include="Migrations\201612220639542_AddValueId.designer.cs">
+      <DependentUpon>201612220639542_AddValueId.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612231230497_RenameToNameTbl.cs" />
+    <Compile Include="Migrations\201612231230497_RenameToNameTbl.designer.cs">
+      <DependentUpon>201612231230497_RenameToNameTbl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612231239308_RenameToNamesTbl.cs" />
+    <Compile Include="Migrations\201612231239308_RenameToNamesTbl.designer.cs">
+      <DependentUpon>201612231239308_RenameToNamesTbl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612231549252_AddLeaveType.cs" />
+    <Compile Include="Migrations\201612231549252_AddLeaveType.designer.cs">
+      <DependentUpon>201612231549252_AddLeaveType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612250754378_RestrictPosition.cs" />
+    <Compile Include="Migrations\201612250754378_RestrictPosition.designer.cs">
+      <DependentUpon>201612250754378_RestrictPosition.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612251422313_AddLeaveType1.cs" />
+    <Compile Include="Migrations\201612251422313_AddLeaveType1.designer.cs">
+      <DependentUpon>201612251422313_AddLeaveType1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612251715292_AddHolidays.cs" />
+    <Compile Include="Migrations\201612251715292_AddHolidays.designer.cs">
+      <DependentUpon>201612251715292_AddHolidays.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612261049318_AddHolidays1.cs" />
+    <Compile Include="Migrations\201612261049318_AddHolidays1.designer.cs">
+      <DependentUpon>201612261049318_AddHolidays1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612261232231_AddLeaveRange.cs" />
+    <Compile Include="Migrations\201612261232231_AddLeaveRange.designer.cs">
+      <DependentUpon>201612261232231_AddLeaveRange.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612261421105_AddEmployment.cs" />
+    <Compile Include="Migrations\201612261421105_AddEmployment.designer.cs">
+      <DependentUpon>201612261421105_AddEmployment.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612261425189_AlterPerson.cs" />
+    <Compile Include="Migrations\201612261425189_AlterPerson.designer.cs">
+      <DependentUpon>201612261425189_AlterPerson.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612272010584_AddRoles.cs" />
+    <Compile Include="Migrations\201612272010584_AddRoles.designer.cs">
+      <DependentUpon>201612272010584_AddRoles.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612272125344_AddRequestWf.cs" />
+    <Compile Include="Migrations\201612272125344_AddRequestWf.designer.cs">
+      <DependentUpon>201612272125344_AddRequestWf.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612281502120_AddEmployeeQualification.cs" />
+    <Compile Include="Migrations\201612281502120_AddEmployeeQualification.designer.cs">
+      <DependentUpon>201612281502120_AddEmployeeQualification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612281558256_AlterEmpQual.cs" />
+    <Compile Include="Migrations\201612281558256_AlterEmpQual.designer.cs">
+      <DependentUpon>201612281558256_AlterEmpQual.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612290906045_RemoveRefereces.cs" />
+    <Compile Include="Migrations\201612290906045_RemoveRefereces.designer.cs">
+      <DependentUpon>201612290906045_RemoveRefereces.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612290951298_AlterQualifications.cs" />
+    <Compile Include="Migrations\201612290951298_AlterQualifications.designer.cs">
+      <DependentUpon>201612290951298_AlterQualifications.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612301638525_AuditTrail.cs" />
+    <Compile Include="Migrations\201612301638525_AuditTrail.designer.cs">
+      <DependentUpon>201612301638525_AuditTrail.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201612311748374_AlterAuditTrails.cs" />
+    <Compile Include="Migrations\201612311748374_AlterAuditTrails.designer.cs">
+      <DependentUpon>201612311748374_AlterAuditTrails.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701011555041_AlterEmployment.cs" />
+    <Compile Include="Migrations\201701011555041_AlterEmployment.designer.cs">
+      <DependentUpon>201701011555041_AlterEmployment.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701020752140_AddLeaveActions.cs" />
+    <Compile Include="Migrations\201701020752140_AddLeaveActions.designer.cs">
+      <DependentUpon>201701020752140_AddLeaveActions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701021421087_AddTraining.cs" />
+    <Compile Include="Migrations\201701021421087_AddTraining.designer.cs">
+      <DependentUpon>201701021421087_AddTraining.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701021708474_Covenant.cs" />
+    <Compile Include="Migrations\201701021708474_Covenant.designer.cs">
+      <DependentUpon>201701021708474_Covenant.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701030726035_UpdateSort.cs" />
+    <Compile Include="Migrations\201701030726035_UpdateSort.designer.cs">
+      <DependentUpon>201701030726035_UpdateSort.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701031045578_AlterTraining.cs" />
+    <Compile Include="Migrations\201701031045578_AlterTraining.designer.cs">
+      <DependentUpon>201701031045578_AlterTraining.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701031451240_AssignmentAndBenefits.cs" />
+    <Compile Include="Migrations\201701031451240_AssignmentAndBenefits.designer.cs">
+      <DependentUpon>201701031451240_AssignmentAndBenefits.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701081102351_AlterLeaveRange.cs" />
+    <Compile Include="Migrations\201701081102351_AlterLeaveRange.designer.cs">
+      <DependentUpon>201701081102351_AlterLeaveRange.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701081539082_AddColorName.cs" />
+    <Compile Include="Migrations\201701081539082_AddColorName.designer.cs">
+      <DependentUpon>201701081539082_AddColorName.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701090449596_Disciplines.cs" />
+    <Compile Include="Migrations\201701090449596_Disciplines.designer.cs">
+      <DependentUpon>201701090449596_Disciplines.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701090908300_Disciplines1.cs" />
+    <Compile Include="Migrations\201701090908300_Disciplines1.designer.cs">
+      <DependentUpon>201701090908300_Disciplines1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701100716381_RemoveMenuLevel.cs" />
+    <Compile Include="Migrations\201701100716381_RemoveMenuLevel.designer.cs">
+      <DependentUpon>201701100716381_RemoveMenuLevel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701101011161_RenameMenuTypeToNodeType.cs" />
+    <Compile Include="Migrations\201701101011161_RenameMenuTypeToNodeType.designer.cs">
+      <DependentUpon>201701101011161_RenameMenuTypeToNodeType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701101441383_AlterTermination.cs" />
+    <Compile Include="Migrations\201701101441383_AlterTermination.designer.cs">
+      <DependentUpon>201701101441383_AlterTermination.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701110816298_AdjustLeave.cs" />
+    <Compile Include="Migrations\201701110816298_AdjustLeave.designer.cs">
+      <DependentUpon>201701110816298_AdjustLeave.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701120910336_LeaveManagement.cs" />
+    <Compile Include="Migrations\201701120910336_LeaveManagement.designer.cs">
+      <DependentUpon>201701120910336_LeaveManagement.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701121127326_AlterTermination1.cs" />
+    <Compile Include="Migrations\201701121127326_AlterTermination1.designer.cs">
+      <DependentUpon>201701121127326_AlterTermination1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701150819454_AddCompanyAndBranch.cs" />
+    <Compile Include="Migrations\201701150819454_AddCompanyAndBranch.designer.cs">
+      <DependentUpon>201701150819454_AddCompanyAndBranch.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701160920057_Wftables.cs" />
+    <Compile Include="Migrations\201701160920057_Wftables.designer.cs">
+      <DependentUpon>201701160920057_Wftables.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701171244048_AddDiagram.cs" />
+    <Compile Include="Migrations\201701171244048_AddDiagram.designer.cs">
+      <DependentUpon>201701171244048_AddDiagram.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701181245526_AlterPositionHier.cs" />
+    <Compile Include="Migrations\201701181245526_AlterPositionHier.designer.cs">
+      <DependentUpon>201701181245526_AlterPositionHier.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701181338110_AlterDiagramNode.cs" />
+    <Compile Include="Migrations\201701181338110_AlterDiagramNode.designer.cs">
+      <DependentUpon>201701181338110_AlterDiagramNode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701191104464_AddSSMenu.cs" />
+    <Compile Include="Migrations\201701191104464_AddSSMenu.designer.cs">
+      <DependentUpon>201701191104464_AddSSMenu.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701220754259_Test12.cs" />
+    <Compile Include="Migrations\201701220754259_Test12.designer.cs">
+      <DependentUpon>201701220754259_Test12.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701230819434_AddMenuinPageDiv.cs" />
+    <Compile Include="Migrations\201701230819434_AddMenuinPageDiv.designer.cs">
+      <DependentUpon>201701230819434_AddMenuinPageDiv.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701231252531_AlterFunctions.cs" />
+    <Compile Include="Migrations\201701231252531_AlterFunctions.designer.cs">
+      <DependentUpon>201701231252531_AlterFunctions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201701250836078_ColumnDefaultValues.cs" />
+    <Compile Include="Migrations\201701250836078_ColumnDefaultValues.designer.cs">
+      <DependentUpon>201701250836078_ColumnDefaultValues.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702021240210_AddPostingLeave.cs" />
+    <Compile Include="Migrations\201702021240210_AddPostingLeave.designer.cs">
+      <DependentUpon>201702021240210_AddPostingLeave.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702050713353_AlterSuspeseReason.cs" />
+    <Compile Include="Migrations\201702050713353_AlterSuspeseReason.designer.cs">
+      <DependentUpon>201702050713353_AlterSuspeseReason.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702051134296_LeaveAssignmentStatus.cs" />
+    <Compile Include="Migrations\201702051134296_LeaveAssignmentStatus.designer.cs">
+      <DependentUpon>201702051134296_LeaveAssignmentStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702061526465_AlterLeaveType.cs" />
+    <Compile Include="Migrations\201702061526465_AlterLeaveType.designer.cs">
+      <DependentUpon>201702061526465_AlterLeaveType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702071511395_RemoveActive.cs" />
+    <Compile Include="Migrations\201702071511395_RemoveActive.designer.cs">
+      <DependentUpon>201702071511395_RemoveActive.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702081151592_ModifyDocTypes.cs" />
+    <Compile Include="Migrations\201702081151592_ModifyDocTypes.designer.cs">
+      <DependentUpon>201702081151592_ModifyDocTypes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702120711305_AddCheckList.cs" />
+    <Compile Include="Migrations\201702120711305_AddCheckList.designer.cs">
+      <DependentUpon>201702120711305_AddCheckList.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702120919180_AlterCheckList.cs" />
+    <Compile Include="Migrations\201702120919180_AlterCheckList.designer.cs">
+      <DependentUpon>201702120919180_AlterCheckList.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702121653464_AlterCheckList1.cs" />
+    <Compile Include="Migrations\201702121653464_AlterCheckList1.designer.cs">
+      <DependentUpon>201702121653464_AlterCheckList1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702130711480_AlterCheckList2.cs" />
+    <Compile Include="Migrations\201702130711480_AlterCheckList2.designer.cs">
+      <DependentUpon>201702130711480_AlterCheckList2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702132023553_AddFlexTableName.cs" />
+    <Compile Include="Migrations\201702132023553_AddFlexTableName.designer.cs">
+      <DependentUpon>201702132023553_AddFlexTableName.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702140636236_AddWaringOrErrorMsg.cs" />
+    <Compile Include="Migrations\201702140636236_AddWaringOrErrorMsg.designer.cs">
+      <DependentUpon>201702140636236_AddWaringOrErrorMsg.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702140844098_AlterFlexData1.cs" />
+    <Compile Include="Migrations\201702140844098_AlterFlexData1.designer.cs">
+      <DependentUpon>201702140844098_AlterFlexData1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702141314229_AddComplainRequest.cs" />
+    <Compile Include="Migrations\201702141314229_AddComplainRequest.designer.cs">
+      <DependentUpon>201702141314229_AddComplainRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702161021097_AlterMenuAddTitle.cs" />
+    <Compile Include="Migrations\201702161021097_AlterMenuAddTitle.designer.cs">
+      <DependentUpon>201702161021097_AlterMenuAddTitle.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702191120550_UpdateTermination.cs" />
+    <Compile Include="Migrations\201702191120550_UpdateTermination.designer.cs">
+      <DependentUpon>201702191120550_UpdateTermination.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702201329000_AlterWF_TRANS.cs" />
+    <Compile Include="Migrations\201702201329000_AlterWF_TRANS.designer.cs">
+      <DependentUpon>201702201329000_AlterWF_TRANS.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702201409133_AlterWFlow.cs" />
+    <Compile Include="Migrations\201702201409133_AlterWFlow.designer.cs">
+      <DependentUpon>201702201409133_AlterWFlow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702221542392_GetEmpStatus.cs" />
+    <Compile Include="Migrations\201702221542392_GetEmpStatus.designer.cs">
+      <DependentUpon>201702221542392_GetEmpStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702230810374_AddStartServDate.cs" />
+    <Compile Include="Migrations\201702230810374_AddStartServDate.designer.cs">
+      <DependentUpon>201702230810374_AddStartServDate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702231353029_AddContracts.cs" />
+    <Compile Include="Migrations\201702231353029_AddContracts.designer.cs">
+      <DependentUpon>201702231353029_AddContracts.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702260956365_CustomUpdate.cs" />
+    <Compile Include="Migrations\201702260956365_CustomUpdate.designer.cs">
+      <DependentUpon>201702260956365_CustomUpdate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201702281330293_AddCompanyIdToPosition.cs" />
+    <Compile Include="Migrations\201702281330293_AddCompanyIdToPosition.designer.cs">
+      <DependentUpon>201702281330293_AddCompanyIdToPosition.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703070816509_ChangeByteToShortInCodes.cs" />
+    <Compile Include="Migrations\201703070816509_ChangeByteToShortInCodes.designer.cs">
+      <DependentUpon>201703070816509_ChangeByteToShortInCodes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703071441024_AlterActualNofDays.cs" />
+    <Compile Include="Migrations\201703071441024_AlterActualNofDays.designer.cs">
+      <DependentUpon>201703071441024_AlterActualNofDays.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703081457258_test16.cs" />
+    <Compile Include="Migrations\201703081457258_test16.designer.cs">
+      <DependentUpon>201703081457258_test16.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703090719401_AddCompanyToBudget.cs" />
+    <Compile Include="Migrations\201703090719401_AddCompanyToBudget.designer.cs">
+      <DependentUpon>201703090719401_AddCompanyToBudget.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703090824374_AddCompanyFKtoColumnTitle.cs" />
+    <Compile Include="Migrations\201703090824374_AddCompanyFKtoColumnTitle.designer.cs">
+      <DependentUpon>201703090824374_AddCompanyFKtoColumnTitle.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703091118296_AddHasImageToEmp.cs" />
+    <Compile Include="Migrations\201703091118296_AddHasImageToEmp.designer.cs">
+      <DependentUpon>201703091118296_AddHasImageToEmp.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703121537032_Messages.cs" />
+    <Compile Include="Migrations\201703121537032_Messages.designer.cs">
+      <DependentUpon>201703121537032_Messages.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703140759458_AlterMessage.cs" />
+    <Compile Include="Migrations\201703140759458_AlterMessage.designer.cs">
+      <DependentUpon>201703140759458_AlterMessage.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703151802047_AlterWorkFlow.cs" />
+    <Compile Include="Migrations\201703151802047_AlterWorkFlow.designer.cs">
+      <DependentUpon>201703151802047_AlterWorkFlow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703201309077_AdjustApprovalStatus.cs" />
+    <Compile Include="Migrations\201703201309077_AdjustApprovalStatus.designer.cs">
+      <DependentUpon>201703201309077_AdjustApprovalStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703270805022_AddCalendar.cs" />
+    <Compile Include="Migrations\201703270805022_AddCalendar.designer.cs">
+      <DependentUpon>201703270805022_AddCalendar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703280724143_MedicalRequest.cs" />
+    <Compile Include="Migrations\201703280724143_MedicalRequest.designer.cs">
+      <DependentUpon>201703280724143_MedicalRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703280841131_BenefitServ.cs" />
+    <Compile Include="Migrations\201703280841131_BenefitServ.designer.cs">
+      <DependentUpon>201703280841131_BenefitServ.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703281603387_AlterLeaveType1.cs" />
+    <Compile Include="Migrations\201703281603387_AlterLeaveType1.designer.cs">
+      <DependentUpon>201703281603387_AlterLeaveType1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703290621066_AlterEmployment1.cs" />
+    <Compile Include="Migrations\201703290621066_AlterEmployment1.designer.cs">
+      <DependentUpon>201703290621066_AlterEmployment1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703290716349_RemoveLeavePeriod.cs" />
+    <Compile Include="Migrations\201703290716349_RemoveLeavePeriod.designer.cs">
+      <DependentUpon>201703290716349_RemoveLeavePeriod.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703291205483_AlterCalendar.cs" />
+    <Compile Include="Migrations\201703291205483_AlterCalendar.designer.cs">
+      <DependentUpon>201703291205483_AlterCalendar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703291312532_AddTemplate.cs" />
+    <Compile Include="Migrations\201703291312532_AddTemplate.designer.cs">
+      <DependentUpon>201703291312532_AddTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703300835039_AlterMedicalRequest.cs" />
+    <Compile Include="Migrations\201703300835039_AlterMedicalRequest.designer.cs">
+      <DependentUpon>201703300835039_AlterMedicalRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703301030487_AddNewColToPeople.cs" />
+    <Compile Include="Migrations\201703301030487_AddNewColToPeople.designer.cs">
+      <DependentUpon>201703301030487_AddNewColToPeople.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201703301127024_ChangeDateTimeToDate.cs" />
+    <Compile Include="Migrations\201703301127024_ChangeDateTimeToDate.designer.cs">
+      <DependentUpon>201703301127024_ChangeDateTimeToDate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704030911138_AlterBenefits.cs" />
+    <Compile Include="Migrations\201704030911138_AlterBenefits.designer.cs">
+      <DependentUpon>201704030911138_AlterBenefits.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704030945593_AlterBenefits2.cs" />
+    <Compile Include="Migrations\201704030945593_AlterBenefits2.designer.cs">
+      <DependentUpon>201704030945593_AlterBenefits2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704031552079_AlterBenefits3.cs" />
+    <Compile Include="Migrations\201704031552079_AlterBenefits3.designer.cs">
+      <DependentUpon>201704031552079_AlterBenefits3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704051247387_AddInvestigations.cs" />
+    <Compile Include="Migrations\201704051247387_AddInvestigations.designer.cs">
+      <DependentUpon>201704051247387_AddInvestigations.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704091357075_AlterEmpTask.cs" />
+    <Compile Include="Migrations\201704091357075_AlterEmpTask.designer.cs">
+      <DependentUpon>201704091357075_AlterEmpTask.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704091408498_AlterInvestigation.cs" />
+    <Compile Include="Migrations\201704091408498_AlterInvestigation.designer.cs">
+      <DependentUpon>201704091408498_AlterInvestigation.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704120839354_ManyChanges.cs" />
+    <Compile Include="Migrations\201704120839354_ManyChanges.designer.cs">
+      <DependentUpon>201704120839354_ManyChanges.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704121558355_AddStars.cs" />
+    <Compile Include="Migrations\201704121558355_AddStars.designer.cs">
+      <DependentUpon>201704121558355_AddStars.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704130649559_AddDeptJobLvPlan.cs" />
+    <Compile Include="Migrations\201704130649559_AddDeptJobLvPlan.designer.cs">
+      <DependentUpon>201704130649559_AddDeptJobLvPlan.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704130906458_RenameBenefServ.cs" />
+    <Compile Include="Migrations\201704130906458_RenameBenefServ.designer.cs">
+      <DependentUpon>201704130906458_RenameBenefServ.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704131217234_RenameHRCalendar.cs" />
+    <Compile Include="Migrations\201704131217234_RenameHRCalendar.designer.cs">
+      <DependentUpon>201704131217234_RenameHRCalendar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704161255504_AddPayRequest.cs" />
+    <Compile Include="Migrations\201704161255504_AddPayRequest.designer.cs">
+      <DependentUpon>201704161255504_AddPayRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704172133101_RenamePersonnel.cs" />
+    <Compile Include="Migrations\201704172133101_RenamePersonnel.designer.cs">
+      <DependentUpon>201704172133101_RenamePersonnel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704230755215_SomeAlters.cs" />
+    <Compile Include="Migrations\201704230755215_SomeAlters.designer.cs">
+      <DependentUpon>201704230755215_SomeAlters.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704250855480_PayrollTables.cs" />
+    <Compile Include="Migrations\201704250855480_PayrollTables.designer.cs">
+      <DependentUpon>201704250855480_PayrollTables.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704261111069_AlterPayroll.cs" />
+    <Compile Include="Migrations\201704261111069_AlterPayroll.designer.cs">
+      <DependentUpon>201704261111069_AlterPayroll.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704261554086_AlterInfoTable.cs" />
+    <Compile Include="Migrations\201704261554086_AlterInfoTable.designer.cs">
+      <DependentUpon>201704261554086_AlterInfoTable.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201704271150157_AddGroupLeave.cs" />
+    <Compile Include="Migrations\201704271150157_AddGroupLeave.designer.cs">
+      <DependentUpon>201704271150157_AddGroupLeave.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705011523587_AlterDatabase.cs" />
+    <Compile Include="Migrations\201705011523587_AlterDatabase.designer.cs">
+      <DependentUpon>201705011523587_AlterDatabase.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705021315533_AlterSalaryItem.cs" />
+    <Compile Include="Migrations\201705021315533_AlterSalaryItem.designer.cs">
+      <DependentUpon>201705021315533_AlterSalaryItem.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705030735465_AlterPayRequest.cs" />
+    <Compile Include="Migrations\201705030735465_AlterPayRequest.designer.cs">
+      <DependentUpon>201705030735465_AlterPayRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705101018500_AddSalVar.cs" />
+    <Compile Include="Migrations\201705101018500_AddSalVar.designer.cs">
+      <DependentUpon>201705101018500_AddSalVar.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705180749366_Notification.cs" />
+    <Compile Include="Migrations\201705180749366_Notification.designer.cs">
+      <DependentUpon>201705180749366_Notification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705180817512_Notification1.cs" />
+    <Compile Include="Migrations\201705180817512_Notification1.designer.cs">
+      <DependentUpon>201705180817512_Notification1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705241041241_AddMsgTemplate.cs" />
+    <Compile Include="Migrations\201705241041241_AddMsgTemplate.designer.cs">
+      <DependentUpon>201705241041241_AddMsgTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705290755559_AddEmailAccount.cs" />
+    <Compile Include="Migrations\201705290755559_AddEmailAccount.designer.cs">
+      <DependentUpon>201705290755559_AddEmailAccount.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705301000373_UpdateNotification.cs" />
+    <Compile Include="Migrations\201705301000373_UpdateNotification.designer.cs">
+      <DependentUpon>201705301000373_UpdateNotification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705301102378_AlterNotification.cs" />
+    <Compile Include="Migrations\201705301102378_AlterNotification.designer.cs">
+      <DependentUpon>201705301102378_AlterNotification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705301105425_AlterNotification2.cs" />
+    <Compile Include="Migrations\201705301105425_AlterNotification2.designer.cs">
+      <DependentUpon>201705301105425_AlterNotification2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705310808138_AlterNotificationCondition.cs" />
+    <Compile Include="Migrations\201705310808138_AlterNotificationCondition.designer.cs">
+      <DependentUpon>201705310808138_AlterNotificationCondition.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201705311218565_AddSchedualTasks.cs" />
+    <Compile Include="Migrations\201705311218565_AddSchedualTasks.designer.cs">
+      <DependentUpon>201705311218565_AddSchedualTasks.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706010952291_AddNotificationLogs.cs" />
+    <Compile Include="Migrations\201706010952291_AddNotificationLogs.designer.cs">
+      <DependentUpon>201706010952291_AddNotificationLogs.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706041408031_AlterNotifyCondition.cs" />
+    <Compile Include="Migrations\201706041408031_AlterNotifyCondition.designer.cs">
+      <DependentUpon>201706041408031_AlterNotifyCondition.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706041432591_AlterNotifyCondition1.cs" />
+    <Compile Include="Migrations\201706041432591_AlterNotifyCondition1.designer.cs">
+      <DependentUpon>201706041432591_AlterNotifyCondition1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706041435465_AlterNotifyCondition2.cs" />
+    <Compile Include="Migrations\201706041435465_AlterNotifyCondition2.designer.cs">
+      <DependentUpon>201706041435465_AlterNotifyCondition2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706080929578_AlterNotifications.cs" />
+    <Compile Include="Migrations\201706080929578_AlterNotifications.designer.cs">
+      <DependentUpon>201706080929578_AlterNotifications.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706081001192_AlterNotifications2.cs" />
+    <Compile Include="Migrations\201706081001192_AlterNotifications2.designer.cs">
+      <DependentUpon>201706081001192_AlterNotifications2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706141622354_AddEmpIdToNotification.cs" />
+    <Compile Include="Migrations\201706141622354_AddEmpIdToNotification.designer.cs">
+      <DependentUpon>201706141622354_AddEmpIdToNotification.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706151047029_AlterEmailAccount.cs" />
+    <Compile Include="Migrations\201706151047029_AlterEmailAccount.designer.cs">
+      <DependentUpon>201706151047029_AlterEmailAccount.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706151432542_AddOrderToEmailAccount.cs" />
+    <Compile Include="Migrations\201706151432542_AddOrderToEmailAccount.designer.cs">
+      <DependentUpon>201706151432542_AddOrderToEmailAccount.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706151435115_AddOrderToEmailAccount1.cs" />
+    <Compile Include="Migrations\201706151435115_AddOrderToEmailAccount1.designer.cs">
+      <DependentUpon>201706151435115_AddOrderToEmailAccount1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706201230297_AlterNotificationDb.cs" />
+    <Compile Include="Migrations\201706201230297_AlterNotificationDb.designer.cs">
+      <DependentUpon>201706201230297_AlterNotificationDb.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201706221507477_FinalAlterNotificationDb.cs" />
+    <Compile Include="Migrations\201706221507477_FinalAlterNotificationDb.designer.cs">
+      <DependentUpon>201706221507477_FinalAlterNotificationDb.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707031614027_FirstIteration.cs" />
+    <Compile Include="Migrations\201707031614027_FirstIteration.designer.cs">
+      <DependentUpon>201707031614027_FirstIteration.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707041219090_FirstIteraion2.cs" />
+    <Compile Include="Migrations\201707041219090_FirstIteraion2.designer.cs">
+      <DependentUpon>201707041219090_FirstIteraion2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707051237327_AddPaidBy.cs" />
+    <Compile Include="Migrations\201707051237327_AddPaidBy.designer.cs">
+      <DependentUpon>201707051237327_AddPaidBy.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707081410473_AlterUniqueIndex.cs" />
+    <Compile Include="Migrations\201707081410473_AlterUniqueIndex.designer.cs">
+      <DependentUpon>201707081410473_AlterUniqueIndex.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707161020342_Iteration1_1.cs" />
+    <Compile Include="Migrations\201707161020342_Iteration1_1.designer.cs">
+      <DependentUpon>201707161020342_Iteration1_1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707191146040_AlterSourceId.cs" />
+    <Compile Include="Migrations\201707191146040_AlterSourceId.designer.cs">
+      <DependentUpon>201707191146040_AlterSourceId.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707250937498_AlterDocTypes.cs" />
+    <Compile Include="Migrations\201707250937498_AlterDocTypes.designer.cs">
+      <DependentUpon>201707250937498_AlterDocTypes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707261313543_AlterJob.cs" />
+    <Compile Include="Migrations\201707261313543_AlterJob.designer.cs">
+      <DependentUpon>201707261313543_AlterJob.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201707270957342_AlterPersonInsurance.cs" />
+    <Compile Include="Migrations\201707270957342_AlterPersonInsurance.designer.cs">
+      <DependentUpon>201707270957342_AlterPersonInsurance.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201708021142183_AddFormulaToFormColumn.cs" />
+    <Compile Include="Migrations\201708021142183_AddFormulaToFormColumn.designer.cs">
+      <DependentUpon>201708021142183_AddFormulaToFormColumn.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201708231149135_TrainEventQualCustody.cs" />
+    <Compile Include="Migrations\201708231149135_TrainEventQualCustody.designer.cs">
+      <DependentUpon>201708231149135_TrainEventQualCustody.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201709191251069_custodyDicipline.cs" />
+    <Compile Include="Migrations\201709191251069_custodyDicipline.designer.cs">
+      <DependentUpon>201709191251069_custodyDicipline.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710060601295_NewUtilForScripts.cs" />
+    <Compile Include="Migrations\201710060601295_NewUtilForScripts.designer.cs">
+      <DependentUpon>201710060601295_NewUtilForScripts.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710060739204_NewUtilForScripts1.cs" />
+    <Compile Include="Migrations\201710060739204_NewUtilForScripts1.designer.cs">
+      <DependentUpon>201710060739204_NewUtilForScripts1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710082112114_RemoveMenuFromFunctions.cs" />
+    <Compile Include="Migrations\201710082112114_RemoveMenuFromFunctions.designer.cs">
+      <DependentUpon>201710082112114_RemoveMenuFromFunctions.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710111140306_AlterAddress.cs" />
+    <Compile Include="Migrations\201710111140306_AlterAddress.designer.cs">
+      <DependentUpon>201710111140306_AlterAddress.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710201431283_AlterLeaveRange1.cs" />
+    <Compile Include="Migrations\201710201431283_AlterLeaveRange1.designer.cs">
+      <DependentUpon>201710201431283_AlterLeaveRange1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710221502238_AddNewTables.cs" />
+    <Compile Include="Migrations\201710221502238_AddNewTables.designer.cs">
+      <DependentUpon>201710221502238_AddNewTables.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710231215160_test122.cs" />
+    <Compile Include="Migrations\201710231215160_test122.designer.cs">
+      <DependentUpon>201710231215160_test122.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710250748449_RemoveTimeFraction.cs" />
+    <Compile Include="Migrations\201710250748449_RemoveTimeFraction.designer.cs">
+      <DependentUpon>201710250748449_RemoveTimeFraction.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710251231450_RemoveDeptPlan.cs" />
+    <Compile Include="Migrations\201710251231450_RemoveDeptPlan.designer.cs">
+      <DependentUpon>201710251231450_RemoveDeptPlan.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710290929339_AlterCustoies.cs" />
+    <Compile Include="Migrations\201710290929339_AlterCustoies.designer.cs">
+      <DependentUpon>201710290929339_AlterCustoies.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201710300822303_AlterEmpCustody.cs" />
+    <Compile Include="Migrations\201710300822303_AlterEmpCustody.designer.cs">
+      <DependentUpon>201710300822303_AlterEmpCustody.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711010738361_AlterRenewOrder.cs" />
+    <Compile Include="Migrations\201711010738361_AlterRenewOrder.designer.cs">
+      <DependentUpon>201711010738361_AlterRenewOrder.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711041356222_AddPagePrint.cs" />
+    <Compile Include="Migrations\201711041356222_AddPagePrint.designer.cs">
+      <DependentUpon>201711041356222_AddPagePrint.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711061201558_AlterPagePrint.cs" />
+    <Compile Include="Migrations\201711061201558_AlterPagePrint.designer.cs">
+      <DependentUpon>201711061201558_AlterPagePrint.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711070813456_AlterCustodies.cs" />
+    <Compile Include="Migrations\201711070813456_AlterCustodies.designer.cs">
+      <DependentUpon>201711070813456_AlterCustodies.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711080703089_AddMailToken.cs" />
+    <Compile Include="Migrations\201711080703089_AddMailToken.designer.cs">
+      <DependentUpon>201711080703089_AddMailToken.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711080852033_AlterMailToken.cs" />
+    <Compile Include="Migrations\201711080852033_AlterMailToken.designer.cs">
+      <DependentUpon>201711080852033_AlterMailToken.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711121352108_AlterCodes.cs" />
+    <Compile Include="Migrations\201711121352108_AlterCodes.Designer.cs">
+      <DependentUpon>201711121352108_AlterCodes.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711130649381_AlterMailToken1.cs" />
+    <Compile Include="Migrations\201711130649381_AlterMailToken1.Designer.cs">
+      <DependentUpon>201711130649381_AlterMailToken1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711130923528_AlterLeaveType2.cs" />
+    <Compile Include="Migrations\201711130923528_AlterLeaveType2.Designer.cs">
+      <DependentUpon>201711130923528_AlterLeaveType2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711151354526_AlterCustody.cs" />
+    <Compile Include="Migrations\201711151354526_AlterCustody.Designer.cs">
+      <DependentUpon>201711151354526_AlterCustody.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711200758038_AddFreezedCustody.cs" />
+    <Compile Include="Migrations\201711200758038_AddFreezedCustody.Designer.cs">
+      <DependentUpon>201711200758038_AddFreezedCustody.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711210706013_AddEmpDocBorrow.cs" />
+    <Compile Include="Migrations\201711210706013_AddEmpDocBorrow.Designer.cs">
+      <DependentUpon>201711210706013_AddEmpDocBorrow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711210712016_AlterEmpDocBorrow.cs" />
+    <Compile Include="Migrations\201711210712016_AlterEmpDocBorrow.Designer.cs">
+      <DependentUpon>201711210712016_AlterEmpDocBorrow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711210954417_AlterEmpDocBorrow1.cs" />
+    <Compile Include="Migrations\201711210954417_AlterEmpDocBorrow1.Designer.cs">
+      <DependentUpon>201711210954417_AlterEmpDocBorrow1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711211255270_AlterEmployment2.cs" />
+    <Compile Include="Migrations\201711211255270_AlterEmployment2.Designer.cs">
+      <DependentUpon>201711211255270_AlterEmployment2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711221011023_AlterCompany.cs" />
+    <Compile Include="Migrations\201711221011023_AlterCompany.Designer.cs">
+      <DependentUpon>201711221011023_AlterCompany.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711251456098_AddNotifyLetter.cs" />
+    <Compile Include="Migrations\201711251456098_AddNotifyLetter.Designer.cs">
+      <DependentUpon>201711251456098_AddNotifyLetter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711261216214_AddFlexForm.cs" />
+    <Compile Include="Migrations\201711261216214_AddFlexForm.Designer.cs">
+      <DependentUpon>201711261216214_AddFlexForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711270912235_AlterNotifyLetter.cs" />
+    <Compile Include="Migrations\201711270912235_AlterNotifyLetter.Designer.cs">
+      <DependentUpon>201711270912235_AlterNotifyLetter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201711271456365_AddWorkflow.cs" />
+    <Compile Include="Migrations\201711271456365_AddWorkflow.Designer.cs">
+      <DependentUpon>201711271456365_AddWorkflow.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712020746220_AlterWorkFlow1.cs" />
+    <Compile Include="Migrations\201712020746220_AlterWorkFlow1.Designer.cs">
+      <DependentUpon>201712020746220_AlterWorkFlow1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712040857275_AddMeeting.cs" />
+    <Compile Include="Migrations\201712040857275_AddMeeting.Designer.cs">
+      <DependentUpon>201712040857275_AddMeeting.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712110610547_AlterMeeting2.cs" />
+    <Compile Include="Migrations\201712110610547_AlterMeeting2.Designer.cs">
+      <DependentUpon>201712110610547_AlterMeeting2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712111241401_AlterMeeting3.cs" />
+    <Compile Include="Migrations\201712111241401_AlterMeeting3.Designer.cs">
+      <DependentUpon>201712111241401_AlterMeeting3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712251422276_RemoveCompanyCode.cs" />
+    <Compile Include="Migrations\201712251422276_RemoveCompanyCode.Designer.cs">
+      <DependentUpon>201712251422276_RemoveCompanyCode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="Persistence\HrContext.cs" />
+    <Compile Include="Persistence\HrContextFactory.cs" />
+    <Compile Include="Persistence\HrUnitOfWork.cs" />
+    <Compile Include="Persistence\MsgUtils.cs" />
+    <Compile Include="Persistence\Repositories\CheckListRepository.cs" />
+    <Compile Include="Persistence\Repositories\ComplaintRepository.cs" />
+    <Compile Include="Persistence\Repositories\EmployeeRepository.cs" />
+    <Compile Include="Persistence\Repositories\AudiTrialRepository.cs" />
+    <Compile Include="Persistence\Repositories\BenefitsRepository.cs" />
+    <Compile Include="Persistence\Repositories\BudgetRepository.cs" />
+    <Compile Include="Persistence\Repositories\CompanyRepository.cs" />
+    <Compile Include="Persistence\Repositories\CompanyStructureRepository.cs" />
+    <Compile Include="Persistence\Repositories\CustodyRepository.cs" />
+    <Compile Include="Persistence\Repositories\DisciplineRepository.cs" />
+    <Compile Include="Persistence\Repositories\HRLettersRepository.cs" />
+    <Compile Include="Persistence\Repositories\JobRepository.cs" />
+    <Compile Include="Persistence\Repositories\LeaveRepository.cs" />
+    <Compile Include="Persistence\Repositories\LocationRepository.cs" />
+    <Compile Include="Persistence\Repositories\LookUpRepository.cs" />
+    <Compile Include="Persistence\Repositories\MedicalRepository.cs" />
+    <Compile Include="Persistence\Repositories\MessageRepository.cs" />
+    <Compile Include="Persistence\Repositories\NotificationRepository.cs" />
+    <Compile Include="Persistence\Repositories\PageEditorRepository.cs" />
+    <Compile Include="Persistence\Repositories\PagesRepository.cs" />
+    <Compile Include="Persistence\Repositories\MenuRepository.cs" />
+    <Compile Include="Persistence\Repositories\PeopleRepository.cs" />
+    <Compile Include="Persistence\Repositories\PositionRepository.cs" />
+    <Compile Include="Persistence\Repositories\PayrollRepository.cs" />
+    <Compile Include="Persistence\Repositories\QualificationRepository.cs" />
+    <Compile Include="Persistence\Repositories\Repository.cs" />
+    <Compile Include="Persistence\Repositories\SalaryDesignRepository.cs" />
+    <Compile Include="Persistence\Repositories\TerminationRepository.cs" />
+    <Compile Include="Persistence\Repositories\TrainingRepository.cs" />
+    <Compile Include="Persistence\Services\CacheManager.cs" />
+    <Compile Include="Persistence\Services\EmailService.cs" />
+    <Compile Include="Persistence\UnitOfWork.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Interface\Interface.csproj">
+      <Project>{d6d87e0f-be32-445c-9874-05e87269ccb1}</Project>
+      <Name>Interface</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Model\Model.csproj">
+      <Project>{b85e0e6b-9aab-475b-9d0a-99503cc0fcda}</Project>
+      <Name>Model</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Migrations\201612050809354_SetCompyIdToNullInLocation.resx">
+      <DependentUpon>201612050809354_SetCompyIdToNullInLocation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612050816300_AddLocations.resx">
+      <DependentUpon>201612050816300_AddLocations.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612060755130_PersonnelAndGetcolumnTitle.resx">
+      <DependentUpon>201612060755130_PersonnelAndGetcolumnTitle.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612061836555_AddCompanyStructure.resx">
+      <DependentUpon>201612061836555_AddCompanyStructure.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612061921077_AddjobClass.resx">
+      <DependentUpon>201612061921077_AddjobClass.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612071228003_AddSystemCode.resx">
+      <DependentUpon>201612071228003_AddSystemCode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612071232089_AlterSystemCode.resx">
+      <DependentUpon>201612071232089_AlterSystemCode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612071237195_AlterSystemCode2.resx">
+      <DependentUpon>201612071237195_AlterSystemCode2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612071724422_RenameMenuOrder.resx">
+      <DependentUpon>201612071724422_RenameMenuOrder.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612091938016_AlterJobClassCompanyStr.resx">
+      <DependentUpon>201612091938016_AlterJobClassCompanyStr.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612112126137_ManyTablesCreate.resx">
+      <DependentUpon>201612112126137_ManyTablesCreate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612120737579_AddIconToCompanyStructure.resx">
+      <DependentUpon>201612120737579_AddIconToCompanyStructure.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612121258265_Job.resx">
+      <DependentUpon>201612121258265_Job.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612130806177_AlterCareerPath.resx">
+      <DependentUpon>201612130806177_AlterCareerPath.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612130907512_AddCompanyDocAttr.resx">
+      <DependentUpon>201612130907512_AddCompanyDocAttr.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612130920264_AlterCompanyDocAttr.resx">
+      <DependentUpon>201612130920264_AlterCompanyDocAttr.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612130922593_AlterCompanyDocAttr2.resx">
+      <DependentUpon>201612130922593_AlterCompanyDocAttr2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612130933261_AlterJobs.resx">
+      <DependentUpon>201612130933261_AlterJobs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612131057443_AlterCompanyDocAttr3.resx">
+      <DependentUpon>201612131057443_AlterCompanyDocAttr3.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612132148512_ManyTablesCreate1.resx">
+      <DependentUpon>201612132148512_ManyTablesCreate1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612180806500_AddQualification.resx">
+      <DependentUpon>201612180806500_AddQualification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612181409438_AddIdToLookUpCode.resx">
+      <DependentUpon>201612181409438_AddIdToLookUpCode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612200734374_AddPersonTable.resx">
+      <DependentUpon>201612200734374_AddPersonTable.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612200808346_AddHasCustomColumns.resx">
+      <DependentUpon>201612200808346_AddHasCustomColumns.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612212101598_AddSortIndex.resx">
+      <DependentUpon>201612212101598_AddSortIndex.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612220639542_AddValueId.resx">
+      <DependentUpon>201612220639542_AddValueId.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612231230497_RenameToNameTbl.resx">
+      <DependentUpon>201612231230497_RenameToNameTbl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612231239308_RenameToNamesTbl.resx">
+      <DependentUpon>201612231239308_RenameToNamesTbl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612231549252_AddLeaveType.resx">
+      <DependentUpon>201612231549252_AddLeaveType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612250754378_RestrictPosition.resx">
+      <DependentUpon>201612250754378_RestrictPosition.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612251422313_AddLeaveType1.resx">
+      <DependentUpon>201612251422313_AddLeaveType1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612251715292_AddHolidays.resx">
+      <DependentUpon>201612251715292_AddHolidays.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612261049318_AddHolidays1.resx">
+      <DependentUpon>201612261049318_AddHolidays1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612261232231_AddLeaveRange.resx">
+      <DependentUpon>201612261232231_AddLeaveRange.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612261421105_AddEmployment.resx">
+      <DependentUpon>201612261421105_AddEmployment.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612261425189_AlterPerson.resx">
+      <DependentUpon>201612261425189_AlterPerson.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612272010584_AddRoles.resx">
+      <DependentUpon>201612272010584_AddRoles.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612272125344_AddRequestWf.resx">
+      <DependentUpon>201612272125344_AddRequestWf.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612281502120_AddEmployeeQualification.resx">
+      <DependentUpon>201612281502120_AddEmployeeQualification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612281558256_AlterEmpQual.resx">
+      <DependentUpon>201612281558256_AlterEmpQual.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612290906045_RemoveRefereces.resx">
+      <DependentUpon>201612290906045_RemoveRefereces.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612290951298_AlterQualifications.resx">
+      <DependentUpon>201612290951298_AlterQualifications.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612301638525_AuditTrail.resx">
+      <DependentUpon>201612301638525_AuditTrail.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201612311748374_AlterAuditTrails.resx">
+      <DependentUpon>201612311748374_AlterAuditTrails.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701011555041_AlterEmployment.resx">
+      <DependentUpon>201701011555041_AlterEmployment.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701020752140_AddLeaveActions.resx">
+      <DependentUpon>201701020752140_AddLeaveActions.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701021421087_AddTraining.resx">
+      <DependentUpon>201701021421087_AddTraining.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701021708474_Covenant.resx">
+      <DependentUpon>201701021708474_Covenant.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701030726035_UpdateSort.resx">
+      <DependentUpon>201701030726035_UpdateSort.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701031045578_AlterTraining.resx">
+      <DependentUpon>201701031045578_AlterTraining.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701031451240_AssignmentAndBenefits.resx">
+      <DependentUpon>201701031451240_AssignmentAndBenefits.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701081102351_AlterLeaveRange.resx">
+      <DependentUpon>201701081102351_AlterLeaveRange.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701081539082_AddColorName.resx">
+      <DependentUpon>201701081539082_AddColorName.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701090449596_Disciplines.resx">
+      <DependentUpon>201701090449596_Disciplines.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701090908300_Disciplines1.resx">
+      <DependentUpon>201701090908300_Disciplines1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701100716381_RemoveMenuLevel.resx">
+      <DependentUpon>201701100716381_RemoveMenuLevel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701101011161_RenameMenuTypeToNodeType.resx">
+      <DependentUpon>201701101011161_RenameMenuTypeToNodeType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701101441383_AlterTermination.resx">
+      <DependentUpon>201701101441383_AlterTermination.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701110816298_AdjustLeave.resx">
+      <DependentUpon>201701110816298_AdjustLeave.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701120910336_LeaveManagement.resx">
+      <DependentUpon>201701120910336_LeaveManagement.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701121127326_AlterTermination1.resx">
+      <DependentUpon>201701121127326_AlterTermination1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701150819454_AddCompanyAndBranch.resx">
+      <DependentUpon>201701150819454_AddCompanyAndBranch.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701160920057_Wftables.resx">
+      <DependentUpon>201701160920057_Wftables.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701171244048_AddDiagram.resx">
+      <DependentUpon>201701171244048_AddDiagram.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701181245526_AlterPositionHier.resx">
+      <DependentUpon>201701181245526_AlterPositionHier.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701181338110_AlterDiagramNode.resx">
+      <DependentUpon>201701181338110_AlterDiagramNode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701191104464_AddSSMenu.resx">
+      <DependentUpon>201701191104464_AddSSMenu.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701220754259_Test12.resx">
+      <DependentUpon>201701220754259_Test12.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701230819434_AddMenuinPageDiv.resx">
+      <DependentUpon>201701230819434_AddMenuinPageDiv.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701231252531_AlterFunctions.resx">
+      <DependentUpon>201701231252531_AlterFunctions.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201701250836078_ColumnDefaultValues.resx">
+      <DependentUpon>201701250836078_ColumnDefaultValues.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702021240210_AddPostingLeave.resx">
+      <DependentUpon>201702021240210_AddPostingLeave.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702050713353_AlterSuspeseReason.resx">
+      <DependentUpon>201702050713353_AlterSuspeseReason.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702051134296_LeaveAssignmentStatus.resx">
+      <DependentUpon>201702051134296_LeaveAssignmentStatus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702061526465_AlterLeaveType.resx">
+      <DependentUpon>201702061526465_AlterLeaveType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702071511395_RemoveActive.resx">
+      <DependentUpon>201702071511395_RemoveActive.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702081151592_ModifyDocTypes.resx">
+      <DependentUpon>201702081151592_ModifyDocTypes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702120711305_AddCheckList.resx">
+      <DependentUpon>201702120711305_AddCheckList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702120919180_AlterCheckList.resx">
+      <DependentUpon>201702120919180_AlterCheckList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702121653464_AlterCheckList1.resx">
+      <DependentUpon>201702121653464_AlterCheckList1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702130711480_AlterCheckList2.resx">
+      <DependentUpon>201702130711480_AlterCheckList2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702132023553_AddFlexTableName.resx">
+      <DependentUpon>201702132023553_AddFlexTableName.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702140636236_AddWaringOrErrorMsg.resx">
+      <DependentUpon>201702140636236_AddWaringOrErrorMsg.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702140844098_AlterFlexData1.resx">
+      <DependentUpon>201702140844098_AlterFlexData1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702141314229_AddComplainRequest.resx">
+      <DependentUpon>201702141314229_AddComplainRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702161021097_AlterMenuAddTitle.resx">
+      <DependentUpon>201702161021097_AlterMenuAddTitle.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702191120550_UpdateTermination.resx">
+      <DependentUpon>201702191120550_UpdateTermination.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702201329000_AlterWF_TRANS.resx">
+      <DependentUpon>201702201329000_AlterWF_TRANS.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702201409133_AlterWFlow.resx">
+      <DependentUpon>201702201409133_AlterWFlow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702221542392_GetEmpStatus.resx">
+      <DependentUpon>201702221542392_GetEmpStatus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702230810374_AddStartServDate.resx">
+      <DependentUpon>201702230810374_AddStartServDate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702231353029_AddContracts.resx">
+      <DependentUpon>201702231353029_AddContracts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702260956365_CustomUpdate.resx">
+      <DependentUpon>201702260956365_CustomUpdate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201702281330293_AddCompanyIdToPosition.resx">
+      <DependentUpon>201702281330293_AddCompanyIdToPosition.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703070816509_ChangeByteToShortInCodes.resx">
+      <DependentUpon>201703070816509_ChangeByteToShortInCodes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703071441024_AlterActualNofDays.resx">
+      <DependentUpon>201703071441024_AlterActualNofDays.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703081457258_test16.resx">
+      <DependentUpon>201703081457258_test16.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703090719401_AddCompanyToBudget.resx">
+      <DependentUpon>201703090719401_AddCompanyToBudget.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703090824374_AddCompanyFKtoColumnTitle.resx">
+      <DependentUpon>201703090824374_AddCompanyFKtoColumnTitle.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703091118296_AddHasImageToEmp.resx">
+      <DependentUpon>201703091118296_AddHasImageToEmp.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703121537032_Messages.resx">
+      <DependentUpon>201703121537032_Messages.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703140759458_AlterMessage.resx">
+      <DependentUpon>201703140759458_AlterMessage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703151802047_AlterWorkFlow.resx">
+      <DependentUpon>201703151802047_AlterWorkFlow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703201309077_AdjustApprovalStatus.resx">
+      <DependentUpon>201703201309077_AdjustApprovalStatus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703270805022_AddCalendar.resx">
+      <DependentUpon>201703270805022_AddCalendar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703280724143_MedicalRequest.resx">
+      <DependentUpon>201703280724143_MedicalRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703280841131_BenefitServ.resx">
+      <DependentUpon>201703280841131_BenefitServ.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703281603387_AlterLeaveType1.resx">
+      <DependentUpon>201703281603387_AlterLeaveType1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703290621066_AlterEmployment1.resx">
+      <DependentUpon>201703290621066_AlterEmployment1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703290716349_RemoveLeavePeriod.resx">
+      <DependentUpon>201703290716349_RemoveLeavePeriod.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703291205483_AlterCalendar.resx">
+      <DependentUpon>201703291205483_AlterCalendar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703291312532_AddTemplate.resx">
+      <DependentUpon>201703291312532_AddTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703300835039_AlterMedicalRequest.resx">
+      <DependentUpon>201703300835039_AlterMedicalRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703301030487_AddNewColToPeople.resx">
+      <DependentUpon>201703301030487_AddNewColToPeople.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201703301127024_ChangeDateTimeToDate.resx">
+      <DependentUpon>201703301127024_ChangeDateTimeToDate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704030911138_AlterBenefits.resx">
+      <DependentUpon>201704030911138_AlterBenefits.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704030945593_AlterBenefits2.resx">
+      <DependentUpon>201704030945593_AlterBenefits2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704031552079_AlterBenefits3.resx">
+      <DependentUpon>201704031552079_AlterBenefits3.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704051247387_AddInvestigations.resx">
+      <DependentUpon>201704051247387_AddInvestigations.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704091357075_AlterEmpTask.resx">
+      <DependentUpon>201704091357075_AlterEmpTask.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704091408498_AlterInvestigation.resx">
+      <DependentUpon>201704091408498_AlterInvestigation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704120839354_ManyChanges.resx">
+      <DependentUpon>201704120839354_ManyChanges.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704121558355_AddStars.resx">
+      <DependentUpon>201704121558355_AddStars.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704130649559_AddDeptJobLvPlan.resx">
+      <DependentUpon>201704130649559_AddDeptJobLvPlan.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704130906458_RenameBenefServ.resx">
+      <DependentUpon>201704130906458_RenameBenefServ.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704131217234_RenameHRCalendar.resx">
+      <DependentUpon>201704131217234_RenameHRCalendar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704161255504_AddPayRequest.resx">
+      <DependentUpon>201704161255504_AddPayRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704172133101_RenamePersonnel.resx">
+      <DependentUpon>201704172133101_RenamePersonnel.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704230755215_SomeAlters.resx">
+      <DependentUpon>201704230755215_SomeAlters.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704250855480_PayrollTables.resx">
+      <DependentUpon>201704250855480_PayrollTables.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704261111069_AlterPayroll.resx">
+      <DependentUpon>201704261111069_AlterPayroll.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704261554086_AlterInfoTable.resx">
+      <DependentUpon>201704261554086_AlterInfoTable.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201704271150157_AddGroupLeave.resx">
+      <DependentUpon>201704271150157_AddGroupLeave.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705011523587_AlterDatabase.resx">
+      <DependentUpon>201705011523587_AlterDatabase.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705021315533_AlterSalaryItem.resx">
+      <DependentUpon>201705021315533_AlterSalaryItem.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705030735465_AlterPayRequest.resx">
+      <DependentUpon>201705030735465_AlterPayRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705101018500_AddSalVar.resx">
+      <DependentUpon>201705101018500_AddSalVar.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705180749366_Notification.resx">
+      <DependentUpon>201705180749366_Notification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705180817512_Notification1.resx">
+      <DependentUpon>201705180817512_Notification1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705241041241_AddMsgTemplate.resx">
+      <DependentUpon>201705241041241_AddMsgTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705290755559_AddEmailAccount.resx">
+      <DependentUpon>201705290755559_AddEmailAccount.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705301000373_UpdateNotification.resx">
+      <DependentUpon>201705301000373_UpdateNotification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705301102378_AlterNotification.resx">
+      <DependentUpon>201705301102378_AlterNotification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705301105425_AlterNotification2.resx">
+      <DependentUpon>201705301105425_AlterNotification2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705310808138_AlterNotificationCondition.resx">
+      <DependentUpon>201705310808138_AlterNotificationCondition.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201705311218565_AddSchedualTasks.resx">
+      <DependentUpon>201705311218565_AddSchedualTasks.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706010952291_AddNotificationLogs.resx">
+      <DependentUpon>201706010952291_AddNotificationLogs.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706041408031_AlterNotifyCondition.resx">
+      <DependentUpon>201706041408031_AlterNotifyCondition.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706041432591_AlterNotifyCondition1.resx">
+      <DependentUpon>201706041432591_AlterNotifyCondition1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706041435465_AlterNotifyCondition2.resx">
+      <DependentUpon>201706041435465_AlterNotifyCondition2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706080929578_AlterNotifications.resx">
+      <DependentUpon>201706080929578_AlterNotifications.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706081001192_AlterNotifications2.resx">
+      <DependentUpon>201706081001192_AlterNotifications2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706141622354_AddEmpIdToNotification.resx">
+      <DependentUpon>201706141622354_AddEmpIdToNotification.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706151047029_AlterEmailAccount.resx">
+      <DependentUpon>201706151047029_AlterEmailAccount.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706151432542_AddOrderToEmailAccount.resx">
+      <DependentUpon>201706151432542_AddOrderToEmailAccount.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706151435115_AddOrderToEmailAccount1.resx">
+      <DependentUpon>201706151435115_AddOrderToEmailAccount1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706201230297_AlterNotificationDb.resx">
+      <DependentUpon>201706201230297_AlterNotificationDb.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201706221507477_FinalAlterNotificationDb.resx">
+      <DependentUpon>201706221507477_FinalAlterNotificationDb.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707031614027_FirstIteration.resx">
+      <DependentUpon>201707031614027_FirstIteration.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707041219090_FirstIteraion2.resx">
+      <DependentUpon>201707041219090_FirstIteraion2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707051237327_AddPaidBy.resx">
+      <DependentUpon>201707051237327_AddPaidBy.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707081410473_AlterUniqueIndex.resx">
+      <DependentUpon>201707081410473_AlterUniqueIndex.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707161020342_Iteration1_1.resx">
+      <DependentUpon>201707161020342_Iteration1_1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707191146040_AlterSourceId.resx">
+      <DependentUpon>201707191146040_AlterSourceId.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707250937498_AlterDocTypes.resx">
+      <DependentUpon>201707250937498_AlterDocTypes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707261313543_AlterJob.resx">
+      <DependentUpon>201707261313543_AlterJob.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201707270957342_AlterPersonInsurance.resx">
+      <DependentUpon>201707270957342_AlterPersonInsurance.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201708021142183_AddFormulaToFormColumn.resx">
+      <DependentUpon>201708021142183_AddFormulaToFormColumn.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201708231149135_TrainEventQualCustody.resx">
+      <DependentUpon>201708231149135_TrainEventQualCustody.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201709191251069_custodyDicipline.resx">
+      <DependentUpon>201709191251069_custodyDicipline.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710060601295_NewUtilForScripts.resx">
+      <DependentUpon>201710060601295_NewUtilForScripts.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710060739204_NewUtilForScripts1.resx">
+      <DependentUpon>201710060739204_NewUtilForScripts1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710082112114_RemoveMenuFromFunctions.resx">
+      <DependentUpon>201710082112114_RemoveMenuFromFunctions.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710111140306_AlterAddress.resx">
+      <DependentUpon>201710111140306_AlterAddress.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710201431283_AlterLeaveRange1.resx">
+      <DependentUpon>201710201431283_AlterLeaveRange1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710221502238_AddNewTables.resx">
+      <DependentUpon>201710221502238_AddNewTables.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710231215160_test122.resx">
+      <DependentUpon>201710231215160_test122.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710250748449_RemoveTimeFraction.resx">
+      <DependentUpon>201710250748449_RemoveTimeFraction.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710251231450_RemoveDeptPlan.resx">
+      <DependentUpon>201710251231450_RemoveDeptPlan.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710290929339_AlterCustoies.resx">
+      <DependentUpon>201710290929339_AlterCustoies.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201710300822303_AlterEmpCustody.resx">
+      <DependentUpon>201710300822303_AlterEmpCustody.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711010738361_AlterRenewOrder.resx">
+      <DependentUpon>201711010738361_AlterRenewOrder.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711041356222_AddPagePrint.resx">
+      <DependentUpon>201711041356222_AddPagePrint.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711061201558_AlterPagePrint.resx">
+      <DependentUpon>201711061201558_AlterPagePrint.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711070813456_AlterCustodies.resx">
+      <DependentUpon>201711070813456_AlterCustodies.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711080703089_AddMailToken.resx">
+      <DependentUpon>201711080703089_AddMailToken.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711080852033_AlterMailToken.resx">
+      <DependentUpon>201711080852033_AlterMailToken.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711121352108_AlterCodes.resx">
+      <DependentUpon>201711121352108_AlterCodes.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711130649381_AlterMailToken1.resx">
+      <DependentUpon>201711130649381_AlterMailToken1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711130923528_AlterLeaveType2.resx">
+      <DependentUpon>201711130923528_AlterLeaveType2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711151354526_AlterCustody.resx">
+      <DependentUpon>201711151354526_AlterCustody.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711200758038_AddFreezedCustody.resx">
+      <DependentUpon>201711200758038_AddFreezedCustody.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711210706013_AddEmpDocBorrow.resx">
+      <DependentUpon>201711210706013_AddEmpDocBorrow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711210712016_AlterEmpDocBorrow.resx">
+      <DependentUpon>201711210712016_AlterEmpDocBorrow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711210954417_AlterEmpDocBorrow1.resx">
+      <DependentUpon>201711210954417_AlterEmpDocBorrow1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711211255270_AlterEmployment2.resx">
+      <DependentUpon>201711211255270_AlterEmployment2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711221011023_AlterCompany.resx">
+      <DependentUpon>201711221011023_AlterCompany.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711251456098_AddNotifyLetter.resx">
+      <DependentUpon>201711251456098_AddNotifyLetter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711261216214_AddFlexForm.resx">
+      <DependentUpon>201711261216214_AddFlexForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711270912235_AlterNotifyLetter.resx">
+      <DependentUpon>201711270912235_AlterNotifyLetter.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201711271456365_AddWorkflow.resx">
+      <DependentUpon>201711271456365_AddWorkflow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712020746220_AlterWorkFlow1.resx">
+      <DependentUpon>201712020746220_AlterWorkFlow1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712040857275_AddMeeting.resx">
+      <DependentUpon>201712040857275_AddMeeting.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712110610547_AlterMeeting2.resx">
+      <DependentUpon>201712110610547_AlterMeeting2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712111241401_AlterMeeting3.resx">
+      <DependentUpon>201712111241401_AlterMeeting3.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712251422276_RemoveCompanyCode.resx">
+      <DependentUpon>201712251422276_RemoveCompanyCode.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

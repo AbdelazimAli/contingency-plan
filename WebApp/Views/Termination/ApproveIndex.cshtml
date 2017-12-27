@@ -1,0 +1,51 @@
+﻿@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    string[] function = ViewBag.Functions as string[];
+
+}
+<div id="TerminationApproveGrid"></div>
+
+
+<script>
+    function Exist(data) {
+        if (data.HasImage)
+            return "url(/SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
+        else
+            return "url(/SpecialData/Photos/noimage.jpg)"
+    }
+
+    var columns = [{
+        field: "Service",
+        template: "<div>#:ServYear# @MsgUtils.Instance.Trls("Year") &nbsp;#:BonusInMonths# @MsgUtils.Instance.Trls("BounsInMonth")</div>"
+    },
+                    {
+                        field: "Employee",
+                        template: "<div class='k-people-photo' " +
+                                        "style='background-image: #:Exist(data)# '></div>" +
+                                        "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>",
+                        locked:true
+                    }];
+
+    var TerminationGrid = "'TerminationApproveGrid'";
+    
+    Grids.indexGrid({
+        read: "@Url.Action("GetRequestsApprove", "Termination")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("ApproveDetails", "Termination")",
+    edit: "@Url.Action("ApproveDetails", "Termination")",
+    objectName: "TerminationApprove",
+    tabeName: "Terminations",
+    recordName: "Employee",
+    gridName: "TerminationApproveGrid",
+    admin: "@admin",
+    columns: columns,
+    toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")">&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + TerminationGrid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+            '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + TerminationGrid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + TerminationGrid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+            '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + TerminationGrid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+    lang: "@User.Identity.GetCulture()",
+    });
+</script>

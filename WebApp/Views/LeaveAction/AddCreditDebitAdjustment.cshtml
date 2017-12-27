@@ -1,0 +1,135 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model LeaveMoneyAdjustViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<style>
+    .k-window-content {
+        min-height: 350px;
+    }
+    #EmpForm input[type="radio"] {
+        position: relative !important;
+    }
+     #EmpForm #Balance
+    {
+        max-width:95px !important;
+        padding:1px 1px !important;
+    }
+    #EmpForm input[type=number]
+    {
+        max-width:95px !important;
+        padding:1px 1px !important;
+    }
+  
+
+</style>
+<div id="AdjustLeaveCredit"></div>
+
+<br />
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<script>
+    $(function () {
+        var model;
+        var Periods = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Periods));
+        var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes));
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var Credit = [{id:1,name:"@MsgUtils.Instance.Trls("Add Credit")"},{id:2,name:"@MsgUtils.Instance.Trls("Deduct Credit")"}];
+
+        var formId = "EmpForm";
+            ///---#Region Emp Form
+        var Language = lang.getList("@culture");
+            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var read = "@Request.QueryString["Read"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'AdjustCreditLeave', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("SaveCreditAdjustment", "LeaveAction")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "LeaveAdjusts";
+                    data.admin = '@admin';
+                    data.rtl = @rtl.ToString().ToLower();
+                    $("#AdjustLeaveCredit").Forms(data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "TypeId", LeaveTypes, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People" });
+                    FormJs.fillOptionsDynamic($("#" +formId),"Credit",Credit,model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", null, model);
+                    //TypeId
+                    $("#AdjustLeaveCredit").find(".editarea.col-sm-6.col-xs-12").removeClass("col-sm-6 col-xs-12").addClass("col-sm-5 col-xs-10");
+
+                    $("#"+formId).on('change','#TypeId',function(){
+                        var element =$(this).val();
+                        $.ajax({
+                            async: false,
+                            url: "@Url.Action("FillPeriod", "LeaveAction")",
+                            data: { TypeId: element },
+                            dataType: "json",
+                            success: function (result)
+                            {
+                                FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", result, model);
+                            }
+                        });
+                    });
+                    $("input[name='Credit'][value='1']").attr('checked', true);
+                    $("#"+formId).on('change','#PeriodId',function(){
+                        var TypeId = $("#TypeId").val();
+                        var PeriodId =$(this).val();
+                        var EmpId  = getEmpId();
+                        $.ajax({
+                            async: false,
+                            url: "@Url.Action("GetCurrentBalance", "LeaveAction")",
+                            data: { TypeId: TypeId,PeriodId : PeriodId , EmpId:EmpId },
+                            dataType: "json",
+                            success: function (result)
+                            {
+                                $("#Balance").val(result);
+                            }
+                        });
+                    });
+                    function getEmpId() {                     
+                        var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                    }
+                   $("#"+formId).find("#Balance, #PeriodId").closest(".col-md-8.col-lg-8").removeClass("col-md-10 col-lg-10").addClass("col-md-6 col-lg-6");
+                    $("#"+formId).find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-8 col-lg-8");
+                    $("#"+formId).find("NofDays").closest(".col-md-8.col-lg-8").addClass("col-md-12 col-lg-12");
+                    $("#" + formId).find('#cancelChanges').val('@MsgUtils.Instance.Trls("Cancel")');
+                    $("#"+formId).on('click','#cancelChanges',function()
+                    {
+                        $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
+                        $("#BalanceWindow").data("kendoWindow").close();
+                    });
+
+                    $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).on('click','#SaveChanges', function (e) {
+                        FormJs.saveForm($("#" + formId), $(this), function (res) {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            $('#CreditBalnaceDiv').data('kendoGrid').dataSource.read();
+                            $('#CreditBalnaceDiv').data('kendoGrid').refresh();
+                            $("#BalanceWindow").data("kendoWindow").close();
+                        });
+                    });
+                }
+            });
+        });
+</script>
+
+
+
+
+
+

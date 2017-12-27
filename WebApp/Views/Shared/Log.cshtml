@@ -1,0 +1,41 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Log"></div>
+
+<script>
+  
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.jobid));
+    var object = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.objectName));
+    var objectName = "AudiTrails";
+   Grids.indexGrid({
+       read: "@Url.Action("GetLog","Job")?objectname="+object+"&jobId=" + id,
+       lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "Log",
+        admin: "@admin",
+       toolbar:'<div></div>'
+          });
+</script>
+
+
+
+
+
+

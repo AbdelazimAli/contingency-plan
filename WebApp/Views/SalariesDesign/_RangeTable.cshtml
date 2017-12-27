@@ -1,0 +1,32 @@
+﻿@using Model.Domain.Payroll
+@model InfoTable
+@using WebApp.Extensions
+
+@{ 
+    var admin = ViewData["admin"].ToString();
+    var rtl = User.Identity.RTL();
+}
+<br />
+
+<div id="RangeTableGridDiv">
+</div>
+<script>
+    var gridname = "'RangeTableGridDiv'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadTable", "SalariesDesign")?id=@Model.Id",
+        update: "@Url.Action("UpdateRangeTable", "SalariesDesign")",
+        create: "@Url.Action("CreateRangeTable", "SalariesDesign")",
+        destroy: "@Url.Action("DeleteRangeTable", "SalariesDesign")",
+        objectName: "RangeTable",
+        tableName: "RangeTables",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        gridName: "RangeTableGridDiv",
+        pageable: false,
+        save: function (e) {
+            e.model.GenTableId = @Model.Id;
+        }
+    });
+
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "RangeTableGridDiv" }, { "ObjectName", "RangeTable" }, { "Functions", ViewBag.Functions } })

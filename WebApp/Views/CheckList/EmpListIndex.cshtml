@@ -1,0 +1,141 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var version = Request.QueryString["Version"];
+    string[] function = ViewBag.Functions as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "EmpListDiv" }, { "HasDepts", "false" }, { "Functions", function }, { "HasRange", "false" }, { "TableName", "EmpChkLists" } })
+<div id="EmpListDiv"></div>
+<script>
+    var addUrl = "@Url.Action("EmplistDetails", "CheckList")";
+    RequestFilters.ApplayAllFilters([], {}, "EmpListDiv", "@Url.Action("ReadEmpCheckList", "CheckList")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var funcs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+    var listType = [
+         { value: 1, text: '@MsgUtils.Instance.Trls("Employment Checklist")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("New Employee Orientation")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("Termination checklist")' },
+
+    ];
+    var ListStatus = [
+        { value: 0, text: '@MsgUtils.Instance.Trls("Darft")' },
+        { value: 1, text: '@MsgUtils.Instance.Trls("Done")' },
+        { value: 2, text: '@MsgUtils.Instance.Trls("Canceled")' },
+
+    ];
+    var columns = [{
+                       field: "Employee",
+                       template: "<div class='k-people-photo' " +
+                                       "style='background-image: url(#:PicUrl#); '></div>" +
+                                       "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>",
+        locked:true
+
+    }, {
+        field: "ListType", values: listType
+    },{field:"UpdateStatus" , hidden:(($.inArray("UpdateStatus",funcs) == -1) ? true : false)}, {
+        field: "Status", values: ListStatus
+    },{field:"PrograssBar",template:"<div class='progress'></div>"}];
+    function copy(){
+        var dropvalue =  $("#checklist").val();
+        if(dropvalue!="")
+            $("#renderbody").load("@Url.Action("CopyEmplistDetails", "CheckList")?checkList="+dropvalue+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+
+        else
+            toastr.error("@MsgUtils.Instance.Trls("No Data")");
+    }
+    var checklist = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.checkList));
+    var gridname = "'EmpListDiv'";
+    toolbar = '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm fa fa-plus ajaxify" href="/CheckList/EmplistDetails?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]" style="@(dataLevel < 2 || read == 1 ? "display: none" : "") accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")" class="btn btn-default btn-sm fa fa-copy" onclick="copy()" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("Copy")</span></a>&nbsp;<input id="checklist" style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")"/>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm fa fa-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+              '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';
+   var updatetask = function(e){
+        var currentAnchor=$(e.currentTarget)
+        var dataItem = $("#EmpListDiv").getKendoGrid().dataItem(currentAnchor.closest("tr"));
+        $.ajax({
+            url:"/CheckList/Updatestatus",
+            data:{id:dataItem.Id},
+            success:function(res){
+                var NewRes = res.split(" ")[1];
+                if(NewRes=="AlreadyAssigned"){
+                    toastr.warning(res.split(" ")[0]+" "+"@MsgUtils.Instance.Trls("tasks assign to employee")");
+                    $("#UpdateStatus").attr("disabled",true);
+                }else{
+                    if(res=="Updated")
+                        toastr.success("@MsgUtils.Instance.Trls("The Next Status Updated")");
+                    else if(res=="OkNoTask"){
+                        toastr.error("@MsgUtils.Instance.Trls("NoTasks")");
+                        $("#UpdateStatus").attr("disabled",true);
+                    }else if(res=="OkCanceled"){
+                        toastr.error("@MsgUtils.Instance.Trls("NoTasks")");
+                        $("#UpdateStatus").attr("disabled",true);
+                    }
+                    else
+                        toastr.error(res);
+                }
+            },
+            error:function(){
+
+            }
+        });
+    }
+    var objectName = "EmpCheckLists";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadEmpCheckList", "CheckList")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("EmplistDetails", "CheckList")",
+        del: "@Url.Action("EmplistDelete", "CheckList")",
+        show: "@Url.Action("EmplistDetails", "CheckList")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "EmpListDiv",
+        admin: "@admin",
+        columns: columns,
+        toolbar: toolbar,
+        select: { "ListType": listType,"Status":ListStatus },
+        dataBound: function (e) {
+            var grid =this.gridName;
+            var z ="@MsgUtils.Instance.Trls("UpdateStatus")";
+
+            $("#"+grid).off("click","a.k-grid-"+z.replace(" ","")+"");
+            $("#"+grid).off("click","a.k-grid-UpdateStatus");
+
+
+
+            $("#"+grid).on("click","a.k-grid-UpdateStatus",updatetask);
+            var cols = this.columns;
+            progCol = $.grep(cols,function(el){if(el.field=="PrograssBar") return el})
+            $("#"+grid).find(".progress").each(function(e){
+                var row = $(this).closest("tr");
+                var model = $("#"+grid).getKendoGrid().dataItem(row);
+                $(this).kendoProgressBar({
+                    max:100,
+                    type:"percent",
+                    animation:{
+                        duration:600
+                    },
+                    value:model.Count != 0 ? (model.PrograssBar * 100 ) /model.Count : 0
+                });
+                $(this).css("width",(progCol[0].width-12)+"px");
+            })
+        }
+    });
+    $("#renderbody").on("ajaxComplete",function(){
+
+        if($.inArray("Copy",funcs) >= 0){
+            $("#checklist").kendoDropDownList({
+                dataTextField: "name",
+                dataValueField: "id",
+                dataSource: checklist,
+                index: 0
+            });
+        }
+
+    });
+</script>

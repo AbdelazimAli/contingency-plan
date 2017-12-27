@@ -1,0 +1,333 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.BenefitRequestFollowUp
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+
+
+<script>
+    var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var RejectReason = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RejectReason));
+    var Currency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Currency));
+    var Services = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Services));
+    var Providers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Providers));
+    var Beneficiary = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Beneficiary));
+    var CancelReasons = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CancelReasons));
+    var BenefitId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BenefitId));
+
+
+    FormJs.DrawTabs("pageTabs"); // "AcceptedLeaves"
+
+    $("#t_WorkMedicalFlow").click(function(){
+        $('#tab_WorkMedicalFlow').load("@Url.Action("WorkFlow", "Log")?Source=Medical&SourceId=@compantId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_MedicalAudiLog").click(function(){
+        $('#tab_MedicalAudiLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_MedicalGeneralInfo").click(function () {
+        $("#tab_MedicalGeneralInfo").html("<div id='AcceptedMedicalDiv'></div>");
+        MedicalRequesForm();
+    });
+
+    $("#t_MedicalGeneralInfo").click();
+
+    var  model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    // Back to index
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    function MedicalRequesForm () {
+        var approvalStatus = [
+         { id: 6, name: '@MsgUtils.Instance.Trls("Approved")' },
+        ];
+        var PaidBy = [
+         { id: 1, name: '@MsgUtils.Instance.Trls("Company")' },{id:2,name:'@MsgUtils.Instance.Trls("Employee")'}
+        ];
+        var formId = "AcceptedMedical";
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        $.getJSON(url, { objectname: 'MedicalReqFollowUpForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("SaveBenefitSettlement", "Medical")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "MedicalRequests";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            data.HasEditControls = true;
+            data.btns = ["back", "doc"];
+            $("#AcceptedMedicalDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", approvalStatus, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "RejectReason", RejectReason, model);
+            FormJs.fillOptionsDynamic($("#"+formId),"Curr",Currency,model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", Services, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ProviderId", Providers, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", Beneficiary, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "BenefitId", BenefitId, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "PaidBy", PaidBy, model);
+
+
+            if(model.Id != 0)
+            {
+                $("#"+ formId + " #RequestDate").data("kendoDatePicker").readonly();
+                $("#"+ formId + " #EmpId").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #ApprovalStatus").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #BenefitId").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #BeneficiaryId").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #ServiceId").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #ProviderId").data("kendoDropDownList").readonly();
+            }
+            $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none");
+            $("#"+ formId + " div[name='CancelReasonSec']").parents(".set").css("display","none")
+            $("#" + formId).find('#cancelRequest').val('@MsgUtils.Instance.Trls("CancelRequest")');
+            $("#" + formId).find('#cancelRequest').removeClass("btn-primary").addClass("btn-default");
+            $("#" + formId).find('#Ok').val('@MsgUtils.Instance.Trls("Ok")');
+            //$("#" + formId).find('#CurrRate').attr("disabled",true);
+            @*if(BeneficiaryId !=null)
+            {
+                console.log(model);
+                BeneficiaryId.unshift({id:"", name:'@MsgUtils.Instance.Trls("Employee")'});
+                FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", BeneficiaryId, model);
+                $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").select("");
+
+            }*@
+            //Get benefiecinary
+            $("#" + formId).on('blur','#EmpId', function(){
+                var elem = getEmpId();
+                //  var benfitClass = $("#" + formId).find("#BenefitClass").data("kendoDropDownList").value();
+                var benfitClass = $("#" + formId).find("#BenefitId").val();
+                $.ajax({
+                    url:"@Url.Action("GetBeneficiary", "Medical")",
+                    data:{EmpId:elem,BenefitClass:benfitClass},
+                    contentType:"application/json",
+                    success:function(res){
+                        if($("#" + formId).find("#BeneficiaryId").val() == 0)
+                            FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res.serv, model);
+                        res.Ben.unshift({id:0, name:'@MsgUtils.Instance.Trls("Employee")'});
+                        FormJs.fillOptionsDynamic($("#" + formId), "BeneficiaryId", res.Ben, model);
+                        //  $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").select(1);
+
+                    },
+                    error:function(){
+                    }
+                });
+            });
+            $("#" + formId).on('change','#BeneficiaryId', function(){
+                // var elem = $("#" + formId).find("#BeneficiaryId").data("kendoDropDownList").value();
+                var elem = $("#" + formId).find("#BeneficiaryId").val();
+                var empId = getEmpId();
+                // var benfitClass=$("#" + formId).find("#BenefitId").data("kendoDropDownList").value();
+                var benfitClass = $("#" + formId).find("#BenefitId").val();
+                if(elem != "")
+                {
+                    $.ajax({
+                        url:"@Url.Action("GetBeneficiaryService", "Medical")",
+                        data:{BeneficiaryId:elem , EmpId:empId,BenefitClass:benfitClass},
+                        contentType:"application/json",
+                        success:function(res){
+                            FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res, model);
+                        },
+                        error:function(){
+                        }
+                    });
+                }
+                else if(elem == "")
+                {
+                    // alert("go");
+                    $.ajax({
+                        url:"@Url.Action("GetBeneficiaryService", "Medical")",
+                        data:{BeneficiaryId:0 , EmpId:empId,BenefitClass:benfitClass},
+                        contentType:"application/json",
+                        success:function(res){
+                            FormJs.fillOptionsDynamic($("#" + formId), "ServiceId", res, model);
+                        },
+                        error:function(){
+                        }
+                    });
+
+                }
+            });
+            var ParentId;
+            var curr;
+            var rate;
+            $("#" + formId).on('change','#ServiceId', function(){
+                //   var elem = $("#" + formId).find("#ServiceId").data("kendoDropDownList").value();
+                var elem = $("#" + formId).find("#ServiceId").val();
+                if(elem != "")
+                {
+                    $.ajax({
+                        url:"@Url.Action("SetCurrency", "Medical")",
+                        data:{ServiceId:elem},
+                        contentType:"application/json",
+                        success:function(res){
+                            if(res != null)
+                            {
+                                curr = res.Currency.Curr;
+                                rate = res.Currency.rate;
+                                $("#" + formId).find("#Curr").data("kendoDropDownList").value(res.Currency.Curr);
+                                if(model.Id > 0)
+                                {
+                                    $("#" + formId).find('#ServCost').val(res.Currency.Cost);
+                                    $("#" + formId).find('#CompanyCost').val(res.CompanyCost);
+                                    $("#" + formId).find('#EmpCost').val(res.EmployeeCost);
+                                    $("#" + formId).find('#CurrRate').val(res.Currency.rate);
+                                }
+                                ParentId=res.Currency.ParentId;
+                                var hiddenId ="<input type='hidden' name='ParentId' id='ParentId' value='" + res.Currency.ParentId+ "'>";
+                                $("#" + formId).append(hiddenId);
+                            }
+                        },
+                        error:function(){
+                        }
+                    });
+                }
+            });
+
+            function getEmpId() {
+                var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+            }
+
+            var additinalBtns='<input type="button" name="cancelRequest" isvisible="true" class="btn submit button btn-default" value="@MsgUtils.Instance.Trls("CancelRequest")" id="cancelRequest">';
+            additinalBtns += '<button name="SaveChanges" isvisible="true" class="btn  btn-primary submit button"  onClick="return false;" id="saveChanges">@MsgUtils.Instance.Trls("SaveChanges")</button>';
+            $("#AcceptedMedicalDiv").append(additinalBtns);
+
+            var  hiddenBenefitPlanId = "<input type='hidden' id='BenefitPlanId' name='BenefitPlanId' value="+model.BenefitPlanId+" />";
+            $("#AcceptedMedicalDiv").append(hiddenBenefitPlanId);
+
+            $("#AcceptedMedicalDiv").on('click', '#cancelRequest', function () {
+                FormJs.fillOptionsDynamic($("#MedicalCancel"), "CancelReason", CancelReasons, null, {hasFilter: false});
+                $("#MedicalCancel").modal('show');
+            });
+
+            $("#AcceptedMedicalDiv").on("click","#saveChanges",null,function (e) {
+                if(!$("#" + formId + " .k-invalid").length) {
+                    FormJs.saveForm($("#"+formId), $(this),function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    });
+                }
+            });
+            function getEmpId() {
+                var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+            }
+            if(model.Id == 0)
+            {
+                $("#" + formId).on('change','#ServCost', function(){
+                    //  console.log(model.Id);
+                    var elem = $("#" + formId).find("#ServCost").val();
+                    var  issueDate = $("#" + formId).find("#RequestDate").val();
+                    var BeneficiaryId = $("#" + formId).find("#BeneficiaryId").val();
+                    var empId = getEmpId();
+                    $.ajax({
+                        url:"@Url.Action("SetCost", "Medical")",
+                        data:{ServiceCost:elem ,ParentId:ParentId,issueDate:issueDate,EmpId:empId,BeneficiaryId:BeneficiaryId},
+                        contentType:"application/json",
+                        success:function(res){
+                            if(res != null)
+                            {
+                                $("#" + formId).find('#CompanyCost').val(res.CompanyCost).blur();
+                                $("#" + formId).find('#EmpCost').val(res.EmployeeCost);
+                                // $("#" + formId).find('#CurrRate').val(rate);
+                                //$("#" + formId).find("#Curr").data("kendoDropDownList").value(curr);
+
+                            }
+                        },
+                        error:function(){
+                        }
+                    });
+
+                });
+            }
+            $("#docWindow").kendoWindow ({
+                title: "@MsgUtils.Instance.Trls("medicalFollowup")",
+                minWidth: "1000px",
+                width: "80%",
+                height: "80%",
+                actions: ["Minimize", "Maximize", "Close"],
+                visible: false,
+                close: function() {
+                    $("#Documents").fadeIn();
+                    $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                    $("#docWindow").empty();
+                }
+            });
+            $("#Documents").on("click", function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Medical&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+
+        });
+
+        $("#MedicalCancel").on("click","#Ok",null,function(){
+
+            $.post("/Medical/CancelAccepted", { Id: model.Id, Reason: $("#CancelReason").val(),Desc:$("#CancelDesc").val() }, function (res) {
+                if (res == "Ok") {
+                    $("#MedicalCancel").modal("hide");
+
+                    toastr.success("@MsgUtils.Instance.Trls("Cancelled Successfully")");
+
+                    $("#renderbody").load(oldulr);
+                    $(".modal-backdrop").remove();
+
+                } else {
+                    toastr.error(res);
+                    $("#MedicalCancel").modal("hide");
+                }
+            });
+        });
+
+    }
+</script>
+
+<div class="modal fade" id="MedicalCancel" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Cancel")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body omegaform @(rtl? "rtl" : "")" tabindex="0">
+                <div class="set panel">
+                    <div class="panel-body">
+                        <div class="form-group row">
+                            <label for="CancelReason" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelReason")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <select allowed="true" name="CancelReason" isvisible="true" id="CancelReason" class="form-control k-valid" style="cursor: pointer;">
+                                    <option></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="CancelDesc" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelDescription")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <textarea name="CancelDesc" isvisible="true" rows="2" id="CancelDesc" class="form-control" style="max-width: 995px;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal" id="Cancel">@MsgUtils.Instance.Trls("Cancel")</button>
+                <button type="button" class="btn btn-primary submit" id="Ok">@MsgUtils.Instance.Trls("Ok")</button>
+            </div>
+        </div>
+    </div>
+</div>

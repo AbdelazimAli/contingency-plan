@@ -1,0 +1,38 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+
+}
+
+<div id="LangDiv"></div>
+
+<script>
+    var objectName = "LangTbl";
+    var gridname = "'LangDiv'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadLang", "AudiTrial")",
+        create: "@Url.Action("CreateLang", "AudiTrial")",
+        update: "@Url.Action("UpdateLang", "AudiTrial")",
+        destroy: "@Url.Action("DeleteLang", "AudiTrial")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "LangDiv"
+    });
+    
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "LangDiv" }, { "ObjectName", "MsgTbl" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+

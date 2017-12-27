@@ -1,0 +1,42 @@
+﻿@using WebApp.Extensions
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    
+}
+
+<div id="AssignmentHistoryDiv">
+
+</div>
+<script>
+    var AssignmenHistorytGrid = "'AssignmentHistoryDiv'"
+    Grids.indexGrid({
+        read: "@Url.Action("GetHitory", "Assignment")?Id="+@ViewBag.Id,
+        del:"@Url.Action("DeleteAssignmentHistory", "Assignment")",
+        objectName: "AssignmentHistory",
+        gridName: "AssignmentHistoryDiv",
+        tableName: "Assignments",
+        recordName: "Code",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        toolbar: '<div><div style="@(rtl ? "float: left" : "float: right")">&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + AssignmenHistorytGrid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li>'+
+                '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+AssignmenHistorytGrid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+        height:650,
+      
+        dataBound: function (e) {
+            var name = $("#" + this.gridName);
+            var gridd = name.data("kendoGrid");
+           
+            name.find(".k-grid-Delete").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if ( !(model.AssignDate > new Date() || model.EndDate == null || model.EndDate == new Date(2099,11,31)))  $(this).hide(); //hide delete btn
+
+            });
+        }     
+    });
+
+</script>

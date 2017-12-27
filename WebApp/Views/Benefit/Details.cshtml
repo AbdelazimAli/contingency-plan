@@ -1,0 +1,292 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="BenefitDiv">
+
+</div>
+
+<script>
+
+
+    $(function () {
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+
+        function changeEmpAccural(valume){
+            if(valume!=3)
+                $("#WaitMonth").parent().parent().css("display","none");
+            else{
+                $("#WaitMonth").parent().parent().css("display","");
+                var nval=$('#WaitMonth').val();
+                if(nval==""){
+                    if ($('#WaitMonth') && !$('#WaitMonth').hasClass("k-invalid")) {
+                        $('#WaitMonth').addClass("k-invalid").prop("aria-invalid", true);
+                        $('#WaitMonth').after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='WaitMonth' role='alert'>@MsgUtils.Instance.Trls("Wait Month Is required")</span>");
+                    }
+                }
+            }
+
+        }
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var EmpAccural= [{id:1,name:"@MsgUtils.Instance.Trls("Optional")"}, {id:2,name:"@MsgUtils.Instance.Trls("As Employees assigned")"}, {id:3,name:"@MsgUtils.Instance.Trls("Afteremployeesassignedinmonths")"}];
+        var PlanLimit= [{id:1,name:"@MsgUtils.Instance.Trls("Company cost")"}, {id:2,name:"@MsgUtils.Instance.Trls("Employee cost")"}, {id:3,name:"@MsgUtils.Instance.Trls("Total service cost")"}];
+        @*var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));*@
+        var Payrolls = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payrolls));
+        var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
+        var PeopleGroups = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroups));
+        var CompanyStuctures = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyStuctures));
+        var Positions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Positions));
+        var PayrollGrades = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrades));
+        var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+        var Qualification = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Qualification));
+        var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.calender));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        var formId = "BenefitForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            //async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "Benefit", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="Benefits";
+                data.FormAction = "@Url.Action("Details", "Benefit")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1) {
+                    data.mode = 'show';
+                    $('#WaitMonth').removeClass("k-invalid").prop("aria-invalid", false);
+                }
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+
+                $("#BenefitDiv").Forms(data, model);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+                $("#" + formId).on('blur','#StartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    if( $('#EndDate').hasClass("k-invalid")){
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next().remove();
+                    }
+                });
+                $("#"+formId).on('blur','#EndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+
+                if(read != 1) changeEmpAccural(model.EmpAccural);
+
+                //Leave Range Grid
+                $("div[name=BenefitPlanSec]").prepend('<div id="BenefitPlanDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                var gridname = "'BenefitPlanDiv'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadBenefitPlan", "Benefit")?BenefitId=" +model.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "BenefitPlans",
+                    admin: "@admin", // Admin role
+                    lang: "@User.Identity.GetCulture()",
+                    toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    recordName: "PlanName",
+                    gridName: "BenefitPlanDiv",
+                    fields:{EmpAmount: { defaultValue: 0 },CompAmount: { defaultValue: 0 },CoverAmount: { defaultValue: 0 },CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+                    columns:[(read == 1 ? { field: "Delete", input: "none"}: { field: "Delete", input: ""}),
+                         {
+                             field: "BenefitServs",editor: function (container, options) {
+                                 if (options.model.BenefitServs.indexOf(',') > 0) options.model.BenefitServs = options.model.BenefitServs.split(',');
+                                 var  input = "<select multiple='multiple' data-value-primitive='true' name='BenefitServs' style='width: 80%; margin-bottom: 0;'>";
+                                 $.ajax({
+                                     async: false,
+                                     url: "@Url.Action("GetBenefitServs", "Benefit")",
+                                     dataType: "json",
+                                     success: function (result) {
+                                         for (var i = 0; i < result.length; i++) {
+                                             input += "<option value='" + result[i].Name + "'>" + result[i].Name + "</option>";
+                                         }
+                                     },
+                                     error: function (result) {
+                                     }
+                                 });
+                                 input += "</select>";
+                                 var multiSelect = $(input).appendTo(container).kendoMultiSelect({
+                                     change: function (ee) {
+                                         options.model.BenefitServs = this.value();
+                                     }
+                                 }).data("kendoMultiSelect");
+                             }
+                         },
+                          {
+                              field: "EmpPercent",
+                              template:'#=kendo.format("{0:p0}",EmpPercent/100)#',
+                              editor: function (container, options) {
+                                  var input='';
+                                  if ( options.model.EmpAmount ==null ||options.model.EmpAmount ==0)
+                                      input = '<input name="EmpPercent" type="number" style="width: 90%; margin-bottom: 0"/>';
+                                  else
+                                      input +='<div></div>'
+
+                                  $(input).appendTo(container);
+                              }
+                          },
+                           {
+                               field: "EmpAmount",
+                               format:'{0:n2}',
+                               editor: function (container, options) {
+                                   var input='';
+                                   if ( options.model.EmpPercent ==null ||options.model.EmpPercent ==0)
+                                       input = '<input name="EmpAmount" type="number" style="width: 90%; margin-bottom: 0"/>';
+                                   else
+                                       input +='<div></div>'
+                                   $(input).appendTo(container);
+                               }
+
+                           },
+                            {
+                                field: "CompPercent",
+                                template:'#=kendo.format("{0:p0}",CompPercent/100)#',
+                                editor: function (container, options) {
+                                    var input='';
+                                    if ( options.model.CompAmount ==null ||options.model.CompAmount ==0)
+                                        input = '<input name="CompPercent" type="number" style="width: 90%; margin-bottom: 0"/>';
+                                    else
+                                        input +='<div></div>'
+                                    $(input).appendTo(container);
+                                }
+                            },
+                           {
+                               field: "CompAmount",
+                               format:'{0:n2}',
+                               editor: function (container, options) {
+                                   var input='';
+                                   if ( options.model.CompPercent ==null ||options.model.CompPercent ==0)
+                                       input = '<input name="CompAmount" type="number" style="width: 90%; margin-bottom: 0"/>';
+                                   else
+                                       input +='<div></div>'
+                                   $(input).appendTo(container);
+                               }
+
+                           },
+                            {
+                                field:"CoverAmount",
+                                format:'{0:n2}'
+                            }
+
+                    ],
+                    save:function(e){
+                        var grid =  $("#BenefitPlanDiv").data("kendoGrid");
+                        if (e.values.EmpPercent && e.values.EmpPercent != e.model.EmpPercent) {
+                        e.model.EmpPercent=e.values.EmpPercent ;
+                        if(e.model.CompPercent+e.model.EmpPercent >100) {
+                            grid.table.find(".errorCell").each(function () {
+                                $(this).removeClass("errorCell k-invalid");
+                            });
+                            $(e.container[0]).addClass("k-invalid errorCell");
+                            $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.EmpPercent+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("CompPercentPlusEmpPercent")<div class="k-callout k-callout-n"></div></div>'));
+                        }
+                        else
+                            $(e.container[0]).removeClass("k-invalid errorCell");
+                        }
+                        if (e.values.CompPercent && e.values.CompPercent != e.model.CompPercent) {
+                            e.model.CompPercent=e.values.CompPercent ;
+                            if(e.model.CompPercent+e.model.EmpPercent >100) {
+                                grid.table.find(".errorCell").each(function () {
+                                    $(this).removeClass("errorCell k-invalid");
+                                });
+                                $(e.container[0]).addClass("k-invalid errorCell");
+                                $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.CompPercent+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("CompPercentPlusEmpPercent")<div class="k-callout k-callout-n"></div></div>'));
+                            }
+                            else
+                                $(e.container[0]).removeClass("k-invalid errorCell");
+                        }
+                    }
+
+
+                });
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpAccural", EmpAccural, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "CalenderId", calender, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payrolls, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroups, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", CompanyStuctures, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Positions, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrades, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Locations, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PlanLimit", PlanLimit, model);
+
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+
+                $('#BenefitDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+                $("#BenefitDiv").on('click',"#saveChanges",null, function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    },Grids.sendData("BenefitPlanDiv"));
+                });
+                $("#BenefitDiv").on("change","#EmpAccural",null,function(e){
+                    var record= $(this).val();
+                    changeEmpAccural(record);
+                });
+                $('#WaitMonth').blur(function(){
+                    var acc=$("#EmpAccural").val();
+                    changeEmpAccural(acc);
+                })
+            }
+
+        });
+    });
+
+
+
+</script>
+
+
+

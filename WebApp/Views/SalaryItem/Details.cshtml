@@ -1,0 +1,237 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+<link href="~/Content/forms.css" rel="stylesheet" />
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="SalaryIDiv"></div>
+<script>
+    function ChangeItemType(record){
+        var SalaryFlag=$("#IsSalaryItem").val();
+        if(SalaryFlag=="true"){
+            if(record==2)
+                $("#Multiple").closest(".form-group").css("display", "");
+            else
+                $("#Multiple").closest(".form-group").css("display", "none");
+        }
+    }
+    function ChangeUoMeasure(record){
+        var SalaryFlag=$("#IsSalaryItem").val();
+        if(record==1 && SalaryFlag=="false")
+            $("#InputCurr").closest(".form-group").css("display", "");
+        else if(SalaryFlag=="true")
+            $("#InputCurr").closest(".form-group").css("display", "");
+        else
+            $("#InputCurr").closest(".form-group").css("display", "none");
+    }
+    function ChangeValueType(record){
+        var SalaryFlag=$("#IsSalaryItem").val();
+        if(record==0 && SalaryFlag=="true")
+            $("#FormulaId ,#InValidValue ,#MaxValue ,#MinValue ").closest(".form-group").css("display", "");
+        else if(record==2 && SalaryFlag=="true")
+            $("#FormulaId ,#InValidValue ,#MaxValue ,#MinValue ").closest(".form-group").css("display", "none");
+        else if(record==1 && SalaryFlag=="true"){
+            $("#FormulaId").closest(".form-group").css("display","");
+            $("#InValidValue ,#MaxValue ,#MinValue ").closest(".form-group").css("display", "none");
+        }
+    }
+
+    $(function () {
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+        var PrimaryClass= [{id:1,name:"@MsgUtils.Instance.Trls("Earning")"}, {id:2,name:"@MsgUtils.Instance.Trls("Deduction")"}, {id:3,name:"@MsgUtils.Instance.Trls("Company shares")"}];
+        var Basis= [{id:1,name:"@MsgUtils.Instance.Trls("Hour")"}, {id:2,name:"@MsgUtils.Instance.Trls("Day")"},{id:3,name:"@MsgUtils.Instance.Trls("Week")"},{id:4,name:"@MsgUtils.Instance.Trls("Month")"},{id:5,name:"@MsgUtils.Instance.Trls("Year")"},{id:6,name:"@MsgUtils.Instance.Trls("Period")"}];
+        var ItemType= [{id:1,name:"@MsgUtils.Instance.Trls("Permanent")"}, {id:2,name:"@MsgUtils.Instance.Trls("Non-Permanent")"}];
+        var ValueType= [{id:0,name:"@MsgUtils.Instance.Trls("Entervaludirectemployee")"}, {id:1,name:"@MsgUtils.Instance.Trls("Selectoneformulaforallemploye")"}, {id:2,name:"@MsgUtils.Instance.Trls("Spformulawhenlinkmployees")"}];
+        var UoMeasure= [{id:1,name:"@MsgUtils.Instance.Trls("Money")"}, {id:2,name:"@MsgUtils.Instance.Trls("Units")"},{id:3,name:"@MsgUtils.Instance.Trls("Hours")"},{id:4,name:"@MsgUtils.Instance.Trls("Days")"}];
+        var InValidValue= [{id:1,name:"@MsgUtils.Instance.Trls("Waring Message")"}, {id:2,name:"@MsgUtils.Instance.Trls("Error Message")"}];
+        var Termination= [{id:0,name:"@MsgUtils.Instance.Trls("To termination date")"}, {id:1,name:"@MsgUtils.Instance.Trls("Next close period")"},{id:2,name:"@MsgUtils.Instance.Trls("Next settlement date")"}];
+
+        var Curr = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Curr));
+        var Account = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Account));
+        var TstFormula= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TstFormula));
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "SalaryItemForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "SalaryItems", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="Payrolls";
+                data.FormAction = "@Url.Action("Details", "SalaryItem")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+
+                if(read == 1) data.mode = 'show';
+                $("#SalaryIDiv").Forms(data, model);
+
+                var SalaryFlag=$("#IsSalaryItem").val();
+                if(SalaryFlag=="true")
+                    $("#UoMeasure").parents(".form-group").css("display", "none");
+                else{
+                    $("#PrimaryClass , #SecondaryClass").closest(".form-group").css("display", "none");
+                    $("#Freezed").parents("fieldset").css("display", "none");
+                    $("#DebitGlAccT").parents("fieldset").css("display", "none");
+                    $("#ItemType,#Basis,#ValueType ").parents(".form-group").css("display", "none");
+                }
+                ChangeUoMeasure(model.UoMeasure);
+                ChangeValueType(model.ValueType);
+                ChangeItemType(model.ItemType);
+
+                FormJs.fillOptionsDynamic($("#" + formId), "PrimaryClass", PrimaryClass, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Termination", Termination, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "InValidValue", InValidValue, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "UoMeasure", UoMeasure, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ValueType", ValueType, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ItemType", ItemType, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Basis", Basis, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "BatchCurr", Curr, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "InputCurr", Curr, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "CreditGlAccT", Account, model,{ objectName: "Accounts" });
+                FormJs.fillOptionsDynamic($("#" + formId), "DebitGlAccT", Account, model,{ objectName: "Accounts" });
+                FormJs.fillOptionsDynamic($("#" + formId), "TstFormula", TstFormula, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "FormulaId", TstFormula, model);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+                var hrefFormula='&nbsp;&nbsp;&nbsp;<a id="formulaDesign">@MsgUtils.Instance.Trls("Formula Design")</a>&nbsp;&nbsp;&nbsp;';
+                $("#SalaryIDiv div[name='FormuleTest']").append(hrefFormula);
+
+                var infoTable='&nbsp;&nbsp;&nbsp;<a id="infoTable">@MsgUtils.Instance.Trls("Table Design")</a>&nbsp;&nbsp;&nbsp;';
+                $("#SalaryIDiv div[name='FormuleTest']").append(infoTable);
+                if(read == 1 || model.Id==0){
+                    $("#formulaDesign").click( function (e){
+                        return false;
+                    });
+
+                    $("#infoTable").click( function (e){
+                        return false;
+                    });
+                }
+
+               else{
+                    //formula
+                    $("#formulaDesign").click( function (e){
+                        e.preventDefault();
+                        var TstFl=$("#TstFormula").val();
+                        if($("#" + formId).find(".k-invalid").length > 0) return ;
+                        FormJs.saveForm($("#"+formId), $(this), function () {
+                            $("#renderbody").load("@Url.Action("Details", "Formula")?id="+TstFl+"&SalaryItem=@Model.Id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+                        });
+                    });
+                    //  info table
+                    $("#infoTable").click( function (e){
+                        e.preventDefault();
+                        var TstFl=$("#TstFormula").val();
+                        if($("#" + formId).find(".k-invalid").length > 0) return ;
+                        FormJs.saveForm($("#"+formId), $(this), function () {
+                            $("#renderbody").load("@Url.Action("Index", "SalariesDesign")?SalaryItem=@Model.Id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+                        });
+                    });
+                }
+                $("#" + formId).on('blur','#StartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    if( $('#EndDate').hasClass("k-invalid")){
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next().remove();
+                    }
+                });
+                $("#"+formId).on('blur','#EndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+
+                $('#SalaryIDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+                $('[name="ItemType"]').change(function(e){
+                    var record= $(this).val();
+                    ChangeItemType(record);
+                });
+
+                $("#SalaryIDiv").on("change","#ValueType",null,function(e){
+                    var record= $(this).val();
+                    ChangeValueType(record);
+                });
+                $("#SalaryIDiv").on("change","#UoMeasure",null,function(e){
+                    var record= $(this).val();
+                    ChangeUoMeasure(record);
+                });
+
+                $("#SalaryIDiv").on("blur","#ShortName",null,function(e){
+                    var pattern=new RegExp('^[A-Za-z0-9]*$');
+                    var tesFlag=pattern.test($(this).val());
+                    if(tesFlag==false){
+                        if ( $("#ShortName") && ! $("#ShortName").hasClass("k-invalid")) {
+                            $("#ShortName").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#ShortName").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ShortName' role='alert'>@MsgUtils.Instance.Trls("NotMatchShortName")</span>");
+                        }
+                    }
+                    else
+                        if($('#ShortName').hasClass("k-invalid")){
+                            $('#ShortName').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#ShortName").next().remove();
+                        }
+                });
+
+                $("#SalaryIDiv").on('click',"#saveChanges",null, function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+            }
+        });
+    });
+
+</script>
+
+
+
+
+

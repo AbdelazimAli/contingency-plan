@@ -1,0 +1,338 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Payroll
+@model SalaryDesignSecondViewModel
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+<div id="SecondPageDiv">
+
+</div>
+
+<script>
+    var colms = [{id:0, name:"IJob"},{id:2, name:"IPayrollGrade"},{id:3,name:"IGrade"},{id:4,name:"ISubGrade"},{id:5,name:"IPoints"},{id:6,name:"EditPoints"},
+                    {id:7,name:"ILocation"},{id:8,name:"IDepartment"},{id:9,name:"IPerformance"},{id:10,name:"IPersonType"}];
+    var Gridcols = [];
+    $(function () {
+       
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var Basismodel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Items = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SalaryItem));
+        var Formula = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.FormulaId));
+        var des = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Desc));
+        Basismodel.SalItemId = Salaryitem;
+        var formId = "SalaryBasisFormPage2";
+        $.getJSON(url, { objectname: "SalaryBasisPage2", version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.FormAction = "@Url.Action("DetailsSecondPage", "SalariesDesign")";
+            data.TableName = "InfoTables";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = "@admin";
+            data.rtl = @rtl.ToString().ToLower();
+            $("#SecondPageDiv").Forms(data, Basismodel);
+            
+            FormJs.fillOptionsDynamic($("#"+formId),"SalItemId",Items, Basismodel)
+            FormJs.fillOptionsDynamic($("#"+formId),"FormulaId",Formula, Basismodel)
+            FormJs.fillOptionsDynamic($("#"+formId),"Y_N_Formula",Formula, Basismodel)
+            
+            $(".form-control").not("span.k-dropdown:parent").css("height","15px");
+            $(".col-md-10,.col-md-8").css("width", "60%");    
+            $("#"+formId).find(".panel").not(".set").append('<button class="submit" onclick="return false;" style="display:none"></button>');
+
+            $("#Description").text(des);
+           
+            purposeValue = $("input[name='Purpose']:checked").val()
+
+            if(purposeValue == 1){
+                $("div[name='FormulaSec']").css("display","none");
+                $("div[name='CellValueSec']").css("display","");
+
+            }
+            else{
+                $("div[name='FormulaSec']").css("display"," ");
+                $("div[name='CellValueSec']").css("display","none");
+            }
+            
+            $("#"+formId).on("change",".salarylinks",null,function(){
+                var ele = $(this);
+                var name = ele.attr("name");
+
+                if(name == "IPoints" || name == "ISubGrade"){
+                    if(name == "IPoints" && ele.prop("checked")){
+                        $("#ISubGrade").prop("checked",false);
+                        if(!$("#IGrade").prop("checked"))
+                            $("#IPayrollGrade").prop("checked",true);
+                    }else if(name == "ISubGrade" && ele.prop("checked")){
+                        $("#IPoints").prop("checked",false);
+                        $("#IPayrollGrade").prop("checked",false);
+                        $("#IGrade").prop("checked",true);
+                    }
+                }
+
+                if(name == "IPayrollGrade" && ele.prop("checked"))
+                    $("#IGrade").prop("checked",false);
+                else if(name == "IGrade" && ele.prop("checked"))
+                    $("#IPayrollGrade").prop("checked",false);
+                else if(name == "IPayrollGrade" && !ele.prop("checked"))
+                {
+                    $("#IPoints").prop("checked",false);
+                    $("#ISubGrade").prop("checked",false);
+                }else if(name == "IGrade" && !ele.prop("checked"))
+                {
+                    $("#IPoints").prop("checked",false);
+                    $("#ISubGrade").prop("checked",false);
+                }
+
+                //GridCols
+                if(ele.prop("checked")){
+                    var x =0;
+                    switch(name){
+                        case "IJob":
+                            Gridcols.push("JobId");
+                            break;
+                        case "IDepartment":
+                            Gridcols.push("DeptId");
+                            break;
+                        case "ILocation":
+                            Gridcols.push("LocationId");
+                            break;
+                        case "IPerformance":
+                            Gridcols.push("Performance");
+                            break;
+                        case "IPersonType":
+                            Gridcols.push("PersonType");
+                            break;
+                        case "IPeopleGroup":
+                            Gridcols.push("GroupId");
+                            break;
+                        case "IPayrollGrade":
+                            x= $.inArray("Grade",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            Gridcols.push("GradeId");
+                            break;
+                        case "IGrade":
+                            x= $.inArray("GradeId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            Gridcols.push("Grade");
+                            break;
+                        case "ISubGrade":
+                            x= $.inArray("Point",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            if($.inArray("Grade",Gridcols) == -1)
+                                Gridcols.push("Grade");
+                            Gridcols.push("SubGrade");
+                            break;
+                        case "IPoints":
+                            x= $.inArray("SubGrade",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            if($.inArray("GradeId",Gridcols) == -1)
+                                Gridcols.push("GradeId");
+                            Gridcols.push("Point");
+                            break;
+                        default:
+                            break;
+                    }
+                }
+                else{
+                    var x = 0;
+                    switch(name){
+                        case "IJob":
+                            x= $.inArray("JobId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IDepartment":
+                            x= $.inArray("DeptId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "ILocation":
+                            x= $.inArray("LocationId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IPerformance":
+                            x= $.inArray("Performance",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IPersonType":
+                            x= $.inArray("PersonType",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IPeopleGroup":
+                            x= $.inArray("GroupId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IPayrollGrade":
+                            x= $.inArray("GradeId",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IGrade":
+                            x= $.inArray("Grade",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "ISubGrade":
+                            x= $.inArray("SubGrade",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        case "IPoints":
+                            x= $.inArray("Point",Gridcols);
+                            if(x != -1)
+                                Gridcols.splice(x,1);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+
+                // ChangeInGrid
+                if($("#LinkTableGridDiv").length != 0){
+                    var grid = $("#LinkTableGridDiv").data("kendoGrid");
+                    if(!ele.prop('checked')){
+                        switch(name){
+                            case "IJob":
+                                grid.hideColumn("JobId");
+                                break;
+                            case "IDepartment":
+                                grid.hideColumn("DeptId");
+                                break;
+                            case "ILocation":
+                                grid.hideColumn("LocationId");
+                                break;
+                            case "IPerformance":
+                                grid.hideColumn("Performance");
+                                break;
+                            case "IPersonType":
+                                grid.hideColumn("PersonType");
+                                break;
+                            case "IPeopleGroup":
+                                grid.hideColumn("GroupId");
+                                break;
+                            case "IPayrollGrade":
+                                grid.hideColumn("Point");
+                                grid.hideColumn("GradeId");
+                                break;
+                            case "IGrade":
+                                grid.hideColumn("SubGrade");
+                                grid.hideColumn("Grade");
+                                break;
+                            case "ISubGrade":
+                                grid.hideColumn("SubGrade");
+                                break;
+                            case "IPoints":
+                                grid.hideColumn("Point");
+                                break; 
+                            default:
+                                break;
+                        }
+                    }
+                    else{
+                        switch(name){
+                            case "IJob":
+                                grid.showColumn("JobId");
+                                break;
+                            case "IDepartment":
+                                grid.showColumn("DeptId");
+                                break;
+                            case "ILocation":
+                                grid.showColumn("LocationId");
+                                break;
+                            case "IPerformance":
+                                grid.showColumn("Performance");
+                                break;
+                            case "IPersonType":
+                                grid.showColumn("PersonType");
+                                break;
+                            case "IPeopleGroup":
+                                grid.showColumn("GroupId");
+                                break;
+                            case "IPayrollGrade":
+                                grid.hideColumn("Grade");
+                                grid.hideColumn("SubGrade");
+                                grid.showColumn("GradeId");
+                                break;
+                            case "IGrade":
+                                grid.showColumn("Grade");
+                                grid.hideColumn("GradeId");
+
+                                break;
+                            case "ISubGrade":
+                                grid.showColumn("Grade");
+                                grid.showColumn("SubGrade");
+                                grid.hideColumn("GradeId");
+                                grid.hideColumn("Point");
+                                break;
+                            case "IPoints":
+                                if($("#IGrade").prop("checked"))
+                                    grid.hideColumn("GradeId");
+                                else
+                                    grid.showColumn("GradeId");
+
+                                grid.hideColumn("SubGrade");
+                                grid.showColumn("Point");
+                                break; 
+                            default:
+                                break;
+                        }
+                    }
+                }
+
+                //drp downList 
+                if($("#LinkTableType").length != 0){
+                    var drp = $("#LinkTableType").data("kendoDropDownList");
+
+                    if(ele.prop("checked")){
+                        var x = $.grep(colms,function(el){ if(el.name == name) return el;});
+                        if(x.length != 0)
+                            $(drp.items()[x[0].id]).css("display","");
+              
+                        if(name == "IPoints"){
+                            $(drp.items()[6]).css("display","");
+                            $(drp.items()[4]).css("display","none");
+                        }
+                        if(name == "ISubGrade"){
+                            $(drp.items()[6]).css("display","none");
+                            $(drp.items()[5]).css("display","none");
+                        }
+
+                        
+                        if(name == "IGrade")
+                            $(drp.items()[2]).css("display","none");
+
+                        if(name == "IPayrollGrade"){
+                            $(drp.items()[3]).css("display","none");
+                            $(drp.items()[4]).css("display","none");
+
+                        }
+                    }else{
+                        var x = $.grep(colms,function(el){ if(el.name == name) return el;});
+                        if(x.length != 0)
+                            $(drp.items()[x[0].id]).css("display","none");
+              
+                        if(name == "IPoints")
+                            $(drp.items()[6]).css("display","none");
+
+                    }
+                }
+
+            });
+
+
+        });
+       
+    });
+</script>

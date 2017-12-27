@@ -1,0 +1,57 @@
+﻿@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br>
+
+<div id="PayReqDiv"></div>
+
+<script>
+    var approvalStatus =  [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' },
+         { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+         { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }];
+
+    var payMethods = [{ value: 1, text: '@MsgUtils.Instance.Trls("Cash")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Cheque")' }, { value: 3, text: '@MsgUtils.Instance.Trls("Bank Transfer")' }];
+
+    Grids.indexGrid({
+        read: "@Url.Action("GetPayRequests", "PayRequest")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "PayRequest")",
+        edit: "@Url.Action("Details", "PayRequest")",
+        del: "@Url.Action("DeletePay", "PayRequest")",
+        objectName: "PayRequests",  // name of the page or table name used to create local db key
+        gridName: "PayReqDiv",
+        recordName: "RequestNo",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{ field: "ApprovalStatus", values: approvalStatus }, { field: "PayMethod", values: payMethods }, { field: "RequestNo", locked: true }],
+        dataBound: function (e) {
+            var gridName = this.gridName;
+            $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                var row = $(this).closest("tr");
+                var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 1) $(this).toggle(); //hide delete btn
+                else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+            });
+        }
+    });
+</script>
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "PayRequest") },
+    { "Admin", admin}, { "GridName", "PayReqDiv" }, {"Functions",ViewBag.Functions} })
+
+
+

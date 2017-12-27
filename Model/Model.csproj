@@ -1,0 +1,429 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B85E0E6B-9AAB-475B-9D0A-99503CC0FCDA}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Model</RootNamespace>
+    <AssemblyName>Model</AssemblyName>
+    <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Domain\Benefits\BenefitPlan.cs" />
+    <Compile Include="Domain\Benefits\BenefitServ.cs" />
+    <Compile Include="Domain\Benefits\BenefitServPlans.cs" />
+    <Compile Include="Domain\Benefits\EmpBenefit.cs" />
+    <Compile Include="Domain\Benefits\EmpRelative.cs" />
+    <Compile Include="Domain\Budgets\BudgetItem.cs" />
+    <Compile Include="Domain\Budgets\CompanyBudget.cs" />
+    <Compile Include="Domain\Budgets\DeptBudget.cs" />
+    <Compile Include="Domain\Budgets\FiscalYear.cs" />
+    <Compile Include="Domain\Budgets\PosBudget.cs" />
+    <Compile Include="Domain\Benefits\BenefitRequest.cs" />
+    <Compile Include="Domain\Custody\CustodyCat.cs" />
+    <Compile Include="Domain\Custody\DocBorrowList.cs" />
+    <Compile Include="Domain\Custody\EmpCustody.cs" />
+    <Compile Include="Domain\Custody\EmpDocBorrow.cs" />
+    <Compile Include="Domain\Discipline\Investigation.cs" />
+    <Compile Include="Domain\Employee\RenewRequest.cs" />
+    <Compile Include="Domain\Form\FlexForm.cs" />
+    <Compile Include="Domain\Form\FlexFormColumn.cs" />
+    <Compile Include="Domain\Form\FlexFormFS.cs" />
+    <Compile Include="Domain\Job\CareerPathJobs.cs" />
+    <Compile Include="Domain\Leave\AssignOrder.cs" />
+    <Compile Include="Domain\Leave\DeptJobLeavePlan.cs" />
+    <Compile Include="Domain\MailMerge\HRLetterLog.cs" />
+    <Compile Include="Domain\MailMerge\MailToken.cs" />
+    <Compile Include="Domain\MailMerge\Meeting.cs" />
+    <Compile Include="Domain\MailMerge\MeetSchedual.cs" />
+    <Compile Include="Domain\MailMerge\NotifyLetter.cs" />
+    <Compile Include="Domain\MailMerge\PagePrint.cs" />
+    <Compile Include="Domain\Menu\MenuFunction.cs" />
+    <Compile Include="Domain\Training\PeopleQual.cs" />
+    <Compile Include="Domain\Leave\GroupLeave.cs" />
+    <Compile Include="Domain\Menu\Language.cs" />
+    <Compile Include="Domain\Notifications\Filter.cs" />
+    <Compile Include="Domain\Notifications\EmailAccount.cs" />
+    <Compile Include="Domain\Notifications\Notification.cs" />
+    <Compile Include="Domain\Notifications\NotifyCondition.cs" />
+    <Compile Include="Domain\Payroll\Account.cs" />
+    <Compile Include="Domain\SystemTools\AuditTrail.cs" />
+    <Compile Include="Domain\Benefits\Benefit.cs" />
+    <Compile Include="Domain\SystemTools\CheckList.cs" />
+    <Compile Include="Domain\Discipline\ComplainRequest.cs" />
+    <Compile Include="Domain\Custody\Custody.cs" />
+    <Compile Include="Domain\Discipline\DisplinPeriod.cs" />
+    <Compile Include="Domain\Discipline\Discipline.cs" />
+    <Compile Include="Domain\Discipline\DisplinRange.cs" />
+    <Compile Include="Domain\Employee\EmpChkList.cs" />
+    <Compile Include="Domain\Discipline\EmpDiscipline.cs" />
+    <Compile Include="Domain\Employee\Employement.cs" />
+    <Compile Include="Domain\Employee\EmpPoints.cs" />
+    <Compile Include="Domain\Employee\EmpTask.cs" />
+    <Compile Include="Domain\Payroll\Formula.cs" />
+    <Compile Include="Domain\Payroll\InfoTable.cs" />
+    <Compile Include="Domain\Payroll\PayRequest.cs" />
+    <Compile Include="Domain\Payroll\PayrollSetup.cs" />
+    <Compile Include="Domain\Payroll\SalaryVar.cs" />
+    <Compile Include="Domain\Leave\LeaveAdjust.cs" />
+    <Compile Include="Domain\Leave\LeaveRequest.cs" />
+    <Compile Include="Domain\Leave\LeaveTrans.cs" />
+    <Compile Include="Domain\Leave\LeaveType.cs" />
+    <Compile Include="Domain\Countries\Address.cs" />
+    <Compile Include="Domain\Employee\Assignment.cs" />
+    <Compile Include="Domain\Budgets\Budget.cs" />
+    <Compile Include="Domain\Job\CareerPath.cs" />
+    <Compile Include="Domain\Countries\City.cs" />
+    <Compile Include="Domain\Grid\ColumnTitle.cs" />
+    <Compile Include="Domain\Company\Company.cs" />
+    <Compile Include="Domain\Company\CompanyBranch.cs" />
+    <Compile Include="Domain\Company\CompanyDocAttr.cs" />
+    <Compile Include="Domain\Company\CompanyDocsViews.cs" />
+    <Compile Include="Domain\Company\CompanyPartner.cs" />
+    <Compile Include="Domain\Countries\Country.cs" />
+    <Compile Include="Domain\Payroll\Currency.cs" />
+    <Compile Include="Domain\Countries\District.cs" />
+    <Compile Include="Domain\SystemTools\DocType.cs" />
+    <Compile Include="Domain\Form\FieldSet.cs" />
+    <Compile Include="Domain\Form\FlexColumn.cs" />
+    <Compile Include="Domain\Form\FlexData.cs" />
+    <Compile Include="Domain\Menu\Function.cs" />
+    <Compile Include="Domain\Employee\Provider.cs" />
+    <Compile Include="Domain\Job\JobClass.cs" />
+    <Compile Include="Domain\Payroll\JobPayrollGrade.cs" />
+    <Compile Include="Domain\Employee\Kafeel.cs" />
+    <Compile Include="Domain\SystemTools\Holiday.cs" />
+    <Compile Include="Domain\MailMerge\HRLetter.cs" />
+    <Compile Include="Domain\SystemTools\LookUpTitles.cs" />
+    <Compile Include="Domain\Payroll\Payroll.cs" />
+    <Compile Include="Domain\Employee\PeopleGroup.cs" />
+    <Compile Include="Domain\Training\PeopleTraining.cs" />
+    <Compile Include="Domain\Job\Position.cs" />
+    <Compile Include="Domain\CompanyStructure\Diagram.cs" />
+    <Compile Include="Domain\Leave\LeavePosting.cs" />
+    <Compile Include="Domain\Budgets\Periods.cs" />
+    <Compile Include="Domain\Workflow\RequestWf.cs" />
+    <Compile Include="Domain\Menu\Role.cs" />
+    <Compile Include="Domain\Payroll\SalaryItem.cs" />
+    <Compile Include="Domain\Employee\Termination.cs" />
+    <Compile Include="Domain\Notifications\SchedualTask.cs" />
+    <Compile Include="Domain\Training\TrainCourse.cs" />
+    <Compile Include="Domain\Training\TrainEvent.cs" />
+    <Compile Include="Domain\Training\TrainPath.cs" />
+    <Compile Include="Domain\Workflow\WfTrans.cs" />
+    <Compile Include="Domain\Workflow\WF_TRANS.cs" />
+    <Compile Include="Domain\Notifications\Message.cs" />
+    <Compile Include="Domain\Workflow\Workflow.cs" />
+    <Compile Include="obj\Debug\TemporaryGeneratedFile_036C0B5B-1481-4323-8D20-8F5ADCB23D92.cs" />
+    <Compile Include="obj\Debug\TemporaryGeneratedFile_5937a670-0e60-4077-877b-f7221da3dda1.cs" />
+    <Compile Include="obj\Debug\TemporaryGeneratedFile_E7A71F73-0F8D-4B9B-B56E-8E70B10BC5D3.cs" />
+    <Compile Include="ViewModel\Administration\AuditViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelCustodyViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelFormLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelGridCustodyViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelGridFormLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelGridJobViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelGridPeopleViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelJobViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExtendOrFinishContractViewModel.cs" />
+    <Compile Include="ViewModel\Administration\GridColumnViewModel.cs" />
+    <Compile Include="ViewModel\Administration\GridListViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CompanyDocAttrViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DocTypeAttrViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DocTypeViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DropDownList.cs" />
+    <Compile Include="ViewModel\Administration\ExcelPeopleViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FilteringInfo.cs" />
+    <Compile Include="ViewModel\Administration\FlexColumnsViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FlexDataViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FunctionVM.cs" />
+    <Compile Include="ViewModel\Administration\LanguageGridViewModel.cs" />
+    <Compile Include="ViewModel\Administration\LookupUserCodeViewModel.cs" />
+    <Compile Include="Domain\SystemTools\PersonSetup.cs" />
+    <Compile Include="Domain\Menu\RoleMenu.cs" />
+    <Compile Include="Domain\SystemTools\SystemCode.cs" />
+    <Compile Include="ViewModel\Administration\AddLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CityViewModel.cs" />
+    <Compile Include="ViewModel\Administration\MailMergeArrayViewModel.cs" />
+    <Compile Include="ViewModel\Administration\MsgTblViewModel.cs" />
+    <Compile Include="ViewModel\Administration\PeopleExportViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UserLogViewModel.cs" />
+    <Compile Include="ViewModel\Administration\WorkFlowRangVM.cs" />
+    <Compile Include="ViewModel\NewCompany.cs" />
+    <Compile Include="ViewModel\Notification\AppendMsgViewModel.cs" />
+    <Compile Include="ViewModel\Notification\EmailAccountFormViewModel.cs" />
+    <Compile Include="ViewModel\Notification\EmailAccountViewModel.cs" />
+    <Compile Include="ViewModel\Notification\EmailLogViewModel.cs" />
+    <Compile Include="ViewModel\Notification\FilterGridViewModel.cs" />
+    <Compile Include="ViewModel\Notification\MeetingViewModel.cs" />
+    <Compile Include="ViewModel\Notification\MsgTemplateViewModel.cs" />
+    <Compile Include="ViewModel\Notification\NotificationMenuViewModel.cs" />
+    <Compile Include="ViewModel\Notification\NotificationViewModel.cs" />
+    <Compile Include="ViewModel\Notification\SchedualeTaskViewModel.cs" />
+    <Compile Include="ViewModel\Notification\NotifyConditionViewModel.cs" />
+    <Compile Include="ViewModel\Notification\SmsLogViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\FormulaViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\LinkTableVM.cs" />
+    <Compile Include="ViewModel\Payroll\PayRequestViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\AccountSetupViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\LinkTableValues.cs" />
+    <Compile Include="ViewModel\Payroll\LinkTableViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\AccountViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\PayrollFormSetupViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\PayrollVarViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\RangeTableViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\RangeTableVm.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryBasisDesignViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\PayrollGradesViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryDesignSecondViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryEmpVarGridViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryEmpVarViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryItemViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SalaryVarFormViewModel.cs" />
+    <Compile Include="ViewModel\Payroll\SubPeriodsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\AddTrailViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\AddWfViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UserCompaniesVM.cs" />
+    <Compile Include="ViewModel\Personnel\AssignHistoryViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\AssignmentFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\AssignmentGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\AssignmentVM.cs" />
+    <Compile Include="ViewModel\Personnel\AssignOrderViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\BenefitViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\BenfitServiceViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CalenderViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\ChangesViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\ChartViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CheckListFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\ColumnDropdownViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CompanyDiagramViewModel.cs" />
+    <Compile Include="ViewModel\Administration\OptionsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CompanyFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CompanyStructureViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CountryViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CurrencyViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DistrictViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DomainUsersviewmodel.cs" />
+    <Compile Include="ViewModel\Administration\FunctionViewModel.cs" />
+    <Compile Include="ViewModel\Administration\GridDesignViewModel.cs" />
+    <Compile Include="ViewModel\Administration\LayoutViewModels.cs" />
+    <Compile Include="ViewModel\Administration\FieldSetViewModel.cs" />
+    <Compile Include="Domain\Form\FormColumn.cs" />
+    <Compile Include="Domain\Grid\PageDiv.cs" />
+    <Compile Include="Domain\Job\Job.cs" />
+    <Compile Include="Domain\CompanyStructure\Location.cs" />
+    <Compile Include="Domain\SystemTools\LookUpUserCode.cs" />
+    <Compile Include="Domain\SystemTools\LookUpCode.cs" />
+    <Compile Include="Domain\Menu\Menu.cs" />
+    <Compile Include="Domain\Translation\NameTbl.cs" />
+    <Compile Include="Domain\Translation\MsgTbl.cs" />
+    <Compile Include="Domain\Payroll\PayrollGrade.cs" />
+    <Compile Include="Domain\Employee\Person.cs" />
+    <Compile Include="Domain\Training\Qualification.cs" />
+    <Compile Include="Domain\Menu\RoleColumns.cs" />
+    <Compile Include="Domain\Grid\GridColumn.cs" />
+    <Compile Include="Domain\Form\Section.cs" />
+    <Compile Include="Domain\Employee\v_employeestore.cs" />
+    <Compile Include="Domain\SystemTools\SysColumns.cs" />
+    <Compile Include="Domain\Countries\World.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ViewModel\Administration\BranchesViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CheckParm.cs" />
+    <Compile Include="ViewModel\Administration\ColumnInfoViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ColumnsView.cs" />
+    <Compile Include="ViewModel\Administration\CompanyDocViewModel.cs" />
+    <Compile Include="ViewModel\Administration\CompanyViewModel.cs" />
+    <Compile Include="ViewModel\Administration\DataSource.cs" />
+    <Compile Include="ViewModel\Administration\FileUploaderViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FormColumnViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FormDesignViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FormErrorViewModel.cs" />
+    <Compile Include="ViewModel\Administration\GridViewModel.cs" />
+    <Compile Include="ViewModel\Administration\keyAttribute.cs" />
+    <Compile Include="ViewModel\Administration\LabelViewModel.cs" />
+    <Compile Include="ViewModel\Administration\FormViewModel.cs" />
+    <Compile Include="ViewModel\Administration\LocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\LookupCodesViewModel.cs" />
+    <Compile Include="ViewModel\Administration\MenuTreeListViewModel.cs" />
+    <Compile Include="ViewModel\Administration\PageDivViewModel.cs" />
+    <Compile Include="ViewModel\Administration\PartnersViewModel.cs" />
+    <Compile Include="ViewModel\Administration\PeopleViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ProfileViewModel.cs" />
+    <Compile Include="ViewModel\Administration\RoleFormColumnViewModel.cs" />
+    <Compile Include="ViewModel\Administration\RoleGridColumnsViewModel.cs" />
+    <Compile Include="ViewModel\Administration\RoleMenuViewModel.cs" />
+    <Compile Include="ViewModel\Administration\RoleUserViewModel.cs" />
+    <Compile Include="ViewModel\Administration\SectionViewModel.cs" />
+    <Compile Include="ViewModel\Administration\SelectOptionsViewModel.cs" />
+    <Compile Include="ViewModel\Administration\TreeViewModel.cs" />
+    <Compile Include="ViewModel\Administration\TreeViewParm.cs" />
+    <Compile Include="ViewModel\Administration\UserCompanyViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UserRoleViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UsersViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UserViewModel.cs" />
+    <Compile Include="ViewModel\Administration\LookUpViewModel.cs" />
+    <Compile Include="ViewModel\Administration\MenuViewModel.cs" />
+    <Compile Include="Domain\CompanyStructure\CompanyStructure.cs" />
+    <Compile Include="ViewModel\Personnel\BudgetItemviewModelPosi.cs" />
+    <Compile Include="ViewModel\Personnel\BudgetViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CareerPathJobsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CareerPathViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\ComplaintRequestViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CustodyFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CustodyViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DeciplineInfoViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DeptLeavePlanViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DisciplineViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DisplinePeriodNoViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DisplinPeriodViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DisplinRangeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DocMergeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\DocTypeFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpActivePeriods.cs" />
+    <Compile Include="ViewModel\Personnel\EmpChkListViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpCustodyViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpDisciplineFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpDisciplineViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpDocBorrowViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpLeaveDays.cs" />
+    <Compile Include="ViewModel\Personnel\EmployeeBenefitViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmployeeMessagesViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmployeePointsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmployeeTrainPathViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmployementViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpQualificationViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpsInYearViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpTaskViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpTasksViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpTaskVM.cs" />
+    <Compile Include="ViewModel\Administration\ExcelFileImports.cs" />
+    <Compile Include="ViewModel\Personnel\ErrorsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\FiscalYearViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\FlexFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\FormList.cs" />
+    <Compile Include="ViewModel\Personnel\HolidayViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\HospitalViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\HrlettersViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\InvesigationIndexViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\InvestigationFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\JobCandidatesViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\JobClassViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\JobGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\JobViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\KafeelViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveBalanceGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeavePostingViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveActionViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveRangeVM.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveReqGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveRequestViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveTransViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveTypeFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\LeaveTypeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\MailMergeViewmodel.cs" />
+    <Compile Include="ViewModel\Personnel\ManagerEmployeeDiagram.cs" />
+    <Compile Include="ViewModel\Personnel\BenfitServiceReqViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpServiceViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\BenefitRequestFollowUp.cs" />
+    <Compile Include="ViewModel\Personnel\MessageViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\NotifiyLetterViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PayrollViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeopleGroupViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeoplesViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeopleTrainGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeopleTrainViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeriodIDTypeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PeriodsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PersonnelViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PersonViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PositionDiagram.cs" />
+    <Compile Include="ViewModel\Personnel\PositionViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\QualGroupsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\QualificationExcelFile.cs" />
+    <Compile Include="ViewModel\Personnel\RenewRequestViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\ReportListViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\RequestDisplinRangeGrid.cs" />
+    <Compile Include="ViewModel\Personnel\RequestDisplinRepeatGrid.cs" />
+    <Compile Include="ViewModel\Personnel\RequestDocTypeAttrGrid.cs" />
+    <Compile Include="ViewModel\Personnel\RequestEmpCustodyGrid.cs" />
+    <Compile Include="ViewModel\Personnel\RequestWfFormViewModel.cs" />
+    <Compile Include="ViewModel\Administration\UserRoleVm.cs" />
+    <Compile Include="ViewModel\Personnel\SetCurrencyInfoViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\SubperiodVM.cs" />
+    <Compile Include="ViewModel\Personnel\SysCodeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TermDurationViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TrainEventFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TrainEventViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WfRoleViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WfRoleWfVM.cs" />
+    <Compile Include="ViewModel\Personnel\RolesViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\SysDisciplinePeriodViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TerminationFormViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TerminationGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TrainCourseViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TrainPathViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WfViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WorkFlowGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WorkFlowObjectsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\WorkFlowViewModel.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="bin\Debug\Model.dll.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\EntityFramework.dll" />
+    <Content Include="bin\Debug\EntityFramework.SqlServer.dll" />
+    <Content Include="bin\Debug\Model.dll" />
+    <Content Include="bin\Debug\Model.pdb" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

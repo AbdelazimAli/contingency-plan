@@ -1,0 +1,132 @@
+﻿@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+
+<!--Leaves-->
+<div class="panel panel-default ">
+    <div class="panel-heading">
+        <i class="fa fa-calendar"></i> @MsgUtils.Instance.Trls("Leaves Statistics") <span class="filterSpan"></span>
+
+        <!--Range Filter-->
+        <div class="btn-group" style="float: right;">
+            <a href="" class="btn btn-info btn-circle btn-sm dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
+                <span class="fa fa-pencil"></span>
+            </a>
+            <ul id="filterRange" class="dropdown-menu pull-right">
+                <li><a href="javascript:;" class="range" id="1"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Today")</a></li>
+                <li><a href="javascript:;" class="range" id="2"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last 3 Days")</a></li>
+                <li><a href="javascript:;" class="range" id="3"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last 7 Days")</a></li>
+                <li><a href="javascript:;" class="range" id="4"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last Month")</a></li>
+                <li><a href="javascript:;" class="range" id="5"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last 3 Months")</a></li>
+                <li><a href="javascript:;" class="range" id="6"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last 6 Months")</a></li>
+                <li><a href="javascript:;" class="range" id="7"><span class="checkedRange fa fa-space"></span>@MsgUtils.Instance.Trls("Last Year")</a></li>
+            </ul>                                               
+        </div>                                                  
+    </div>                                                      
+    <div class="panel-body">
+        <div id="leave-carousel" class="carousel slide" data-ride="carousel">
+            <!-- Indicators -->
+            <ol class="carousel-indicators">
+                <li data-target="#leave-carousel" data-slide-to="0" class="active"></li>
+            </ol>
+
+            <!-- Wrapper for slides -->
+            <div class="carousel-inner">
+                <div class="item active">
+                    <div class="col-md-6">
+                        <button class="btn-xs btn-primary" onclick="Grids.ExportChart('leaves')">@MsgUtils.Instance.Trls("ExportImage")</button>
+                        <div class="my-border" id="leaves"></div>
+                    </div>
+                    <div class="col-md-6"><div class="my-border" id="leavesGridDiv"></div></div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <a class="left carousel-control" href="#leave-carousel" role="button" data-slide="prev">
+                <span class="glyphicon glyphicon-chevron-left"></span>
+            </a>
+            <a class="right carousel-control" href="#leave-carousel" role="button" data-slide="next">
+                <span class="glyphicon glyphicon-chevron-right"></span>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+
+<script>
+    selectedRange = 1;
+    var LeaveStatus;
+
+    function getLeaveDashboard(selectedRange) {
+
+        if (selectedRange == null) {
+            var storedRange = localStorage.getItem("dashboard-range-filter");
+            if (storedRange != null) selectedRange = JSON.parse(storedRange);
+
+            $(".filterSpan").text(" - " + $("#filterRange #" + selectedRange).text());
+            $('.checkedRange').removeClass('fa-check');
+            $('#' + selectedRange).find('.checkedRange').addClass('fa-check');
+        }
+
+        $.get("@Url.Action("LeaveDashboardData", "Dashboard")", { range: selectedRange }, function (data) {
+            LeaveStatus = data.LeaveStatus;
+            leaveInitial(data);
+        });
+    }
+
+    function leaveInitial(data) {
+        //-------------------------Leave Statistics-------------------------
+        //Leave Statistics
+        $("#leaves").kendoChart({
+            dataSource: { data: data.LeaveStatus },
+            title: { text: '@MsgUtils.Instance.Trls("Leaves Statistics") ', align: "center" },
+            legend: { position: 'right' },
+            series: [{ type: 'pie', field: 'value', categoryField: 'category' }],
+            seriesDefaults: { labels: { visible: true, background: 'transparent', template: '${ value } - ${ category }' } },
+            tooltip: { visible: true, template: '${ value } @MsgUtils.Instance.Trls("leaves") ${ category }' },
+            //animation: {type:'fadein', duration: '5000' },
+            dataBound: noDataFunc
+        });
+
+        //Grids
+        if ($("#leavesGridDiv").data("kendoGrid")) $("#leavesGridDiv").data("kendoGrid").dataSource.data(data.LeaveStatus);
+        else {
+            Grids.indexGrid({
+                dataSource: { data: data.LeaveStatus },
+                objectName: "LeaveStatistics",
+                tabeName: "LeaveRequests",
+                gridName: "leavesGridDiv",
+                admin: "@admin",
+                lang: "@culture",
+                height: 388,
+                groupable: false,
+                pageable: false,
+                toolbar: '<div></div>',
+                detailInit: detailInit
+            });
+        }
+
+        function detailInit(e) {
+            $("<div id='Leave" + e.data.Id + "'/>").appendTo(e.detailCell);
+            var gridname = "'Leave" + e.data.Id + "'";
+            Grids.indexGrid({
+                read: "@Url.Action("GetLeaveStatusDetailsGrid", "Dashboard")?range=" + selectedRange + "&approvalStatus=" + e.data.Id,
+                objectName: "LeaveStatisticsDetails",
+                tabeName: "LeaveRequests",
+                gridName: "Leave" + e.data.Id,
+                admin: "@admin",
+                lang: "@culture",
+                height: 230,
+                groupable: false,
+                columnMenu: false,
+                pageable: false,
+                toolbar: '<div></div>'
+            });
+        }
+    }
+</script>

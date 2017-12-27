@@ -1,0 +1,30 @@
+﻿
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<div id="grid">
+
+
+</div>
+<script>
+    Grids.indexGrid({
+        read: "@Url.Action("GetCompanies", "Company")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "Company")",
+        edit: "@Url.Action("Details", "Company")",
+        del: "@Url.Action("DeleteCompany", "Company")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "test",
+        recordName: "Name",
+        gridName: "grid",
+    });
+</script>
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "Company") },
+    { "Admin", admin}, { "GridName", "grid" },{"objectName" , "test"}, {"Functions",ViewBag.Functions} })

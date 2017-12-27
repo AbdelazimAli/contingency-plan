@@ -1,0 +1,485 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.Domain.AssignOrder
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var companyId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="pageTabs"></div>
+<br />
+<div id="docWindow"></div>
+<div id="prevAssignOrdersWindow"></div>
+
+<script>
+    $(function () {
+        FormJs.DrawTabs("pageTabs");
+        picker = "kendoDatePicker";
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        $("#t_WorkFlow").click(function () {
+            $('#tab_WorkFlow').load("@Url.Action("WorkFlow", "Log")" + "?Source=AssignOrder&SourceId=@companyId&DocumentId=" + model.Id + "&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignOrders&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_AudiLog").click(function () {
+            $('#tab_AudiLog').load("@Url.Action("Log", "Log")?id=" + model.Id + "&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignOrders&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_GeneralInformations").click(function () {
+            $("#tab_GeneralInformations").html("<div id='AssignOrderDiv'></div>");
+            LeaveRequesForm();
+        });
+
+        $("#t_GeneralInformations").click();
+        var formId = "FormName";
+
+        function LeaveRequesForm() {
+            var Emp=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employee));
+            var Mangers=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Mangers));
+            var calender =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+            var daydate=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Today));
+
+            // serializing Menu functions region
+            var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+            // end region
+
+            var try1=kendo.toString(new Date(parseInt(daydate.substr(6))), "yyyy-MM-dd");
+            var Durations=[{id:2, name: "@MsgUtils.Instance.Trls("0.25 day")"}, {id: 3, name: "@MsgUtils.Instance.Trls("0.5 day")"}, {id: 1, name: "@MsgUtils.Instance.Trls("Day")"}]
+            var calcs=[{id:1,name:"@MsgUtils.Instance.Trls("Cash")"},{id:2,name:"@MsgUtils.Instance.Trls("Time Compensation")"}];
+            var read = "@Request.QueryString["Read"]";
+            var isShow = read == 1;
+
+            //
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var read = "@Request.QueryString["Read"]";
+            $.getJSON(url, { objectname: 'AssignOrders', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+                data.FormAction = "@Url.Action("Details", "AssignOrder")";
+                data.FormId = 'FormName';
+                data.Culture = '@culture';
+                data.TableName = "AssignOrders";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@companyId";
+                data.btns = ["back", "doc"];
+                if(isShow) {
+                    data.mode = 'show';
+                }
+                // Mail merge region
+                data.reqbtns = [];
+
+                if(funs && funs.length >0)
+                {
+                    if($.inArray('Download',funs) >= 0)
+                        data.reqbtns.push('Download');
+                    if($.inArray('Upload',funs) >= 0)
+                        data.reqbtns.push('Upload');
+                }
+                // End Mail merge region
+                $("#AssignOrderDiv").Forms(data, model);
+
+                FormJs.fillOptionsDynamic($("#" + formId), "ManagerId", Mangers, model,{ remoteTableName: "People" });
+                FormJs.fillOptionsDynamic($("#" + formId), "Duration", Durations,model);
+                FormJs.fillOptionsDynamic($("#" + formId), "CalcMethod", calcs,model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Emp, model);
+                //in Add Mode
+                if(model.Id == 0){
+                    $("#Id").closest(".form-group").hide();
+                }
+                //In Edit Mode
+                if(model.Id != 0  && data.mode != "show"){
+                    ChangEmpLeave(model.EmpId);
+                    GetEmpInformation(model.EmpId);
+                    //Mahshy(model.Duration)
+                    $("#AssignDate").data('kendoDatePicker').min(new Date());
+                }
+                //In Show Mode
+                if(data.mode == "show"){
+                    ChangEmpLeave(model.EmpId);
+                    GetEmpInformation(model.EmpId);
+                }
+                //Hidden Data
+                $("#" + formId).find('[name="HiddenData"]').css("display","none");
+                //min Assign Date
+                if(data.mode != "show"){
+                    $("#AssignDate").kendoDatePicker({min:new Date()})
+                }
+                //----append dynamic elements----
+                $("#" + formId).find("#EmpId").closest(".form-group").before('<a class="ajaxBtn" id="prevAssignorder" >@MsgUtils.Instance.Trls("prevAssignorder")</a>');
+                if(!model.EmpId){
+                    $('#prevAssignorder').hide();
+                }
+
+                function addDaysToDate(date,days) {
+                    var dummy = new Date(date);
+                    return new Date(dummy.setDate(dummy.getDate() + days));
+                }
+
+                function getDatesFromCalender(startDate,stopDate,calender) {
+                    var dateArray=[];
+                    startDate = new Date(startDate).setHours(0,0,0,0);
+                    stopDate = new Date(stopDate).setHours(0,0,0,0);
+                    var currentDate = startDate;
+                    while(new Date(currentDate) <= new Date(stopDate)){
+                        if (currentDate && calender) {
+                            //weekends
+                            if (new Date(currentDate).getDay() == calender.weekend1 || new Date(currentDate).getDay() == calender.weekend2  ) {
+                                dateArray.push(new Date(currentDate));
+                            }
+                            //Custom Holidays
+                            for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                                var holiDate = new Date(calender.CustomHolidays[i].HoliDate);
+                                if (holiDate.getYear() == new Date(currentDate).getYear() && holiDate.getMonth() == new Date(currentDate).getMonth() && holiDate.getDate() == new Date(currentDate).getDate()) {
+                                    dateArray.push(new Date(currentDate));
+                                    break;
+                                }
+                            }
+                            //Standard Holidays
+                            var sholiday = calender.StanderdHolidays;
+                            for (var i = 0; i < sholiday.length; i++) {
+                                if ((new Date(currentDate).getMonth() + 1) == sholiday[i].SMonth && new Date(currentDate).getDate() == sholiday[i].SDay) {
+                                    dateArray.push(new Date(currentDate));
+                                    break;
+                                }
+                            }
+                        }
+                        currentDate = addDaysToDate(currentDate,1).setHours(0,0,0,0);
+                    }
+                    return dateArray;
+                }
+
+                if(model.Id==0){
+                    var TotalArray=[];
+                    var filterArray=[];
+                }
+
+                function disabledDates(){
+                    TotalArray=[];
+                    filterArray=[];
+                    var dur= $("#"+ formId + " #Duration").data("kendoDropDownList").value();
+                    var emp = $("#"+ formId + " #EmpId").data("kendoDropDownList").value();
+
+                    var fromCalender
+                    if($("#"+ formId + " #EmpId").data("kendoDropDownList").value()){
+                        $.get("/AssignOrder/disableEmpAssignDates", {EmpId : emp}, function (result) {
+                            for (var i = 0; i < result.dates.length; i++) {
+                                filterArray.push(new Date(parseInt(result.dates[i].substr(6))));
+                            }
+                            if($("#Duration").val() && $("#Duration").val() == 1){
+                                TotalArray =fromCalender.filter(function(Calend){
+                                    var tot = filterArray.filter(function(filt){
+                                        if(filt.setHours(0,0,0,0) != Calend.setHours(0,0,0,0)){
+                                            return Calend;
+                                        }
+                                    })
+                                    return tot;
+                                })//tot
+                                return TotalArray;
+                            }//if
+                        });
+                    }
+                    if ($("#"+ formId + " #Duration").data("kendoDropDownList").value() && $("#"+ formId + " #Duration").data("kendoDropDownList").value() == 1) {
+                        fromCalender= getDatesFromCalender(new Date(),new Date(new Date().getFullYear(),12,31),calender);
+                    }
+                    return TotalArray;
+                }
+
+                function disabledDateFunc(date) {
+                    var isDisabled = false;
+                    if (date && calender) {
+                        //weekends
+                        if (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2  ) { 
+                            isDisabled = true;}
+                        //Custom Holidays
+                        for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                            var holiDate = new Date(calender.CustomHolidays[i].HoliDate);
+                            if (holiDate.getYear() == date.getYear() && holiDate.getMonth() == date.getMonth() && holiDate.getDate() == date.getDate()) {
+                                isDisabled = true;
+                                break;
+                            }
+                        }
+                        //Standard Holidays
+                        var sholiday = calender.StanderdHolidays;
+                        for (var i = 0; i < sholiday.length; i++) {
+                            if ((date.getMonth() + 1) == sholiday[i].SMonth && date.getDate() == sholiday[i].SDay) {
+                                isDisabled = true;
+                                break;
+                            }
+                        }
+                    }
+                    return !isDisabled;
+                } //disabledDateFunc
+
+                function MangerChanged(MangId){
+                    $.get("/AssignOrder/MangerChanged", {MangId : MangId}, function (result) {
+                        FormJs.fillOptionsDynamic($("#" + formId), "EmpId", result.emps, model);
+                    })
+                }
+                $("input[name='CalcMethod'][value='1']").attr('checked', true);
+                function ChangeEmpCalcsData(EmpId){
+                    $.get("/AssignOrder/EmpChanged", {EmpId : EmpId}, function (result) {
+                        if(result.value > 0){
+                  
+                            $("input[name='CalcMethod'][value="+result.value+"]").attr('checked', true);
+                            editCalcsMethod(result.value);
+                        }
+                        if(result.value == 0){
+
+                            $("input[name='CalcMethod'][value='1']").attr('checked', true);
+                        }
+                    })
+                }
+                //
+                function GetEmpInformation(EmpId){
+                    $.get("/AssignOrder/GetEmpInfo", {EmpId : EmpId}, function (result) {
+                        $("#" + formId).find('[name="HiddenData"]').css("display","");
+                        if(isShow) {
+                            $("#Code").text(result.Info.Code)
+                            $("#Department").text(result.Info.Department)
+                            $("#Job").text(result.Info.Job)
+                        }
+                        else {
+                            $("#Code").val(result.Info.Code)
+                            $("#Department").val(result.Info.Department)
+                            $("#Job").val(result.Info.Job)
+                        }
+                    })
+                }
+                //
+                function ChangEmpLeave(EmpId){
+                    $.get("/AssignOrder/GetSpacificEmpLeave", {EmpId : EmpId}, function (result) {
+                        FormJs.fillOptionsDynamic($("#" + formId), "LeaveTypeId", result.leaves, model);
+                    })
+                }
+                //
+                function EmpChanged(EmpId){
+                    ChangeEmpCalcsData(EmpId)
+                    GetEmpInformation(EmpId)
+                    ChangEmpLeave(EmpId)
+                }
+
+                $("#"+formId).on('change',"#EmpId",function(){
+                    var emp = $("#"+ formId + " #EmpId").data("kendoDropDownList").value();
+                    if(emp == "" || emp == null){
+                        $('#prevAssignorder').hide();
+                    }
+                    else{
+                        $('#prevAssignorder').show();
+                    }
+                    var xArray=[];
+                    xArray = disabledDates();
+                    if($("#Duration").val()==1){
+                        FormJs.disbaleKendoDates($('#AssignDate'),function (date) {
+                            if (date) {
+                                for (var i = 0; i < xArray.length; i++) {
+                                    if (xArray[i].setHours(0,0,0,0) === date.setHours(0,0,0,0)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            return true;
+                        });
+                    }
+                    else{
+                        FormJs.disbaleKendoDates($('#AssignDate'),function (date) {
+                            if (date) {
+                                for (var i = 0; i < xArray.length; i++) {
+                                    if (xArray[i].setHours(0,0,0,0) === date.setHours(0,0,0,0)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                            return true;
+                        });
+                    }
+                    $("#"+ formId + " #Duration").data("kendoDropDownList").value("");
+                    $("#AssignDate").data('kendoDatePicker').value("");
+                    $("#AssignDate").data('kendoDatePicker').min(new Date());
+                    if($("#EmpId").val()){
+                        EmpChanged($("#EmpId").val());
+                    }
+                });
+
+                $("#" + formId).on('change',"#Duration", function(){
+                    var xArray = disabledDates();
+                    if($("#Duration").val()==1){
+                        FormJs.disbaleKendoDates($('#AssignDate'),function (date) {
+                            if (date) {
+                                var disable = true;
+                                for (var i = 0; i < filterArray.length; i++) {
+                                    if (filterArray[i].setHours(0,0,0,0) === date.setHours(0,0,0,0)) {
+                                        return true;
+                                    }
+                                }
+                                disable = disabledDateFunc(date);
+                            }
+                            return disable;
+                        });
+                        $("#AssignDate").data('kendoDatePicker').value("");
+                        $("#AssignDate").data('kendoDatePicker').min(new Date());
+                    }
+                    else{
+                        FormJs.disbaleKendoDates($('#AssignDate'),function (date) {
+                            if (date) {
+                                for (var i = 0; i < filterArray.length; i++) {
+                                    if (filterArray[i].setHours(0,0,0,0) === date.setHours(0,0,0,0)) {
+                                        return true;
+                                    }
+                                }
+                            }
+                            return false;
+                        });
+                        $("#AssignDate").data('kendoDatePicker').value("");
+                        $("#AssignDate").data('kendoDatePicker').min(new Date());
+                    }
+                });
+
+                $("#"+formId).on('change',"#ManagerId",function(){
+                    var manag = $("#"+ formId + " #ManagerId").data("kendoDropDownList").value();
+                    if(manag == "" || manag == null){
+                        $('#prevAssignorder').hide();
+                    }
+                    MangerChanged($("#ManagerId").val());
+                });
+
+                $("#" + formId).on('change',"#AssignDate", function(){
+                    var AssignDate = $("#AssignDate").data('kendoDatePicker').value();
+                    var value = $("input[name='CalcMethod']:checked").val();
+                    if(value == 2){
+                        var Expiry = $("#ExpiryDate").data('kendoDatePicker');
+                        Expiry.value("");
+                        Expiry.trigger('change');
+                        Expiry.min(new Date(new Date(AssignDate.getTime()+(24*60*60*1000)).setHours(0,0,0,0)))
+                    }
+                });
+
+                $("#" + formId).on('blur',"#LeaveTypeId", function(){
+                    if($("#LeaveTypeId").val()==null || $("#LeaveTypeId").val()==""){
+                        FormJs.addFormError(formId,"LeaveTypeId",'@MsgUtils.Instance.Trls("Required")');
+                    }
+                });
+               
+       
+                if(model.Id==0){
+                    $("#AssignDate").data('kendoDatePicker').value("");
+                    $("#ExpiryDate").closest(".form-group").hide();
+                    $("#LeaveTypeId").closest(".form-group").hide();
+                }
+
+                var calmethod=$("input[name='CalcMethod']:checked").val();
+                if(calmethod){
+                    
+                    editCalcsMethod(calmethod);
+                }
+
+                if(isShow){
+                    var labelcalmethod=model.CalcMethod;
+                    editCalcsMethod(labelcalmethod);
+                }
+
+                $("input[name='CalcMethod']").change(function(){
+                    var value = $("input[name='CalcMethod']:checked").val();
+                    editCalcsMethod(value);
+                })
+
+                function editCalcsMethod(value){
+                    if(value ==1){ //cash
+                        $("#ExpiryDate").closest(".form-group").hide();
+                        $("#LeaveTypeId").closest(".form-group").hide();
+                        if(!isShow){
+                            $("#ExpiryDate").data('kendoDatePicker').value("");
+                            $("#LeaveTypeId").val("");
+                            FormJs.removeFormError(formId,"LeaveTypeId");
+                        }
+                    }
+                    else if(value ==2){ //leave
+                        $("#ExpiryDate").closest(".form-group").show();
+                        $("#LeaveTypeId").closest(".form-group").show();
+                        if(!isShow){
+                            var AssignDate = $("#AssignDate").data('kendoDatePicker').value();
+                            var Expiry = $("#ExpiryDate").data('kendoDatePicker');
+                            //Expiry.value("");
+                            //Expiry.trigger('change');
+                            if(AssignDate){
+                                var x=new Date(new Date(AssignDate.getTime()+(24*60*60*1000)).setHours(0,0,0,0));
+                                Expiry.min(new Date(new Date(AssignDate.getTime()+(24*60*60*1000)).setHours(0,0,0,0)));
+                            }
+                            //
+                            if( $("#ExpiryDate").val()=="" && $("#LeaveTypeId").val()==""){
+                                FormJs.addFormError(formId,"LeaveTypeId",'@MsgUtils.Instance.Trls("Required")');
+                            }
+                        }
+                    }
+                }
+                function getEmpId() {
+                    if(isShow) return model.EmpId;
+                    var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                    return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                }
+              //  $('input[type=radio]').attr('required',true);
+             
+                $('#prevAssignorder').click(function(e) {
+                    e.preventDefault();
+
+                    $("#prevAssignOrdersWindow").data("kendoWindow").refresh("/AssignOrder/PrevEmpAssignOrders?empId=" + getEmpId()).center().open();
+                    $("#prevAssignorder").fadeOut();
+                })
+
+                $("#prevAssignOrdersWindow").kendoWindow ({
+                    title: "@MsgUtils.Instance.Trls("PrevEmpAssignOrders")",
+                    width: "50%",
+                    height: "70%",
+                    actions: ["Minimize", "Maximize", "Close"],
+                    visible: false,
+                    close: function() {
+                        $("#prevAssignorder").fadeIn();
+                        $("#prevAssignOrdersWindow").empty();
+                    }
+                });
+
+
+                $("#" + formId).find('#saveInsertion').val('@MsgUtils.Instance.Trls("Save")');
+                $("#" + formId).on('click', '#saveInsertion', function (e) {
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        $("#" +formId).find('#Duration').data("kendoDropDownList").enable(false);
+                        $("#"+formId).find("#AssignDate").data('kendoDatePicker').enable(false);
+                        $("#Documents").attr("disabled", false);
+                        if(res) {
+                            model = res;
+                            $("#" + formId + " #Id").val(res.Id);
+                            $("#Documents").attr("disabled", false);
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        }
+                    });
+                });
+                if($("#" + formId + " #Id").val() == 0) $("#Documents").attr("disabled", true);
+
+                //Open window when click
+                $("#Documents").on('click', function() {
+                    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=AssignOrders&SourceId=" + model.Id).center().open();
+                    $("#Documents").fadeOut();
+                });
+            })//end of json
+        }
+
+
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("AssignOrderWindow")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+
+    })
+</script>
+@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "FormName" } })

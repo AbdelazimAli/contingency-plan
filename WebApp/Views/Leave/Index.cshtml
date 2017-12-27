@@ -1,0 +1,94 @@
+﻿@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    string culture = User.Identity.GetCulture();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+    bool isSSMenu = ViewBag.isSSMenu;
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "LeaveDiv" }, { "HasDepts", isSSMenu ? "false" : "true"} })
+@Html.Partial("_ThumpImageGrid")
+
+<div id='LeaveDiv'></div>
+
+<script>
+
+    function GetStatus(data) {
+        var iconClass = "ace-icon fa fa-circle stat";
+
+        if (data.ApprovalStatus < 6) //Pending
+            iconClass += "12"; //gold
+        else if (data.ApprovalStatus == 6) //Approved
+            iconClass += "1";
+        else if (data.ApprovalStatus == 9) //Rejected
+            iconClass += "3";
+        else if (data.ApprovalStatus == 7 || data.ApprovalStatus == 8) //Cancel
+            iconClass = "k-icon k-i-cancel";
+
+        return iconClass;
+    }
+
+    //12: Gold, 1: Green, 3: Red, 2: Gray.
+
+    var hiddenCols = { 4: ["AuthEmpName", "AuthDeptName", "AuthPosName", "WorkflowTime"] };
+
+    var leaveTabs = [{ Id: 1, Name: "Pending", Class: "ace-icon fa fa-circle stat12", Title: "@MsgUtils.Instance.Trls("Pending Requests")" },
+                     { Id: 2, Name: "Approved", Class: "ace-icon fa fa-circle stat1", Title: "@MsgUtils.Instance.Trls("Approved Requests")" },
+                     { Id: 3, Name: "Rejected", Class: "ace-icon fa fa-circle stat3", Title: "@MsgUtils.Instance.Trls("Rejected Requests")" },
+                     { Id: 4, Name: "Archived", Class: "ace-icon fa fa-circle stat2", Title: "@MsgUtils.Instance.Trls("Archived Requests")" }];
+    var readUrl = "@Url.Action("GetLeaves", "Leave")?MenuId=@Request.QueryString["MenuId"]";
+    RequestFilters.ApplayAllFilters(leaveTabs, hiddenCols, "LeaveDiv", readUrl, '@Url.Action("Details", "Leave")');
+
+    $(function () {
+        var approvalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+              { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' }, { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+              { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' }, { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+              { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' }, { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+              { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }];
+
+        var grid = "'LeaveDiv'";
+        Grids.indexGrid({
+            read: RequestFilters.GetReadUrl(),
+            show: "@Url.Action("Details", "Leave")",
+            edit: "@Url.Action("Details", "Leave")",
+            del: "@Url.Action("DeleteLeaves", "Leave")",
+            objectName: "LeaveRequests",  // name of the page or table name used to create local db key
+            gridName: "LeaveDiv",
+            recordName: "Employee",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: [{ field: "ApprovalStatus", values: approvalStatus }, { field: "Employee", locked: true },
+                { field: "Status", template: "<i class='#:GetStatus(data)#' ></i>" },
+                { field: "Attachement", template: "<img class='myThumpImg' src='#:ThumpImage.CheckPic(data) #' width='80' height='80'>" }],
+            select: { "ApprovalStatus": approvalStatus },
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            serverPaging: true,
+            serverFiltering: true,
+            serverSorting: true,
+            pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+            dataBound: function () {
+                var gridName = this.gridName;
+                $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                    var row = $(this).closest("tr");
+                    var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                    if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 1) $(this).toggle(); //hide delete btn
+                    else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+                });
+
+                ThumpImage.BindLoadImage(gridName, 'LeaveRequest');
+            }
+        });
+    });
+</script>
+@*@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", Url.Action("Details", "Leave") },
+    { "Admin", admin}, { "GridName", "LeaveDiv" }, {"Functions",ViewBag.Functions} })*@
+     

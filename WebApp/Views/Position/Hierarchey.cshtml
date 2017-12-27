@@ -1,0 +1,541 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@using Model.Domain
+@model IEnumerable<PositionDiagram>
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+
+<br>
+
+<div class="row"> 
+    <div class="col-lg-12 col-md-12 col-sm-12">
+        <select id="drophierarchy" style="@(rtl ? "float: right" : "float: left")"></select>&ensp;&ensp;
+        <input type="checkbox" id="reliefCheck"/>@MsgUtils.Instance.Trls("showreliefpos")
+        <div class="form-group" style="@(!rtl ? "float: right" : "float: left")" id="Changes">
+            <input type="button" class="btn btn-danger" value="@MsgUtils.Instance.Trls("Delete")" id="Delete" />
+            <input type="button" class="btn btn-info" value="@MsgUtils.Instance.Trls("edit")" id="Edit" />
+            <input type="button" class="btn btn-primary" value="@MsgUtils.Instance.Trls("Save")" id="Save" />
+            <input type="button" class="btn btn-primary" value="@MsgUtils.Instance.Trls("Save As")" id="SaveAs" />
+        </div>
+    </div>
+</div>
+
+<div id="Hierarchy">
+    <button class="btn-xs btn-primary" onclick="Grids.ExportDiagram('diagram')">@MsgUtils.Instance.Trls("ExportImage")</button>
+    <div id="diagram"></div>
+    <div>
+        <span style="@(rtl?"float:right":"float:left")">@MsgUtils.Instance.Trls("note:diagram")</span>
+    </div>
+    <div id="diagramGridDiv"></div>
+</div>
+<script>
+    var dropdawn = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PositionHierarchy));
+    function drawRelief(diagram){
+        diagram.shapes.forEach(function(v){
+            if(v.dataItem && (v.dataItem.Relief != null)){
+                $.getJSON("/Position/Relief",{id:v.dataItem.Relief},function(res){
+                    if(res != null){
+                        var po = kendo.dataviz.diagram.Point;
+                        var rposShape1 = v.getPosition("left");
+                        var obj={dataItem:null};
+                        obj.dataItem=res;
+                        var s2=  diagram.addShape(obj);
+                        s2.position(new po(rposShape1.x+380,rposShape1.y+50));
+                        diagram.connect(s2,v,{stroke:{color:"red",width:1},content:{text:"@MsgUtils.Instance.Trls("Relief")"}});
+                    }
+                });
+            }
+        });
+    }
+    function GotoSaveAsForm(model){
+        if(model==null)
+       var model = @Html.Raw((new JavaScriptSerializer()).Serialize(new Diagram() { StartDate=DateTime.Now}));
+
+        $.ajax({
+            url:"@Url.Action("ReadFormInfo", "Pages")",
+            data: { objectname: 'DiagramPositionForm', version: "@Request.QueryString["Version"]" },
+            async:false,
+            success:function(data){
+                var formId = "DiagramForm";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "Diagrams";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.admin = "@admin";
+
+                $("#bodyContainer").Forms(data, model);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#Cancel').val('@MsgUtils.Instance.Trls("Cancel")');
+
+                $("#DiagramPopUp").modal("show");
+                $("#Color").kendoColorPicker({
+                    value:"#ff458a",
+                    buttons:false,
+                    select:preview
+                });
+                $("#" + formId).on('blur', "#EndDate",function(){
+                    var elem = $(this);
+                    if($('#StartDate').val() != ""){
+                        $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#StartDate').next("span.k-tooltip-validation").remove();
+                    }
+                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                    elem.next("span.k-tooltip-validation").remove();
+
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                    }
+                });
+                $("#" + formId).on('blur','#StartDate', function(){
+
+                    var elem = $(this);
+
+                    if(elem.val() != ""){
+                        var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0 && $('#EndDate').val() != ""){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                            }
+                        }
+                        else{
+
+                            $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#EndDate').next("span.k-tooltip-validation").remove();
+                            elem.removeClass("k-invalid").prop("aria-invalid", false);
+                            elem.next("span.k-tooltip-validation").remove();
+                        }
+                    }
+                });
+
+            },
+            error:function(){
+            }
+
+        });
+    }
+    function DrawDiagram(item,value,check){
+        if(value!=null){
+            $.ajax({
+                url:"/Position/RedrawDiagram",
+                async:false,
+                data:{diagramId:value},
+                dataType: 'json',
+                contentType:'application/json',
+                success:function(res){
+                    item=res;
+                },
+                error:function(){
+                    toastr.error("Error Happened");
+                }
+            });
+        }
+
+        $("#diagram").kendoDiagram({
+            dataSource:new kendo.data.HierarchicalDataSource({
+                data: item,
+                schema: {
+                    model: {
+                        children: "Children"
+                    }
+                }
+            }),
+            layout: {
+                type:"layered"
+            },
+            shapeDefaults: {
+                visual:visualTemplate
+            },
+            connectionDefaults:{
+                stroke: { color:"#979797", width:2 }
+            },
+            dragEnd:function(e){
+                var diagram = $("#diagram").data("kendoDiagram");
+                if(e.connections[0] && e.connectionHandle){
+                    var childId
+                    if(e.connections[0].to.shape)
+                        childId = e.connections[0].to.shape.dataItem.Id;
+                    else if(e.connections[0].to.dataItem)
+                        childId = e.connections[0].to.dataItem.Id;
+
+                    var diagramconnections = diagram.connections;
+
+                    var arr=[]
+                    for (var i = 0; i < diagramconnections.length-1; i++) {
+                        if(diagramconnections[i].targetConnector)
+                            arr.push(diagramconnections[i].targetConnector.shape.dataItem.Id)
+                    }
+                    if($.inArray(childId,arr)>=0){
+                        toastr.error("@MsgUtils.Instance.Trls("Already has Parent")");
+                        e.preventDefault();
+                    }else
+                        e.connections[0].path.options.stroke.width = 2;
+                }
+            }
+        });
+
+
+        /* RENDER LINES CORRECTLY */
+        var diagram = $("#diagram").getKendoDiagram();
+        diagram.bringIntoView(diagram.shapes);
+        var From = [];
+        var To = []
+        var idRelief=[]
+        for (var i = 0; i < diagram.connections.length; i++) {
+            From.push(diagram.connections[i].from.id);
+            To.push(diagram.connections[i].to.id)
+        }
+       
+        diagram.remove(diagram.connections);
+        var Points= kendo.dataviz.diagram.Point;
+        var reliefArr=[];
+        var numConnections = From.length;
+        for(var i = 0; i < numConnections; i++) {
+            var shape1 = diagram.getShapeById(From[i]);
+            var shape2 = diagram.getShapeById(To[i]);
+            var posShape1 = shape1.getPosition("bottom");
+            var posShape2 = shape2.getPosition("top");
+            var point1 = {
+                x: posShape1.x,
+                y: posShape1.y + ((posShape2.y - posShape1.y) / 2)
+            };
+            var point2 = {
+                x: posShape2.x,
+                y: point1.y
+            };
+           
+           
+            diagram.connect(shape1.connectors[1], shape2.connectors[0], {
+                stroke: {
+                    width: 2
+                },
+                points: [point1,point2]
+            
+            });
+
+        }
+
+        if(check)
+            drawRelief(diagram);
+        
+        /* END */
+       
+        //Draw Grid
+        $("#diagramGridDiv").html('<div id="GridPosition" style="padding: inherit;" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+
+        var gridItems =  $("#diagram").data("kendoDiagram").shapes;
+        var items=[];
+        for (var i = 0; i <gridItems.length; i++) {
+            var item={
+                PositionName:gridItems[i].dataItem.Name,
+                HeadCount:gridItems[i].dataItem.HeadCount,
+                NoofHolder:gridItems[i].dataItem.NoofHolder!=0?gridItems[i].dataItem.NoofHolder:"",
+                Vacancy:gridItems[i].dataItem.HeadCount > gridItems[i].dataItem.NoofHolder ? gridItems[i].dataItem.HeadCount - gridItems[i].dataItem.NoofHolder : "",
+                Over:gridItems[i].dataItem.HeadCount < gridItems[i].dataItem.NoofHolder ?gridItems[i].dataItem.NoofHolder - gridItems[i].dataItem.HeadCount : ""
+            }
+
+            items.push(item);
+        }
+
+        Grids.indexGrid({
+            dataSource:items,
+            lang: "@User.Identity.GetCulture()",
+            objectName: "PositionHierrachy",
+            admin: "@admin",
+            toolbar:kendo.template($("#template").html()),
+            height:250,
+            pageable:true,
+            gridName: "GridPosition"
+        });
+
+        function visualTemplate(options)
+        {
+            var dataviz=kendo.dataviz;
+            var g = new dataviz.diagram.Group();
+            var dataItem= options.dataItem;
+            var Employees= dataItem.Employee.join(" - ");
+            if(dataItem.HeadCount == null )
+                dataItem.HeadCount = 0;
+            g.append(new dataviz.diagram.Rectangle({
+                width:320,
+                height:75,
+                stroke:{
+                    width:0
+                },
+                fill:{
+                    gradient:{
+                        type:"linear",
+                        stops:[{
+                            color:dataItem.colorSchema,
+                            offset:0,
+                            opacity:0.5
+                        },
+                            {
+                                color:dataItem.colorSchema,
+                                offset:1,
+                                opacity:1
+                            }]
+                    }
+                },
+            
+            }));
+
+            g.append(new dataviz.diagram.TextBlock({
+                text:dataItem.Name,
+                width:90,
+                fontStyle:"Bold",
+                x:85,
+                y:8,
+                fill:dataItem.colorSchema != "#f5f5f5"?"#fff" :"#ff0000"
+            }));
+
+            g.append(new dataviz.diagram.TextBlock({
+                text:"HeadCount:"+(dataItem.HeadCount != null ? dataItem.HeadCount: "")+"     NoofHolder:"+dataItem.NoofHolder+""+(dataItem.HeadCount >= dataItem.NoofHolder?"    Vacancy:"+(Number(dataItem.HeadCount - dataItem.NoofHolder))+"":"  Over:"+(Number( dataItem.NoofHolder - dataItem.HeadCount )))+"",
+                x:20,
+                y:25,
+                fill:dataItem.colorSchema != "#f5f5f5"?"#fff" :"#ff0000"
+            }));
+
+            g.append(new dataviz.diagram.TextBlock({
+                text:Employees,
+                width:240,
+                fontSize:20,
+                x:40,
+                y:40,
+                fill:dataItem.colorSchema != "#f5f5f5"?"#fff" :"#ff0000"
+            }));
+            if((dataItem.HeadCount != dataItem.NoofHolder ) && (value == null || value == 0)){
+                g.append(new dataviz.diagram.Circle({
+                    width:38,
+                    height:22,
+                    fill:(dataItem.HeadCount >= dataItem.NoofHolder ? "#3498db":"#e74c3c")
+            
+                }));
+                g.append(new dataviz.diagram.TextBlock({
+                    x:12,
+                    y:2,
+                    text:(dataItem.HeadCount != null ?((dataItem.HeadCount >= dataItem.NoofHolder)?((dataItem.HeadCount - dataItem.NoofHolder) == 0 ? "":(dataItem.HeadCount - dataItem.NoofHolder)):(dataItem.NoofHolder - dataItem.HeadCount)):""),
+                    fill:"#ffffff", 
+                    fontStyle:"Bold",
+                    fontSize:15
+
+                }));
+            }
+            return g;
+        }
+
+    }
+    function preview(e){
+        $("#Color").val(e.value);
+    }
+
+    function SaveDiagram(NewDiagram)
+    {
+        var diagram = $("#diagram").data("kendoDiagram");
+        var obj= diagram.save();
+        var newobj=[];
+        for (var i = 0; i < obj.connections.length; i++) {
+
+            var shapeFromId = obj.connections[i].from.shapeId;
+            var shapeToId = obj.connections[i].to.shapeId;
+            if(shapeToId != undefined){
+                var item = { DiagramId:$("#drophierarchy").val(),ChildId :diagram.getShapeById(shapeToId).dataItem.Id,ParentId:diagram.getShapeById(shapeFromId).dataItem.Id};
+                newobj.push(item);
+            }
+        }
+
+        if($("#DiagramPopUp").find(".k-invalid").length > 0) return ;
+           $.post("/Position/SaveDiagram",{ NewDiagram:NewDiagram,DiagramNodes:newobj },function(res){
+                var newres = res.split(',')
+                if(newres[0]=="Ok"){
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#DiagramPopUp").modal("hide");
+                    if(newres[1]!=0){
+                        var arr=[];
+                        $("#drophierarchy option").each(function(){
+                            arr.push($(this).val())
+                        });
+                        if($.inArray(newres[1],arr)==-1)
+                            $("#drophierarchy").append("<option selected value='"+newres[1]+"'>"+NewDiagram.Name+"</option>");
+                        else
+                            $("#drophierarchy option[value='"+newres[1]+"']").text(NewDiagram.Name);
+                    }
+                }else
+                    toastr.error(res);
+            });
+
+    }
+
+    $(function () {
+        var item = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        DrawDiagram(item,null,false);
+    });
+
+    $("#drophierarchy").append("<option selected value='0'>DefaultDiagram</option>");
+    for (var i = 0; i < dropdawn.length; i++) {
+        $("#drophierarchy").append("<option value='"+dropdawn[i].id+"'>"+dropdawn[i].name+"</option>");
+    }
+
+    $("#drophierarchy").change(function(){
+        var value = $(this).val();
+        var che =  $("#reliefCheck").prop("checked");
+        DrawDiagram(null,value,che);
+    });
+    $("#reliefCheck").change(function(){
+        var diagram = $("#diagram").data("kendoDiagram");
+        var value = $("#drophierarchy").val();
+        if($(this).prop("checked"))
+            drawRelief(diagram);
+        else
+            DrawDiagram(null,value,false);
+
+    })
+    $("#Changes").on("click","#Delete",null,function(){
+        var value = $("#drophierarchy").val();
+        if(value!=0){
+            $.post("/Position/DeleteDiagram",{diagramId:value},function(res){
+                if(res=="Ok"){
+                    toastr.success("@MsgUtils.Instance.Trls("Successfully deleted")");
+                    $("#drophierarchy option[value="+$("#drophierarchy").val()+"]").remove();
+                    DrawDiagram(null,0);
+                }else
+                    toastr.error("@MsgUtils.Instance.Trls("Error Happened")");
+            });
+        }else
+            toastr.error("@MsgUtils.Instance.Trls("Can't delete default diagram")");
+    });
+
+    $("#Changes").on("click","#Save",null,function(){
+        var Check = $("#reliefCheck").prop("checked");
+        var value = $("#drophierarchy").val();
+
+        if(Check){
+            bootbox.confirm("@MsgUtils.Instance.Trls("ReliefConSave")",function(resu){
+                if(resu){
+                    if(value==0)
+                        GotoSaveAsForm(null);
+                    else{
+                        var obj={Id:$("#drophierarchy").val()}
+                        SaveDiagram(obj);
+                    }
+                }
+            });
+        }else
+        {
+            if(value==0)
+                GotoSaveAsForm(null);
+            else{
+                var obj={Id:$("#drophierarchy").val()}
+                SaveDiagram(obj);
+            }
+        }
+        
+    });
+
+    $("#Changes").on("click","#Edit",null,function(){
+        var id=$("#drophierarchy").val();
+        if(id!=0){
+            $.post("/Position/GetDiagram",{diagramId:id},function(res){
+                if(res!=null)
+                    GotoSaveAsForm(res);
+            });
+        }else
+            toastr.error("@MsgUtils.Instance.Trls("Can't Edit Default Diagram")");
+    });
+
+    $("#Changes").on("click","#SaveAs",null,function(){
+        var Check = $("#reliefCheck").prop("checked");
+
+        if(Check){
+            bootbox.confirm("@MsgUtils.Instance.Trls("ReliefConSave")",function(resu){
+                if(resu){
+                    GotoSaveAsForm(null);
+                }
+            });
+        }else
+            GotoSaveAsForm(null);
+    });
+
+
+
+    $("#DiagramPopUp").on("click","#saveChanges ",null,function(){
+        var Name = $("#Name").val();
+        var Color=$("#Color").val();
+        var StartDate= $("#StartDate").val();
+        var EndDate =$("#EndDate").val();
+        var Id =$("#Id").val();
+        var newDi = {Id:Id,Name:Name,Color:Color,StartDate:StartDate,EndDate:EndDate};
+        SaveDiagram(newDi);
+    });
+
+</script>
+
+
+<div class="modal fade" id="DiagramPopUp" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Diagram Position")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body omegaform" tabindex="0">
+               
+            </div>
+           
+        </div>
+    </div>
+</div>
+
+<script type="text/x-kendo-template" id="template">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin == true)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('GridPosition')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('GridPosition')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('GridPosition')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('GridPosition')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }
+            </ul>
+        </div>
+    </div>
+
+</script>
+
+
+
+
+
+
+

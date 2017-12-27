@@ -1,0 +1,190 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model LeaveRestFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<style>
+    #DeptsTree {
+        min-height: 150px;
+        max-height: 250px;
+    }
+    .k-multiselect {
+         min-height: 100px;
+        /*overflow: scroll;*/
+        min-width :80px;
+        display:inline-block;
+        /*padding:15px 0px 5px 0px;*/
+    }
+</style>
+<div class="omegaform @(rtl ? "rtl" : "")">
+    
+        <!--Dept Filter-->
+        <div>
+            
+    </div>
+</div>
+<div id="RestLeave"></div>
+<br />
+
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<script>
+    $(function () {      
+        var model;
+        var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes));
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var fractions = [{id:.25, name: "@MsgUtils.Instance.Trls("0.25 day")"}, {id: .5, name: "@MsgUtils.Instance.Trls("0.5 day")"}, {id: 1, name: "@MsgUtils.Instance.Trls("Day")"}];
+        var calender =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+        var initialDisabled;
+
+        var formId = "EmpForm";
+        ///---#Region Emp Form
+        var Language = lang.getList("@culture");
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'RestLeave', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveRestLeave", "LeaveAction")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "LeaveAdjusts";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                $("#RestLeave").Forms(data, model);
+                $("#" + formId).find("#NofDays").closest(".form-group").hide();
+                FormJs.fillOptionsDynamic($("#" + formId), "TypeId", LeaveTypes, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IEmpId", Employees, model);
+                //TypeId
+                $("#"+formId).on('change','#TypeId',function(){
+                    var element =$(this).val();
+                    $.ajax({
+                        async: false,
+                        url: "@Url.Action("FillNoDays", "LeaveAction")",
+                        data: { TypeId: element },
+                        dataType: "json",
+                        success: function (res)
+                        {
+                            if(res == true)
+                            {
+                                $("#" + formId).find("#NofDays").closest(".form-group").show();
+                                FormJs.fillOptionsDynamic($("#" + formId), "NofDays", fractions, model);
+                            }
+                        }
+                    });
+                });
+
+                var myForm = $("#" + formId);
+                myForm.find("#Depts").parent().append("<div id='DeptsTree'><div>");
+                myForm.find("#Depts").remove();
+                var deptsDiv = myForm.find("#DeptsTree");
+                myForm.find("#DeptsTree").TreeView({
+                    dragAndDrop: false,
+                    table: "CompanyStructures",
+                    root: "Company",
+                    lang: "@culture",
+                    checkboxes: { checkChildren: true },
+                    check: function (e) {
+                        var treeView = deptsDiv.data("kendoTreeView");
+                        var selectedDepts = [];
+                        checkNodeIds(treeView.dataSource.view(), selectedDepts);
+                        var formatedDepts = selectedDepts.join(",");
+                        console.log(formatedDepts);
+                        if(formatedDepts != "")
+                        {
+                            $.ajax({
+                                async: false,
+                                url: "@Url.Action("FillEmployeesMultiSelect", "LeaveAction")",
+                                data: { Departments: formatedDepts },
+                                dataType: "json",
+                                success: function (res)
+                                {
+                                    $("#" + formId).find("#IEmpId").getKendoMultiSelect().value(res);
+                                }
+                            });
+                        }
+                        else
+                        {
+                            $("#" + formId).find("#IEmpId").getKendoMultiSelect().value("");
+                        }
+                    },
+                    dataBound: function (e) {
+                        var treeView = deptsDiv.data("kendoTreeView");
+                        treeView.expand(".k-item");
+                    }
+                });
+                function disabledDateFunc(date) {
+                    var isDisabled = false;
+                    if (date && calender) {
+                        if (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2) isDisabled = true;
+                        //Custom Holidays
+                        for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                            var holiDate = new Date(calender.CustomHolidays[i].HoliDate);
+                            if (holiDate.getYear() == date.getYear() && holiDate.getMonth() == date.getMonth() && holiDate.getDate() == date.getDate()) {
+                                isDisabled = true;
+                                break;
+                            }
+                        }
+                        //Standard Holidays
+                        var sholiday = calender.StanderdHolidays;
+                        for (var i = 0; i < sholiday.length; i++) {
+                            if ((date.getMonth() + 1) == sholiday[i].SMonth && date.getDate() == sholiday[i].SDay) {
+                                isDisabled = true;
+                                break;
+                            }
+                        }
+                    }
+                    return !isDisabled;
+                }
+
+                initialDisabled = $('#WorkingDate').data('kendoDatePicker').options.disableDates;
+                FormJs.disbaleKendoDates($('#WorkingDate'), disabledDateFunc);
+
+                $("#"+formId).on('change','#NofDays',function() {
+                    var element =$(this).val();
+                    if(element == 1) { //
+                        initialDisabled = $('#WorkingDate').data('kendoDatePicker').options.disableDates;
+                        FormJs.disbaleKendoDates($('#WorkingDate'), disabledDateFunc);
+                    }
+                    else { //0.5 , 0.25
+                        if(initialDisabled) FormJs.disbaleKendoDates($('#WorkingDate'), initialDisabled);
+                    }
+                });
+
+                //$("#"+formId).find("NofDays").closest(".col-md-8.col-lg-8").addClass("col-md-12 col-lg-12");
+                $("#" + formId).find('#cancelChanges').val('@MsgUtils.Instance.Trls("Cancel")');
+                $("#"+formId).on('click','#cancelChanges',function()
+                {
+                    var oldPage = localStorage.getItem("menuhigh").split(",");
+                    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+                    $("#renderbody").load(oldulr);
+                });
+                $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).on('click','#SaveChanges', function (e) {
+                    $("#" + formId).find("#NofDays:hidden").remove();
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    });
+                });
+            }
+        });
+    });
+</script>
+
+
+
+
+

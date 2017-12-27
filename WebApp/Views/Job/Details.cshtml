@@ -1,0 +1,269 @@
+﻿
+@using System.Web.Script.Serialization
+
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+
+<div id="pageTabs"></div>
+<div id="Job"></div><br />
+<div id="ContractWindow"></div>
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<script>
+    var model;
+    $( function () {
+         model =  @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+        FormJs.DrawTabs("pageTabs"); // "Job"
+
+        $("#t_JobLog").click(function () {
+            // $("#tab_JobInformation").empty();
+            $('#tab_JobLog').load("@Url.Action("Log", "Log")?Id="+model.Id+"&ObjectName=Job&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+        $("#t_JobFlexData").click(function(){
+            $('#tab_JobFlexData').load("@Url.Action("FlexData", "Flex")?id="+model.Id+"&objectName=Job&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+
+        $("#t_JobInformation").click(function () {
+
+            $("#tab_JobInformation").html("<div id='Jobtab'></div>");
+
+            var Language = lang.getList("@culture");
+            var JobClass=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.JobClass));
+            if(!model.IsLocal)
+            {
+                var res = [];
+                for (var i = 0; i < JobClass.length; i++) {
+                    if(!JobClass[i].IsLocal)
+                        res.push(JobClass[i]);
+                }
+               
+                JobClass = res;
+            }
+            var PayrollGrade=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrade));
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var formId = "JopForm";
+            var read = "@Request.QueryString["Read"]";
+
+            $.getJSON
+                (url, {
+                    objectname: "Job", version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" },
+                    function (data) {
+                        data.FormAction = "@Url.Action("Details", "Job")";
+                        data.FormId = formId;
+                        data.Culture = '@culture';
+                        data.TableName = "Jobs";
+                        data.companyId = "@compantId";
+                        data.admin = '@admin';
+                        //Unique for Company
+                        data.parentColumn = "CompanyId";
+                        data.parentId = "@compantId";
+                        data.isLocal = true;
+
+                        if(read == 1) data.mode = 'show';
+                        data.rtl = @rtl.ToString().ToLower();
+
+                        $("#Jobtab").Forms(data, model);
+
+                        FormJs.fillOptionsDynamic($("#" + formId), "IJobClasses", JobClass, model);
+                        FormJs.fillOptionsDynamic($("#" + formId), "DefaultGradeId", PayrollGrade, model, { objectName: "PayrollGrades" });
+                        $("#" + formId).find('#ContractTempl').after("<span>"+(model.ContractTempl != null ? model.ContractTempl : " ")+"</span>");
+
+                        $("#" + formId).on('blur', "#EndDate",function(){
+                            var elem = $(this);
+                            if($('#StartDate').val() != ""){
+                                $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                                $('#StartDate').next("span.k-tooltip-validation").remove();
+                            }
+                            elem.removeClass("k-invalid").prop("aria-invalid", false);
+                            elem.next("span.k-tooltip-validation").remove();
+
+                            if(elem.val()!=""){
+                                var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                                if(valueinDays > 0){
+                                    if (elem && !elem.hasClass("k-invalid")) {
+                                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                                    }
+                                }
+                            }
+                        });
+                        $("#" + formId).on('blur','#StartDate', function(){
+
+                            var elem = $(this);
+
+                            if(elem.val() != ""){
+                                var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                                if(valueinDays > 0 && $('#EndDate').val() != ""){
+                                    if (elem && !elem.hasClass("k-invalid")) {
+                                        elem.addClass("k-invalid").prop("aria-invalid", true);
+                                        elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                                    }
+                                }
+                                else{
+
+                                    $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                                    $('#EndDate').next("span.k-tooltip-validation").remove();
+                                    elem.removeClass("k-invalid").prop("aria-invalid", false);
+                                    elem.next("span.k-tooltip-validation").remove();
+                                }
+                            }
+                        });
+
+                        if(model.Id == 0)
+                            $("#" + formId).find('#Contracts').attr("disabled","disabled");
+
+                        $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                        $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                        $("#" + formId).find('#Contracts').val('@MsgUtils.Instance.Trls("Contracts")');
+
+                        var allSections = $("#" + formId).find(".set .section");
+
+                        for (var i = 0; i < allSections.length; i++) {
+                            if ($(allSections[i]).children().length == 0)
+                                $(allSections[i]).remove();
+                        }
+
+                        var sets = $("#" + formId).find(".set");
+                        for(var i=0; i<sets.length; i++){
+                            if($(sets[i]).children(".sections").children().length == 0)
+                                $(sets[i]).remove();
+                        }
+
+                        $("#" + formId).on('click',"#saveChanges",null, function (e) {
+                            if($("#" + formId).find(".k-invalid").length > 0) return ;
+                            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                model = res;
+                                $("#" + formId).find('#Contracts').removeAttr("disabled");
+                            });
+                        });
+                        $("#" + formId).on('change',"#IsLocal",null, function () {
+                            var checked= $(this).prop("checked");
+                            var res  = [];
+                            if(!checked){
+                                for (var i = 0; i < JobClass.length; i++) {
+                                    if(!JobClass[i].IsLocal)
+                                        res.push(JobClass[i]);
+                                }
+                            }else{
+                                res = JobClass;
+                            }
+                            $("#IJobClasses").data("kendoMultiSelect").dataSource.data(res);
+                        });
+                        $("#" + formId).on('click',"#Contracts",null, function () {
+                            $("#ContractWindow").data("kendoWindow").refresh("/Job/ContractFiles?Id="+model.Id).center().open();
+                        });
+                        $("#"+formId).on("change","#ContractTempl",function(event){
+                            var elem = $(this);
+                            var  file = new FormData($('form').get(0));
+                            $.ajax({
+                                url:"/Job/CheckDocs",
+                                type:'POST',
+                                cache:false,
+                                processData:false,
+                                contentType:false,
+                                data: file,
+                                success:function(data){
+                                    if(data.Exist != "NoData"){
+                                        if(!data.Move){
+                                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ContractTempl' role='alert'>@MsgUtils.Instance.Trls("MustbeWordFile")</span>");
+                                        }else
+                                        {
+                                            elem.removeClass("k-invalid").prop("aria-invalid", false);
+                                            elem.next("span.k-tooltip-validation").remove();
+                                        }
+                                    }else
+                                        toastr.error("@MsgUtils.Instance.Trls("No Files Uploaded")")
+                                }
+                                ,error:function(){
+
+                                }
+                            });
+                        });
+
+                    });
+        });
+
+        $("#ContractWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("Contracts")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+
+        });
+        $("#t_JobInformation").click();
+
+        var additinalBtns = '<input type="button" name="backToIndex" isvisible="true" class="btn btn-warning back button" value="@MsgUtils.Instance.Trls("backToIndex")" id="backToIndex">';
+
+
+        $(".tab-content").append(additinalBtns);
+        $('#backToIndex').on('click', function(){
+            $("#renderbody").load(oldulr);
+        });
+    });
+
+</script>
+@*<script type="text/x-kendo-template" id="template">*@
+    <div class="modal fade" id="PayRollGrade" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title" id="myModalLabel">PayRollGrade</h4>
+                </div>
+                <div id="Job1" class="modal-body" tabindex="0">
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">@MsgUtils.Instance.Trls("Close")</button>
+                </div>
+            </div>
+        </div>
+    </div>
+@*</script>*@
+
+
+
+    @*<script>
+        function GetPayRollGrade() {
+            Grids.batchGrid({
+            read: "@Url.Action("ReadPayRollGrad", "Job")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "PayRollGrade", // name of the page or table name used to create local db key
+            recordName: "Name", // custom delete message
+            gridName: "Role",
+            height: 350,
+            toolbar: kendo.template($("#template4").html()),
+            });
+            $('#PayRollGrade').modal('show');
+        }
+
+    </script>*@
+<style>
+    #Job .k-grid-content {
+        min-height: 100px;
+    }
+
+</style>
+
+
+

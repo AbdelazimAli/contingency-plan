@@ -1,0 +1,132 @@
+﻿@using Model.ViewModel.Personnel
+@using System.Web.Script.Serialization
+@model IEnumerable<CompanyDiagramViewModel>
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+
+}
+<style>
+    #diagramDiv {
+        direction:ltr;
+    }
+</style>
+<br />
+<button class="btn-xs btn-primary" onclick="Grids.ExportDiagram('diagramDiv')">@MsgUtils.Instance.Trls("ExportImage")</button>
+<div id="diagramDiv" class="col-sm-12">
+</div>
+<div>
+    <span style="@(rtl?"float:right":"float:left")">@MsgUtils.Instance.Trls("note:diagram")</span>
+</div>
+<script>
+    function visualTemplate(options)
+    {
+        var dataviz=kendo.dataviz;
+        var g= new dataviz.diagram.Group();
+        var dataItem= options.dataItem;
+        g.append(new dataviz.diagram.Rectangle({
+            width:210,
+            height:75,
+            stroke:{
+                width:0
+            },
+            fill:{
+                gradient:{
+                    type:"linear",
+                    stops:[{
+                        color:dataItem.colorSchema,
+                        offset:0,
+                        opacity:0.5
+                    },
+                        {
+                            color:dataItem.colorSchema,
+                            offset:1,
+                            opacity:1
+                        }]
+                }
+            }
+        }));
+        g.append(new dataviz.diagram.TextBlock({
+            text:dataItem.Name != null ? dataItem.Name : " ",
+            width:90,
+            x:85,
+            y:8,
+            fill:"#fff"
+        }));     
+        g.append(new dataviz.diagram.TextBlock({
+            text:dataItem.Employee == null ?"":dataItem.Employee,
+            width:90,
+            x:85,
+            y:25,
+            fill:"#fff"
+        }));  
+        g.append(new dataviz.diagram.Image({
+            source:"/SpecialData/Photos/"+(!dataItem.HasImage?"noimage.jpg": "@User.Identity.GetDefaultCompany()/"+dataItem.Image+".jpeg"),
+            x:3,
+            y:3,
+            width:68,
+            height:68
+        }));
+        return g;
+    }
+    $(function () {
+        var item = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+      
+        $("#diagramDiv").kendoDiagram({
+
+            dataSource:new kendo.data.HierarchicalDataSource({
+                data: item,
+                schema: {
+                    model: {
+                        children: "Children"
+                    }
+                }
+            }),
+            layout: {
+                type:"tree"
+                //subtype:"right"
+            },
+            shapeDefaults: {
+                visual:visualTemplate
+            },
+            editable:false,
+            connectionDefaults:{
+                stroke:{
+                    color:"#979797",
+                    width:0
+                }
+            }
+        });
+
+        /* RENDER LINES CORRECTLY */
+        var diagram = $("#diagramDiv").getKendoDiagram();
+       // diagram.bringIntoView(diagram.shapes);
+        var numConnections = diagram.connections.length;
+        for(var i = 0; i < numConnections; i++) {
+            var shape1 = diagram.connections[i].from;
+            var shape2 = diagram.connections[i].to;
+
+            var posShape1 = shape1.getPosition("bottom");
+            var posShape2 = shape2.getPosition("top");
+
+            var point1 = {
+                x: posShape1.x,
+                y: posShape1.y + ((posShape2.y - posShape1.y) / 2)
+            };
+
+            var point2 = {
+                x: posShape2.x,
+                y: point1.y
+            };
+
+            diagram.connect(shape1.connectors[1], shape2.connectors[0], {
+                stroke: {
+                    width: 1
+                },
+                points: [point1,point2]
+            });
+        }
+        /* END */
+    });
+</script>

@@ -1,0 +1,185 @@
+﻿@using WebApp.Extensions
+
+@{
+    var AdminMode = ViewData["Admin"].ToString();
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string href = ViewData["AddRecord"].ToString() + "?MenuId="+Request.QueryString["MenuId"]+"&Version=" + Request.QueryString["Version"] + "&DataLevel=" + Request.QueryString["DataLevel"] + "&RoleId=" + Request.QueryString["RoleId"];
+    string[] function = ViewData["Functions"] as string[];
+    string objectName = ViewData["ObjectName"]?.ToString();
+    string OldObjectName = ViewData["OldObjectName"]?.ToString();
+    string TableName = ViewData["TableName"]?.ToString();
+}
+
+<style>
+    /* Page Template for the exported PDF  "Frutiger LT Arabic", "Frutiger" */
+    .page-template {
+        font-family: "Arial", sans-serif;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+    }
+
+        .page-template .header {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            right: 30px;
+            border-bottom: 1px solid #888;
+            color: #888;
+        }
+
+        .page-template .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            border-top: 1px solid #888;
+            text-align: center;
+            color: #888;
+        }
+
+        .page-template .watermark {
+            font-weight: bold;
+            font-size: 400%;
+            text-align: center;
+            margin-top: 30%;
+            color: #aaaaaa;
+            opacity: 0.1;
+            transform: rotate(-35deg) scale(1.7, 1.5);
+        }
+</style>
+
+<script type="x/kendo-template" id="page-template">
+    <div class="page-template">
+        <div class="header">
+            <div style="float: right">Page #: pageNum # of #: totalPages #</div>
+            Multi-page grid with automatic page breaking
+        </div>
+        <div class="watermark">KENDO UI</div>
+        <div class="footer">
+            Page #: pageNum # of #: totalPages #
+        </div>
+    </div>
+</script>
+
+<script type="text/x-kendo-template" id="template">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default glyphicon glyphicon-plus ajaxify" href="@href" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>
+        &nbsp;
+        @if (function != null && function.Length > 0)
+        {
+            if (Array.Exists(function, f => f == "Import"))
+            {
+                <button class="btn btn-default fa fa-arrow-down" onclick="AddFields()" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")"><span>&nbsp;@MsgUtils.Instance.Trls("Export")</span></button>
+            }
+            if (Array.Exists(function, f => f == "Export"))
+            {
+                <button class="btn btn-default fa fa-arrow-up" onclick="ReturnView()" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")"><span>&nbsp;@MsgUtils.Instance.Trls("Import")</span></button>
+            }
+        }
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+
+                @if (AdminMode == "True")
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }
+                @if (AdminMode == "True" && grid.ToString() == "AssignmentDiv")
+                {
+                    <li><a class="glyphicon glyphicon-trash" onclick="Grids.deleteAllEmp('@MsgUtils.Instance.Trls("DeleteEmployees")')"><span>&nbsp; @MsgUtils.Instance.Trls("deleteAllEmp")</span></a></li>
+                }
+            </ul>
+        </div>
+    </div>
+
+</script>
+<div id="NotifyWindow"></div>
+<div id="waitWindow">@MsgUtils.Instance.Trls("takeWhileFor") <img id="compLoadImg" src="~/Content/Default/loading-image.gif" /></div>
+<script src="~/Scripts/cultures/timezone.js"></script>
+
+<script>
+
+    $("#NotifyWindow").kendoWindow({
+        title: "@MsgUtils.Instance.Trls("Notifications")",
+        minWidth: "500px",
+        width: "55%",
+        height: "95%",
+        actions: ["Minimize", "Maximize", "Close"],
+        visible: false,
+        close: function () {
+            $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
+            $("#NotifyWindow").empty();
+        }
+    });
+
+    //Import & Export Function region
+    var timezoneSrc = JSON.stringify(timeZoneList.getTimeZone("@User.Identity.GetLanguage()", "Grid"));
+    var file = {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"],objectName:"@objectName",OldObjectName:"@OldObjectName",TableName:"@TableName",DataLevel:@dataLevel,Read:@read,ErrorData:true,TimeZone:timezoneSrc};
+
+    var waitWindow = $("#waitWindow").kendoWindow({
+        title: "@MsgUtils.Instance.Trls("Please Wait")",
+        actions: [], //to remove close btn
+        width: "40%",
+        height: "100",
+        visible: false
+    }).data("kendoWindow");
+
+    function AddFields() {
+        waitWindow.center().open();
+
+        $.ajax({
+            url:"/ImportData/AddFields",
+            type:"POST",
+            data:file,
+            success:function(res){
+                var ok = res.substring(0,2);
+                if(ok != "Ok")
+                    toastr.error(res);
+                else
+                    window.location = "/SpecialData/EmployeesData/"+res.substring(2,res.length)+".xlsx?dummy="+(new Date().getTime());
+
+                waitWindow.close();
+            },error:function(err){
+            }
+        });
+
+    }
+    function ReturnView(){
+        $("#renderbody").load("/ImportData/ImportDataView",{File:file});
+    }
+    //End region
+
+    //Function Notifications
+    function notification(name) {
+        var grid = $('#' + name).attr("tablename");
+        var objectname = $('#' + name).attr("objectname");
+        $("#NotifyWindow").data("kendoWindow").refresh("/AudiTrial/NotificationMenu?TableName=" + grid + "&ObjectName=" + objectname + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+        $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+
+    }
+ 
+</script>
+
+
+<script src="~/Scripts/pako_deflate.min.js"></script>

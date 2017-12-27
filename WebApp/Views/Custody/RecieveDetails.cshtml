@@ -1,0 +1,187 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<style>
+    .k-slider-horizontal{
+        width:80% !important; 
+    }
+</style>
+
+<div id="RecieveCustody"></div>
+<div id="CustReportWindow"></div>
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var EmpCustody=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpCustody));
+    var locations=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+    var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var CustCategory =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CustodyCategory));
+    var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //tabs
+        var formId = "PeopleForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+        //Send the serialized model and props to form.js
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "RecieveCustody", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("SaveRecieveCustody", "Custody")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "EmpCustodies";
+                    data.companyId = "@compantId";
+                    data.admin = '@admin';
+                    //Unique for Company
+                    data.parentColumn = "CompanyId";
+                    data.parentId = "@compantId";
+                    data.isLocal = true;
+
+                    //data.HasPanel=false;
+                    if(read == 1)
+                        data.mode = 'show';
+                    data.rtl = @rtl.ToString().ToLower();
+                    data.btns = ["back"];
+                    data.reqbtns = [];
+
+                    if(funs && funs.length >0)
+                    {
+                        if($.inArray('Download',funs) >= 0)
+                            data.reqbtns.push('Download');
+                        if($.inArray('Upload',funs) >= 0)
+                            data.reqbtns.push('Upload');
+                    }
+
+                    //Append the form to the div
+                    $("#RecieveCustody").Forms(data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "LocationId", locations, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "CustodyCatId",CustCategory, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People"});
+                    $("#Qty").closest(".form-group").remove();
+                
+                    if(model.Id == 0)
+                        $("#RecvDate").data("kendoDatePicker").value("");
+
+                    $("#Documents").attr('disabled','disabled');
+                    //-- Slider Status Custody
+                    $("#RecvStatus").kendoSlider({
+                        min: 1,
+                        max: 100,
+                        tickPlacement:'none',
+                        value:model.RecvStatus,
+                        change:function(e){
+                            $("#statusId").text(e.value+"%");
+                        }
+                    });
+                    $("#" + formId).find('#RecvStatus').closest(".k-widget.k-slider").after("<span id='statusId' class='badge badge-red'>"+model.RecvStatus+"%</span>");
+
+                    //----append dynamic elements----
+                    $("#" + formId).find("#ItemCode").closest(".form-group").after('<a class="ajaxBtn" id="CustReportBtn" >@MsgUtils.Instance.Trls("CustReportBtn")</a>');
+                    // disable Kendo Slider
+                    //var slider=$("#RecvStatus").data("kendoSlider");
+                    //slider.enable(false);
+
+                    // change Emp Id
+                    $("#"+formId).on('change','#EmpId',function(){
+                        var EmpId  = getEmpId();
+                        $.ajax({
+                            async: false,
+                            url: "@Url.Action("GetCurrentLocation", "Custody")",
+                            data: {EmpId:EmpId },
+                            dataType: "json",
+                            success: function (res)
+                            {
+                                if(res != null)
+                                    $("#" + formId).find('#LocationId').getKendoDropDownList().value(res);
+                            }
+                        });
+                    });
+
+                    //get Employee Id
+                    function getEmpId() {
+                        var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                    }
+
+                    //Translate The Button saveChanges from ColumnsTilte based on Culture
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    @*$("#" + formId).find('#Download').attr('disabled',true).val('@MsgUtils.Instance.Trls("Download")');
+                    $("#" + formId).find('#Upload').attr('disabled',true).val('@MsgUtils.Instance.Trls("Upload")');*@
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                }
+            });
+        if(model.Id > 0)
+        {
+            $('#backToIndex').click(function (e) {
+                e.stopPropagation();
+                var oldPage = localStorage.getItem("menuhigh").split(",");
+                var oldulr = $("#" + oldPage[2] + " a").attr("href");
+                $("#renderbody").load(oldulr + "&isEmp=true");
+            });
+        }
+        $("#"+formId).on("click","#saveChanges",function (e) {
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                model = res;
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#Documents").attr('disabled',false);
+                $("#" +formId).find('#EmpId').data("kendoDropDownList").enable(false);
+                $("#" +formId).find('#LocationId').data("kendoDropDownList").enable(false);
+
+            });
+
+        });
+
+
+        //CustReportBtn
+        $("#CustReportBtn").click(function(e){
+            e.preventDefault();   
+            $("#CustReportWindow").data("kendoWindow").refresh("/Custody/CustodyReport?Id=" + model.CustodyId).center().open();
+            $("#CustReportBtn").fadeOut();            
+        });
+
+        $("#CustReportWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("CustReportWindow")",
+            //minWidth: "1000px",
+            width: "50%",
+            height: "70%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#CustReportBtn").fadeIn();
+                $("#CustReportWindow").empty();
+            }
+        });
+      
+    });
+
+</script>
+@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "PeopleForms" } })
+
+
+
+
+

@@ -1,0 +1,97 @@
+﻿
+@using System.Runtime.InteropServices.ComTypes
+@using System.Web.UI.WebControls
+@using Newtonsoft.Json
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.Domain.Employement
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<style>
+    .k-window-content {
+        min-height: 350px;
+    }
+</style>
+<div id="Emp"></div>
+
+<br />
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<script>
+    $(function () {
+        var model;
+        var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+        var EmpCode = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GenEmpCode));
+       // var sequence= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.sequence));
+        var nationalId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.nationalId));
+        var formId = "EmpForm";
+            ///---#Region Emp Form
+        var Language = lang.getList("@culture");
+            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var read = "@Request.QueryString["Read"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'Emp', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("Suspend", "People")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "Employements";
+                    data.admin = '@admin';
+                    data.rtl = @rtl.ToString().ToLower();
+                    data.HasEditControls = false;
+                    $("#Emp").Forms(data, model);
+                    $("#" + formId).find(".col-sm-10.col-md-10.col-lg-10").removeClass("col-sm-10 col-md-10 col-lg-10").addClass("col-sm-8 col-md-8 col-lg-8");
+                    $("#" + formId).find('#Code').css("height", "25px");
+                    FormJs.fillOptionsDynamic($("#" + formId), "PersonType", PersonType, model);
+                    $("#" + formId).find("#PersonType").parents(".form-group").css("display","none");
+                                      
+                        if(EmpCode ==1)
+                        {
+                            $("#" + formId).find("#Code").prop('disabled','true');
+                            $("#" + formId).find("#Code").val(model.Code);
+                        }
+                        else if(EmpCode ==3)
+                        {
+                            $("#" + formId).find("#Code").prop('disabled','true');
+
+                            if(nationalId != null)
+                            {
+                               $("#" + formId).find("#Code").val(nationalId);
+                            }
+                        }
+                        $(".ModifyInfo").remove();
+                        $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+                    $("#" + formId).on('click','#saveChanges', function (e) {
+                        $("#"+formId).append("<input type='hidden' name='EmpId' value="+model.EmpId+">");
+                        FormJs.saveForm($("#" + formId), $(this), function (res) {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            $("#" + formId + " #Id").val(res);
+                            $('#EmpDiv').data('kendoGrid').dataSource.read();
+                            $('#EmpDiv').data('kendoGrid').refresh();
+                            $("#EmpWindow").data("kendoWindow").close();
+                        });
+                    });
+                }
+            });
+        });
+</script>
+
+
+
+
+

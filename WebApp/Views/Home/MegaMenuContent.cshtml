@@ -1,0 +1,92 @@
+﻿@using WebApp.Extensions
+@model IEnumerable<Model.ViewModel.MegaMenu>
+
+@{
+
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    string culture = User.Identity.GetCulture();
+    var admin = User.IsInRole("Admin");
+
+
+
+}
+<ul class="dropdown-menu">
+    @foreach (var module in Model)
+    {
+        <li>
+            <div class="dropdown">
+                <a class="dropdown-toggle @module.ModuleName" data-toggle="dropdown" data-hover="dropdown" data-close-others="true">
+                    @module.ModuleTitle
+                </a>
+                <ul class="dropdown-menu sub">
+                    <li class="scroll-mega">
+                        <ul class="mega-cont" id="@module.ModuleId">
+                            @{
+                                var xMenu = new List<Model.ViewModel.LayOutMenuViewModel>();
+                            }
+                            @foreach (var item in module.SubModules)
+                            {
+                                if (item.MenuObj.Url != null)
+                                {
+                                    xMenu.Add(item.MenuObj);
+                                }
+                            }
+                            @foreach (var submodule in module.SubModules)
+                            {
+                                if (submodule.MenuObj.Url == null)
+                                {
+                                    <li>
+                                        <h3>@submodule.SubName</h3>
+                                        <ul id="@submodule.SubId" data-parentID="@submodule.ModuleId">
+                                            @foreach (var menu in submodule.MenuItems)
+                                            {
+                                                <li id="@menu.Id" data-parentID="@menu.ParentId">
+                                                    <a onclick="updateHistory('@menu.Url?RoleId=@menu.RoleId&MenuId=@menu.Id&Version=@menu.Version&SSMenu=@menu.SSMenu&DataLevel=@menu.DataLevel')">
+                                                        <i class="@menu.Icon"></i>
+                                                        @menu.Title
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </li>
+                                }
+                            }
+                            @if (xMenu.Count > 0)
+                            {
+                                <li>                                    
+                                    <ul data-parentID="@module.ModuleId">
+                                        @foreach (var menu in xMenu)
+                                        {
+
+                                            <li id="@menu.Id" data-parentID="@menu.ParentId">
+                                                <a onclick="updateHistory('@menu.Url?RoleId=@menu.RoleId&MenuId=@menu.Id&Version=@menu.Version&SSMenu=@menu.SSMenu&DataLevel=@menu.DataLevel')">
+                                                    <i class="@menu.Icon"></i>
+                                                    @menu.Title
+                                                </a>
+                                            </li>
+
+
+                                        }
+                                    </ul>
+                                </li>
+                            }
+
+                        </ul>
+
+
+
+                    </li>
+                </ul>
+            </div>
+        </li>
+                                }
+
+</ul>
+
+@section scripts{
+
+    <script>
+    </script>
+
+}

@@ -1,0 +1,487 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<script src="~/Scripts/app/tree.js"></script>
+<script src="~/Scripts/starwars.js"></script>
+<link href="~/Content/starwars.css" rel="stylesheet" />
+
+<br>
+<style>
+    div.k-treeview {
+        min-height: 400px;
+        max-height: 400px;
+        overflow: scroll;
+    }
+
+    .caption {
+        margin-right: 10px !important;
+    }
+
+    .deptContainer {
+    }
+</style>
+
+<div class="omegaform @(rtl ? "rtl" : "")">
+    <div class="section row deptContainer">
+        <!--Tree-->
+        <div class="col-md-3"><div id="CSTree"></div></div>
+        <!--Chart-->
+        <div class="col-md-9">
+            <button id="next" class="btn btn-circle fa fa-arrow-right" disabled="disabled"></button>
+            <button id="prev" class="btn btn-circle fa fa-arrow-left" disabled="disabled"></button>
+            <div id="chartDiv"></div>
+        </div>
+    </div>
+    <br />
+    <!--Grid-->
+    <div id="DeptLvPlanvDiv"></div>
+</div>
+
+
+<script>
+    var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+    var culture = "@User.Identity.GetCulture()", deptId, week = 0, expanded = {},
+        colors = ['#42a7ff', '#797979', '#d54c7e', '#ededed', '#B0D877', '#FFD700'];
+
+    drawChart([]);
+    //------------Departments Tree------------
+    $("#CSTree").TreeView({
+        dragAndDrop: false,
+        table: "CompanyStructures",
+        root: "Company",
+        lang: culture,
+        dataBound: function (e) {
+            var treeView = $("#CSTree").data("kendoTreeView");
+            treeView.expand(".k-item");
+        },
+        select: function(e) {
+            var model = e.sender.dataItem(e.node);
+            deptId = model.Id;
+            week = 0;
+            //disableBtns(false, true);
+
+            refreshChart(deptId, week, true);
+        }
+    });
+
+    ///Check if dept has jobs (employees) and get Chart
+    function refreshChart(deptId, week, isDeptChange) {
+        $.get('/Personnel/ChangeDept', { DeptId: deptId, Week: week }, function (res) {
+            drawChart(res.chartData ? res.chartData : []);
+
+            if (!res.message) {
+                disableBtns(week == 0, false);
+
+                $("#DeptLvPlanvDiv").find('#deptTB').show(); //show toolbar
+                if (isDeptChange) refreshGrid(deptId);
+            }
+            else {
+                disableBtns(true, true);
+
+                $("#DeptLvPlanvDiv").find('#deptTB').hide(); //hide toolbar
+                toastr.error(res.message);
+                $("#DeptLvPlanvDiv").data("kendoGrid").dataSource.data([]);
+            }
+        });
+    }
+
+    //------------End Departments Tree------------
+
+    //btns
+    $('#prev, #next').click(function (e) {
+        ($(this).attr('id') == 'prev') ? week-- : week++;
+        disableBtns(true, false);
+        refreshChart(deptId, week);
+    });
+
+    function disableBtns(prev, next) {
+        if (week != 0) $('#prev').attr('disabled', false);
+        else $('#prev').attr('disabled', prev);
+
+        $('#next').attr('disabled', next);
+    }
+
+    
+    //------------Chart------------
+    function drawChart(chartData) {
+        var chart = $('#chartDiv').data("kendoChart");
+        if (chart) {
+            chart.dataSource.data(chartData);
+            chart.redraw();
+        }
+        else {
+            //value: MinPercent, dateCategory: Date, myGroup: Job
+            $('#chartDiv').kendoChart({
+                dataSource: { data: chartData, group: { field: "myGroup" }, sort: [{ field: "dateCategory", dir: "asc" }] },
+                seriesDefaults: { type: "column", labels: { visible: true, background: "transparent" } },
+                series: [{ field: "floatValue", categoryField: "dateCategory", labels: { template: "#: value == undefined ? '' : value #%" } }],
+                seriesColors: colors,
+                valueAxis: { min: 0, max: 100, labels: { template: "#:value#% " } },
+                categoryAxis: { labels: { template: "#: getCategoryTemp(data) # " } },
+                title: { align: "center", text: '@MsgUtils.Instance.Trls("MinPercentJobsPlan")' },
+                legend: { visible: true },
+                tooltip: { visible: true, template: "#: value #% @MsgUtils.Instance.Trls("In") #: series.name # " },
+            });
+        }
+    }
+
+    function getCategoryTemp(data) {
+        var date = data.value;
+
+        if (date && date.indexOf('/Date') != -1) date = parseInt(date.substr(6));
+        return kendo.toString(new Date(date), 'd');
+    }
+
+    //------------End Chart------------
+
+
+
+    //-----------Department Grid-----------
+    function refreshGrid(deptId) {
+        var grid = $("#DeptLvPlanvDiv").data("kendoGrid");
+
+        if (grid && deptId) {
+            grid.dataSource.transport.options.read.url = "/Personnel/GetDeptLvPlanv?deptId=" + deptId;
+            grid.dataSource.read();
+        }
+    }
+
+    var gridname = "'DeptLvPlanvDiv'";
+    Grids.batchGrid({
+        destroy: "@Url.Action("DeleteDeptLvPlan", "Personnel")",
+        admin:"@admin",
+        lang: culture,
+        objectName: "LeavePlanDept",
+        tableName: "DeptJobLeavePlans",
+        recordName: "FromDate",
+        gridName: "DeptLvPlanvDiv",
+        //height:650,
+        columns: [{field:"Stars", template:"<div id='#:uid#' class='rate_row' value='#:Stars#' ></div>"},
+                  {field:"ToDate", editor: dateEditor }, {field:"FromDate", editor: dateEditor }],
+        toolbar: '<div><div id="deptTB" style="@(rtl ? "float: right" : "float: left"); display:none;"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick=" Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="SavePlan()" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+        detailInit: detailInit,
+        save: function (e) { loadCascade(e.model); },
+        detailExpand: function (e) {
+            var uid = e.masterRow.attr('data-uid');
+            if (expanded[uid]) expanded[uid].expand = true;
+            else expanded[uid] = { expand: true };
+        },
+        detailCollapse: function (e) {
+            var uid = e.masterRow.attr('data-uid');
+            if (expanded[uid]) expanded[uid].expand = false;
+            else expanded[uid] = { expand: false };
+        },
+        dataBound: function (e) {
+            var grid = e.sender;
+
+            grid.tbody.find('tr').each(function (index, item) {
+                var uid = $(item).attr("data-uid");
+
+                ///Expand Edit Jobs
+                if (expanded[uid]) {
+                    if (expanded[uid].expand)
+                        grid.expandRow(this);
+                    else {
+                        grid.expandRow(this);
+                        grid.collapseRow(this);
+                    }
+                }
+
+                ///Stars
+                var starDiv = $(item).find(".rate_row#" + uid);
+                starDiv.starwarsjs({
+                    stars: 5,
+                    count: 1,
+                    default_stars: (starDiv.attr("value")),
+                    on_select: changeStars
+                });
+
+                starDiv.find(".rate_star").dblclick(function () { //to clear stars
+                    starDiv.find(".rate_star").removeClass("checked");
+                    starDiv.find(".rate_row .get_rate").attr("default-stars", 0).val(0);
+
+                    changeStars(0, uid);
+                });
+            });
+
+        },
+        fields: {
+            Stars: {editable:false},
+            ToDate: {
+                defaultValue: null,
+                validation: {
+                    ValidateDates: function (input) {
+                        var model = $("#DeptLvPlanvDiv").data("kendoGrid").dataItem($(input).closest("tr")),
+                            toDate = $(input).data('kendoDatePicker').value();
+
+                        return customValidationDates($(input), model.FromDate, toDate, model.uid);
+                    }
+                }
+            },
+            FromDate: {
+                defaultValue: null,
+                validation: {
+                    ValidateDates: function (input) {
+                        var model = $("#DeptLvPlanvDiv").data("kendoGrid").dataItem($(input).closest("tr")),
+                            fromDate = $(input).data('kendoDatePicker').value();
+
+                        return customValidationDates($(input), fromDate, model.ToDate, model.uid);
+                    }
+                }
+            }
+        }
+    });
+
+    function changeStars(data, id) {
+        var grid = $("#DeptLvPlanvDiv").data("kendoGrid");
+        var record = grid.dataItem($("#" + id).closest("tr"));
+        record.Stars = data;
+        record.dirty = true;
+        loadCascade(record);
+    }
+
+    function dateEditor(container, options) {
+        container.append('<input name="'+ options.field +'" />');
+
+        var datePicker = container.find('[name="'+ options.field +'"]').kendoDatePicker({
+            culture: "@User.Identity.GetCulture()",
+            disableDates: function(date) {
+                var isDisabled;
+
+                if (date && calender) {
+                    if (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2)
+                        isDisabled = true;
+
+                    //Custom Holidays
+                    for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                        var holiDate = new Date(calender.CustomHolidays[i].HoliDate);
+                        if (holiDate.getYear() == date.getYear() && holiDate.getMonth() == date.getMonth() && holiDate.getDate() == date.getDate()) {
+                            isDisabled = true;
+                            break;
+                        }
+                    }
+
+                    //Standard Holidays
+                    var sholiday = calender.StanderdHolidays;
+                    for (var i = 0; i < sholiday.length; i++) {
+                        if ((date.getMonth() + 1) == sholiday[i].SMonth && date.getDate() == sholiday[i].SDay) {
+                            isDisabled = true;
+                            break;
+                        }
+                    }
+                }
+                return isDisabled;
+            }
+        });
+    }
+
+    function customValidationDates(input, fromDate, toDate, uid) {
+        if (!fromDate) return true; //check null
+
+        if (!toDate) toDate = new Date(fromDate);
+
+        fromDate = new Date(fromDate.setHours(0, 0, 0, 0));
+        toDate = new Date(toDate.setHours(0, 0, 0, 0));
+
+        //---Check prev Dates
+        var today = new Date().setHours(0, 0, 0, 0);
+        if (fromDate < today) {
+            input.attr("validationMessage", "@MsgUtils.Instance.Trls("CantLessThanToday")");
+            return false;
+        }
+
+        //---Check if FromDate > ToDate
+        if (fromDate > toDate) {
+            input.attr("validationMessage", "@MsgUtils.Instance.Trls("FromDateLEThanToDate")");
+            return false;
+        }
+
+        //---Check Overlap Dates
+        var gridData = $("#DeptLvPlanvDiv").data("kendoGrid").dataSource.data();
+        var found = gridData.filter(function (item, index) {
+            //check if this record
+            if (uid == item.uid) return false;
+
+            item.FromDate.setHours(0, 0, 0, 0);
+            item.ToDate.setHours(0, 0, 0, 0);
+
+            return (item.FromDate <= fromDate && item.ToDate >= fromDate
+             || item.FromDate <= toDate && item.ToDate >= toDate
+             || fromDate <= item.FromDate && toDate >= item.FromDate
+             || fromDate <= item.ToDate && toDate >= item.ToDate);
+        });
+
+        if (found.length > 0) {
+            input.attr("validationMessage", "@MsgUtils.Instance.Trls("OverlapLeavePlanDate")");
+            return false;
+        }
+        return true;
+    }
+
+    function loadCascade(model) {
+        var jobGrid = $('#JobLv' + model.uid);
+        if (jobGrid.length == 0) // || model.Id
+            //detailInit(model);
+            $("#DeptLvPlanvDiv").find('tr[data-uid="' + model.uid + '"]').find('.k-hierarchy-cell a').click();
+    }
+
+
+    //function addClick(gridName) {
+    //    Grids.addNewClick(gridName);
+    //   // expandOld();
+    //}
+
+    //-----------End Department Grid-----------
+
+
+    //-----------Job Grid-----------
+    function detailInit(e) {
+        var parentModel = e.data, uid = parentModel.uid,
+            FromDate = kendo.toString(parentModel.FromDate, 'yyyy-MM-dd'),
+            ToDate = kendo.toString(parentModel.ToDate, 'yyyy-MM-dd');
+
+        $("<div id='JobLv" + uid + "'/>").appendTo(e.detailCell);
+        var gridname = "'JobLv" + uid + "'";
+
+        var gridSettings = {
+            admin: "@admin",
+            lang: culture,
+            objectName: "DeptJobLvPlan",
+            tableName: "DeptJobLeavePlans",
+            parentColumnName: "DeptPlanId",
+            parentColumnId: uid,
+            recordName: "JobId",
+            gridName: 'JobLv' + uid,
+            height: 350,
+            toolbar: '<div><div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
+            columns: [{ field: "MinAllowPercent", template: '#=kendo.format("{0:p0}",MinAllowPercent/100)#' }],
+            fields: { Job: { editable: false } },
+            dataBound: function (e) { expanded[uid].data = e.sender.dataSource.data() },
+            save: function (e) {
+                var dataChanged = $('#JobLv' + uid).attr("dataChanged");
+                if (dataChanged == "true") Grids.TriggerChanges('JobLv' + uid, "Data", false);
+
+                parentModel.dirty = true;
+       
+                ///Grid data for expand
+                if (e.values.MinAllowPercent != e.model.MinAllowPercent) {
+                    if (expanded[uid]) {
+                        var jobModel = e.sender.dataItem(e.container.closest('tr'));
+                        jobModel.MinAllowPercent = e.values.MinAllowPercent;
+                        expanded[uid].data = e.sender.dataSource.data();
+                    }
+                }
+            }
+        }
+       
+        ///Bind old data if new record or delete
+        if (expanded[uid] && expanded[uid].data)
+            gridSettings.dataSource = expanded[uid].data;
+        else
+            gridSettings.read = "@Url.Action("ReadDeptJobLvPlan","Personnel")?DeptId=" + deptId + "&FromDate=" + FromDate + "&ToDate=" + ToDate;
+
+        Grids.batchGrid(gridSettings);
+    }
+
+    //console.log('old');
+    //function expandOld() {
+    //    var gridDiv = $('#DeptLvPlanvDiv'), grid = gridDiv.data('kendoGrid'), rows = gridDiv.find('tbody tr');
+
+    //    for (var uid in expanded) {
+    //        var row = gridDiv.find('tr[data-uid="' + uid + '"]');
+    //        if (expanded[uid].expand)
+    //            grid.expandRow(row);
+    //        else {
+    //            grid.expandRow(row);
+    //            grid.collapseRow(row);
+    //        }
+    //    }
+    //}
+
+    //-----------End Job Grid-----------
+
+
+    //-----------Save Plan-----------
+    function SavePlan() {
+            var deptGrid = $("#DeptLvPlanvDiv").data("kendoGrid"),
+                deptPlanData = deptGrid.dataSource.data(), deptRecords = [];
+
+            //get data (new & update)
+            for (var i = 0; i < deptPlanData.length; i++) {
+                if (deptPlanData[i].Id == 0 || deptPlanData[i].dirty) {
+                    var deptObj = Grids.toValidJson(deptPlanData[i]),
+                        jobDiv = $("#JobLv" + deptPlanData[i].uid);
+
+                    deptObj.DeptId = deptId;
+                    if (!deptObj.Stars) deptObj.Stars = 0;
+                    console.log(deptObj, deptObj.Stars);
+
+                    if (jobDiv.length)
+                        deptRecords = deptRecords.concat(getJobDate(jobDiv, deptObj));
+                    else
+                        deptRecords.push(deptObj);
+                }
+            }
+
+            if (deptRecords.length) {
+                $.post("/Personnel/CheckPrevLeaves", { models: deptRecords }, function (res) {
+                    if (res == 'OK')
+                        postData(deptRecords);
+                    else
+                        bootbox.confirm(res, function (con) { if (con) postData(deptRecords); });
+                });
+            }
+
+        }
+
+    function postData(deptRecords) {
+        $.post('/Personnel/SaveLeavePlan', { models: deptRecords }, function (res) {
+            if (res == 'OK') {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                //expanded = {};
+                $("#DeptLvPlanvDiv").data("kendoGrid").dataSource.read();
+
+                var dataChanged = $('#DeptLvPlanvDiv').attr("dataChanged");
+                if (dataChanged == "true") Grids.TriggerChanges('DeptLvPlanvDiv', "Data", false);
+
+                refreshChart(deptId, week);
+            }
+            else
+                toastr.error(res);
+        });
+    }
+
+    function getJobDate(jobDiv, deptObj) {
+            var records = [], jobDate = jobDiv.data('kendoGrid').dataSource.data();
+
+            for (var i = 0; i < jobDate.length; i++) {
+                if (jobDate[i])
+                {
+                    var jobRecord = Grids.toValidJson(jobDate[i]);
+                    var obj = {};
+                    obj.Stars = deptObj.Stars;
+                    obj.FromDate = deptObj.FromDate;
+                    obj.ToDate = deptObj.ToDate;
+                    obj.DeptId = deptObj.DeptId;
+                    obj.Id = jobRecord.Id;
+                    obj.isNew = jobRecord.Id == 0;
+                    obj.JobId = jobRecord.JobId;
+                    obj.MinAllowPercent = jobRecord.MinAllowPercent;
+
+                    records.push(obj);
+                }
+            }
+            return records;
+        }
+
+    //-----------End Save Plan-----------
+
+</script>

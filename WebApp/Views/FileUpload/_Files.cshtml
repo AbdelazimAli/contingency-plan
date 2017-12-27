@@ -1,0 +1,603 @@
+﻿
+@using System.Web.Script.Serialization
+@{
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    string hideUpload = (!ViewBag.Upload ? "display:none;" : "");
+    Layout = null;
+}
+
+<style>
+     /*td {
+    text-align: right;
+}*/
+    #fileupload {
+        margin-top: 25px;
+    }
+    .displayOnly {
+        border: none;
+        background-color:transparent;
+        font-size:small;
+    }
+    .fullLine {
+        width: 80%;
+    }
+    .halfLine {
+        width: 32%;
+    }
+    .smallLabel {
+        font-size: small;
+        width: 16%;
+        padding-right: 21px !important;
+    }
+    p.small{
+        /*margin: -2px 1px -22.5px !important;*/
+    }
+    .bootbox {
+        z-index: 10006;
+    }
+    /*#myModal .modal-content {
+        width: 800px !important;
+    }*/
+
+    /*Form Style*/
+    #editDocForm .form-control {
+        height: 25px;
+    }
+    #editDocForm input, #editDocForm select, #editDocForm textarea {
+        margin-bottom: 0px;
+    }
+    #editDocForm .form-group, #editDocForm .section {
+        margin-bottom: 5px;
+    }
+    #editDocForm .o-collabsebtn {
+        width: 95%
+    }
+     #editDocForm  .k-datepicker:first-of-type {
+         margin-bottom: 15px;
+     }
+
+</style>
+
+<form id="fileupload" method="POST" enctype="multipart/form-data" data-url="@Url.Action("Upload","FileUpload")" enableDrop="@(ViewBag.Upload ? "true" : "false")" >
+    <div class="row fileupload-buttonbar">
+        <div class="col-lg-7">
+            <!-- The fileinput-button span is used to style the file input field as button -->
+            <span class="btn btn-default fileinput-button">
+                <i class="glyphicon glyphicon-plus"></i>
+                @*<span>Add files...</span>*@
+                <span>&nbsp;@MsgUtils.Instance.Trls("Add files")</span>
+                <input type="file" name="files[]" multiple >
+                <input type="hidden" name="Source" value="@ViewBag.Source"  />
+                <input type="hidden" name="SourceId" value="@ViewBag.SourceId" />
+            </span>
+            <button type="submit" class="btn btn-default start">
+                <i class="glyphicon glyphicon-upload"></i>
+                @*<span>Startupload</span>*@
+                <span>&nbsp;@MsgUtils.Instance.Trls("Start upload")</span>
+            </button>
+            <button type="reset" class="btn btn-default cancel">
+                <i class="glyphicon glyphicon-ban-circle"></i>
+                @*<span>Cancel upload</span>*@
+                <span>&nbsp;@MsgUtils.Instance.Trls("Cancel upload")</span>
+            </button>
+            <button type="button" class="btn btn-default delete" id="deleteSelected">
+                <i class="glyphicon glyphicon-trash"></i>
+                @*<span>Delete</span>*@
+                <span>&nbsp;@MsgUtils.Instance.Trls("Delete")</span>
+            </button>
+            <input type="checkbox" class="toggle">
+            <!-- The global file processing state -->
+            <span class="fileupload-process"></span>
+        </div>
+        <!-- The global progress state -->
+        <div class="col-lg-5 fileupload-progress fade">
+            <!-- The global progress bar -->
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+            </div>
+            <!-- The extended global progress state -->
+            <div class="progress-extended">&nbsp;</div>
+        </div>
+    </div>
+    <!-- The global progress state -->
+    <div class="col-lg-5 fileupload-progress fade">
+        <!-- The global progress bar -->
+        <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar progress-bar-success" style="width:0%;"></div>
+        </div>
+        <!-- The extended global progress state -->
+        <div class="progress-extended">&nbsp;</div>
+    </div>
+
+    <!-- The table listing the files available for upload/download -->
+    <table role="presentation" class="table table-responsive table-striped table-bordered table-hover table-condensed flip-content">
+        <thead>
+            <tr>
+                <th style='@(User.Identity.RTL()==true ?"text-align: right;":"")'> @MsgUtils.Instance.Trls("Preview") </th>
+                <th style='@(User.Identity.RTL()==true ?"text-align: right;":"")'> @MsgUtils.Instance.Trls("Name") </th>
+                <th style='@(User.Identity.RTL()==true ?"text-align: right;":"")'> @MsgUtils.Instance.Trls("Details") </th>
+                <th style='@(User.Identity.RTL()==true ?"text-align: right;":"")'>@MsgUtils.Instance.Trls("Delete")</th>
+
+
+            </tr>
+        </thead>
+        <tbody class="files"></tbody>
+    </table>
+</form>
+
+<!-- The blueimp Gallery widget -->
+<div id="blueimp-gallery" class="blueimp-gallery blueimp-gallery-controls" data-filter=":even">
+    <div class="slides"></div>
+    <h3 class="title"></h3>
+    <a class="prev">‹</a>
+    <a class="next">›</a>
+    <a class="close">×</a>
+    <a class="play-pause"></a>
+    <ol class="indicator"></ol>
+</div>
+<!-- The template to display files available for upload -->
+<script id="template-upload" type="text/x-tmpl">
+    {% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-upload fade">
+        <td width="5%" style='@(User.Identity.RTL()==true ?"text-align: right;":"")'>
+            <span class="preview"></span>
+        </td>
+        <td  width="5%" style='@(User.Identity.RTL()==true ?"text-align: right;":"")'>
+            <p class="name">{%=file.name%}</p>
+            <strong class="error text-danger"></strong>
+        </td>
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;":"")'>
+            <p class="size">Processing...</p>
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
+        </td>
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;":"")'>
+            {% if (!i && !o.options.autoUpload) { %}
+            <button class="btn btn-primary start" disabled>
+                <i class="glyphicon glyphicon-upload"></i>
+                <span>&nbsp;@MsgUtils.Instance.Trls("Start")</span>
+            </button>
+            {% } %}
+            {% if (!i) { %}
+            <button class="btn btn-warning cancel">
+                <i class="glyphicon glyphicon-ban-circle"></i>
+                <span>&nbsp;@MsgUtils.Instance.Trls("Cancel")</span>
+            </button>
+            {% } %}
+        </td>
+    </tr>
+    {% } %}
+</script>
+
+<!-- The template to display files available for download -->
+<script id="template-download" type="text/x-tmpl">
+
+    {% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-download fade">
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;width:10%":"width:10%")'>
+            <span class="preview">
+               
+                {% if ((file.type == "application/pdf" || file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type == "text/plain"|| file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"|| file.type == "video/mp4" || file.type == "audio/mpeg") ) { %}
+
+                <a href="{%=file.url%}" title="{%=file.name%}" target="_blank"><img src="{%=file.thumbnailUrl%}"></a>
+
+                {% } else if ((file.thumbnailUrl)  ) { %}
+
+                <a href="{%=file.url%}" title="{%=file.name%}" target="_blank" data-gallery><img src="{%=file.thumbnailUrl%}"></a>
+                {% } %}
+            </span>
+        </td>
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;width:10%":"width:10%")'>
+            <p class="name" > 
+                {%  if (file.url=="") { %}
+                <span>{%=file.name%}</span>
+                {% } else if (file.type == "application/pdf" || file.type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || file.type == "text/plain"|| file.type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"|| file.type == "video/mp4" || file.type == "audio/mpeg") { %}
+
+                <a href="{%=file.url%}" target="_blank">{%=file.name%} {%=file.type%}</a>
+
+                {% } else if (file.url) { %}
+                <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a>
+                {% } %}
+
+            </p>
+            {% if (file.error) { %}
+            <div><span class="label label-danger">Error</span> {%=file.error%}</div>
+            {% } %}
+        </td>
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;width: 70%":"width: 70%")'>
+            <!-- Button trigger modal -->
+            <input type="hidden" id="_stream_id" value="{%=file.sid%}" />
+            <input type="hidden" id="_name" value="{%=file.name%}" />
+            <input type="hidden" id="_DocType" value="{%=file.DocType%}" />
+
+            <p class="small">
+                <label for="_DocName" class="smallLabel">@MsgUtils.Instance.Trls("Type:")</label>
+                <input type="text" id="_DocName" value="{%=file.DocName%}" readonly class="displayOnly halfLine" />
+                <label for="_creation_time" class="smallLabel">@MsgUtils.Instance.Trls("Creation time")</label>
+                <input type="text" id="_creation_time" value="{%=file.creation_time%}" readonly class="displayOnly" />
+            </p>
+            <p class="small">
+                <label for="_ExpiryDate" class="smallLabel">@MsgUtils.Instance.Trls("Expiry date:")</label>
+                <input type="text" id="_ExpiryDate" value="{%=file.ExpiryDate%}" readonly class="displayOnly halfLine" />
+                <label for="_last_access_time" class="smallLabel">@MsgUtils.Instance.Trls("Last access:")</label>
+                <input type="text" id="_last_access_time" value="{%=file.last_access_time%}" readonly class="displayOnly" />
+            </p>
+            <p class="small">
+                <label for="_Description" class="smallLabel">@MsgUtils.Instance.Trls("Description:")</label>
+                <input type="text" id="_Description" value="{%=file.Description%}" readonly class="displayOnly fullLine" />
+            </p>
+            <p class="small">
+                <label for="_CreatedUser" class="smallLabel">@MsgUtils.Instance.Trls("Created user:")</label>
+                <input type="text" id="_CreatedUser" value="{%=file.CreatedUser%}" readonly class="displayOnly halfLine" />
+                <label for="_ModifiedUser" class="smallLabel">@MsgUtils.Instance.Trls("Modified user:")</label>
+                <input type="text" id="_ModifiedUser" value="{%=file.ModifiedUser%}" readonly class="displayOnly" />
+            </p>
+           
+                    <button type="button" class="btn btn-info btn-link" onclick="showModel($(this));" style='@hideUpload'>`
+                <span>&nbsp;@MsgUtils.Instance.Trls("edit")</span>
+            </button>   
+            
+        </td>
+        @*<td>
+            <span class="size">{%=o.formatFileSize(file.size)%}</span>
+        </td>*@
+        <td style='@(User.Identity.RTL()==true ?"text-align: right;width:10%":"width:10%")'>
+            {% if (file.deleteUrl) { %}
+            <a class="btn btn-default" style="@hideUpload" onclick="deleteBtn($(this));" onmouseover="$(this).removeClass('btn-default'); $(this).addClass('btn-danger');" onmouseout="$(this).removeClass('btn-danger'); $(this).addClass('btn-default');" d-type="{%=file.deleteType%}" d-url="{%=file.deleteUrl%}" >
+                <i class="glyphicon glyphicon-trash"></i>
+                <span>&nbsp;@MsgUtils.Instance.Trls("Delete")</span>
+            </a>
+            <input type="checkbox" style="@hideUpload" name="delete" value="1" class="toggle">
+            {% } else { %}
+            <button class="btn btn-warning cancel">
+                <i class="glyphicon glyphicon-ban-circle"></i>
+                <span>&nbsp;@MsgUtils.Instance.Trls("Cansel")</span>
+            </button>
+            {% } %}
+        </td>
+    </tr>
+    {% } %}
+</script>
+
+<script>
+
+
+    if("@ViewBag.Upload" == "False")
+    {       
+ 
+        $("#docWindow .btn-default").remove();
+        $("#docWindow input[type='checkbox']").remove();  
+        $("#docWindow :button").remove();
+    }
+    else
+    {
+        $(" .btn-default").css("display","");
+        $("input[type='checkbox']").css("display","");
+
+    }
+    var currentrow;
+    function deleteBtn(me) {
+        bootbox.confirm('@MsgUtils.Instance.Trls("AreYouSureToDeleteDoc")',
+            function (result) {
+                if (result) {
+                    $.ajax({
+                        url: $(me).attr("d-url"),
+                        type: $(me).attr("d-type")
+                    }).success(function () {
+                        $(me).closest('tr').remove();
+                    }
+                    );
+                }
+            });
+    }
+
+    $("#deleteSelected").click(function(e) {
+        var rows = $("[name='delete']:checked").closest("tr");
+        if(rows.length) {
+            bootbox.confirm('@MsgUtils.Instance.Trls("AreYouSureToDeleteDocs")', function (result) {
+                if (result) {
+                    var files = [], selected = rows.find("#_stream_id");
+                    for(var i=0; i < selected.length; i++) {
+                        files.push(selected[i].value);
+                    }
+
+                    $.post("/FileUpload/DeleteMultiFiles", {files: files}, function() {
+                        rows.remove();
+                    });
+                }
+            });
+        }
+    });
+
+    var codesList;
+    function getAllCodes(typeId) {
+        $.ajax({
+            async: false,
+            url : "@Url.Action("GetLookUpCodesLists", "FileUpload")",
+            data: {typeId: typeId},
+            success: function (result) {
+                codesList = result;
+            },
+            error: function (result) {
+                console.log(result.responseText);
+            }
+        });
+    }
+
+    var formId = "editDocForm";
+    var DocType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DocType))
+    var CodeName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CodeName))
+
+    function showModel(me)
+    {
+        $("#docWindow").off('dragenter, dragleave, dragover, drop');
+
+        //Form
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'CompanyDocuments', version: 0},
+            success: onFormSuccess
+        });
+
+        //Load Form Success
+        function onFormSuccess(data) {
+            data.FormAction = "@Url.Action("UpdateDocument", "FileUpload")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "CompanyDocuments";
+            data.companyId = "@compantId";
+            data.rtl = @rtl.ToString().ToLower();
+            data.admin = "@admin";
+            //data.HasEditControls = false;
+            //data.HasPanel = false;
+            
+            currentrow = $(me).closest('tr');
+            var model = {
+                Id: $(currentrow).find('#_stream_id').val(),
+                stream_id: $(currentrow).find('#_stream_id').val(),
+                name: $(currentrow).find('#_name').val(),
+                Description: $(currentrow).find('#_Description').val(),
+                DocType: $(currentrow).find('#_DocType').val(),
+                ExpiryDate: $(currentrow).find('#_ExpiryDate').val(),
+            };
+
+            $("#editDoc").Forms(data, model);
+
+            $("#editDoc").find(".editarea.col-sm-6.col-xs-12").removeClass("col-sm-6 col-xs-12").addClass("col-sm-5 col-xs-10");
+            $("#" + formId).find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-8 col-lg-8");
+
+            FormJs.fillOptionsDynamic($("#"+ formId), "DocType", DocType, model, {objectName:"DocType" });
+
+            var hiddenFields = '<input type="hidden" id="stream_id" name="stream_id" value="'+ model.stream_id +'"/>'
+            + '<input type="hidden" id="ModifiedUser" name="ModifiedUser" value="@User.Identity.Name"/>';
+            $("#" + formId).append(hiddenFields);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            $("#" + formId).find('#Close').val('@MsgUtils.Instance.Trls("Close")');
+
+            //for size problem
+            $("#" + formId).find(".col-sm-10.col-md-10.col-lg-10").removeClass("col-sm-10 col-md-10 col-lg-10").addClass("col-sm-8 col-md-8 col-lg-8");
+            $(".submit").attr('disabled', false); //save button enabled
+
+            //----------------------------------------------
+            var myModal = $('#myModal');
+            myModal.modal('show');
+                    
+            //--DocTypeAttr Grid
+            //Grid container
+            var gridTitle = "@MsgUtils.Instance.Trls("DocTypeAttr")";
+            $("div[name='attrSec']").append("<h4 style='margin-top:0px;'>" + gridTitle + "</h4><div id='docAttrGrid'></div>");
+            DrawGrid();
+
+            //Save Form
+            $("#" + formId).on('click', '#saveChanges', function () {
+                FormJs.saveForm($("#" + formId), $(this), function (res) {
+
+                    $("#docAttrGrid").data("kendoGrid").saveChanges();
+                    if ($("#docAttrGrid").attr("hasErrors") == "false") {
+                        var myModal = $('#myModal');
+                        myModal.modal('hide');
+                        
+                        $(currentrow).find('#_Description').val(res.Description);
+                        $(currentrow).find('#_DocType').val(res.DocType);
+                        
+                        var ExpiryDate; //## convert serialized date
+                        if(res.ExpiryDate)
+                            ExpiryDate = new Date(parseInt(res.ExpiryDate.substr(6))).toLocaleDateString("@culture");
+                        $(currentrow).find('#_ExpiryDate').val(ExpiryDate);
+                        $(currentrow).find('#_DocName').val($('#DocType option:selected').text());
+                        $(currentrow).find('#_ModifiedUser').val(res.ModifiedUser);
+                        $(currentrow).find('#_name').val(res.name);
+                        $(currentrow).find('p.name a').each(function () {
+                            $(this).text(res.name);
+                        });
+                    }
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                });
+            });
+        }
+
+        function DrawGrid () {
+            //-- Grid
+            var gridname="docAttrGrid",grid="'docAttrGrid'", typeId=$("#"+ formId + " #DocType :selected").val();
+            getAllCodes(typeId);  //All LookUp Codes List for this DocType
+
+            //Drow Grid
+            Grids.batchGrid({
+                read: "@Url.Action("ReadDocTypeAttr", "FileUpload")" + "?streamId=" +  $("#" + formId + " #stream_id").val() + "&typeId=" + typeId,
+                update: "@Url.Action("UpdateDocTypeAttr", "FileUpload")",
+                lang: "@User.Identity.GetCulture()",
+                objectName: "CompanyDocAttrs",
+                gridName: gridname,
+                admin: "@admin",
+                height: 250 ,
+                toolbar: '<div><div style="@(rtl ? "float: left" : "float: right")">&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li>'+
+                 '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+grid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+               //fields: { ValueText: {editable: false}},
+                columns: [
+                    {field: "Attribute", editor: function (container, options) { $('#'+ gridname).data("kendoGrid").closeCell(); }},
+                    {   //Custom Value Field
+                        field: "ValueText",
+                        editor: function (container, options) {
+                            var input, inputTypeId = options.model.InputType;
+
+                            switch (inputTypeId) {
+                                case 2 :
+                                    input = '<input type="number" name="ValueText" style="height: 90%;"/>';
+                                    break;
+                                case 3 : //select
+                                    input = '<select name="Value" style="margin-bottom: 0;">';
+                                    var optionList = codesList;
+                                    for(var i=0; i < optionList.length; i++) {
+                                        if(optionList[i].CodeName == options.model.CodeName)
+                                           input += '<option id='+ optionList[i].Id +' value='+ optionList[i].CodeId +'>'+ optionList[i].Name +'</option>';
+                                    }
+                                    input += '</select>';
+                                    break;
+                                case 4 : //Date
+                                    options.model.Value  = options.model.ValueText; //for bind data
+                                    input = '<input type="date" name="Value" style="height: 90%; width: 70% !important; margin-bottom: 0;"/>';
+                                    break;
+                                case 5 : //time
+                                    options.model.Value = options.model.ValueText; //for bind data
+                                    input = '<input type="time" name="Value" style="width: 80% !important; margin-bottom: 0;"/>';
+                                    break;
+                                case 6 : //datetime
+                                    options.model.Value = options.model.ValueText; //for bind data
+                                    input = '<input type="datetime" name="Value" style="height: 90%; width: 80% !important; margin-bottom: 0;"/>';
+                                    break;
+                                case 7: //textarea
+                                    input = '<textarea rows="2" cols="40" name="ValueText" ></textarea>';
+                                    break;
+                                case 8: 
+                                    input = '<input class="k-valid" type="checkbox"' + (options.model.ValueText == "1" ? 'checked' : '') + '/>';
+                                    break;
+                                default:
+                                    input = '<input type="text" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;"/>';
+                                    break;
+                            }
+                            $(input).appendTo(container);
+
+                            //Kendo
+                            $("#" + gridname + " [name='Value'][type='date']").kendoDatePicker({ culture: "@culture" });
+                            $("#" + gridname + " [name='Value'][type='time']").kendoTimePicker({ culture: "@culture" });
+                            $("#" + gridname + " [name='Value'][type='datetime']").kendoDateTimePicker({ culture: "@culture" });
+                            $("#" + gridname + " select[name='Value']").kendoDropDownList({valuePrimitive: true, dataTextField: "Name", dataValueField: "CodeId"}); //, value: options.model.Value
+                        },
+                        //checkbox
+                        template: '#if(InputType == 8){# <input type="checkbox" name="ValueText" #:ValueText == "1" ? "checked" : ""#  /> #}else{# <div> #: ValueText ? ValueText : ""  # </div> #}#' 
+                    }
+                ],
+                save: function(e) {
+                    e.model.StreamId = $("#" + formId + " #stream_id").val(); //Bind StreamId
+                    if (e.values.Value && e.values.Value != e.model.Value) {
+
+                        //select
+                        if (e.model.InputType == 3) {
+                            var code = $.grep(codesList, function(item) {
+                                if(item.CodeName == e.model.CodeName && item.CodeId == e.values.Value)
+                                    return true;
+                                return false;
+                            })[0];
+                            e.model.ValueText = code.Name;
+                            e.model.ValueId = code.Id;
+                        }
+
+                        if (e.model.InputType == 4) {
+                            e.values.Value = kendo.toString(new Date(e.values.Value), 'd');
+                            e.model.Value =  e.values.Value; //kendo.toString(new Date(e.values.Value), 'yyyy-MM-dd');
+                            e.model.ValueText =  e.values.Value;
+                        }
+                        else if(e.model.InputType == 5) {
+                            e.values.Value = kendo.toString(new Date(e.values.Value), 't');
+                            e.model.ValueText = e.values.Value;
+                        }
+                        else if(e.model.InputType == 6) {
+                            e.values.Value = kendo.toString(new Date(e.values.Value), 'g');
+                            e.model.ValueText = e.values.Value;
+                        }
+                    }
+
+                    if (e.values.ValueText != e.model.ValueText) {
+                        e.model.Value =  e.values.ValueText;
+                    }
+                }
+            });
+
+            //Reread Grid
+            $('#' + formId).on('change', '#DocType', function(e) {
+                var typeId = $(e.target).find(":selected").val();
+                var readUrl = "@Url.Action("ReadDocTypeAttr", "FileUpload")" + "?streamId="+  $("#" + formId + " #stream_id").val() +"&typeId=" + typeId;
+                $("#docAttrGrid").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+                $("#docAttrGrid").data("kendoGrid").dataSource.read();
+                getAllCodes(typeId);
+            });
+
+            //Checkbox change
+            $('#' + gridname).on('change', 'input[type="checkbox"]', function (e) {
+                var dataItem = $("#" + gridname).data("kendoGrid").dataItem($(this).closest("tr"));
+                dataItem.StreamId = $("#" + formId + " #stream_id").val(); //Bind StreamId
+                dataItem.dirty = true;
+                if ($(this).is(":checked")) {
+                    dataItem.ValueText = "1";
+                    dataItem.Value = "1";
+                } else {
+                    dataItem.ValueText = "0";
+                    dataItem.Value = "0";
+                }
+            });
+        }
+    }
+
+    $(document).ready(function () {
+
+        $('body').on('keydown, keypress, keyup', "#docWindow[data-role='window']", function(e) {
+            if(e.keyCode == 27) {
+                if($(e.target).attr("id") == "docWindow")
+                    $(".modal-backdrop").remove();
+            }
+        });
+
+        $(".fileinput-button").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-success");
+        });
+
+        $(".start").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-primary");
+        });
+
+        $(".cancel").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-warning");
+        });
+
+        $(".delete").hover(function (e) {
+            $(this).toggleClass("btn-default");
+            $(this).toggleClass("btn-danger");
+        });
+    });
+
+</script>
+<!-- Modal -->
+
+<div class="modal fade" id="myModal" role="dialog" aria-labelledby="myModalLabel" > @*tabindex="-1"*@
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Updatedocumentdetails")</h4>
+            </div>
+            <div id="editDoc" class="modal-body"></div>
+        </div>
+    </div>
+</div>
+

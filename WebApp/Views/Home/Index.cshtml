@@ -1,0 +1,51 @@
+﻿
+@section Scripts {
+ <script src="~/Scripts/jquery.signalR-2.2.2.min.js"></script>
+<script src="~/signalr/js"></script>
+     <script>
+         $(function () {
+             @*$("#longTaskBtn").click(function (e) {
+                 e.preventDefault();
+                 $.ajax({
+                     type: "POST",
+                     url: '@Url.Action("SendMe", "AudiTrial")',
+                     data: {
+                         taskId: $("#mm").val()
+                     }
+                 });
+
+                 //// clear
+                 $("#mm").val("");
+             });*@
+
+             var notificationHub = $.connection.myHub;
+            // $.connection.hub.qs = { 'userId': '@User.Identity.Name' };
+             @*notificationHub.client.sendMessage = function (Msg) {
+                 drawItems("notification",Msg,"@Url.Action("GetNotify","Notification")","@Url.Action("GetAllNotifications","Notification")");
+             };*@
+             notificationHub.client.AppendMessage = function (Msg) {
+                 AppendNotifyElement("notification", Msg, "@Url.Action("GetNotify","Notification")");
+                 //
+             }
+             $.connection.hub.start().done(function () {
+                    
+             });
+
+
+         });
+         
+        $(document).ready(function () {
+            $.ajax({
+                url: "@Url.Action("GetLayOut", "Home")",
+                dataType: 'json',
+                contentType: "application/json",
+                async: false,
+                success: function (data) {
+                    localStorage["Companies"] = JSON.stringify(data.Companies);
+                    localStorage["Menus"] = JSON.stringify(data.Menus);
+                    localStorage["Tabs"] = JSON.stringify(data.Tabs);
+                }
+            }); 
+        });
+    </script>
+}

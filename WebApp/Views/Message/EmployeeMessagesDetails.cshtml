@@ -1,0 +1,45 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model EmployeeMessagesViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+
+<div id="ReadMessage"></div>
+<script>
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        $.getJSON("@Url.Action("ReadFormInfo","Pages")", { objectname: 'ReadMessage', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("EmployeeMessagesDetails", "Message")";
+            data.FormId = "ReadMesageForm";
+            data.Culture = '@culture';
+            data.TableName = "MsgEmployees";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            $("#ReadMessage").Forms(data, model);
+            $("#Body").kendoEditor({
+                resizable :{
+                    content:true,
+                    toolbar:true
+                }
+            });
+            $("#ReadMesageForm").find("#backToIndex").val('@MsgUtils.Instance.Trls("backToIndex")');
+            $($("#Body").getKendoEditor().body).attr("contenteditable",false);
+        });
+
+
+        $("#ReadMessage").on('click','#backToIndex', function (e) {
+            $("#renderbody").load(oldulr);
+        });
+    });
+</script>

@@ -1,0 +1,565 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    int dataLevel = 4, read = 4;
+    //int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    //int.TryParse(Request.QueryString["Read"], out read);
+    var version = Request.QueryString["Version"];
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/app/formula.js"></script>
+<div id="NotifyDiv">
+
+</div>
+<div id="conditionWind"><div id='conditionGrid'></div></div>
+
+<style>
+    #Value-list.k-list-container {
+        min-width: 100px !important;
+        width: auto !important;
+    }
+
+    #Value-list .k-list {
+        width: auto !important;
+    }
+</style>
+
+<script>
+
+    $(function () {
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Users = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Users));
+        var columns=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Columns));
+        var value= [{id:1,name:"@MsgUtils.Instance.Trls("After")"}, {id:2,name:"@MsgUtils.Instance.Trls("Before")"}];
+        var AlertMeFor= [{id:1,name:"@MsgUtils.Instance.Trls("All Records")"}, {id:2,name:"@MsgUtils.Instance.Trls("Current Record Only")"},{id:3,name:"@MsgUtils.Instance.Trls("Only record that matches the selected filter")"}];
+        var Event= [
+            {id:1,name:"@MsgUtils.Instance.Trls("NumberHasChanged")"},
+            {id:2,name:"@MsgUtils.Instance.Trls("NumberIsSetTo")"},
+            {id:3,name:"@MsgUtils.Instance.Trls("HasDecreased")"},
+            {id:4,name:"@MsgUtils.Instance.Trls("HasDecreasedBelow")"},
+            {id:5,name:"@MsgUtils.Instance.Trls("HasIncreased")"},
+            {id:6,name:"@MsgUtils.Instance.Trls("HasIncreasedAbove")"},
+            {id:11,name:"@MsgUtils.Instance.Trls("StringHasChanged")"},
+            {id:12,name:"@MsgUtils.Instance.Trls("StringIsSetTo")"},
+            {id:21,name:"@MsgUtils.Instance.Trls("HasBeenPostponed")"},
+            {id:22,name:"@MsgUtils.Instance.Trls("HasBeenPostponedUntilEarliest")"},
+            {id:23,name:"@MsgUtils.Instance.Trls("DateHasChanged")"},
+            {id:24,name:"@MsgUtils.Instance.Trls("IsDueTo")"},
+            {id:25,name:"@MsgUtils.Instance.Trls("IsDueIn")"},
+            {id:26,name:"@MsgUtils.Instance.Trls("IsSetToDateEarlierThan")"},
+            {id:27,name:"@MsgUtils.Instance.Trls("IsSetToEarlierDate")"},
+            {id:28,name:"@MsgUtils.Instance.Trls("IsSetToDate")"},
+            {id:29,name:"@MsgUtils.Instance.Trls("WasDueThisAmountofTimeAgo")"},
+            {id:51,name:"@MsgUtils.Instance.Trls("RecordHassBeenCreated")"},
+            {id:52,name:"@MsgUtils.Instance.Trls("RecordHasBeenDeleted")"}
+        ]; //filterd envents --> in form success
+
+        var dateFuncs = [
+            {id:1,name:"@MsgUtils.Instance.Trls("1 Day")"},
+            {id:2,name:"@MsgUtils.Instance.Trls("2 Days")"},
+            {id:3,name:"@MsgUtils.Instance.Trls("3 Days")"},
+            {id:4,name:"@MsgUtils.Instance.Trls("4 Days")"},
+            {id:5,name:"@MsgUtils.Instance.Trls("5 Days")"},
+            {id:6,name:"@MsgUtils.Instance.Trls("6 Days")"},
+            {id:7,name:"@MsgUtils.Instance.Trls("1 Week")"},
+            {id:8,name:"@MsgUtils.Instance.Trls("2 Weeks")"},
+            {id:9,name:"@MsgUtils.Instance.Trls("3 Weeks")"},
+            {id:10,name:"@MsgUtils.Instance.Trls("4 Weeks")"},
+            {id:11,name:"@MsgUtils.Instance.Trls("1 Month")"},
+            {id:12,name:"@MsgUtils.Instance.Trls("2 Months")"},
+            {id:13,name:"@MsgUtils.Instance.Trls("3 Months")"},
+            {id:14,name:"@MsgUtils.Instance.Trls("4 Months")"}
+        ];
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        var formId = "NotifyForm", objectName = "@ViewBag.ObjectName";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            //async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "Notify", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="NotifyConditions";
+                data.FormAction = "@Url.Action("SaveNotification", "AudiTrial")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1) data.mode = 'show';
+
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                model.Columns = "@ViewBag.ColumnName";
+
+                $("#NotifyDiv").Forms(data, model);
+                var myForm = $("#"+formId);
+
+                myForm.find("#filter").closest(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-7 col-lg-7");
+                myForm.find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-4 col-lg-4");
+
+                FormJs.fillOptionsDynamic(myForm, "Helpers", columns, model);
+                FormJs.fillOptionsDynamic(myForm, "Users", Users , model);
+                FormJs.fillOptionsDynamic(myForm,"AlertMeFor",AlertMeFor,model);
+                FormJs.fillOptionsDynamic(myForm,"Value",value,model);
+                myForm.find("#Value").data("kendoDropDownList").select(1);
+                FormJs.fillOptionsDynamic(myForm,"ColumnName",columns,model);
+              //  $("#Value").closest(".form-group").css("display","");
+
+                $("#Message").kendoEditor({ resizable :{ content:true, toolbar:true}});
+
+                $("#filter").closest(".form-group").before("<div><button id='showCondition' class='btn ajaxBtn' value='show' >@MsgUtils.Instance.Trls("Show filter")</button></div>");
+                $("#filter").closest(".form-group").hide();
+
+                $("#showCondition").click(function() {
+                    if($(this).val() == 'show') {
+                        $("#filter").closest(".form-group").show();
+                        $(this).val('hide');
+                    } else {
+                        $("#filter").closest(".form-group").hide();
+                        $(this).val('show');
+                    }
+                });
+
+                $("#Helpers").on('change',function(){
+                    var dataItem = $("#Helpers").data("kendoDropDownList").value();
+                    var oldVal=$("#Value").data("kendoDropDownList").value();
+                    if(oldVal == 1)
+                        $("#Message").data("kendoEditor").exec("insertHtml",{html:"&lt;"+"&lt;"+dataItem+"&gt;"+"&gt;" ,spilt:false});
+                    else
+                        $("#Message").data("kendoEditor").exec("insertHtml",{html:"&lt;"+"&lt;"+dataItem+"."+"old"+"&gt;"+"&gt;" ,spilt:false});
+                });
+
+                var sharedEvent = [{id:51,name:"@MsgUtils.Instance.Trls("RecordHassBeenCreated")"}, {id:52,name:"@MsgUtils.Instance.Trls("RecordHasBeenDeleted")"}];
+                var numericEvent = Event.filter(function(item) {
+                    return (item.id > 0 && item.id <= 6) || $.inArray(item.id, [51, 52]) != -1;
+                });
+                var textEvent = Event.filter(function(item) {
+                    return (item.id > 10 && item.id <= 12) || $.inArray(item.id, [51, 52]) != -1;
+                });
+                var dateEvent= Event.filter(function(item) {
+                    return (item.id > 22 && item.id <= 29) || $.inArray(item.id, [51, 52]) != -1;
+                });
+                var listEvent = numericEvent.filter(function(item) {
+                    return $.inArray(item.id, [1, 2, 51, 52]) != -1;
+                });
+
+                columnChange(); //to filter for first selected item
+                $("#ColumnName").on('change', columnChange);
+                function columnChange() {
+                    var val = $("#ColumnName").data("kendoDropDownList").value();
+                    var type, list = null, selectedCol = columns.find(c => c.id == val);
+
+                    var type, list = null, selectedCol = columns.find(c => c.id == val);
+                    if(selectedCol) type = selectedCol.type;
+                    if(val != undefined) list = getList(val, objectName);
+                    if(list != null) type = "list";
+                    switch(type) {
+                        case 'list':
+                            FormJs.fillOptionsDynamic(myForm, "Event", listEvent, model);
+                            break;
+                        case 'number':
+                            FormJs.fillOptionsDynamic(myForm, "Event", numericEvent, model);
+                            break;
+                        case 'string':
+                            FormJs.fillOptionsDynamic(myForm, "Event", textEvent, model);
+                            break;
+                        case 'date':
+                            FormJs.fillOptionsDynamic(myForm, "Event", dateEvent, model);
+                            break;
+                        default:
+                            FormJs.fillOptionsDynamic(myForm, "Event", sharedEvent, model);
+                            break;
+                    }
+                    $("#EventNum, #Eventtext, #Eventdate").remove();
+                }
+
+                $("#Event").on('change',function() {
+                    var element =$(this).val();
+                    var culture = "@culture";
+                    $("#EventNum, #Eventtext, #Eventdate").remove();
+                    switch(element) {
+                        case '2': //DDl
+                            $("#Value").closest(".form-group").css("display","");
+                            var ddl = myForm.find('#Value').data("kendoDropDownList");
+                            ddl.wrapper.show();
+                            if($("#EventNum").length  == 0) {
+                                var list = getList($("#Columns").val(), objectName);
+                                if(list) {
+                                    $("#Event").closest(".form-group").append('<div id="EventNum"><select type="number" id="EventValue" name="EventValue" class="form-control" style="height: 50%; width: 30% !important; margin-bottom: 0; "></select></div>');
+                                    FormJs.fillOptionsDynamic(myForm, "EventValue", list);
+                                    break; //break; only if DDL -- else number
+                                }
+                            }
+                        case '4':
+                        case '6':
+                            if($("#EventNum").length  == 0)
+                                $("#Event").closest(".form-group").append('<div id="EventNum"><input type="number"  name="EventValue" class="form-control" style="height: 50%; width: 30% !important; margin-bottom: 0; "/></div>');
+                            break;
+                        case '12':
+                            var ddl = myForm.find('#Value').data("kendoDropDownList");
+                            ddl.wrapper.show();
+                            $("#Value").closest(".form-group").css("display","");
+                            if($("#Eventtext").length  == 0)
+                                $("#Event").closest(".form-group").append('<div id="Eventtext"><input type="text" id="EventValue"  name="EventValue" style="height: 50%; width: 30% !important; margin-bottom: 0;" class="form-control" /></div>');
+                            break;
+                        case '22':
+                        case '24': //##DDL calender
+                            $("#Event").closest(".form-group").append('<div  id="Eventdate"><select id="EventValue" name="EventValue" style="height: 50%; width:30% !important; margin-bottom: 0;" class="form-control" ></<select></div>');
+                            FormJs.fillOptionsDynamic(myForm, "EventValue", dateFuncs);
+                            break;
+                        case '26':
+                        case '27':
+                        case '28':
+                            $("#Value").closest(".form-group").css("display","");
+                            var ddl = myForm.find('#Value').data("kendoDropDownList");
+                            ddl.wrapper.show();
+                            if($("#Eventdate").length  == 0)
+                                $("#Event").closest(".form-group").append('<div  id="Eventdate"><input type="date" name="EventValue" style="height: 50%; width:30% !important; margin-bottom: 0;" class="form-control" /></div>');
+                            $("#"+formId).find("input[type='date']").kendoDatePicker({ culture: culture });
+                            break;
+                        case '51':
+                        case '52':
+                            var ddl = myForm.find('#Value').data("kendoDropDownList");
+                            ddl.wrapper.hide();
+                            $("#Value").closest(".form-group").css("display","none");
+                            break;
+                        default:
+                            //if($("#Eventtext").length == 0)
+                            //    $("#Event").closest(".form-group").append('<div id="Eventtext"><input type="text"  name="EventValue" disabled style="height: 90%; width: 30% !important; margin-bottom: 0;" class="form-control" /></div>');
+                            //$("#EventNum").remove();
+                            //$("#Eventdate").remove();
+                            break;
+                    }
+                    $("#Subject").val("@ViewBag.ColumnName" +" in "+"@ViewBag.TableName" +" "+$("#Event").data("kendoDropDownList").text());
+                });
+
+                $("#AlertMeFor").change(function() {
+                    var value = $(this).val();
+
+                    $("#filterBtn").hide();
+                    $("#filter").val("");
+
+                    //if(value == 1)
+                    //    $("#filter").closest(".form-group").hide();
+                    //else
+                    if(value == 2)  //2- current record only
+                        $("#filter").val("Id = @ViewBag.CurrentId ");
+                    else if(value == 3)  //3- matched filter
+                        $("#filterBtn").show();
+                });
+
+                //var ddl = myForm.find('#Value').data("kendoDropDownList");
+                //ddl.wrapper.hide();
+                myForm.find('label[for="value"]').css("display","none");
+                var additinalBtns = '<div class="form-group"><input type="button" name="backToIndex" isvisible="true" class="btn btn-warning back button" value="@MsgUtils.Instance.Trls("backToIndex")" id="backToIndex"></div>';
+                additinalBtns += '<input type="hidden" name="TableName" value='+model.TableName+' id="TableName">';
+                additinalBtns += '<input type="hidden" name="ObjectName" value='+model.ObjectName+' id="ObjectName">';
+
+             
+                $("#" + formId).find('[name="Savbtn"]').append(additinalBtns);
+
+
+                myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+
+
+                var currentId = "@ViewBag.CurrentId";
+
+                //------Check------
+                $("#filter").keyup(function() {
+                    var field = $(this), txt = $(this).val();
+                    var columns = columns.map(function(element) { return element.value }); //##ToDo: Send Type..
+                    Checker.InitialValues({columns: columns.join(',')});
+                    var res = Checker.CheckFormula(txt);
+
+                    if(!res.isValid) {
+                        if (field && !field.hasClass("k-invalid")) {
+                            field.addClass("k-invalid").prop("aria-invalid", true);
+                            field.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='filter' role='alert'>" + res.message + "</span>");
+                        } else {
+                            field.next(".k-invalid-msg").text(res.message);
+                        }
+                    } else {
+                        field.removeClass("k-invalid");
+                        field.nextAll(".k-invalid-msg[data-for='filter']").remove();
+                    }
+                });
+
+                $("#" + formId + " #filter").closest(".form-group").append("<div class='col-md-1 col-lg-1'><button id='filterBtn' @(Model.Id == 0 ? "disabled" : "") class='ajaxBtn btn' >@MsgUtils.Instance.Trls("Filter")</button></div>");
+            }
+
+        });
+
+        $('#NotifyDiv').on('click',"#backToIndex",null, function(){
+            $("#renderbody").load(oldulr);
+        });
+
+        $("#NotifyDiv").on('click',"#saveChanges",null, function (e) {
+            FormJs.saveForm($("#"+formId), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+                $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
+            });
+        });
+
+
+        function showCondition() {
+            $("#conditionWind").data("kendoWindow").center().open();
+
+            //---------Grid---------
+            var culture = "@culture";
+            var AndOr = [{value: "And", text: "@MsgUtils.Instance.Trls("And")"}, {value: "Or", text: "@MsgUtils.Instance.Trls("Or")"}];
+            var OperatorList = [{value: "=", text: "="}, {value: "<", text: "<"}, {value: ">", text: ">"}, {value: "<=", text: "<="}, {value: ">=", text: ">="}, {value: "Contains", text: "@MsgUtils.Instance.Trls("Contains")"}, {value: "StartWith", text: "@MsgUtils.Instance.Trls("StartWith")"}, {value: "EndWith", text: "@MsgUtils.Instance.Trls("EndWith")"}];
+
+            var conditionGrid = $("#conditionGrid").data("kendoGrid");
+            if(conditionGrid) conditionGrid.dataSource.read();
+            else {
+                var grid = "'conditionGrid'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadCondition", "AudiTrial")?notifyCondId=@Model.Id",
+                    update: "@Url.Action("UpdateCondition", "AudiTrial")",
+                    create: "@Url.Action("UpdateCondition", "AudiTrial")",
+                    destroy: "@Url.Action("DeleteCondition", "AudiTrial")",
+                    lang: culture,
+                    objectName: "Conditions",
+                    tableName: "Conditions",
+                    gridName: "conditionGrid",
+                    admin: "@admin",
+                    toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveFilterGrid(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>'+
+                            '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+grid+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+                    columns: [{ field: "ColumnName", values: columns}, { field: "Operator", values: OperatorList}, { field: "AndOr", values: AndOr},
+                      {   //Custom Value Field
+                          field: "ValueText",
+                          editor: function (container, options) {
+                              var input, dataSource, columnName = options.model.ColumnName;
+                              switch (options.model.ColumnType) {
+                                  case 'boolean':
+                                      options.model.ValueText = (options.model.Value == "true" || options.model.Value == true);
+                                      options.model.Value = options.model.ValueText;
+                                      input = '<input type="checkbox" name="ValueText" />';
+                                      $(input).appendTo(container);
+                                      break;
+                                  case 'date':
+                                      options.model.Value = options.model.ValueText;
+                                      input = '<input type="date" name="Value" style="height: 90%; width: 80% !important; margin-bottom: 0;" />';
+                                      $(input).appendTo(container);
+                                      container.find("input[type='date']").kendoDatePicker({ culture: culture });
+                                      break;
+                                  case 'number':
+                                      input = '<input type="number" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;" />';
+                                      $(input).appendTo(container);
+                                      drawMultiSelect(columnName, container.find("input"), options);
+                                      break;
+                                  default:
+                                      input = '<input type="text" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;" />';
+                                      $(input).appendTo(container);
+                                      drawMultiSelect(columnName, container.find("input"), options);
+                                      break;
+                              }
+                          },
+                          template: '<div class="val">#:ValueText#</div>'
+                          //checkbox
+                          //template: '#if(ColumnType == 8){# <input type="checkbox" name="ValueText" #:ValueText == "1" ? "checked" : ""#  /> #}else{# <div> #: ValueText ? ValueText : ""  # </div> #}#'
+                      }],
+                    fields: { AndOr: {defaultValue: 'And'}, Operator: {defaultValue: '='}, NotifyCondId: {defaultValue: $("#NotifyForm").find("#Id").val()} },
+                    save: function(e) {
+                        if(e.values.ColumnName != undefined && e.values.ColumnName != e.model.ColumnName) {
+                            var selectedCol = columns.find(c => c.value == e.values.ColumnName);
+                            e.model.ColumnType = selectedCol.type;
+                            e.model.ObjectName = selectedCol.objectName;
+                            e.model.PageType = selectedCol.pageType;
+
+                            var row = $(e.container).closest('tr');
+                            row.find(".val").text("");
+                            e.model.Value = "";
+                            e.model.ValueText = "";
+                        }
+                        //console.log(e.model.NotifyCondId);
+                        if(e.values.ValueText != undefined && e.values.ValueText != e.model.ValueText) {
+                            e.model.Value = e.values.ValueText;
+                        }
+
+                        if(e.values.Value != undefined && e.values.Value != e.model.Value) {
+                            if(e.model.ColumnType == 'date') {
+                                e.values.ValueText = kendo.toString(new Date(e.values.Value), 'd');
+                                e.model.Value =  e.values.ValueText;
+                                e.model.ValueText = e.values.ValueText;
+                            }
+                            else
+                                e.model.Value = e.values.ValueText;
+                        }
+                    }
+                });
+
+                function drawMultiSelect(columnName, input, options) {
+                    var list = [];
+
+                    //Get List
+                    list = getList(columnName, options.model.ObjectName);
+                    //Draw MultiSelect
+                    if (list != null) {
+                        input.attr('name', 'Value');
+                        input.kendoMultiSelect({
+                            valuePrimitive: true,
+                            dataSource: list,
+                            dataValueField: "id",
+                            dataTextField: "name",
+                            change: function(e) {
+                                var vals = this.value();
+                                ///selected text
+                                options.model.Value = vals;
+                                var selected = list.filter(function(item, index) {
+                                    return vals.find(d => d == item.id) != undefined;
+                                });
+                                selected = selected.map(function(e) {return e.name; });
+                                options.model.ValueText =  (selected.join(','));
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        function getList(columnName, objectName) {
+            if(!columnName || !objectName) return null;
+
+            var list = [], div = $("[objectname='" + objectName + "']"),
+                pageType = div.data("kendoGrid") ? "Grid" : "Form";
+
+            //if Grid -> Grid Columns --- else if Form -> Form html
+            if(pageType == "Grid") {
+                list = null;
+                var grid = div.data("kendoGrid");
+                if(grid) {
+                    var matchColumn = grid.columns.find(e => e.field == columnName && $.isArray(e.values));
+                    if(matchColumn)
+                        list = matchColumn.values.map(function(e) { return {id: e.value, name: e.text}; });
+                }
+            }
+            else if (pageType == "Form") {
+                var formField = div.find("#" + columnName), type;
+                if(formField[0] != undefined) type = formField[0].type;
+
+                switch(type) {
+                    case 'select-one':
+                        var ddl = formField.data("kendoDropDownList");
+                        if(ddl) list = ddl.options.dataSource;
+                        break;
+                    case 'select-multiple':
+                        var ddl = formField.data("kendoMultiSelect");
+                        if(ddl) list = ddl.options.dataSource;
+                        break;
+                    case 'radio':
+                        for(var i = 0; i < formField.length; i++) {
+                            var currField = $(formField[i]);
+                            list.push({ id: currField.val(), name: currField.closest("label").text() });
+                        }
+                        break;
+                    case 'text': //AutoComplete
+                        list = null;
+                        if(formField.hasClass("tt-input")) {
+                            $.ajax({
+                                url: '/Pages/ReadRemoteList',
+                                async: false,  //async: false ==> to solve auto blur problem
+                                data: { tableName: formField.attr('tablename'), formTblName: formField.closest('form').attr("tablename") },
+                                success: function(res) { list = res; }
+                            });
+                        }
+                        break;
+                    default:
+                        list = null;
+                        break;
+                }
+            }
+
+            return list;
+        }
+
+        //Grid to filter Text
+        $("#NotifyDiv").on('click', "#filterBtn", function(e) {
+            e.preventDefault();
+            showCondition();
+        });
+    });
+
+
+    function saveFilterGrid(name) {
+        var grid = $('#' + name);
+        grid.data("kendoGrid").saveChanges();
+        grid.ajaxStop(function() {
+            if(grid.attr("hasErrors") == "false") {
+                //After SaveGrid
+                var gridData =  $("#conditionGrid").data("kendoGrid").dataSource.data(),
+                    length = gridData.length, conditionText = "";
+
+                for(var i=0; i<length; i++) {
+                    var current = gridData[i];
+                    conditionText += current.ColumnName + " "
+                            + (Array.isArray(current.Value) && current.Value.length > 1 ? "in (" : current.Operator) + " "
+                            + getVal(current) + " " + (current.AndOr != null && i < length - 1 ? current.AndOr : " ") + " ";
+                }
+                $("#NotifyForm #filter").val(conditionText);
+
+                //close window
+                $("#conditionWind").data('kendoWindow').close();
+            }
+        });
+    }
+
+    $("#conditionWind").kendoWindow({
+        title: "@MsgUtils.Instance.Trls("Notification Filter")",
+        actions: ["Minimize", "Maximize", "Close"],
+        visible: false,
+        minWidth: "45%",
+        minHeight: "60%",
+        close: function() {
+            $("#conditionWind").empty();
+            $("#conditionWind").append("<div id='conditionGrid'></div>");
+        }
+    });
+
+    function getVal(current) {
+        var result = "";
+        if(current.ColumnType == "boolean")
+            result = (current.Value == true);
+        else if(current.ColumnType == "date")
+            result = '"' + kendo.toString(new Date(current.Value), 'yyyy-MM-dd') + '"';
+        else if(Array.isArray(current.Value) && current.Value.length > 1)
+            result = current.Value + ")";
+        else if(current.ColumnType == "string")
+            result = '"' + current.Value + '"';
+        else
+            result = current.Value;
+
+        return result;
+    }
+
+</script>
+<style>
+    #listView {
+        max-height: 250px;
+        overflow: auto;
+    }
+
+    #NotifyDiv .k-dropdown {
+        width: 100%;
+    }
+</style>

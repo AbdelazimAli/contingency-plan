@@ -1,0 +1,185 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@*@using Model.ViewModel.Personnel
+@model IEnumerable<DashboardsViewModel>*@
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<style>
+#dashboardDiv .panel-heading {
+    /*text-align: center !important;*/
+    font-size: 16px;
+    font-weight: bold;
+}
+
+#dashboardDiv .filterSpan {
+    font-weight: normal;
+}
+
+.my-border {
+    /*padding: 5px;*/
+    margin: 5px 15px;
+    border: thin solid rgba(222, 222, 222, 0.40);
+}
+
+.k-grid {
+    margin-top: 31px;
+}
+
+.noData {
+    opacity: .4;
+    filter: alpha(opacity=60);
+    text-align: center;
+    top: 50%;
+    position: absolute;
+    width: 100%;
+}
+
+.carousel-inner {
+    min-height: 400px;
+    padding: 10px;
+}
+
+.carousel-control {
+    width: 4%;
+}
+
+/*.carousel-caption {
+    position: relative;
+    left: 0 !important;
+    color: black;
+    text-align: left;
+    font-size: 20px;
+}*/
+</style>
+<link href="~/Content/kendo.metro.min.css" rel="stylesheet" />
+<script src="~/Scripts/app/tree.js"></script>
+
+<div id="dashboardDiv">
+    @Html.Partial("_LeaveDashboard")
+    @Html.Partial("_EmpCountDashboard")
+</div>
+
+<script>
+    $(function () {
+        $('.carousel').carousel();
+        $('.carousel').carousel('pause'); //to play ->'cycle'
+        //for kendo chart with carousel position problem
+        $(".carousel").on('slide.bs.carousel', SlidCarousel);
+
+        function SlidCarousel(e) {
+            var item = e.relatedTarget == undefined ? $(e).find(".item.active") : $(e.relatedTarget);
+            var Chart = $(item).find(".k-chart"), Grid = $(item).find(".k-grid");
+
+            if (Chart.length > 0) {
+                var chart = Chart.data("kendoChart"), url = Chart.attr("url");
+                var hasData = chart.dataSource.data().length;
+
+                if (url && !hasData) {
+                    $.ajax({
+                        url: url,
+                        data: { depts: selectedDepts },
+                        traditional: true,
+                        success: function (data) {
+                            var grid = Grid.data("kendoGrid");
+                            if (grid) grid.dataSource.data(data);
+
+                            chart.dataSource.data(data);
+                            chart.redraw();
+                        }
+                    });
+                } else {
+                    setTimeout(function() { if (chart) chart.redraw(); }, 50);
+                }
+            }
+        }
+
+        //to prevent toggle button when expand tree
+        $("#filterDept").on('click', 'li', function(e) {
+            e.stopPropagation();
+        });
+
+        var storedRange = localStorage.getItem("dashboard-range-filter");
+        if (storedRange != null) {
+            selectedRange = JSON.parse(storedRange);
+            //text
+            $(".filterSpan").text(" - " + $("#filterRange #" + selectedRange).text());
+            //check
+            $('.checkedRange').removeClass('fa-check');
+            $('#' + selectedRange).find('.checkedRange').addClass('fa-check');
+        }
+
+        selectedDepts = [];
+        var storedDepts = localStorage.getItem("dashboard-depts-filter");
+        if (storedDepts != null) selectedDepts = JSON.parse(storedDepts);
+
+        $("#filterDeptItem").TreeView({
+            dragAndDrop: false,
+            table: "CompanyStructures",
+            root: "Company",
+            lang: "@User.Identity.GetCulture()",
+            checkboxes: { checkChildren: true },
+            dataBound: function (e) {
+                var treeView = $("#filterDeptItem").data("kendoTreeView");
+                treeView.expand(".k-item");
+                if (e.node) bindChecked([treeView.dataItem(e.node)], selectedDepts);
+            }
+        });
+
+        //filter range
+        $("#filterRange").on('click', '.range', function(e) {
+            selectedRange = $(this).prop("id"); //for Cascade Grid
+
+            localStorage.setItem("dashboard-range-filter", selectedRange);
+            getLeaveDashboard();
+        });
+
+        //filter Depts
+        $("#deptsFiletrBtn").click(function (e) {
+            var treeView = $("#filterDeptItem").data("kendoTreeView");
+            selectedDepts = [];
+            checkNodeIds(treeView.dataSource.view(), selectedDepts);
+
+            var charts = $("#emp-carousel").find(".k-chart");
+            for (var i = 0; i < charts.length; i++) {
+                var chart = $(charts[i]).data("kendoChart");
+                chart.dataSource.data([]); //grids
+                chart.redraw();
+            }
+            SlidCarousel("#emp-carousel");
+
+            localStorage.setItem("dashboard-depts-filter", JSON.stringify(selectedDepts));
+        });
+    });
+
+    function initialData() {
+
+        $.ajax({
+            url: "@Url.Action("InitialData", "Dashboard")",
+            data: { range: selectedRange, depts: selectedDepts },
+            traditional: true,
+            success: function (data) {
+                //Initial Charts
+                leaveInitial(data);
+                empsInitial(data);
+            }
+        });
+    }
+    
+    initialData();
+
+    function noDataFunc(e) {
+        var view = e.sender.dataSource.view();
+        if(view.length === 0)  { 
+            if ($(this.element).find(".noData").length === 0) $(this.element).after("<div class='noData'>@MsgUtils.Instance.Trls("No data available")</div>"); 
+        }
+        else
+            $(this.element).nextAll('.noData').remove();
+    }
+</script>

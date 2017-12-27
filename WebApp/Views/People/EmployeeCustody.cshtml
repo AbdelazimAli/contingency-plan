@@ -1,0 +1,42 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "DisplayLookUpCode";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var CodeName = ViewBag.name;
+}
+<br>
+<div id="CustodyDiv"></div>
+
+<script>
+    var Custody = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Custody));
+    var catState=[{value:1,text:"@MsgUtils.Instance.Trls("Darft")"},{value:2,text:"@MsgUtils.Instance.Trls("used")"}];
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Id));
+    var objectName = "EmployeeCustody";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadEmployeeCustody", "People")?id="+id,
+        create: "@Url.Action("CreateEmpCustody", "People")?Id="+id,
+        update: "@Url.Action("UpdateEmpCustody", "People")",
+        destroy: "@Url.Action("DeleteEmpCustody", "People")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        tableName: "EmpCustodies",
+        recordName: "Name",
+        gridName: "CustodyDiv",
+        columns: [{ field: "CustodyId", values: Custody },{field:"CustodyStat",values:catState}],
+        select: { "CustodyId": Custody,"CustodyStat": catState}
+    });
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "CustodyDiv" }, { "ObjectName", "EmployeeCustody" }, { "Functions", ViewBag.Functions } })
+
+
+
+

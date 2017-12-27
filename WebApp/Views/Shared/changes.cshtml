@@ -1,0 +1,26 @@
+﻿@using Model.ViewModel.Personnel
+@model IEnumerable<ChangesViewmodel>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th style="text-align:center">Value</th>
+            <th style="text-align:center">ModifiedUser</th>
+            <th style="text-align:center">ModifiedTime</th>
+        </tr>
+    </thead>
+    <tbody>
+        
+       @foreach (var item in Model)
+       {
+         <tr>
+            <td>@item.Value</td>
+            <td>@item.ModifiedUser</td>
+            <td>@item.ModifiedTime</td>
+        </tr>
+       }
+
+    </tbody>
+</table>
+
+

@@ -1,0 +1,53 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "LeaveTypes" } })
+<div id="LeaveDiv"></div>
+<script>
+    var addUrl = "@Url.Action("Details", "LeaveType")";
+    RequestFilters.ApplayAllFilters([], {}, "LeaveDiv", "@Url.Action("GetLeaveTypes", "LeaveType")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var AbsenceType=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AbsenceType));
+    var objectName = "LeaveTypes";
+    Grids.indexGrid({
+        read: "@Url.Action("GetLeaveTypes","LeaveType")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("Details", "LeaveType")",
+        del: "@Url.Action("DeleteLeaveType", "LeaveType")",
+        show: "@Url.Action("Details", "LeaveType")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        toolbar:'<div></div>',
+        recordName: "Name",
+        gridName: "LeaveDiv",
+        admin: "@admin",
+        columns: [{ field: "Name", locked: true }, { field: "AbsenceType", values: AbsenceType }],
+        select: { "AbsenceType": AbsenceType }
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

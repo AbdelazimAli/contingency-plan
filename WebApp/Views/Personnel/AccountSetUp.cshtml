@@ -1,0 +1,101 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+}
+<table class="table" style="width:60%">
+    <tr>
+        <td>
+            <div style="@(rtl?"float:right":"float:left")"><label style="font-size:medium">@MsgUtils.Instance.Trls("Account Type")</label>&emsp;<input id="AccountDiv" /></div>
+        </td>
+        <td>
+            <div style="@(rtl?"float:right":"float:left")"><label style="font-size:medium">@MsgUtils.Instance.Trls("Spiltter")</label>&emsp;<input id="SpiltterDiv"/></div>
+        </td>
+    </tr>
+</table>
+
+<div id="AccSetUp"></div>
+
+<script>
+
+    var result = [{ value: 1, text: "@MsgUtils.Instance.Trls("GL Account")" }, { value: 2, text: "@MsgUtils.Instance.Trls("App Account")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Cost Center")" }];
+    var Spiltter = [{ value: ".", text: "." }, { value: "/", text: "/" }, { value: "-", text: "-" }, { value: "\\", text: "\\" }];
+    $("#SpiltterDiv").kendoDropDownList({
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: Spiltter ,
+        value: "@ViewBag.Spiltter",
+        change: function(e)
+        {
+            changeSpiltter($("#AccountDiv").val(), this.value());
+        }
+    });
+  
+    $("#AccountDiv").kendoDropDownList({
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: result,
+        change: function (e) {
+            AccTypeId = this.value();
+            AccTypeName = this.text();
+            $.ajax({
+                url: "@Url.Action("GetSpiltter", "Personnel")",
+                data: { AccTypeId: AccTypeId },
+                dataType: "json",
+                success: function (result) {
+                    $("#SpiltterDiv").data("kendoDropDownList").text(result);
+                },
+                error: function (result) {
+                    console.log(result.responseText);
+                }
+            });
+            var readUrl = "@Url.Action("ReadAccountSetUp", "Personnel")?AccTypeId=" + this.value();
+            changeSpiltter(this.value(), $("#SpiltterDiv").val());
+            $("#AccSetUp").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+            //$("#AccSetUp").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("CreateAccountSetUp", "Personnel")?AccTypeId=" + this.value() + "&Spiltter=" + $("#SpiltterDiv").val();
+           // $("#AccSetUp").data("kendoGrid").dataSource.transport.options.update.url = "@Url.Action("UpdateAccountSetUp", "Personnel")?AccTypeId=" + this.value() ;
+            $("#AccSetUp").data("kendoGrid").dataSource.read();
+        }
+    });
+
+    function changeSpiltter(AccTypeId,Spilter) {
+        $("#AccSetUp").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("CreateAccountSetUp", "Personnel")?AccTypeId=" + AccTypeId + "&Spiltter=" + Spilter;
+        $("#AccSetUp").data("kendoGrid").dataSource.transport.options.update.url = "@Url.Action("UpdateAccountSetUp", "Personnel")?AccTypeId=" + AccTypeId + "&Spiltter=" + Spilter;
+    }
+    var objectName = "AccountSetup";
+    var Seq = [{ value: 1, text: "1" }, { value: 2, text: "2" }, { value: 3, text: "3" }, { value: 4, text: "4" }, { value: 5, text: "5" }, { value: 6, text: "6" }, { value: 7, text: "7" }, { value: 8, text: "8" }, { value: 9, text: "9" }, { value: 10, text: "10" }];
+    var SegLength = [{ value: 1, text: "1" }, { value: 2, text: "2" }, { value: 3, text: "3" }, { value: 4, text: "4" }, { value: 5, text: "5" }, { value: 6, text: "6" }, { value: 7, text: "7" }, { value: 8, text: "8" }, { value: 9, text: "9" }, { value: 10, text: "10" }];
+    var Id = $("#AccountDiv").val();
+    var spilt = $("#SpiltterDiv").val();
+    Grids.batchGrid({
+        read: "@Url.Action("ReadAccountSetUp", "Personnel")?AccTypeId=" + Id,
+        create: "@Url.Action("CreateAccountSetUp", "Personnel")?AccTypeId=" + Id + "&Spiltter=" + spilt,
+        update: "@Url.Action("UpdateAccountSetUp", "Personnel")?AccTypeId=" + Id + "&Spiltter=" + spilt,
+        destroy: "@Url.Action("DeleteAccountSetUp", "Personnel")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        gridName: "AccSetUp",
+        recordName: "Segment",
+        columns : [{field:"Seq",values:Seq},{field:"SegLength",values:SegLength}],
+        select: { "Seq": Seq, "SegLength": SegLength }
+    });
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "AccSetUp" }, { "ObjectName", "AccountSetup" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+
+
+

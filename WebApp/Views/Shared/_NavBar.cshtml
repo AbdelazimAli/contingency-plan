@@ -1,0 +1,58 @@
+﻿@using WebApp.Extensions
+
+<div class="navbar navbar-default navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header @(User.Identity.RTL() ? "navbar-right" : "")">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            @Html.ActionLink("Enterprize HR", "Index", "Home", new { area = "" }, new { @class = "navbar-brand" })
+        </div>
+
+
+        @if (User.Identity.IsAuthenticated)
+        {
+            <div class="navbar-collapse collapse">
+                <ul class="nav navbar-nav">
+                    <li>@Html.ActionLink("Dashboard", "Index", "Home")</li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Administration <span class="caret"></span></a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li>@Html.ActionLink("Users", "Index", "Users")</li>
+                            <li>@Html.ActionLink("Menu Editor", "Index", "Menu")</li>
+                            <li>@Html.ActionLink("Page Grid Editor", "GridIndex", "PageEditor")</li>
+                            <li>@Html.ActionLink("Page Form Editor", "Index", "PageEditor")</li>
+                            <li>@Html.ActionLink("Change Password", "About", "Home")</li>
+
+                            <li class="divider"></li>
+                            <li>@Html.ActionLink("Refresh", "Refresh", "Home")</li>
+                            <li class="divider"></li>
+                            <li>@Html.ActionLink("Company", "Index", "Company")</li>
+                        </ul>
+                    </li>
+                    <li class="dropdown">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Personnel <span class="caret"></span></a>
+                        <ul class="dropdown-menu" role="menu">
+                            <li>@Html.ActionLink("Company Structure", "Contact", "Home")</li>
+                            <li>@Html.ActionLink("Employee", "Index", "Person")</li>
+                            <li>@Html.ActionLink("Setup", "Contact", "Home")</li>
+                            <li class="divider"></li>
+                            <li>@Html.ActionLink("Vacation", "Contact", "Home")</li>
+                            <li class="divider"></li>
+                            <li>@Html.ActionLink("Termination", "Contact", "Home")</li>
+                        </ul>
+                    </li>
+                    <li>@Html.ActionLink("Payroll", "Contact", "Home")</li>
+                    <li>@Html.ActionLink("Attendance", "Contact", "Home")</li>
+                    <li>@Html.ActionLink("Planning", "Contact", "Home")</li>
+                    <li>@Html.ActionLink("Recruitment", "Contact", "Home")</li>
+                    <li>@Html.ActionLink("Appraisal", "Contact", "Home")</li>
+                </ul>
+                @Html.Partial("_LoginPartial")
+            </div>
+
+        }
+    </div>
+</div>

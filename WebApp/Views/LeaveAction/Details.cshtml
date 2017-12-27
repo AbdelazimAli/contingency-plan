@@ -1,0 +1,132 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="LeaveActionDiv"></div>
+<div id="docWindow"></div>
+
+<script>
+    var model;
+
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "LeaveActionForm";
+
+        var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
+        var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));
+        var TypeId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TypeId));
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'LeaveAction', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "LeaveAction")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "LeaveActions";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+            data.btns = ["back", "doc"];
+
+            $("#LeaveActionDiv").Forms(data, model);
+            if(model.Id==0){
+                $("#cancelTrans").attr("disabled","disabled");
+                $("#trans").attr("disabled","disabled");
+                $("#Documents").attr("disabled", true);
+            }
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model, { remoteTableName: "People" });
+            FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", PeriodId, model);
+
+            $("#" + formId).find('#trans').val('@MsgUtils.Instance.Trls("Post")');
+            $("#" + formId).find('#cancelTrans').val('@MsgUtils.Instance.Trls("Un Post")');
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+            // Change EmpId => fill LeaveType
+            function getEmpId() {
+                var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+            }
+
+            if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', fillLeaves);
+            else $("#" + formId).on('change',  "#EmpId", fillLeaves);
+
+            if(getEmpId()) fillLeaves();
+            else FormJs.fillOptionsDynamic($("#" + formId), "TypeId", TypeId, model);
+           
+            function fillLeaves() {
+                $.get("@Url.Action("GetEmpLeaveType", "LeaveAction")", {EmpId : getEmpId()}, function (list) {
+                    FormJs.fillOptionsDynamic($("#" + formId), "TypeId", list, model);
+                });
+            }
+            //change  TypeId => fill period
+            $("#LeaveActionForm").on("change","#TypeId",null,function(e){
+                var record= $(this).val();
+                $.get("@Url.Action("GetLeaveType", "LeaveAction")", {LeaveId :record}, function (list) {
+                    FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", list, model);
+                });
+            });
+
+            $("#" + formId).on('click','#saveChanges', function (e) {
+                FormJs.saveForm($("#" + formId), $(this), function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                });
+            });
+            $("#" + formId).find('#trans').on('click', function(){
+                $.getJSON("/LeaveAction/PostLeaveAction",{objId:model.Id},function(res){
+                    toastr.success('@MsgUtils.Instance.Trls("PostTransSucess")');
+                    $("#renderbody").load(oldulr);
+                });
+            });
+            $("#" + formId).find('#cancelTrans').on('click', function(){
+                $.getJSON("/LeaveAction/UnPostLeaveAction",{objId:model.Id},function(res){
+                    toastr.success(res);
+                    $("#renderbody").load(oldulr);
+                });
+            });
+
+
+            $("#Documents").on('click', function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveAction&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+
+        });
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("Documents")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#docWindow").empty();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+            }
+        });
+    });
+
+</script>
+
+
+
+
+
+

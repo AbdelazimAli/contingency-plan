@@ -1,0 +1,54 @@
+﻿@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<div class="omegaform @(rtl ? "rtl" : "")">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-sm-6 ">
+                <label id="LeaveLbl" class="control-label">@MsgUtils.Instance.Trls("Repeat Period")</label>&nbsp;&nbsp;
+                <input id="ddlFromPicker" class="form-control" title="ddlFromPicker" />&nbsp;&nbsp;
+            </div>
+            <div class=" col-md-4">
+                <label id="FiscalLbl" class="control-label">@MsgUtils.Instance.Trls("To")</label>&nbsp;&nbsp;
+                <input id="ddlToPicker" class="form-control" title="ddlToPicker" />&nbsp;
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="tabs"></div>
+<script>
+    $("#ddlFromPicker").kendoDatePicker({});
+    $("#ddlToPicker").kendoDatePicker({});
+    $("#ddlFromPicker").data("kendoDatePicker").value(new Date());
+    $("#ddlToPicker").data("kendoDatePicker").value(new Date(new Date().getFullYear(),11,31));
+
+    // draw tabs
+    FormJs.DrawTabs("tabs", [{ Name: "RepeatDaysTab", Title: "@MsgUtils.Instance.Trls("Days")" }, { Name: "RepeatMonthsTab", Title: "@MsgUtils.Instance.Trls("Month")" }, { Name: "RepeatRestTab", Title: "@MsgUtils.Instance.Trls("Rest")" }]);
+    var Depts = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Depts));
+    var Year = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Year));
+
+    $('#tab_RepeatDaysTab').load("@Url.Action("DaysTab", "Personnel")?Depts="+Depts+"&year="+Year+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+
+    $("#t_RepeatDaysTab").click(function () {
+        $("#tab_RepeatMonthsTab").empty();
+        $("#tab_RepeatRestTab").empty();
+        $('#tab_RepeatDaysTab').load("@Url.Action("DaysTab", "Personnel")?Depts="+Depts+"&year="+Year+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+    $("#t_RepeatMonthsTab").click(function () {
+        $("#tab_RepeatDaysTab").empty();
+        $("#tab_RepeatRestTab").empty();
+        $('#tab_RepeatDaysTab').load("@Url.Action("MonthsTab", "Personnel")?Depts="+Depts+"&year="+Year+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+</script>

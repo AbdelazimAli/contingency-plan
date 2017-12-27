@@ -1,0 +1,186 @@
+﻿@using System.Web.Script.Serialization
+@model IEnumerable<Model.ViewModel.ReportViewModel>
+
+@{
+    ViewBag.Title = "Reports List";
+    Layout = null;
+}
+
+
+<div id="reportlist">
+
+    <div class="k-content wide">
+        <div id="listView"></div>
+        <div id="pager" class="k-pager-wrap"></div>
+    </div>
+
+    <script type="text/x-kendo-template" id="template">
+        <div class="column" style="@(User.Identity.RTL() ? "float: right" : "float: left")">
+            <figure><img src="../Content/Reports/#: Icon #" alt="#: ReportName # image" /></figure>
+            <h3>
+                #:ReportTitle#
+            </h3>
+        </div>
+    </script>
+   
+    <script>
+        var reports = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+
+        $(function() {
+            var dataSource = new kendo.data.DataSource({
+                data: reports,
+                pageSize: 21
+            });
+
+            $("#pager").kendoPager({
+                dataSource: dataSource
+            });
+
+            $("#listView").kendoListView({
+                dataSource: dataSource,
+                selectable: "single",
+                dataBound: setItemClickEvent,
+                template: kendo.template($("#template").html())
+            });
+
+            @*$("#listView").keydown(function (e) {
+                if (e.keyCode == 46) // && e.ctrlKey
+                {
+                    var index = this.select().index();
+                    if (index > 0) {
+                        dataItem = this.dataSource.view()[index];
+                        this.dataSource.remove(dataItem);
+                    }
+                }
+            });*@
+
+            var running = false;
+            var listView = $("#listView").data("kendoListView");
+            function setItemClickEvent() {
+                $(".column", listView).on("click", function (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var uid = $(this).data("uid");
+                    var item = listView.dataSource.getByUid(uid);
+                    if (running) return;
+                    $("#loadingImg").show();
+                    $("#renderbody").on("ajaxComplete", function () {
+                        running = false;
+                        $("#loadingImg").hide();
+
+                    });
+
+                    if (item.NodeType == 1) {
+                        var path = "@Url.Action("ReportsList", "BaseReport")?MenuId=" + item.Id + "&MenuName=" + item.ReportName + "&myurl=" + item.Url;
+                        console.log(path);
+                        //$("#renderbody").load(path);
+                        updateHistory(path);
+                    }
+                    else
+                        window.location.href = "@Url.Action("ReportViewMode", ViewBag.Controller)" + "?id=" + item.Id + "&name=" + item.ReportName + "&icon=" + item.Icon + "&controller=@ViewBag.Controller";
+
+                    running = true;
+                });
+            }
+        });
+    </script>
+
+    <style>
+        #listView {
+            padding: 10px 5px;
+            margin-bottom: -1px;
+            min-height: 510px;
+        }
+
+        .column {
+            position: relative;
+            width: 120px; /*111*/
+            height: 200px; /*170*/
+            margin: 0 5px 20px 0px;
+            padding: 0;
+            cursor: pointer;
+        }
+
+            .column img {
+                width: 50px; /*110*/
+                height: 50px;
+            }
+
+            .column h3 {
+                margin: 0;
+                padding: 3px 5px 0 0;
+                max-width: 120px; /*96*/
+                overflow: hidden;
+                line-height: 1.1em;
+                font-size: 1em;
+                height: 50px;
+                font-weight: bold;
+                text-align: center;
+                /*text-transform: uppercase;
+                color: #999;*/
+            }
+
+            /*.column p {
+                visibility: hidden;
+            }
+
+            .column:hover p {
+                visibility: visible;
+                position: absolute;
+                width: 110px;
+                height: 110px;
+                top: 0;
+                margin: 0;
+                padding: 0;
+                line-height: 110px;
+                vertical-align: middle;
+                text-align: center;
+                color: #fff;
+                background-color: rgba(0,0,0,0.75);
+                transition: background .2s linear, color .2s linear;
+                -moz-transition: background .2s linear, color .2s linear;
+                -webkit-transition: background .2s linear, color .2s linear;
+                -o-transition: background .2s linear, color .2s linear;
+            }*/
+
+        .k-listview:after {
+            content: ".";
+            display: block;
+            height: 0;
+            clear: both;
+            visibility: hidden;
+        }
+
+ figure {
+	width: 225px;
+	height: 150px;
+	margin: 0;
+	padding: 0;
+    text-align: justify;
+	background: #fff;
+	overflow: hidden;
+}
+
+/*.column figure img {
+	-webkit-transform: scale(1.25);
+	transform: scale(1.25);
+	-webkit-transition: .3s ease-in-out;
+	transition: .3s ease-in-out;
+}
+.column figure:hover img {
+	-webkit-transform: scale(0.75);
+	transform: scale(0.75);
+}*/
+
+.column figure img {
+	width: 100px; /*300*/
+	height: auto;
+	-webkit-transition: .3s ease-in-out;
+	transition: .3s ease-in-out;
+}
+.column figure:hover img {
+	width: 140px;
+}
+
+    </style>
+</div>

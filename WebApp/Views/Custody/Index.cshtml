@@ -1,0 +1,257 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+    var admin = User.IsInRole("Admin");
+}
+<br />
+<style>
+    .omegaform input:checked + .slider{
+        background-color:green;
+    }
+    .omegaform .slider {
+        height: 25px;
+    }
+    .left-switch {
+        position: absolute;
+        padding-right: 4%;
+    }
+    .right-button{
+        float:right;
+    }
+     .sliderProgress {
+        width: 95%;
+        top: 10px;
+    }
+</style>
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "CustodyDiv" }, { "HasDepts", "false" }, { "Functions", function }, { "ObjectName", MsgUtils.Instance.Trls("Custody") }, { "OldObjectName", "Custody" }, { "TableName", "Custody" } })
+@Html.Partial("_ThumpImageGrid")
+
+  <div id="divChange"> <div id="CustodyDiv"></div> </div>
+  
+
+    <script>
+
+        var addUrl = "@Url.Action("Details", "Custody")";
+        RequestFilters.ApplayAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+        $('#filterDiv').after('<div class="switch-zone"><div class="switch"><input id="switchDesign" type="checkbox" />' +
+            '<div class="slider round"></div><span></span></div><h2 id="own"></span></h2>');
+
+        $("#own").text("@MsgUtils.Instance.Trls("in Company")");
+
+        function CompanyCustody() {
+            var columns = [{ field: "Status", template: "<div class='sliderProgress'></div>" }, { field: "Delete", hidden: false }, { field: "EditRecieve", hidden: true }, { field: "Name", locked: true },
+            ];
+            var grid = "'CustodyDiv'";
+            Grids.indexGrid({
+                read: "@Url.Action("ReadCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]",
+                edit: "@Url.Action("Details", "Custody")",
+                del: "@Url.Action("DeleteCustody", "Custody")",
+                objectName: "Custodies",  // name of the page or table name used to create local db key
+                recordName: "Name", // custom delete message
+                gridName: "CustodyDiv",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                columns: columns,
+                toolbar: '<div></div>',
+                dataBound: function (e) {
+                    var name = $("#" + this.gridName);
+                    var gridd = name.data("kendoGrid");
+                    gridd.hideColumn("Attachement");
+                   // gridd.hideColumn("EditRecieve");
+                    gridd.hideColumn("RecvDate");
+                    gridd.showColumn("Delete");
+                    gridd.showColumn("PurchaseDate");
+                    var designChanged = $('#CustodyDiv').attr('designChanged');
+                    if (designChanged == 'true') Grids.TriggerChanges("CustodyDiv", 'Design', false);
+                    name.find(".k-grid-Delever").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                        if (model.InUse == true) {
+                            $(this).addClass("Delever");
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("Delever")");
+                        } else {
+                            $(this).addClass("Recieve");
+                            $(this).click(ClickRecieve);
+                            $(this).attr("modelid", model.Id);
+                            $(this).attr("freeze", model.Freeze);
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("Recieve")");
+                        }
+                    });
+
+                    name.find(".sliderProgress").each(function () {
+                        var td = $(this).parent("td");
+                        if (td.css("display") != "none") {
+                            td.attr("style", "padding: 0");
+                            var model = e.sender.dataItem($(this).closest("tr"));
+                            if (model != null) {
+                                $(this).kendoProgressBar({
+                                    value: model.Status,
+                                    type: "percent",
+                                    max: 100,
+                                    animation: {
+                                        duration: 2000
+                                    }
+                                });
+                            }
+                        }
+                    });
+
+                }
+            });
+        }
+
+        function EmployeeCustody() {
+            var columns = [{ field: "Status", template: "<div class='sliderProgress'><div>" }, { field: "Name", locked: true } ,{ field: "Delete", hidden: true },{ field: "EditRecieve",hidden:false },
+             {
+                 field: "Attachement",
+                 template: "<img class='myThumpImg'src='#:ThumpImage.CheckPic(data) #' width='80' height='80'>"
+
+             }];
+            var grid = "'CustodyDiv'";
+            Grids.indexGrid({
+                read: "@Url.Action("ReadEmpCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]",
+                edit: "@Url.Action("Details", "Custody")",
+                objectName: "Custodies",  // name of the page or table name used to create local db key
+                recordName: "Name", // custom delete message
+                gridName: "CustodyDiv",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                columns: columns,
+               toolbar: '<div></div>',
+                dataBound: function (e) {
+                    var gridName = this.gridName;
+                    var name = $("#" + this.gridName);
+                    var gridd = name.data("kendoGrid");
+                    gridd.showColumn("Attachement");
+                    gridd.showColumn("RecvDate");
+                    gridd.hideColumn("PurchaseDate");
+
+                    name.find(".k-grid-Delever").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                        if (model.InUse == true) {
+                            $(this).addClass("Delever");
+                            $(this).click(ClickDelever);
+                            $(this).attr("modelid", model.Id);
+                            $(this).attr("EmpCustodyId", model.EmpCustodyId);
+                            $(this).attr("empid", model.EmpId);
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("Delever")");
+                        }
+                        else {
+
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("Recieve")");
+                        }
+                    });
+                    gridd.showColumn("EditRecieve");
+                  //  gridd.hideColumn("Delete");
+                    var designChanged = $('#CustodyDiv').attr('designChanged');
+                    if (designChanged == 'true') Grids.TriggerChanges("CustodyDiv", 'Design', false);
+                    name.find(".k-grid-EditRecieve").each(function (e) {
+                        var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                            $(this).click(ClickEditRecieve);
+                            $(this).attr("modelid", model.Id);
+                            $(this).attr("EmpCustodyId", model.EmpCustodyId);
+                            $(this).prop("innerHTML", "@MsgUtils.Instance.Trls("EditRecieve")");
+
+                    });
+                    name.find(".sliderProgress").each(function () {
+                        var td = $(this).parent("td");
+                        if (td.css("display") != "none") {
+                            td.attr("style", "padding: 0");
+                            var model = e.sender.dataItem($(this).closest("tr"));
+                            if (model != null) {
+                                $(this).kendoProgressBar({
+                                    value: model.Status,
+                                    type: "percent",
+                                    max: 100,
+                                    animation: {
+                                        duration: 2000
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    ThumpImage.BindLoadImage(gridName, 'RecieveCustody', "EmpCustodyId");
+                }
+            });
+
+        }
+        $("#switchDesign").on("change", function (e) {
+            $("#divChange").empty();
+            $("#divChange").append("<div id='CustodyDiv'></div>");
+
+            if ($("#switchDesign").is(':checked')) {
+                $("#own").text("@MsgUtils.Instance.Trls("With Employee")");
+                $("#NicePen").hide();
+                $("#funcs").hide();
+                EmployeeCustody();
+
+            }
+            else {
+                $("#own").text("@MsgUtils.Instance.Trls("in Company")");
+                $("#NicePen").show();
+                $("#funcs").show();
+                CompanyCustody();
+
+            }
+        });
+
+        $('#switchDesign').prop('checked', "@ViewBag.isEmp" == "True");
+        $('#switchDesign').trigger('change');
+
+        function ClickRecieve(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var modelId = $(this).attr("modelid");
+            var freeze = $(this).attr("freeze");
+            //var modelStartDate = $(this).attr("modelStartDate");
+            //var modelEndDate = $(this).attr("modelEndDate");
+            @*if (new Date(modelStartDate).setHours(0, 0, 0, 0) > new Date().setHours(0, 0, 0, 0))
+            {
+                toastr.error("@MsgUtils.Instance.Trls("todayLessStart")");
+                return;
+            }
+            if (new Date(modelEndDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0))
+            {
+                toastr.error("@MsgUtils.Instance.Trls("todaygreaterEnd")");
+                return;
+            }*@
+            if (freeze == "true")
+            {
+                toastr.error("@MsgUtils.Instance.Trls("Freezed Custody")");
+                return;
+            }
+            $('#renderbody').load("@Url.Action("RecieveDetails", "Custody")?Id=" + modelId +"&MenuId=@Request.QueryString["MenuId"]&Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]");
+        }
+        function ClickDelever(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var modelId = $(this).attr("modelid");
+            var modelEmpId = $(this).attr("empid");
+            var modelEmpCustodyId = $(this).attr("EmpCustodyId");
+            $('#renderbody').load("@Url.Action("DeleverDetails", "Custody")?Id=" + modelId +"&EmpId="+modelEmpId+"&EmpCustodyId="+modelEmpCustodyId+"&MenuId=@Request.QueryString["MenuId"]&Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]");
+        }
+        function ClickEditRecieve(e) {
+            e.stopPropagation();
+            e.preventDefault();
+            var modelId = $(this).attr("modelid");
+            var modelEmpCustodyId = $(this).attr("EmpCustodyId");
+            $('#renderbody').load("@Url.Action("RecieveDetails", "Custody")?Id=" + modelId +"&EmpCustodyId="+modelEmpCustodyId+"&MenuId=@Request.QueryString["MenuId"]&Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]&edit=true");
+
+        }
+    </script>
+
+
+
+
+
+
+

@@ -1,0 +1,201 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    var grid = ViewData["GridName"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Calendar"></div>
+
+<script>
+    var objectName = "OpenHRCalendar";
+    var SubPeriodCount = [{ value: 0, text: "0" },{value:1,text:"1"}, { value: 2, text: "2" }, { value: 3, text: "3" }, { value: 4, text: "4" }, { value: 6, text: "6" }, { value: 12, text: "12" }, { value: 24, text: "24" },{ value: 26, text: "26" }, { value: 52, text: "52" }]
+    var Status = [{ value: 1, text: "@MsgUtils.Instance.Trls("Opened")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Closed")" }]
+    var StatusToSub = [{ value: 1, text:"@MsgUtils.Instance.Trls("NotDeserved")"}, { value: 2, text:"@MsgUtils.Instance.Trls("Deserved")" }]
+    var gridname1 = "Calendar";
+    var gridname = "'Calendar'";
+    var columns = [
+                  { field: "SubPeriodCount", values: SubPeriodCount }, { field: "Status", values: Status },
+                  {
+                      field: "Default",
+                      template: '<input  type="checkbox" #:Default == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Default\',' + gridname + ')"/>'
+                  }, {
+                      field: "IsLocal",
+                      template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsLocal\',' + gridname + ')"/>'
+                  }
+    ];
+    Grids.batchGrid({
+        read: "@Url.Action("GetOpenCalender", "Period")",
+        create: "@Url.Action("CreateCalendar", "Period")",
+        update: "@Url.Action("UpdateCalendar", "Period")",
+        destroy: "@Url.Action("DeleteCalendar", "Period")",
+        admin: "@User.IsInRole("Admin")", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        tableName: "HRCalendars",
+        recordName: "Name", // custom delete message
+        gridName: "Calendar",
+        columns: columns,
+        fields: {
+            EndDate: { defaultValue: null }, StartDate: { defaultValue: null }, Default: { editable: false }, IsLocal: { editable: false }
+        },
+        select: { "SubPeriodCount": SubPeriodCount },
+        detailInit: periodInit,
+        save: function (e) {
+            e.model.Default = false;
+        }
+
+    });
+    function Changed(e) {
+        var grid = $("#Calendar").data("kendoGrid");
+        var datasource = grid.dataSource.data();
+        var row = grid.dataItem($(e).closest("tr"));
+        //if ($(e).closest("td").hasClass("errorCell")) {
+        //    console.log($(this));
+        //    $(e).closest("td").removeClass("errorCell k-invalid");
+        //    $(e).next("div.k-tooltip-validation").remove();
+        //}
+        if ($(e).is(':checked')) {
+            @*for (var i = 0; i < datasource.length; i++) {
+                if (datasource[i].Default == true) {
+                    // toastr.error("@MsgUtils.Instance.Trls("Cantbedefault")");
+                    $(e).closest("td").addClass("k-invalid errorCell");
+                    $(e).closest("td").append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="' + datasource[i].Default + '" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("Cantbedefault")<div class="k-callout k-callout-n"></div></div>'));
+                    row.Default = false;
+                    return;
+                }
+            }*@
+            row.Default = true;
+            row.dirty = true;
+        }
+        else
+        {
+            row.Default = false;
+            row.dirty = true;
+        }
+    }
+
+    function periodInit(e) {
+        $("<div id='period" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname = "'period" + e.data.Id + "'";
+        var gridName='period' + e.data.Id;
+        var objectName = "Periods";
+        var columns = [{ field: "Status", values: Status },
+        {
+            field: "Distribution",
+            command: {
+            text: '@MsgUtils.Instance.Trls("Distribution")', click: function (e) {
+                var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
+                console.log(dataItem);
+                $.getJSON("/Period/DistributeSubPeriods", { id: dataItem.Id, CalendarId: dataItem.CalendarId }, function (res) {
+                    console.log(res);
+                    if (res == "Ok") {
+                        toastr.success('@MsgUtils.Instance.Trls("DistributionSuccess")');
+                        $("#period").data("kendoGrid").dataSource.read();
+                    }
+                    else if (res == "EndDateIsOpen")
+                        toastr.error('@MsgUtils.Instance.Trls("DistributeFailed")');
+                    else if (res == "ZeroSubPeriod")
+                        toastr.error('@MsgUtils.Instance.Trls("DistributeFailedSub")');
+
+                    else
+                        toastr.error('@MsgUtils.Instance.Trls("CantDistribute")');
+
+                });
+            },
+            }
+        }]
+        Grids.batchGrid({
+            read: "@Url.Action("GetPeriods", "Period")?Id=" +e.data.Id,
+            create: "@Url.Action("CreatePeriods", "Period")",
+            update: "@Url.Action("Updateperiod", "Period")",
+            destroy: "@Url.Action("DeletePeriod", "Period")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name",
+            parentColumnName: "CalendarId",
+            parentColumnId: e.data.Id,
+            gridName: 'period' + e.data.Id,
+            select: { "Status": Status },
+            columns: columns,
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            fields: {
+                EndDate: { defaultValue: null }, StartDate: {
+                    defaultValue: function () {
+                        //var grid = $("#"+gridName).data("kendoGrid");
+                        //var datasource = grid.dataSource.data();
+                        //var row = grid.dataItem($(e).closest("tr"));
+                        //console.log(datasource);
+                    }
+                }
+            },
+            detailInit: subperiodInit,
+            save: function (e) {
+                if (e.model.EndDate == null) {
+                    e.values.Name = "no";
+                    var d = new Date("2999/1/1");
+                    e.model.EndDate = kendo.toString(d, 'g');
+                }
+
+            },
+            dataBound:function(d)
+            {
+                //d._defaultPrevented = true;
+                //var grid = $("#"+gridName).data("kendoGrid");
+                //var datasource = grid.dataSource.data();
+                //var row = grid.dataItem($(e).closest("tr"));
+                //if(datasource.length >0)
+                //{
+                //    console.log(datasource);
+                //}
+            }
+        });
+    }
+
+    function subperiodInit(e) {
+        $("<div id='subperiod" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname = "'subperiod" + e.data.Id + "'";
+        var columns = [
+                 { field: "Status", values: StatusToSub }
+        ];
+  Grids.batchGrid({
+      read: "@Url.Action("GetSubPeriods", "Period")?Id=" + e.data.Id,
+      create: "@Url.Action("CreateSubPeriods", "Period")",
+      update: "@Url.Action("UpdateSubperiod", "Period")",
+      destroy: "@Url.Action("DeleteSubPeriod", "Period")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "SubPeriods",
+        parentColumnName: "PeriodId",
+        parentColumnId: e.data.Id,
+        recordName: "Name",
+        gridName: 'subperiod' + e.data.Id,
+        fields: {
+            EndDate: { defaultValue: null }, StartDate: { defaultValue: null }
+        },
+        columns: columns,
+        select: { "Status": StatusToSub },
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+    });
+    }
+    function addNewClick(name) {
+        var grid = $("#" + name).data("kendoGrid");
+        var len = grid.dataSource.view().length;
+        var datasource = grid.dataSource.view()[length];
+        var dataLevel = $.urlParam('DataLevel');
+        if (dataLevel < 2) return;
+        var grid = $('#' + name).data("kendoGrid");
+        if (grid.dataSource.at(0)) grid.dataSource.page(1);
+        grid.addRow();
+    }
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "Calendar" }, { "ObjectName", "HRCalendar" }, { "Functions", ViewBag.Functions } })
+
+

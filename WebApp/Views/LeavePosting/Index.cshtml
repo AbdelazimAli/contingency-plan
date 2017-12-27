@@ -1,0 +1,254 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+
+}
+
+<div id="postingDiv"></div>
+<div id="waitWindow"></div>
+
+@*<style>
+    .fail {
+        background-color: #f59e9e;
+    }
+</style>*@
+
+<script>
+
+    function getStatus(data) {
+        if(data && data.PostAction)  //3 red, 1 green
+            return  data.PostAction == 3 ? 3 : 1;
+    }
+
+    var formId = "postForm", read = "@Request.QueryString["Read"]";
+    var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes));
+    var Periods = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Periods));
+    var SubPeriods = [];
+
+    $.get("@Url.Action("ReadFormInfo", "Pages")",  { objectname: "Posting", version: "@version", roleId: "@Request.QueryString["RoleId"]"}, function(data) {
+        data.FormAction = "@Url.Action("Post", "LeavePosting")";
+        data.FormId = formId;
+        data.TableName ="Periods";
+        data.Culture = "@culture";
+        data.rtl = @rtl.ToString().ToLower();
+        data.companyId = "@compantId";
+        data.admin = "@admin";
+        if(read == 1) data.mode = 'show';
+
+        $("#postingDiv").Forms(data);
+
+        FormJs.fillOptionsDynamic($("#" + formId), "LeaveType", LeaveTypes);
+        FormJs.fillOptionsDynamic($("#" + formId), "Period", []);
+        FormJs.fillOptionsDynamic($("#" + formId), "SubPeriod", SubPeriods);
+
+        $("#" + formId).find('#Post').val('@MsgUtils.Instance.Trls("Post")').hide();
+        $("#" + formId).find('#Calculate').val('@MsgUtils.Instance.Trls("Calculate")');
+        $("#" + formId + " div[name='calcSec']").append("<div id='calc'></div>");
+
+        $("#" +formId+ " #LeaveType").change(changePeriodDDL);
+        $("#" +formId+ " #Period").change(GetSubPeriods);
+        $("#" +formId+ " #SubPeriod").change(renameBtn);
+
+        btnsClick();
+    });
+
+    function GetPeriods() {
+        $.get("@Url.Action("GetOpenPeriods", "LeavePosting")", null, function(data) {
+            if(data) {
+                Periods = data;
+                changePeriodDDL();
+            }
+        });
+    }
+
+    //change - Period
+    function GetSubPeriods() {
+        var periodId =  $("#" + formId + " #Period").val();
+        var subPeriodDDL = $("#" +formId+ " #SubPeriod").data("kendoDropDownList");
+
+        if(periodId) {
+            $.get("@Url.Action("GetSubPeriod", "LeavePosting")", {PeriodId : periodId}, function(data) {
+                if(data) {
+                    SubPeriods = data;
+                    SubPeriods.push({id: 0, name: "@MsgUtils.Instance.Trls("Post Period")"});
+                    subPeriodDDL.dataSource.data(SubPeriods);
+                    subPeriodDDL.select(1);
+
+                    renameBtn();
+                }
+            });
+        }
+        else
+            subPeriodDDL.dataSource.data([]);
+    }
+
+    //change - LeaveType
+    function changePeriodDDL() {
+        var leaveType = $("#" +formId+ " #LeaveType").val(),
+            periodDDL = $("#" +formId+ " #Period").data("kendoDropDownList");
+        var TypePeriods = Periods.filter(function(item) { return item.typeId == leaveType; });
+
+        periodDDL.dataSource.data(TypePeriods);
+        periodDDL.select(1);
+
+        GetSubPeriods();
+        hideBtn();
+    }
+
+    function renameBtn() {
+        $("#" + formId + " #Post").val($("#" +formId+ " #SubPeriod").val() == 0 ? '@MsgUtils.Instance.Trls("Post")' : '@MsgUtils.Instance.Trls("Add Balance")');
+        hideBtn();
+    }
+    function hideBtn() {
+        var calcGrid = $("#calc").data("kendoGrid");
+        if(calcGrid) calcGrid.dataSource.data([]);
+        $("#" + formId + " #Post").hide();
+    }
+
+    $("#waitWindow").kendoWindow({
+        title: "@MsgUtils.Instance.Trls("Please Wait")",
+        actions: [], //to remove close btn
+        width: "40%",
+        height: "100",
+        visible: false
+    });
+    var waitWindow = $("#waitWindow").data("kendoWindow");
+
+    function btnsClick() {
+        $("#" + formId + " #Calculate").click(function(e) {
+            $("#" + formId).find('#Post').show();
+            var gridname = "'calc'", objectName = "LeaveBalance", calcGrid = $("#calc").data("kendoGrid"),
+                typeId = $("#" +formId+ " #LeaveType").val(), periodId = $("#" +formId+ " #Period").val(), subPeriodId = $("#" +formId+ " #SubPeriod").val();
+
+            var readURL = "@Url.Action("ReadLeaveBalance", "LeavePosting")?typeId="+ typeId + "&periodId=" + periodId + "&subPeriodId=" + subPeriodId;
+            if(calcGrid != undefined) {
+                calcGrid.dataSource.transport.options.read.url = readURL;
+                calcGrid.dataSource.read();
+            }
+            else {
+                Grids.batchGrid({
+                    read: readURL,
+                    admin: "@admin",
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: objectName,
+                    tableName: 'LeavePostings',
+                    recordName: "Name",
+                    //pageable: false,
+                    @*toolbar:'<div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname+ ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>'+
+                            '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}</div><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a></div>' ,*@
+                    toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(\'calc\')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp; <div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(\'calc\')"><span>&nbsp;@MsgUtils.Instance.Trls("SaveGrid")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(\'calc\')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></div></div>',
+                    gridName: "calc",
+                    //selectable: "multiple",
+                    columns: [{ field: "Total", editor: function (container, options) { $('#calc').data("kendoGrid").closeCell(); } },
+                    {
+                        field: "Status",
+                        template: "&nbsp;<i class='ace-icon fa fa-circle stat#:getStatus(data)#'></i>&nbsp; ",
+                    }],
+                    fields: {Employee:{ editable: false }, Name: { editable: false }, Period: { editable: false }, NewPeriod: { editable: false }, StartDate: { editable: false }, WorkDuration: { editable: false },AgeText: { editable: false },OpenBalance: { editable: true },CurrBalance:{editable:false}, PostBal:{editable:false}, Status:{editable:false}, Reason:{editable:false}, SubStartDate:{editable:false}, SubEndDate:{editable:false}, EmpCode:{editable:false}},
+                    save:function(e) {
+                        var v1 = e.values.PostBal == undefined ? e.model.PostBal : e.values.PostBal;
+                        var v2 = e.values.OpenBalance == undefined ? e.model.OpenBalance : e.values.OpenBalance;
+                        var total= v1+v2;
+                        var grid = $('#calc').data("kendoGrid");
+                        var row = $("#calc [data-uid=" +e.model.uid + "]");
+                        var model = grid.dataItem(row);
+                        model.set("Total", total);
+                        //$(".k-state-selected").removeClass("k-state-selected k-state-selecting");
+                    },
+                    //change: function(e) {
+                    //    if($("#" +formId+ " #SubPeriod").val() != 0) //posting
+                    //        $(".k-state-selected").removeClass("k-state-selected k-state-selecting");
+                    //},
+                    dataBound: function (e) {
+                        var data = e.sender.dataSource.data();
+                        //error
+                        console.log(data);
+                        if(data && typeof(data[0]) == "string" && data[0]) {
+                            toastr.error(data[0]);
+                            e.sender.dataSource.data([]);
+                        }
+                    },
+                    readCompleted: function (e) {
+                        calcGrid = $("#calc").data("kendoGrid");
+                        if($("#" +formId+ " #SubPeriod").val() != 0) { // Not Post Period
+                            calcGrid.hideColumn('PostBal');
+                            calcGrid.hideColumn('Reason');
+                            calcGrid.hideColumn('Status');
+                        } else {
+                            calcGrid.showColumn('PostBal');
+                            calcGrid.showColumn('Reason');
+                            calcGrid.showColumn('Status');
+                        }
+                        var designChanged = $('#calc').attr("designChanged");
+                        if (designChanged == "true") Grids.TriggerChanges("calc", "Design", false);
+                    }
+                });
+            }
+        });
+
+        $("#" + formId + " #Post").on('click', function (e) {
+            var grid = $("#calc").data("kendoGrid");
+            if(grid == undefined) {
+                toastr.error("@MsgUtils.Instance.Trls("Please Calculate First")");
+                return;
+            }
+
+            var currentData = grid.dataSource.data(), errorCount = 0, newRecords = [];
+            //Collect Data
+            for(var i = 0; i < currentData.length; i++) {
+                if(currentData[i].PostAction == 3) errorCount++;
+                newRecords.push(Grids.toValidJson(currentData[i]));
+            }
+
+            //Save..
+            if(newRecords.length) {
+                if(errorCount > 0) //Confirm Errors
+                    bootbox.confirm("@MsgUtils.Instance.Trls("SureToPostErrors")".replace('{0}', errorCount), function(res) { if(res) postFunc(); });
+                else
+                    postFunc();
+            }
+
+            function postFunc() {
+                if(newRecords[0].PeriodId != newRecords[0].NewPeriodId) { //Confirm new period
+                    var selIndex = $("#Period").data('kendoDropDownList').selectedIndex; //for close prev periods
+                    var msg = "@MsgUtils.Instance.Trls("SureToNewPeriod") " + newRecords[0].NewPeriod
+                        + " @MsgUtils.Instance.Trls("SureToClosePeriod") " + newRecords[0].Period
+                        + (selIndex > 1 ? " @MsgUtils.Instance.Trls("AndPrevPeriods")" : "") ;
+                    bootbox.confirm(msg, function(res) { if(res) postLeaveAjax(); });
+                }
+                else //sub period
+                    postLeaveAjax();
+            }
+
+            function postLeaveAjax() {
+                waitWindow.center().open();
+                $.ajax({
+                    url: "/LeavePosting/postLeave",
+                    type: "POST",
+                    data: { models: newRecords, closePeriod: ($("#" +formId+  " #SubPeriod").val() == 0) },
+                    success: function (data) {
+                        if(data) {
+                            for(var i=0; i<data.length; i++) {
+                                if(data[i].StartDate && data[i].StartDate.startsWith('/Date'))
+                                    data[i].StartDate = kendo.toString(new Date(parseInt(data[i].StartDate.substr(6))), "d");
+                            }
+                            GetPeriods();
+                        }
+                        if(data.Errors == undefined)
+                            $("#calc").data("kendoGrid").dataSource.data(data);
+
+                        waitWindow.close();
+                    }
+                });
+            }
+        });
+    }
+</script>

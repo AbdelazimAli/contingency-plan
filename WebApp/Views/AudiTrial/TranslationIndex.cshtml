@@ -1,0 +1,137 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+
+}
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div style="@(rtl?"float:right":"float:left")">
+    <label style="font-size:medium">@MsgUtils.Instance.Trls("Language")</label>&emsp;<input id="LangDiv" />&emsp;
+    <button id="btnRefresh" style="font-size:medium"  onclick="getTrls()">@MsgUtils.Instance.Trls("Refresh")</button>&emsp;
+    <button style="font-size:medium" onclick="destroySingleToneObj()">@MsgUtils.Instance.Trls("RefreshMsgs")</button>
+
+</div>
+<br><br>
+
+<div id="Lang"></div>
+
+<script>
+    function getTrls() {
+        $.ajax({
+            url: "@Url.Action("AddTrls","AudiTrial")",
+            success: function (data) {
+                if (data != "OK")
+                    toastr.error('The lenght of this message&emsp;"' + data + '"&emsp;is greater than 30 charchter');
+                else
+                    toastr.success("@MsgUtils.Instance.Trls("AlldataTranslated")")
+        },
+            error: function (data) {
+            console.log(data);
+
+        }
+    });
+    }
+    function destroySingleToneObj() {
+        $.ajax({
+            url: "@Url.Action("DestroySingleToneObj", "AudiTrial")",
+            success: function (data) {
+
+                toastr.success("@MsgUtils.Instance.Trls("RefreshCompleted")")
+            },
+            error: function (data) {
+                console.log(data);
+
+            }
+        });
+    }
+
+    var result;
+    $.ajax({
+        url: "@Url.Action("ReadLanguage","AudiTrial")",
+        async: false,
+    success: function (data) {
+        result = data;
+
+    },
+    error: function (result) {
+
+    }
+    });
+    var culture = lang.getList("@User.Identity.GetLanguage()");
+    var Arr = [];
+    for (var i = 0; i <= result.length ; i++ )
+    {
+        for (var z = 0; z <= culture.length-1 ; z++ )
+        {
+            if (culture[z].id) {
+                if (result[i] == culture[z].id) {
+                    var obj = { text: culture[z].name, value: result[i] };
+                    Arr.push(obj);
+                }
+            }
+        }
+    }
+    $("#LangDiv").kendoDropDownList({
+        dataTextField: "text",
+        dataValueField:"value",
+        dataSource: Arr,
+        change: function (e) {
+            Id = this.value();
+            name = this.text();
+            var readUrl = "@Url.Action("ReadMsgs", "AudiTrial")?culture="+ this.value();
+            $("#Lang").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+            $("#Lang").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("ReadMsgs", "AudiTrial")?culture=" + this.value();
+            $("#Lang").data("kendoGrid").dataSource.transport.options.create.url = "@Url.Action("CreateMsgTbl", "AudiTrial")?culture=" + this.value();
+            $("#Lang").data("kendoGrid").dataSource.transport.options.update.url = "@Url.Action("UpdateMsgTbl", "AudiTrial")?culture=" + this.value();
+            $("#Lang").data("kendoGrid").dataSource.read();
+        }
+    });
+    var objectName = "MsgTbl";
+    var cul = $("#LangDiv").val();
+    var gridname = "'Lang'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadMsgs", "AudiTrial")?culture=" + cul,
+        create: "@Url.Action("CreateMsgTbl", "AudiTrial")?culture=" + cul,
+        update: "@Url.Action("UpdateMsgTbl", "AudiTrial")?culture=" + cul,
+        destroy: "@Url.Action("DeleteMsgTbl", "AudiTrial")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "Lang",
+        fields: { JavaScript: { editable: false } },
+        columns: [{
+           field: "Name", editor: function (container, options) {
+               if (options.model.Id > 0) {
+                   $('#Lang').data("kendoGrid").closeCell();
+                   return;
+               }else{
+                   var input = $('<input name="Name" type="text" style="width: 90%; margin-bottom: 0"/>');
+                   input.appendTo(container);
+               }
+           }
+        }, {
+            field: "JavaScript",
+            template: '<input  type="checkbox" #:JavaScript == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'JavaScript\',' + gridname + ')"/>'
+        }],
+    });
+    if ("@User.IsInRole("Developer")" == "False")
+        $("#btnRefresh").remove();
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Lang" }, { "ObjectName", "MsgTbl" }, { "Functions", ViewBag.Functions }})
+
+
+
+
+
+
+
+

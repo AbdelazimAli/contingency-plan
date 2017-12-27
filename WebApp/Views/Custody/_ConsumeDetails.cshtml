@@ -1,0 +1,167 @@
+﻿<form action="/Custody/SaveConsumeCustody" method="post" version="0" objectname="ConsumeFormCustody" companyid="0" tablename="Custody" formtitle="Custody Information" culture="ar-EG" islocal="true" parentcolumn="CompanyId" parentid="0" id="PeopleForms" data-role="validator" novalidate="novalidate">
+    <div class="panel panel-default">
+        <div class="panel-heading row">
+            <div class="panel-title col-xs-12 col-sm-6">
+                <span class="panelicon glyphicon glyphicon-pencil"> </span> <span class="paneltitle" name="Custody Information" id="titleLbl"><span class="lblSpan">  بيانات العُهدة المستهلكة </span></span>
+            </div>
+            <hr class="visible-xs-block clearfix">
+            <div class="editarea  col-sm-6 col-xs-12">
+                <div class="switch">
+                    <input id="switchDesign" type="checkbox">
+                    <div class="slider round"></div>
+                    <span></span>
+                </div>
+                <button type="button" id="saveDesignBtn" class="btn btn-info"><span class="glyphicon glyphicon-floppy-disk"> </span> حفظ </button>
+                <button type="button" id="resetBtn" class="btn btn-danger"><span class="glyphicon glyphicon-repeat"> </span> التعيين </button>
+            </div>
+            <div class="clearfix"></div>
+        </div>
+        <div class="panel-body sets-container " data-role="sortable" style="touch-action: none;">
+            <fieldset id="1778" class="set panel lblEditable">
+                <button type="button" class="btn btn-primary o-collabsebtn" data-parent="#PeopleForms" data-toggle="collapse" href="#Sec1778"><span class="glyphicon glyphicon-chevron-up"></span></button>
+                <div id="Sec1778" class="sections panel-body  collapse in" data-role="sortable" style="touch-action: none;">
+                    <div id="2847" class="form-horizontal section row" style="margin-bottom: 0px;"></div>
+                    <div name="CodeSec" id="2848" class="form-inline section row">
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="Code" class="control-label col-md-4 col-lg-4"><span class="lblSpan">كود العُهدة</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <input type="text" value="2" name="Code" isvisible="true" maxlength="30" readonly="" id="Code" class="form-control" style="cursor: no-drop;">
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="Name" class="control-label col-md-4 col-lg-4"><span class="lblSpan" style="color: rgb(213, 5, 5);">اسم العُهدة</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <input type="text" value="قلم جاف" name="Name" isvisible="true" formreq="formreq" maxlength="150" id="Name" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div name="CatSec" id="2849" class="form-inline section row">
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="CustodyCatId" class="control-label col-md-4 col-lg-4"><span class="lblSpan" style="color: rgb(213, 5, 5);">تصنيف العُهدة</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <select allowed="true" name="CustodyCatId" isvisible="true" formreq="formreq" id="CustodyCatId" class="form-control" style="cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="Qty" class="control-label col-md-4 col-lg-4"><span class="lblSpan" style="color: rgb(213, 5, 5);">الكمية</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <input type="number" value="15" name="Qty" isvisible="true" formreq="formreq" id="Qty" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div name="CurrSec" id="2850" class="form-inline section row">
+                        <div class="form-group  col-md-4 col-lg-4">
+                            <label for="PurchaseAmount" class="control-label col-md-6 col-lg-6"><span class="lblSpan" style="color: rgb(213, 5, 5);">قيمة العُهدة</span></label>
+                            <!--</label-->
+                            <div class="col-md-6 col-lg-6">
+                                <input type="number" value="100" name="PurchaseAmount" isvisible="true" formreq="formreq" id="PurchaseAmount" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-4 col-lg-4">
+                            <label for="Curr" class="control-label col-md-6 col-lg-6"><span class="lblSpan">العملة</span></label>
+                            <!--</label-->
+                            <div class="col-md-6 col-lg-6">
+                                <select allowed="true" name="Curr" isvisible="true" id="Curr" class="form-control" style="cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-4 col-lg-4">
+                            <label for="CurrencyRate" class="control-label col-md-6 col-lg-6"><span class="lblSpan">معدل العملة</span></label>
+                            <!--</label-->
+                            <div class="col-md-6 col-lg-6">
+                                <input type="number" value="1" name="CurrencyRate" isvisible="true" id="CurrencyRate" class="form-control">
+                            </div>
+                        </div>
+                    </div>
+                    <div name="JobSec" id="2851" class="form-inline section row">
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="JobId" class="control-label col-md-4 col-lg-4"><span class="lblSpan">الوظيفة</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <select allowed="true" name="JobId" isvisible="true" id="JobId" class="form-control" style="cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="LocationId" class="control-label col-md-4 col-lg-4"><span class="lblSpan">موقع العُهدة بالشركة</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <select allowed="true" name="LocationId" isvisible="true" id="LocationId" class="form-control" style="cursor: pointer;"></select>
+                            </div>
+                        </div>
+                    </div>
+                    <div name="PurchaseDate" id="2852" class="form-inline section row">
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="ItemCode" class="control-label col-md-4 col-lg-4"><span class="lblSpan">كود العُهدة بالمخزن</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <input type="text" value="ق1" name="ItemCode" isvisible="true" maxlength="30" id="ItemCode" class="form-control">
+                            </div>
+                        </div>
+                        <div class="form-group  col-md-6 col-lg-6">
+                            <label for="PurchaseDate" class="control-label col-md-4 col-lg-4"><span class="lblSpan">تاريخ الشراء</span></label>
+                            <!--</label-->
+                            <div class="col-md-8 col-lg-8">
+                                <span class="k-widget k-datepicker k-header form-control" style="">
+                                    <span class="k-picker-wrap k-state-default">
+                                        <input type="text" value="2017-01-01" name="PurchaseDate" isvisible="true" id="PurchaseDate" class="form-control k-input" data-type="date" data-role="datepicker" role="combobox" aria-expanded="false" aria-owns="PurchaseDate_dateview" aria-disabled="false" style="width: 100%;"><span unselectable="on" class="k-select" aria-label="select" role="button" aria-controls="PurchaseDate_dateview"><span class="k-icon k-i-calendar"></span></span>
+                                    </span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div name="DescSec" id="2853" class="form-horizontal section row">
+                        <div class="form-group ">
+                            <label for="Description" class="control-label col-md-2 col-lg-2"><span class="lblSpan">وصف العُهدة</span></label>
+                            <!--</label-->
+                            <div class="col-md-10 col-lg-10">
+                                <textarea value="10 اقلام -5 أسود -5 أحمر" name="Description" isvisible="true" maxlength="250" row="2" id="Description" class="form-control" style="max-width: 1376px;">10 اقلام -5 أسود -5 أحمر</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+            <div id="1779" class="set panel">
+                <div id="Sec1779" class="sections panel-body  collapse in" data-role="sortable" style="touch-action: none;">
+                    <div name="btnSec" id="2854" class="form-inline section row" style="direction: rtl;">
+                        <div class="form-group ">
+                            <!--</label-->
+                            <div>
+                                <input type="button" name="saveChanges" isvisible="true" class="btn btn-success  submit button" value="Save Changes" onclick="return false;" id="saveChanges" disabled="disabled" accesskey="s">
+                            </div>
+                        </div>
+                        <div class="form-group ">
+                            <!--</label-->
+                            <div>
+                                <input type="button" name="saveAndClose" isvisible="true" class="btn btn-success  submit button" value="Save and Close" onclick="return false;" id="saveAndClose" disabled="disabled">
+                            </div>
+                        </div>
+                        <div class="ModifyInfo">
+                            <div><b>المستخدم المُنشئ:&nbsp;</b> seham&nbsp;&nbsp;-&nbsp;&nbsp;<b>وقت الإدخال:&nbsp;</b> ١٤‏/١١‏/٢٠١٧</div>
+                            <div><b>مستخدم التعديل:&nbsp;</b> seham&nbsp;&nbsp;-&nbsp;&nbsp;<b>تاريخ التعديل:&nbsp;</b> ٢٧‏/١١‏/٢٠١٧</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="Id" name="Id" value="1043">
+            <input type="hidden" id="CompanyId" name="CompanyId" value="0">
+            <div id="btnsDiv" class="form-inline section row frozen" style="direction: rtl;">
+                <button id="backToIndex" name="backToIndex" onclick="return false;" class="btn btn-warning back button " accesskey="b"> الرجوع إلى القائمة </button>
+            </div>
+        </div>
+    </div>
+</form>
+<div id="addSelectWindow"></div>
+<div class="modal fade" id="InfoPopupForm-ConsumeFormCustody" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" id="InfoBtn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <h4 class="modal-title" id="FormModalLabel">ColumnProperties</h4>
+            </div>
+            <div id="FormColumnProp-ConsumeFormCustody" class="modal-body" tabindex="0"></div>
+        </div>
+    </div>
+</div>

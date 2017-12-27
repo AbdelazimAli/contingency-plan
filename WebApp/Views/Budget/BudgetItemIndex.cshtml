@@ -1,0 +1,35 @@
+﻿@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+}
+
+<div id="BudgetItems"></div>
+
+<script>
+    Grids.batchGrid({
+        read: "@Url.Action("ReadBudgetItems", "Budget")?MenuId=@Request.QueryString["MenuId"]",
+        update: "@Url.Action("UpdateBudgetItems", "Budget")",
+        create: "@Url.Action("CreateBudgetItems", "Budget")",
+        destroy: "@Url.Action("DeleteBudgetItems", "Budget")",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        objectName: "BudgetItems",
+        recordName: "Name",
+        gridName: "BudgetItems",
+    });
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "BudgetItems" }, { "ObjectName", "BudgetItems" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+

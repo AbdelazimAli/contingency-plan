@@ -1,0 +1,291 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.Domain.DisplinPeriod
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br />
+<br />
+<div id="DisplinDiv"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var startPeriod=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.StartPeriod));
+    var date=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.date));
+
+    var desplinObj=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.desplinObj));
+
+    $(function () {
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var formId = "DisplinForm";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+        //Send the serialized model and props to form.js
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "DisplinPeriods", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveDisplinPeriod", "Discipline")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "DisplinPeriods";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = '@admin';
+                //data.HasPanel=false;
+                if(read == 1)
+                    data.mode = 'show';
+                data.rtl = @rtl.ToString().ToLower();
+                //Append the form to the div
+                $("#DisplinDiv").Forms(data, model);
+
+                //Translate The Button saveChanges from ColumnsTilte based on Culture
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#GenerateBtn').val('@MsgUtils.Instance.Trls("GenerateBtn")');
+
+                var hidden = "<input type='hidden' id='submit' name='submit' value=false />";
+
+                $("#" + formId).append(hidden);
+
+                $("#" + formId).find('#GenerateBtn').on('click', function (e) {
+                    var submit = $(this).attr("id") == "GenerateBtn";
+                    $("#" + formId + " #submit").val(submit);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        $("#" + formId).find('#saveAndClose').attr("disabled", false);
+                        $("#" + formId).find('#saveChanges').attr("disabled",false);
+                        var readUrl ="@Url.Action("ReadDisPeriodNo", "Discipline")?PeriodId="+res;
+                         $("#GridPeriodDiv").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+                         $("#GridPeriodDiv").data("kendoGrid").dataSource.read();
+                         $("#GridRangeDiv").data("kendoGrid").dataSource.read();
+                         $("#GridPeriodDiv").data('kendoGrid').refresh();
+                         $("#GridRangeDiv").data("kendoGrid").refresh();
+                    },Grids.sendData("GridRangeDiv"));
+
+                });
+
+                $("#" + formId).on('click','#saveAndClose', function (e) {
+                    var submit = $(this).attr("id") == "GenerateBtn";
+                    $("#" + formId + " #submit").val(submit);
+                    var sysType = $("#" + formId).find('#SysType').val();
+                    if(sysType == 1)
+                    {
+                        $("#" + formId).find('#MaxDaysDeduction').val('');
+
+                    }else if(sysType ==2)
+                    {
+                        $("#" + formId).find('#MaxPoints').val('');
+                        $("#" + formId).find('#PointsAdd').val('');
+                    }
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+
+                        $("#renderbody").load(oldulr);
+                        $("#GridRangeDiv").data("kendoGrid").dataSource.read();
+
+                    },Grids.sendData("GridRangeDiv"));
+                });
+                $("#" + formId).on('click','#saveChanges', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    var submit = $(this).attr("id") == "GenerateBtn";
+                    $("#" + formId + " #submit").val(submit);
+                    var sysType = $("#" + formId).find('#SysType').val();
+                    if(sysType == 1)
+                    {
+                        $("#" + formId).find('#MaxDaysDeduction').val('');
+
+                    }else
+                    {
+                        $("#" + formId).find('#MaxPoints').val('');
+                        $("#" + formId).find('#PointsAdd').val('');
+                    }
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#GridRangeDiv").data("kendoGrid").dataSource.read();
+
+                    },Grids.sendData("GridRangeDiv"));
+                });
+                $("#" + formId).on('blur','#StartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    if( $('#EndDate').hasClass("k-invalid")){
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next().css("display","none");
+                    }
+                });
+
+                $("#"+formId).on('blur','#EndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+                $("#"+formId).on('blur','#PeriodSDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PeriodSDate' role='alert'>Period Start Date Must Greater Than or equal StartDate</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+
+
+                if(model.Id ==0)
+                {
+                    $("#" + formId).find('[name="PointsSec"]').css("display","none");
+                    $("#" + formId).find('[name="MaxDayDeductiopnSec"]').css("display","none");
+                    $("#" + formId).find('[name="RangGridSec"]').css("display","none");
+                    $("#" + formId).find('#StartDate').val('');
+                    $("#" + formId).find('#EndDate').val('');
+                    $("#" + formId).find('#Times').val('');
+                    $("#" + formId).find('#MaxDaysDeduction').val('');
+
+                }else
+                {
+                    if(desplinObj.SysType==1)
+                    {
+
+                        $("#" + formId).find('[name="PointsSec"]').css("display","");
+                        $("#" + formId).find('[name="MaxDayDeductiopnSec"]').css("display","none");
+                       // $("#" + formId).find('[name="GenerateGridSec"]').css("display","none");
+                        $("#" + formId).find('[name="RangGridSec"]').css("display","");
+                       // $("#" + formId).find('[name="FrequencySec"]').css("display","none");
+                       // $("#" + formId).find('[name="GeneratebtnSec"]').css("display","none");
+                    }
+                    if(desplinObj.SysType==2)
+                    {
+                        $("#" + formId).find('[name="RangGridSec"]').css("display","none");
+                        $("#" + formId).find('[name="MaxDayDeductiopnSec"]').css("display","");
+                        $("#" + formId).find('[name="PointsSec"]').css("display","none");
+                        $("#" + formId).find('[name="GenerateGridSec"]').css("display","");
+                        $("#" + formId).find('[name="FrequencySec"]').css("display","");
+                        $("#" + formId).find('[name="GeneratebtnSec"]').css("display","");
+                    }
+                    if(startPeriod != null)
+                    {
+                        var datePicker= $("#" + formId).find("#PeriodSDate").data("kendoDatePicker");
+                       
+                        if(read!=1){
+                            datePicker.enable(false);
+                            $("#" + formId).find("#PeriodSDate").data("kendoDatePicker").value(date);
+                        }
+                        else
+                            $("#" + formId).find("#PeriodSDate").text(kendo.toString(new Date(parseInt(date.substr(6))).toLocaleDateString("@User.Identity.GetCulture()") ,"yyyy-MM-dd"));
+
+                    }
+
+                }
+                $("#DisplinDiv").on("change","#SysType",null,function(e){
+                    if($(this).val() == 1)
+                    {
+                        $("#" + formId).find('[name="PointsSec"]').css("display","");
+                        $("#" + formId).find('[name="RangGridSec"]').css("display","");
+                        $("#" + formId).find('[name="MaxDayDeductiopnSec"]').css("display","none");
+                       // $("#" + formId).find('[name="GenerateGridSec"]').css("display","none");
+                       // $("#" + formId).find('[name="FrequencySec"]').css("display","none");
+                        //$("#" + formId).find('[name="GeneratebtnSec"]').css("display","none");
+
+                    }else
+                    {
+                        $("#" + formId).find('[name="RangGridSec"]').css("display","none");
+                        $("#" + formId).find('[name="PointsSec"]').css("display","none");
+                        $("#" + formId).find('[name="MaxDayDeductiopnSec"]').css("display","");
+                      //  $("#" + formId).find('[name="GenerateGridSec"]').css("display","");
+                      //  $("#" + formId).find('[name="FrequencySec"]').css("display","");
+                       // $("#" + formId).find('[name="GeneratebtnSec"]').css("display","");
+
+                    }
+                });
+            }
+        });
+        // Find Button BackToindex and bind for Click
+        $('#DisplinDiv').on('click',"#backToIndex",null, function(){
+            $("#renderbody").load(oldulr);
+        });
+        var id = desplinObj ==null ?0 :desplinObj.Id;
+        //Employee Custody Grid
+        $("div[name=GenerateGridSec]").prepend('<div id="GridPeriodDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+        var gridname = "'GridPeriodDiv'";
+        Grids.batchGrid({
+
+            read: "@Url.Action("ReadDisPeriodNo", "Discipline")?PeriodId="+id,
+            update: "@Url.Action("UpdateDisPeriodNo", "Discipline")",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "DisPeriodNo",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            toolbar: '<div><div>',
+            recordName: "Name",
+            gridName: "GridPeriodDiv",
+            height:250,
+            fields: { PeriodNo: {editable: false}, PeriodSDate: {editable: false}, PeriodEDate: {editable: false},CreatedUser:{editable:false},CreatedTime:{editable:false} }
+        });
+        $("div[name=RangGridSec]").prepend('<div id="GridRangeDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+        var gridname = "'GridRangeDiv'";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadDisplinRange", "Discipline")?PeriodId="+model.Id,
+            lang: "@User.Identity.GetCulture()",
+            objectName: "DisplinRanges",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            toolbar:read==1?'<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')"  accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a></span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" ><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            recordName: "Percentage",
+            gridName: "GridRangeDiv",
+            height:250,
+            columns: read==1 ?[{field:"Delete",input:"none"},{field:"Percentage",template:'#=kendo.format("{0:p0}",Percentage/100)#'}]:[{field:"Delete",input:""},{field:"Percentage",template:'#=kendo.format("{0:p0}",Percentage/100)#'}],
+            fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+
+        });
+
+
+    });
+</script>
+
+
+
+
+

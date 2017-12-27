@@ -1,0 +1,282 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model TerminationFormViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+
+<br />
+<br />
+<div id="EmployeeTermDiv">
+
+</div>
+
+
+<script>
+    var model;
+
+    $(function () {
+        var Res =[
+         { id: 1, name: '@MsgUtils.Instance.Trls("Darft")' },
+         { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 3, name: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { id: 4, name: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 6, name: '@MsgUtils.Instance.Trls("Approved")' },
+         { id: 7, name: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { id: 8, name: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }
+        ];
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        var oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        ///---#Region Location Form
+
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Employees =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var CancelReason = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CancelReason));
+
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+
+        //Give Id for the form that will Show
+        var formId = "EmployeeTermForm";
+
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+
+        //Send the serialized model and props to form.js
+        $.getJSON(url, { objectname: 'EmpTermForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("ApprovalDetails", "Termination")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Terminations";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+
+
+            $("#EmployeeTermDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", Res, model);
+
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+            $("#" + formId).find('#Terminat').val('@MsgUtils.Instance.Trls("Terminat")');
+            $("#" + formId).find('#CancelRequest').val('@MsgUtils.Instance.Trls("Cancel Request")');
+            if(read!= 1){
+                $("#ServStartDate").data("kendoDatePicker").readonly();
+                $("#PlanedDate").data("kendoDatePicker").readonly();
+            }else
+                $("#CancelRequest").closest("div.form-group").remove();
+
+
+        });
+
+        $("#EmployeeTermDiv").on('blur','#ActualDate', function(){
+            var A = $(this).data("kendoDatePicker").value();
+            var lA=$("#LastAccDate").data("kendoDatePicker").value();
+            var lJ=$("#LastAdjustDate").data("kendoDatePicker").value();
+            var R=$("#RequestDate").data("kendoDatePicker").value();
+            var elem =$(this);
+            if(elem.val()!=""){
+                var valueinDaysR=(A-R)/(1000*3600*24);
+                if(valueinDaysR < 0){
+                    if (!$("#RequestDate").hasClass("k-invalid")) {
+                        $("#RequestDate").addClass("k-invalid").prop("aria-invalid", true);
+                        $("#RequestDate").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("ActualDateMGRequestDate")</span>");
+                    }
+                }else {
+                    if($("#RequestDate").hasClass("k-invalid")){
+                        $("#RequestDate").removeClass("k-invalid").prop("aria-invalid", false);
+                        $("#RequestDate").next("span.k-tooltip-validation").remove();
+                    }
+                }
+                if(lA!=null)
+                {
+                    var valueinDaysALA=(lA-A)/(1000*3600*24);
+                    if(valueinDaysALA < 0){
+                        if (! $("#LastAccDate").hasClass("k-invalid")) {
+                            $("#LastAccDate").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#LastAccDate").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("LastAccDateMGActualDate")</span>");
+                        }
+                    }else
+                    {
+                        if($("#LastAccDate").hasClass("k-invalid")){
+                            $("#LastAccDate").removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#LastAccDate").next("span.k-tooltip-validation").remove();
+                        }
+                    }
+                }
+                if(lJ!=null){
+                    var valueinDaysALA=(lJ-A)/(1000*3600*24);
+                    if(valueinDaysALA < 0){
+                        if (!$("#LastAdjustDate").hasClass("k-invalid")) {
+                            $("#LastAdjustDate").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#LastAdjustDate").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("LastAccDateMGActualDate")</span>");
+                        }
+                    }else
+                    {
+                        if($("#LastAdjustDate").hasClass("k-invalid")){
+                            $("#LastAdjustDate").removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#LastAdjustDate").next("span.k-tooltip-validation").remove();
+                        }
+                    }
+                }
+            }
+
+        });
+        $("#EmployeeTermDiv").on('blur',"#RequestDate", function(){
+            var R = $(this).data("kendoDatePicker").value();
+            var A=$("#ActualDate").data("kendoDatePicker").value();
+            var elem =$(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(R != null){
+                var valueinDaysALA=(A-R)/(1000*3600*24);
+                if(valueinDaysALA < 0){
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("ActualDateMGRequestDate")</span>");
+                }
+            }
+        });
+
+        $("#EmployeeTermDiv").on('blur',"#LastAccDate" ,function(){
+            var lA = $(this).data("kendoDatePicker").value();
+            var A=$("#ActualDate").data("kendoDatePicker").value();
+            var elem =$(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(lA!=null){
+                var valueinDaysALA=(lA-A)/(1000*3600*24);
+                if(valueinDaysALA < 0){
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("LastAccDateMGActualDate")</span>");
+                }
+            }
+
+
+        });
+
+        $("#EmployeeTermDiv").on('blur','#LastAdjustDate', function(){
+            var lJ = $(this).data("kendoDatePicker").value();
+            var A=$("#ActualDate").data("kendoDatePicker").value();
+            var elem =$(this);
+            elem.removeClass("k-invalid").prop("aria-invalid", false);
+            elem.next("span.k-tooltip-validation").remove();
+            if(lJ!=null){
+                var valueinDaysALA=(lJ-A)/(1000*3600*24);
+                if(valueinDaysALA < 0){
+                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='LastAccDate' role='alert'>@MsgUtils.Instance.Trls("LastAdjustDateMGActualDate")</span>");
+                }
+            }
+        });
+
+
+        $('#EmployeeTermDiv').on("click",'#backToIndex',null,function(){
+
+            $("#renderbody").load(oldulr);
+        });
+        $('#EmployeeTermDiv').on("click","#saveChanges",null,function (e) {
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+
+            FormJs.saveForm($("#"+formId), $(this),function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            });
+
+        });
+
+
+        $('#EmployeeTermDiv').on("click","#CancelRequest",null,function (e) {
+            $("#Term").appendTo("#EmployeeTermForm");
+            FormJs.fillOptionsDynamic($("#" + formId), "CancelReason", CancelReason, model,{hasFilter : false});
+            $("#Term").modal('show');
+            $("#Ok").click(function(){
+                $("#"+formId).append("<input type='hidden' name='ApprovalStatus' id='ApprovalStatus' value='8'>");
+                FormJs.saveForm($("#"+formId), $(this),function () {
+
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+
+                    $("#renderbody").load(oldulr);
+                    $("#Term").modal('hide');
+                    $(".modal-backdrop").remove();
+                });
+            });
+
+            $("#Cancel").click(function(){
+                $("#CancelReason").val("");
+                $("#CancelDesc").val("");
+
+            })
+        });
+        $('#EmployeeTermDiv').on("click","#Terminat",null,function (e) {
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+
+            $("#"+formId).append("<input type='hidden' name='Terminated' id='Terminated' value='True'>");
+            FormJs.saveForm($("#"+formId), $(this),function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+
+                $("#renderbody").load(oldulr);
+            });
+
+        });
+
+    });
+
+
+</script>
+
+
+<div class="modal fade" id="Term" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("CancelTermination")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body omegaform @(rtl?"rtl":"")" tabindex="0">
+                <div class="set panel">
+                    <div class="panel-body">
+                        <div class="form-group row">
+                            <label for="CancelReason" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelReason")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <select allowed="true" name="CancelReason" isvisible="true" id="CancelReason" class="form-control k-valid" style="cursor: pointer;"></select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="CancelDesc" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelDescription")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <textarea name="CancelDesc" isvisible="true" rows="2" id="CancelDesc" class="form-control" style="max-width: 995px;">@Model.CancelDesc</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+              <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" id="Cancel">@MsgUtils.Instance.Trls("Cancel")</button>
+                    <button type="button" class="btn btn-primary submit" id="Ok">@MsgUtils.Instance.Trls("Ok")</button>
+              </div>
+        </div>
+    </div>
+</div>

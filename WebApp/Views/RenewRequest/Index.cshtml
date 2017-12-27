@@ -1,0 +1,87 @@
+﻿@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    string culture = User.Identity.GetCulture();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+
+@Html.Partial("~/Views/Shared/_RequestFilters.cshtml", new ViewDataDictionary { { "HasDepts", "false" } })
+@Html.Partial("~/Views/Shared/_ThumpImageGrid.cshtml");
+
+
+<div id='RenewDiv'></div>
+
+<script>
+
+    var hiddenCols = { 1: ["RejectionRes"], 2: ["RejectionRes"] };
+
+    var leaveTabs = [{ Id: 1, Name: "Pending", Class: "ace-icon fa fa-circle stat12", Title: "@MsgUtils.Instance.Trls("Pending Requests")" },
+                     { Id: 2, Name: "Approved", Class: "ace-icon fa fa-circle stat1", Title: "@MsgUtils.Instance.Trls("Approved Requests")" },
+                     { Id: 3, Name: "Rejected", Class: "ace-icon fa fa-circle stat3", Title: "@MsgUtils.Instance.Trls("Rejected Requests")" },
+    ];
+    var readUrl = "@Url.Action("GetAllRenew", "RenewRequest")?MenuId=@Request.QueryString["MenuId"]";
+    RequestFilters.ApplayAllFilters(leaveTabs, hiddenCols, "RenewDiv", readUrl, '@Url.Action("Details", "RenewRequest")');
+   
+    $(function () {
+        var approvalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+              { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' }, { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+              { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' }, { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+              { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' }, { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+              { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }];
+
+        var grid = "'RenewDiv'";
+        Grids.indexGrid({
+            read: RequestFilters.GetReadUrl(),
+            show: "@Url.Action("Details", "RenewRequest")",
+            edit: "@Url.Action("Details", "RenewRequest")",
+            del: "@Url.Action("DeleteRequest", "RenewRequest")",
+            objectName: "RenewRequestTable",  // name of the page or table name used to create local db key
+            gridName: "RenewDiv",
+            recordName: "ColumnName",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: [{ field: "ApprovalStatus", values: approvalStatus }, {
+                field: "Attachement",
+                template: "<img class='myThumpImg' src='#:ThumpImage.CheckPic(data) #' alt='#: ColumnName #' width='80' height='80'>",
+
+                //      title: "Company Logo",
+                //       width: 300,
+                //        filterable: { cell: { inputWidth: '91%', suggestionOperator: "contains" } }
+            }],
+            select: { "ApprovalStatus": approvalStatus },
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            serverPaging: true,
+            serverFiltering: true,
+            serverSorting: true,
+            pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+            dataBound: function () {
+                var gridName = this.gridName;
+                $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                    var row = $(this).closest("tr");
+                    var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                    if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 2) $(this).toggle(); //hide delete btn
+                    //else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+                });
+                
+                ThumpImage.BindLoadImage(gridName, 'RenewRequest');
+        
+            }
+        });
+
+
+
+
+    });
+
+    //"<div class='k-company-photo'" +
+    //                "style='background-image: url(../../Files/uploadercash/#: data.AttUrl #); '></div>" +
+    //                "&nbsp;&nbsp;&nbsp;<div class='k-company-name'>#: ColumnName #</div>"
+</script>

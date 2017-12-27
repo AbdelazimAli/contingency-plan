@@ -1,0 +1,274 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model EmployementViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<style>
+    .k-window-content {
+        min-height: 350px;
+    }
+</style>
+<div id="Emp"></div>
+
+<script>
+    function BackEvents(OrgHandler){
+        var other =$("#menu_tabs > li > a:not('#t_GeneralInformation')");
+        for (var i = 0; i < OrgHandler.length; i++) {
+            if(OrgHandler[i].selector =="t_Assignments" || OrgHandler[i].selector == "t_AssignmentsHistory"){
+                $(other[i]).click(OrgHandler[i].click);
+                $(other[i]).parent("li").removeClass("disabled");
+            }
+        }
+    }
+    function ContractPeriod(startDate,endDate,selectedelem){
+        var days = 0;
+        var yearselem =  $("#DurInYears");
+        var monthelem =  $("#DurInMonths");
+        var elem = $("#EndDate");
+        if(endDate == null && yearselem.val() == 0 && monthelem.val() == 0)
+            return;
+        if(endDate != null){
+           
+            days= (endDate-startDate)/(1000*3600*24);
+            if(days < 0 ){
+                if(elem.next("span.k-tooltip-validation").length == 0)
+                    FormJs.addFormError("EmpForm",'EndDate',"@MsgUtils.Instance.Trls("EndDateGrTStartDate")")
+                 
+                if(!elem.hasClass("k-invalid"))
+                    FormJs.addFormError("EmpForm",'EndDate',"@MsgUtils.Instance.Trls("EndDateGrTStartDate")")
+                return ;
+            }else{
+                FormJs.removeFormError("EmpForm",'EndDate')
+                if(selectedelem.attr('id') == "EndDate"){
+                    var result =parseFloat(days/365).toFixed(2);
+                    var M = result.toString().split(".");
+                    var months = Math.ceil((parseInt(M[1]) *12) /100);
+                    var Y = M[0];
+                    yearselem.val(Y);
+                    monthelem.val(months);
+                    return;
+                }
+            }
+        }
+
+        elem.removeClass("k-invalid").prop("aria-invalid", false);
+        elem.next("span.k-tooltip-validation").remove();
+            
+         
+        if(yearselem.val() >= 0 && monthelem.val() >= 0){              
+            endDate =new Date(startDate);
+            endDate.setYear(endDate.getFullYear() + Number(yearselem.val()));
+            endDate.setMonth(endDate.getMonth() + Number(monthelem.val()));
+            endDate.setDate(endDate.getDate() - 1);
+               
+            elem.data("kendoDatePicker").value(endDate);
+        }
+    }
+   
+    function DisableEvents(OrgHandler){
+      var other =$("#menu_tabs > li > a:not('#t_GeneralInformation')");
+        for (var i = 0; i < other.length; i++) {
+            if(OrgHandler[i].selector =="t_Assignments" || OrgHandler[i].selector == "t_AssignmentsHistory")
+            {
+                $(other[i]).off('click');
+                $(other[i]).parent("li").addClass("disabled");
+            }
+        }
+    }
+    $(function () {
+        var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+        var EmpCode = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GenEmpCode));
+        var Currency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Currency));
+        var sequence= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.sequence));
+        var nationalId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.nationalId));
+        var toLocation = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.toCountry));
+        var fromLocation = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.fromCountry));
+        var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+        var formId = "EmpForm";
+        var  emplymentModel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'Emp', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("EmpDetails", "People")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "Employements";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1)
+                    data.mode = 'show';
+                $("#Emp").Forms(data, emplymentModel);
+
+                $("#" + formId).find(".col-sm-10.col-md-10.col-lg-10").removeClass("col-sm-10 col-md-10 col-lg-10").addClass("col-sm-8 col-md-8 col-lg-8");
+
+                FormJs.fillOptionsDynamic($("#" + formId), "PersonType", PersonType, emplymentModel);
+                FormJs.fillOptionsDynamic($("#" + formId), "ToCountry", Locations, emplymentModel);
+                FormJs.fillOptionsDynamic($("#" + formId), "FromCountry", Locations, emplymentModel);
+                FormJs.fillOptionsDynamic($("#" + formId), "Curr", Currency, emplymentModel);
+                //Enhance Design
+                $("#"+formId).find("#Code").parent().removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
+                $("#"+formId).find("#PersonType").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
+                $("#"+formId).find("Label[for='PersonType']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
+                $("#"+formId).find("#Profession").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
+                $("#"+formId).find("Label[for='Profession']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
+                //Enhance Design
+                $("#"+formId).find("#ContIssueDate").parent().removeClass(" col-md-6 col-lg-6").addClass(" col-md-12 col-lg-12");
+                $("#"+formId).find("#DurInYears").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
+                $("#"+formId).find("Label[for='DurInYears']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
+                $("#"+formId).find("#DurInMonths").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
+                $("#"+formId).find("Label[for='DurInMonths']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-3 col-lg-3");
+
+                if($("#" + formId).find("#PersonType").val() == 11)
+                    $("#" + formId).find('#Profession').closest(".form-group").css("display","");
+                else
+                    $("#" + formId).find('#Profession').closest(".form-group").css("display","none");
+                
+                if(emplymentModel.SysCodeId != 1)
+                    $("#" + formId).find('#AutoRenew').closest(".section").css("display","none")
+                else
+                    $("#" + formId).find('#AutoRenew').closest(".section").css("display","")
+                
+
+                if(EmpCode ==1)
+                {
+                    $("#" + formId).find("#Code").prop('disabled','true');
+                    if (emplymentModel.Code ==null)
+                       $("#" + formId).find("#Code").val(sequence);
+                    else
+                       $("#" + formId).find("#Code").val(emplymentModel.Code);
+                }
+                else if(EmpCode ==3)
+                {
+                    if(emplymentModel.Code !=null)
+                        $("#" + formId).find("#Code").val(emplymentModel.Code);
+                    else
+                        $("#" + formId).find("#Code").val(nationalId);
+                }
+                else if(EmpCode==2)
+                {
+                    if(emplymentModel.Code !=null)
+                        $("#" + formId).find("#Code").val(emplymentModel.Code);
+                    else
+                        $("#" + formId).find("#Code").val(sequence);
+
+                }
+
+                $("#" + formId).find('#Correct').val('@MsgUtils.Instance.Trls("Correct")');
+                $("#" + formId).find('#Update').val('@MsgUtils.Instance.Trls("Update")');
+
+                $("#"+formId).on('click','#Correct',function (e) {
+                    if($("#"+formId).find(".k-invalid").length > 0) return ;
+                    $("#"+formId).attr("action","/People/CorrectEmpDetails/"+@Model.Id);
+                    $("#"+formId).append("<input type='hidden' name='EmpId' value="+@ViewBag.Id+">");
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        updateEmpProgress(false);
+                        if((res.Code != null) && (res.SysCodeId == 1 || res.SysCodeId == 2 || res.SysCodeId == 4))
+                            BackEvents(OrgHandler);
+                        else
+                            DisableEvents(OrgHandler);
+                    });
+
+                });
+                var hiddenFields = "<input type='hidden' name='sequence' id='sequence' value='"+sequence+"'/>"
+                hiddenFields += "<input type='hidden' name='SysCodeId' id='SysCodeId' value='"+emplymentModel.SysCodeId+"'/>";
+                $("#" + formId).append(hiddenFields);
+
+                if(emplymentModel.Id==0)
+                    $("#" + formId).find('#Correct').attr("disabled", true).css("display","none");
+                else
+                    $("#" + formId).find('#Correct').attr("disabled", false).css("display","");
+
+                $("#" + formId).on("blur","#StartDate,#DurInYears,#DurInMonths,#EndDate",null,function(e)
+                {
+                    var startDate = $("#" + formId).find("#StartDate").data("kendoDatePicker").value();
+                    var endDate = $("#" + formId).find("#EndDate").data("kendoDatePicker").value();
+                    ContractPeriod(startDate,endDate,$(this));
+
+                });
+
+                $("#" + formId).on("change","#PersonType",null,function(e)
+                {
+                   
+                    var codeId= $(this).val();
+                    if(codeId != ""){
+                        var obj = PersonType.find(a =>a.id == codeId);
+                        $("#" + formId).find('#SysCodeId').val(obj.SysCodeId);
+
+                        if(obj.SysCodeId == 5)
+                            $("#" + formId).find('#Profession').closest(".form-group").css("display","");
+                        else
+                            $("#" + formId).find('#Profession').closest(".form-group").css("display","none");
+                        
+                        if(obj.SysCodeId != 1)
+                            $("#" + formId).find('#AutoRenew').closest(".section ").css("display","none")
+                        else
+                            $("#" + formId).find('#AutoRenew').closest(".section ").css("display","")
+                    }
+                });
+
+
+                if(emplymentModel.Id==0){
+                    $("#Update").attr("accesskey","s")
+                    $("#Correct").removeAttr("accesskey")
+
+                }
+
+                $("#"+formId).on('click','#Update',function (e) {
+
+                    if($("#"+formId).find(".k-invalid").length > 0) return ;
+                    $("#"+formId).attr("action","/People/UpdateEmpDetails/"+@Model.Id);
+                    $("#"+formId).append("<input type='hidden' name='EmpId' value="+@ViewBag.Id+">");
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        updateEmpProgress(false);
+
+                        $("#" + formId).find('#Merage').css("display","");
+
+                        if((res.Code != null) && (res.SysCodeId == 1 || res.SysCodeId == 2 || res.SysCodeId == 4))
+                            BackEvents(OrgHandler);
+                        else
+                            DisableEvents(OrgHandler);
+
+                        $("#Correct").css("display","");
+                        $("#Update").removeAttr("accesskey")
+                        $("#Correct").attr("accesskey","s")
+
+                        if(res.Error != null)
+                        {
+                            var result = res.Error.split(',');
+                            if(result[0] =="SystemWarningDocuments")
+                            {
+                                result.shift();
+                                toastr.warning(result);
+                            }
+                        }
+                    });
+                });
+
+            }
+        });
+    });
+</script>
+
+
+
+
+

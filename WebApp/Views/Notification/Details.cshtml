@@ -1,0 +1,102 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Notification
+@model MsgTemplateViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="MsgDiv"></div>
+
+<script>
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var emailId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmailId));
+        var formId = "MsgTemplateForm";
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'MsgTemplateForm', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveMsgTemplate", "Notification")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "MsgTemplates";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                $("#MsgDiv").Forms(data, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmailId", emailId, model);
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#Save').val('@MsgUtils.Instance.Trls("Save")');
+
+                $("#Body").kendoEditor({
+                    resizable :{
+                        content:true,
+                        toolbar:true
+                    }
+                });
+                if(read == 1)
+                {
+                    data.mode = 'show';
+                    var editor=  $("#Body").data("kendoEditor");
+                    editor.body.contentEditable=false;
+                    $('.k-editor-toolbar-wrap').hide();
+                }
+
+                $("#" + formId).find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-8 col-lg-8");
+                $("#Body").closest(".form-group").append("<div class='col-md-2'><input type='button' class='myclass' value='%Ref Employee%'/><input type='button' class='myclass' value='%Event%' /><br/><input type='button' class='myclass' value='%Table%' /><input type='button' class='myclass' value='%Column%' /><input type='button' class='myclass' value='%Data%' /><input type='button' class='myclass' value='%Request Comment%'/><input type='button'class='myclass' value='%Comment%'/><input type='button'class='myclass' value='%Today%'/><input type='button' class='myclass' value='%Now%'/><input type='button' class='myclass' value='%User%'/><input type='button'class='myclass' value='%Role%'/><input type='button'class='myclass' value='%Company Name%'/><input type='button' class='myclass' value='%Consignee%'/></div>")
+                $('input[type=button].myclass').on('click',function(){
+
+                    $("#Body").data("kendoEditor").exec("insertHtml",{html:$(this).val() ,spilt:false});
+
+                }); 
+
+                $("#" + formId).on('click','#Save', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+                $("#" + formId).on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+            }
+        });
+    });
+</script>
+<style>
+    .btnclass {
+        background-color: burlywood;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 10px;
+        margin: 4px 2px;
+        cursor: pointer;
+    }
+</style>
+
+
+
+
+
+
+

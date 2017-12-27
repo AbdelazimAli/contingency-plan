@@ -1,0 +1,108 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var admin = @User.IsInRole("Admin");
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br>
+<div id="MedicalDiv"></div>
+<style>
+    .Balance {
+        width: 40%;
+        max-height:100px;
+    }
+</style>
+<script>
+    var BeneficiaryId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BeneficiaryId));
+    var ProviderId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Providers));
+    BeneficiaryId.unshift({value:null, text:'@MsgUtils.Instance.Trls("Employee")'});
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Id));
+    var columns = [
+                    { field: "BeneficiaryId", values:BeneficiaryId },
+                    {field:"Balance",template: "<div class='Balance'></div>"}
+    ];
+    var gridname="'MedicalDiv'";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadMedicalService", "People")?id="+id,
+        admin: "@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: "MedicalService",
+        recordName: "Name", // custom delete message
+        gridName: "MedicalDiv",
+        columns: columns,
+        select: { "BeneficiaryId": BeneficiaryId},
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"></div><div class="btn-group"><button type="button" class="btn btn-xs btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+        dataBound: function (e) {
+            var gridName = this.gridName;
+            var cols = this.columns;
+            var progCol = $.grep(cols, function (el) { if (el.field == "Balance") return el });
+            $(".Balance").each(function () {
+                $(this).parent("td").attr("style", "padding: 0");
+                var model = e.sender.dataItem($(this).closest("tr"));
+                if (model != null) {
+                    if(model.PlanLimit == 1)
+                    {
+                        $(this).kendoProgressBar({                          
+                            value:model.TotalCompCost *100/model.Balance,
+                            type: "percent",
+                            max: 100                       
+                        });
+                    }
+                    else if(model.PlanLimit ==2)
+                    {
+                        $(this).kendoProgressBar({                          
+                            value:model.TotalEmpCost *100/model.Balance,
+                            type: "percent",
+                            max: 100                       
+                        });
+
+                    }
+                    else if(model.PlanLimit ==3) {
+
+                        $(this).kendoProgressBar({                          
+                            value:model.TotalCost *100/model.Balance,
+                            type: "percent",
+                            max: 100                       
+                        });
+                    }
+
+                }
+            });
+        },
+        detailInit: detailInit
+    });
+
+    function detailInit(e) {
+       
+        $("<div id='Service" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname1 = "'Service" + e.data.Id + "'";
+        var columns = [
+                   { field: "ProviderId", values:ProviderId }
+        ];
+        var BeneficiaryId= e.data.BeneficiaryId == null ? 0 :e.data.BeneficiaryId;
+        Grids.indexGrid({
+            read: "@Url.Action("ReadBenfitService", "People")?PeriodId=" + e.data.PeriodId +"&BeneficiaryId="+BeneficiaryId+"&EmpId="+e.data.EmpId,
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "BenService",
+            toolbar: '<div><div style="@(rtl ? "float: left" : "float: left")"></div><div class="btn-group" style="@(rtl ? "float: left" : "float: left")"><button type="button" class="btn btn-xs btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+gridname1+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+gridname1+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+            recordName: "Name",
+            gridName: 'Service' + e.data.Id,
+            columns: columns,
+            select: { "ProviderId": ProviderId},
+           // height:450
+        });
+    }
+</script>
+
+
+

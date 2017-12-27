@@ -1,0 +1,69 @@
+﻿
+@using WebApp.Extensions
+@{ 
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="Codes"></div>
+
+<script>
+
+    var objectName = "LookUpCode";
+    var gridname1 = "'Codes'";
+ Grids.batchGrid({
+    read: "@Url.Action("GetLookUpUserCode", "LookUpCode")",
+    admin: "@admin",
+    lang: "@User.Identity.GetCulture()",
+     objectName: objectName,
+     tableName: 'Lookupcode',
+    recordName: "Title",
+    fields: { CodeName: { type: "string", editable: false } },
+    gridName: "Codes",
+    toolbar:' <div >&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right")"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>'
+       +'&nbsp;&nbsp;</div>',
+    detailInit: detailInit
+    });
+
+    function detailInit(e) {
+        //ajax call to fill ddl
+        var result;
+        $.ajax({
+            url: "@Url.Action("ReadSysCodeId", "LookUpCode")",
+            data: { CodeName: e.data.Id },
+            async: false,
+            dataType: "json",
+            success: function (data) {
+                result = data;
+            },
+            error: function (result) {
+                console.log(result.responseText);
+            }
+        });
+
+        $("<div id='code" + e.data.CodeName + "'/>").appendTo(e.detailCell);
+        var gridname = "'code" + e.data.CodeName + "'";
+        Grids.batchGrid({
+            read: "@Url.Action("GetLookUpUserCodes", "LookUpCode")?Id=" + e.data.CodeName,
+            create: "@Url.Action("CreateLookUpUserCodes", "LookUpCode")",
+            update: "@Url.Action("UpdateLookUpUserCodes", "LookUpCode")",
+            destroy: "@Url.Action("DeleteLookUpUserCodes", "LookUpCode")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "LookUpUserCodes",
+            parentColumnName: "CodeName",
+            parentColumnId: e.data.CodeName,
+            recordName: "Name",
+            gridName: 'code' + e.data.CodeName,
+            fields: {EndDate: { defaultValue: null }, CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            columns: [{ field: "SysCodeId", values: result }],
+            select: { "SysCodeId": result }
+        });
+    }
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Codes" }, { "ObjectName", "LookUpCode" }, { "Functions", ViewBag.Functions } })

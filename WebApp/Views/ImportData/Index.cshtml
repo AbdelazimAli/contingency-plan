@@ -1,0 +1,19 @@
+﻿
+@{
+    Layout = null;
+}
+
+
+<div id="pageTabs"></div>
+<script>
+    FormJs.DrawTabs("pageTabs");
+    $("#t_ImportEmployees").click(function () {
+        $('#tab_ImportQualifications').empty();
+        $("#tab_ImportEmployees").load("@Url.Action("ImportEmployees", "ImportData")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+    });
+    $("#t_ImportQualifications").click(function () {
+        $('#tab_ImportEmployees').empty();
+        $("#tab_ImportQualifications").load("@Url.Action("ImportQualifications", "ImportData")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]&MenuId=@Request.QueryString["MenuId"]");
+    });
+    $("#t_ImportEmployees").click();
+</script>

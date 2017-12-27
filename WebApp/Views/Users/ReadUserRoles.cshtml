@@ -1,0 +1,45 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_IndexLayout.cshtml";
+    var rtl = User.Identity.RTL();
+    var gridName = "userRole";
+    //var grid = ViewData["GridName"];
+
+}
+@{ var admin = User.IsInRole("Admin");}
+
+<div id="userRole"></div>
+
+@section scripts
+{
+<script>
+    var objectName = "UserRoles";
+
+    Grids.batchGrid({
+        read: "@Url.Action("GetUserRoles", "Users")",
+        update: "@Url.Action("SaveRole", "Users")",
+        admin:"@User.IsInRole("Admin")", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName, // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+        gridName: "userRole",
+        admin: "@admin",
+        height: 350 ,
+        toolbar: kendo.template($("#template3").html()),
+       
+    });
+    </script>
+ }
+@*@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" } })*@
+
+<script type="text/x-kendo-template" id="template3">
+    <div>
+        <a class="btn btn-default glyphicon glyphicon-ok" href="\#" onclick="Grids.saveClick('@gridName')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        <div class="btn-group" style="@(rtl ? "float: left" : "float: right")">
+        </div>
+    </div>
+</script>
+

@@ -1,0 +1,223 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="RequestWfDiv">
+
+</div>
+
+<style>
+    #RequestWfDiv .o-collabsebtn{
+        width: 96%;
+       
+    }
+      #RequestWfDiv .sections{
+           margin-right:30px;
+      }
+</style>
+<script>
+
+
+    $(function () {
+        var old;
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        var Rolee;
+        function changeHeirType(valume){
+
+            if(valume==3){
+                $("#Hierarchy").parents(".form-group").css("display","");
+
+            }
+            else
+                $("#Hierarchy").parents(".form-group").css("display","none");
+            if(valume >1)
+                $("#NofApprovals").parent().parent().css("display","");
+            else
+                $("#NofApprovals").parent().parent().css("display","none");
+            if(valume==1){
+                Rolee=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RoleCode));
+                if($("#WfRoleDiv").data("kendoGrid") != undefined) {
+                    var grid= $("#WfRoleDiv").data("kendoGrid").columns;
+                    for (var i = 0; i < grid.length; i++) {
+                        if(grid[i].field=="Role")
+                            grid[i].values=Rolee;
+                    }
+                }
+
+            }
+
+            else{
+                Rolee=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+                if($("#WfRoleDiv").data("kendoGrid") != undefined) {
+                    var con=confirm("Are you sure you Want to change hierarcy type?");
+                    if(con==true){
+                            var grid1= $("#WfRoleDiv").data("kendoGrid").columns;
+                            for (var i = 0; i < grid1.length; i++) {
+                                if(grid1[i].field=="Role")
+                                    grid1[i].values=Rolee;
+                            }
+                        var grid=$("#WfRoleDiv").data("kendoGrid").dataSource;
+                        var gridData=grid._data;
+                        for (var i = 0; i <gridData.length; i++) {
+                            if(gridData[i].CodeId !=null){
+                                var record=$("#WfRoleDiv").data("kendoGrid").dataSource._data[i];
+                                grid.remove(record);
+                            }
+                        }
+                    }
+                    else
+                        $('#HeirType').data("kendoDropDownList").value(old)
+                }
+            }
+
+        }
+
+
+        var Hierarchy=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Hierarchy));
+        var sourceId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.sourceId));
+        var WaitAction =[{id:1,name:"@MsgUtils.Instance.Trls("Back to requester")"}, {id:2,name:"@MsgUtils.Instance.Trls("Back to previous step")"}, {id:3,name:"@MsgUtils.Instance.Trls("Foreword to next step")"}];
+        var sourceTxt=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.sourceTxt));
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "RquestForm";
+        var read = "@Request.QueryString["Read"]";
+    $.ajax({
+        async: false,
+        url: "@Url.Action("ReadFormInfo","Pages")",
+        type: "GET",
+        dataType: "json",
+        contentType: 'application/json',
+        data: { objectname: "RequestWfs", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+        success: function (data) {
+            data.FormId = formId;
+            data.TableName ="RequestWf";
+            data.FormAction = "@Url.Action("RequestDetails", "LeaveType")?sourceId="+sourceId+"&Source=Leave";
+            data.Culture = "@User.Identity.GetCulture()";
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = "@admin";
+            $("#RequestWfDiv").Forms(data, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "TimeOutAction", WaitAction, model);
+
+            if(model.Hierarchy == null)
+                Hierarchy.unshift({id:"", name: "Default Hierarchy"});
+
+
+
+            FormJs.fillOptionsDynamic($("#" + formId), "Hierarchy", Hierarchy, model);
+            if(model.Hierarchy == null)
+                $("#Hierarchy").data("kendoDropDownList").text("Default Hierarchy");
+
+
+            $("#" + formId).find(".col-sm-10.col-md-10.col-lg-10").removeClass("col-sm-10 col-md-10 col-lg-10").addClass("col-sm-8 col-md-8 col-lg-8");
+            $("#" + formId).find(".col-sm-8.col-md-8.col-lg-8").removeClass("col-sm-8 col-md-8 col-lg-8").addClass("col-sm-6 col-md-6 col-lg-6");
+
+            $("#NofApprovals").parent().removeClass("col-sm-6 col-md-6 col-lg-6").addClass("col-sm-8 col-md-8 col-lg-8");
+
+            $("#" + formId).find(".form-control").not(".k-dropdown").css("height", "25px");
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#close').val('@MsgUtils.Instance.Trls("Close")');
+
+            var hiddenFields = "<input type='hidden' name='SourceId' id='SourceId' value='" + (sourceId != null ? sourceId : "") + "'>";
+            hiddenFields+=  "<input type='hidden' name='Source' id='Source' value='"+ sourceTxt+"'>";
+            hiddenFields+=  "<input type='hidden' name='WFlowId' id='Source' value='"+model.Id+"'>";
+
+
+            $("#" + formId).append(hiddenFields);
+            old=model.HeirType;
+            changeHeirType(model.HeirType);
+            //Request Grid
+
+            $("div[name=GridSec]").prepend('<div id="WfRoleDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+            var gridname = "'WfRoleDiv'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadWfRole", "LeaveType")?RequestWfId=" +model.Id,
+                lang: "@User.Identity.GetCulture()",
+                objectName: "WfRole",
+                tableName: "WfRoles",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                recordName: "Order",
+                gridName: "WfRoleDiv",
+                fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+                columns: [
+                {
+                    field: "Role", values: Rolee
+                },
+                 {
+                     field: "WaitAction", values: WaitAction
+                 }
+                ],
+                select: { "Role":Rolee,"WaitAction":WaitAction},
+                save:function(e){
+                    if (e.values.Role && e.values.Role != e.model.Role) {
+                        var role=Number(e.values.Role);
+
+                        if(Number.isNaN(role)){
+                            e.model.RoleId=e.values.Role;
+                            e.model.CodeId=null;
+                        }
+
+
+                        else{
+                            e.model.CodeId=e.values.Role;
+                            e.model.RoleId=null;
+                        }
+                    }
+                }
+            });
+
+
+
+            var sets = $("#" + formId).find(".set");
+            for(var i=0; i<sets.length; i++){
+                if($(sets[i]).children(".sections").children().length == 0)
+                    $(sets[i]).remove();
+            }
+        },
+        error: function (data) {
+        }
+    });
+
+        $('#RequestWfDiv').on('click',"#close",null, function(){
+            $("#FlowWindow").data("kendoWindow").close();
+        });
+        $("#RequestWfDiv").on('click',"#saveChanges",null, function (e) {
+            FormJs.saveForm($("#"+formId), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#FlowWindow").data("kendoWindow").close();
+            },Grids.sendData("WfRoleDiv"));
+        });
+        $("#RequestWfDiv").on("change","#HeirType",null,function(e){
+            var record= $(this).val();
+            changeHeirType(record);
+        });
+
+    });
+
+
+
+</script>
+
+
+

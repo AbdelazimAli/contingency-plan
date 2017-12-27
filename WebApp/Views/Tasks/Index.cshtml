@@ -1,0 +1,138 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string href = Url.Action("Details", "Tasks") + "?Version=" + Request.QueryString["Version"] + "&DataLevel=" + Request.QueryString["DataLevel"] + "&RoleId=" + Request.QueryString["RoleId"];
+
+}
+
+
+<br />
+<div id="selPeriod" class="omegaform @(rtl ? "rtl" : "")">
+    <div class="section from-inline">
+        <div class="form-group">
+            <label class="control-label col-md-1">@MsgUtils.Instance.Trls("Period")</label>
+            <div class="col-md-3">
+                <select id="PeriodId" name="PeriodId" class="form-control"></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-md-1">@MsgUtils.Instance.Trls("SubPeriod")</label>
+            <div class="col-md-3">
+                <select id="SubPeriodId" name="SubPeriodId" class="form-control"></select>
+            </div>
+        </div>
+        <div class="form-group">
+            <button id="refreshBtn" class="btn btn-success ">@MsgUtils.Instance.Trls("Refresh")</button>
+        </div>
+    </div>
+</div>
+<div><div id="tasksDiv"></div></div>
+<script>
+    var Res = [
+            { value: 0, text: '@MsgUtils.Instance.Trls("Darft")' },
+            { value: 1, text: '@MsgUtils.Instance.Trls("AssignedTo")' },
+            { value: 2, text: '@MsgUtils.Instance.Trls("Done")' },
+            { value: 3, text: '@MsgUtils.Instance.Trls("Canceled")' },
+            { value: 4, text: '@MsgUtils.Instance.Trls("NotDone")' }];
+
+    var Periods = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Periods));
+    var SubPeriods = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SubPeriods));
+    var errorMsg = "@ViewBag.errorMsg";
+    if(errorMsg && errorMsg.length) toastr.error(errorMsg);
+
+    FormJs.fillOptionsDynamic($("#selPeriod"), "SubPeriodId", [], null, {hasFilter: false});
+    FormJs.fillOptionsDynamic($("#selPeriod"), "PeriodId", Periods, null, {hasFilter: false});
+
+    var periodDDL = $("#PeriodId").data("kendoDropDownList");
+    if(Periods) {
+        for(var i=0; i<Periods.length; i++){
+            if(Periods[i].selected == true) {
+                periodDDL.value(Periods[i].id);
+                break;
+            }
+        }
+    }
+    PeriodChanged();
+
+
+    function PeriodChanged() {
+        var subPeriod = SubPeriods.filter(function(item) { return item.periodId == $("#PeriodId").val(); });
+        var SubPeriodDDL = $("#SubPeriodId").data("kendoDropDownList");
+        SubPeriodDDL.dataSource.data(subPeriod);
+    }
+    $("#PeriodId").change(PeriodChanged);
+
+
+    var taskGridName = "'tasksDiv'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetTasksPeriods", "Tasks")?MenuId=@Request.QueryString["MenuId"]&PeriodId=" + $("#PeriodId").val(),
+        objectName: "EmpTasksMainGrid",
+        gridName: "tasksDiv",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{ field: "EmployeeChart", template: "<div class='empChart'></div>" }],
+        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default glyphicon glyphicon-plus ajaxify" href="@href" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<div class="btn-group"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+taskGridName+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+taskGridName+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>',
+        detailInit: detailInit,
+        dataBound: function (e) {
+            var gridName = this.gridName, cols = this.columns;
+            var progCol = $.grep(cols, function (el) { if (el.field == "EmployeeChart") return el });
+
+            $.get("@Url.Action("GetChart", "Tasks")?periodId=" + $("#PeriodId").val() + "&subPeriodId=" + $("#SubPeriodId").val(), function(Chart) {
+                $("#" + gridName).find(".empChart").each(function (e) {
+                    var row = $(this).closest("tr");
+                    if($(this).closest("td").css("display") != "none") {
+                        var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                        var dataSource = Chart.filter(function(e) { return e.EmpId == model.Id && e.Year == model.PeriodId; });
+
+                        $(this).kendoChart({
+                            series: [{ type: 'pie',  data: dataSource }], //, template: "#:value# %"
+                            chartArea: { width:150, height:100 },
+                            //seriesDefaults: { labels: { visible: true, background: 'transparent', template: '${ value }%' } }, ///, position: 'center'
+                            tooltip: { visible: true, format: "{0}", template: "#:value#% @MsgUtils.Instance.Trls("Task") #:category#" },
+                        });
+                    }
+                });
+            });
+        }
+    });
+
+    function detailInit(e) {
+        $("<div id='Task" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname = "'Task" + e.data.Id + "'";
+        Grids.indexGrid({
+            read: "@Url.Action("GetTasks", "Tasks")?MenuId=@Request.QueryString["MenuId"]&EmpId=" + e.data.Id+ "&PeriodId="+ e.data.PeriodId + "&SubPeriodId=" + e.data.SubPeriodId,
+            show: "@Url.Action("Details", "Tasks")",
+            edit: "@Url.Action("Details", "Tasks")",
+            del: "@Url.Action("DeleteTask", "Tasks")",
+            objectName: "EmpTasks",
+            gridName: "Task" + e.data.Id,
+            recordName: "TaskNo",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            height: 400,
+            columns: [{ field: "Status", values: Res }, { field: "EmployeeChart", template: "<div class='empChart'></div>" }],
+            select: { "Status": Res },
+            toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('+gridname+')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li></ul></div></div>'
+        });
+    }
+
+
+    $("#refreshBtn").click(function(e) {
+        var periodId = $("#PeriodId").val(), subPeriodId = $("#SubPeriodId").val(),
+            grid =  $("#tasksDiv").data("kendoGrid");
+
+        grid.dataSource.transport.options.read.url = "@Url.Action("GetTasksPeriods", "Tasks")?MenuId=@Request.QueryString["MenuId"]&PeriodId=" + periodId + "&SubPeriodId=" + subPeriodId;
+        grid.dataSource.read();
+    });
+
+</script>

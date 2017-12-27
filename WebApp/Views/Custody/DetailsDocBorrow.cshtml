@@ -1,0 +1,171 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<style>
+    .k-slider-horizontal {
+        width: 80% !important;
+    }
+</style>
+
+<div id="BorrowPapers"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var Docs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpDocs));
+    var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //tabs
+        var formId = "PeopleForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+        //Send the serialized model and props to form.js
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "BorrowPapers", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("SaveBorrowPapers", "Custody")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "EmpDocBorrows";
+                    data.companyId = "@compantId";
+                    data.admin = '@admin';
+                    //Unique for Company
+                    data.parentColumn = "CompanyId";
+                    data.parentId = "@compantId";
+                    data.isLocal = true;
+                    //data.HasPanel=false;
+                    data.rtl = @rtl.ToString().ToLower();
+                    data.reqbtns = [];
+
+                    if(funs && funs.length >0)
+                    {
+                        if($.inArray('Download',funs) >= 0)
+                            data.reqbtns.push('Download');
+                        if($.inArray('Upload',funs) >= 0)
+                            data.reqbtns.push('Upload');
+                    }
+                    //Append the form to the div
+                    $("#BorrowPapers").Forms(data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "document", null, model);
+                    if(model.Id == 0)
+                        $("#RecvDate").data("kendoDatePicker").value("");
+                    // change Emp Id
+                    function empChanged() {
+                        var EmpId  = getEmpId();
+                        $.ajax({
+                            async: false,
+                            url: "@Url.Action("GetDocType", "Custody")",
+                            data: {EmpId:EmpId },
+                            dataType: "json",
+                            success: function (res)
+                            {
+                                $("#document").data("kendoMultiSelect").dataSource.data(res);
+                            }
+                        });
+                    };
+
+                    //for emp change (select & autocomplete)
+                    if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', empChanged);
+                    else $("#" + formId).on('change',  "#EmpId", empChanged);
+
+                    if(model.Id >0)
+                    {
+                        $("#"+formId).on("click",".k-multiselect-wrap",function (e) {
+                            var ids = $("#document").data("kendoMultiSelect").value();
+                            var EmpId  = getEmpId();
+                            $.ajax({
+                                async: false,
+                                url: "@Url.Action("GetEditDocType", "Custody")",
+                                data: {DocumentIds:ids.toString(),EmpId:EmpId },
+                            dataType: "json",
+                            success: function (res)
+                            {
+                                $("#document").data("kendoMultiSelect").dataSource.data(res);
+                            }
+                        });
+               
+                    });
+                        $("#document").data("kendoMultiSelect").dataSource.data(Docs);
+                        var multiObject= $("#document").data("kendoMultiSelect");
+                        multiObject.value(model.Document);
+                       
+                    }
+                    //get Employee Id
+                    function getEmpId() {
+                        var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                        return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                    }
+
+                    //Translate The Button saveChanges from ColumnsTilte based on Culture
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                }
+
+
+            });
+        //check Recieve Date Must Greater than Expected DeleverDate 
+
+        $("#"+formId).on("blur","#ExpdelvryDate",function()
+        {
+            var ExpdelvryDate =$(this).data("kendoDatePicker").value();
+            var recvDate = $("#RecvDate").data("kendoDatePicker").value();
+            if (ExpdelvryDate !=null && new Date(ExpdelvryDate).setHours(0, 0, 0, 0) < recvDate.setHours(0, 0, 0, 0))
+                FormJs.addFormError(formId,"ExpdelvryDate","@MsgUtils.Instance.Trls("delverGRthanRecv")");
+           
+        });
+        $("#"+formId).on("blur","#RecvDate",function()
+        {        
+            console.log("hi");
+            var ExpdelvryDate =$("#ExpdelvryDate").data("kendoDatePicker").value();
+            var recvDate = $(this).data("kendoDatePicker").value();
+            if (ExpdelvryDate !=null && new Date(ExpdelvryDate).setHours(0, 0, 0, 0) < recvDate.setHours(0, 0, 0, 0))
+                FormJs.addFormError(formId,"RecvDate","@MsgUtils.Instance.Trls("RecvLethThanDelever")");
+           
+        });
+        $("#"+formId).on("click","#backToIndex",function (e) {
+            $("#renderbody").load(oldulr);
+        });
+
+        $("#"+formId).on("click","#saveChanges",function (e) {
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                model = res;
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+
+            });
+        });
+
+    });
+
+</script>
+@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "PeopleForms" } })
+
+
+
+
+
+

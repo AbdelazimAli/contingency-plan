@@ -1,0 +1,65 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="BenefitServDiv"></div>
+<script>
+    var curr = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.curr));
+    var BenefitId=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BenefitId));
+    var objectName = "BenefitServ";
+    Grids.batchGrid({
+        read: "@Url.Action("GetBenefitServ","BenefitService")?IsGroup=true&Id="+null,
+        create:"@Url.Action("CreateBenefitServ", "BenefitService")?IsGroup=true",
+        update:"@Url.Action("UpdateBenefitServ", "BenefitService")?IsGroup=true",
+        destroy:"@Url.Action("DeleteBenefitServ", "BenefitService")",
+        admin:"@admin",
+        lang:"@User.Identity.GetCulture()",
+        objectName: "BenefitServ",
+        tableName: "BenefitServs",
+        recordName: "Name",
+        gridName: "BenefitServDiv",
+        detailInit:detailInit,
+        columns:[{field:"BenefitId",values:BenefitId},{field:"EmpPercent",template:'#=kendo.format("{0:p0}",EmpPercent/100)#'},{field:"CompPercent",template:'#=kendo.format("{0:p0}",CompPercent/100)#'}],
+        select:{"BenefitId":BenefitId},
+        fields: { EndDate: { defaultValue: null }, StartDate: { defaultValue: new Date(2010, 0) },Code: { editable: false }}
+  
+    });
+    function detailInit(e) {
+
+        var objectName = "BenefitServChild";
+        $("<div id='Bitem" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname = "'Bitem" + e.data.Id + "'";
+        Grids.batchGrid({
+            read: "@Url.Action("GetBenefitServ","BenefitService")?IsGroup=false&Id=" + e.data.Id,
+            create:"@Url.Action("CreateBenefitServ", "BenefitService")?IsGroup=false",
+            update:"@Url.Action("UpdateBenefitServ", "BenefitService")?IsGroup=false",
+            destroy:"@Url.Action("DeleteBenefitServ", "BenefitService")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "BenefitServChild",
+            tableName: "BenefitServs",
+            parentColumnName:"ParentId",
+            parentColumnId:e.data.Id,
+            recordName: "Name",
+            gridName: 'Bitem' + e.data.Id,
+            height: 650,
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            columns: [{field: "Curr", values: curr},{field:"Cost", format:'{0:n2}'}],
+            select: { "Curr": curr  },
+            fields: { EndDate: { defaultValue: null }, StartDate: { defaultValue: new Date(2010, 0) }}
+        });
+    }
+
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "gridName", "BenefitServDiv" }, { "ObjectName", "BenefitServ" }, { "Functions", ViewBag.Functions } })
+
+

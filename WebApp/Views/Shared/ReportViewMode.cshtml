@@ -1,0 +1,168 @@
+﻿@model WebApp.Models.ReportDesignViewModel
+
+@{
+    ViewBag.Title = "Report Viewer";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+<style>
+    .dxrd-toolbar-item-image {
+        float: left;
+    }
+  
+    .img {
+        background-image: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxzdHlsZT4uc3Qwe2ZpbGw6IzNEM0QzRDt9PC9zdHlsZT48cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTggNmwtNC00djRoNHpNMTQgMThoMmw4LTgtMi0yLTggOHoiLz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNMTIgMjB2LTRsNi02VjhoLTZWMkgwdjIwaDE4di00bC0yIDJoLTR6bS02LTRjLTIuMiAwLTQtMS44LTQtNHMxLjgtNCA0LTQgNCAxLjggNCA0LTEuOCA0LTQgNHoiLz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNNiAxMGMtMS4xIDAtMiAuOS0yIDJzLjkgMiAyIDIgMi0uOSAyLTJINnYtMnoiLz48L3N2Zz4=);
+        display: block;
+        background-position: center center;
+        background-size: 24px 24px;
+        background-repeat: no-repeat;
+    }
+    .Exit {
+        background-image: url(data:image/svg+xml;base64,PHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2aWV3Qm94PSIwIDAgMjQgMjQiPjxzdHlsZT4uc3Qwe2ZpbGw6IzNEM0QzRDt9PC9zdHlsZT48cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjIgMTJsLTYtNnY0SDh2NGg4djR6Ii8+PHBhdGggY2xhc3M9InN0MCIgZD0iTTEyIDIwSDJWNGgxMHY0aDJWMkgwdjIwaDE0di02aC0yeiIvPjwvc3ZnPg==);
+        display: block;
+        background-position: center center;
+        background-size: 24px 24px;
+        background-repeat: no-repeat;
+    }
+    #btn{
+        float:right;
+        margin-right:2px;
+        margin-top:2px;
+
+    }
+    #date_js{
+     float:right;
+ 
+    }
+   
+</style>
+<script type="text/html" id="custom-dx-date">
+    <div class="customDate">
+        <div id="date_js" data-bind="dxDateBox: {placeholder:'Select date',value: value.extend({ throttle: 500}), type: 'date',disabled: disabled,onFocusOut:NullVal, showButtonPanel:true,showClearButton:false,dxValidator: {validationRules: validationRules}}">
+     </div>
+        <div><input id="btn" type="button" value="@MsgUtils.Instance.Trls("Today")" onclick="Click(this)"></div>
+    </div>
+@*<script type="text/html" id="custom-dx-button">
+    <div data-bind="dxButton: { text: DevExpress.Designer.getLocalization('إعادة تعيين'), onClick: function() { model.restore(); } , text:'إعادة تعيين'}"/>
+</script>*@
+@*<script type="text/javascript">
+
+    function preloadfunc()
+    {
+
+            $("span.dx-button-text").text("تأكيد");
+           // $("span.dx-button-text:last").text("إعادة تعيين");
+
+    }
+
+    window.onpaint = preloadfunc();
+
+*@
+</script>
+<script type="text/javascript">
+    
+    function NullVal(e) {
+
+        if (e.component.option('text') == '') {
+            e.component.option('value',  new Date('01/01/0001'));
+        }
+    }
+
+        
+    
+   function Click(e)
+   {
+       
+       
+        var obj = new Date();
+        var y = obj.getUTCFullYear();
+        var m = obj.getUTCMonth() + 1;
+        var d = obj.getUTCDate();
+        newdate = y + "/" + m + "/" + d;
+        var dbox = $(e).closest('.customDate').find('#date_js').dxDateBox('instance');
+        dbox.option('value', new Date());
+    }
+
+    function WebDocumentViewer_CustomizeParameterEditors(s, e) {
+      
+       
+        if (e.parameter.name === 'EmpEndDate') {
+            e.info.editor.header = 'custom-dx-date';
+        }
+
+        else if(e.parameter.name === 'EmpStartDate')
+        {
+            e.info.editor.header = 'custom-dx-date'
+
+        }
+        else if (e.parameter.name === 'from') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'to') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'EmpEndDateDetails') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'AssignEndDateEmp') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'ConEmpStartDate') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'ConEmpEndDate') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'AssignEndDate') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+        else if (e.parameter.name === 'EmployeeEndDate') {
+            e.info.editor.header = 'custom-dx-date'
+        }
+    }
+    function CustomizeMenuActions(s, e) {
+        var actions = e.Actions;
+        actions.push({
+            container: "toolbar",
+            imageClassName: "img",
+            text: "Go To Design Mode",
+            disabled: ko.observable(false),
+            visible: true,
+            hasSeparator: true,
+            clickAction: function (report) {
+                console.log(report);
+                window.location.href = "@Url.Action("ReportDesignMode", Model.Controller, new { id = Model.ReportId, name = Model.ReportName, icon = Model.Icon, controller = Model.Controller })";
+            }
+        });
+        actions.push({
+            container: "toolbar",
+            imageClassName: "Exit",
+            text: "Back To List",
+            disabled: ko.observable(false),
+            visible: true,
+            hasSeparator: true,
+            clickAction: function () {
+                var loc = window.location.href.split("@Model.Controller")[0];
+                window.location = loc;
+            }
+        });
+    }
+    function SetDefaultZoom(s,e)
+    {
+        s.previewModel.reportPreview.zoom(1);
+    }
+</script>
+
+
+@Html.DevExpress().WebDocumentViewer(settings =>
+{
+    settings.Name = "WebDocumentViewer";
+    settings.ClientSideEvents.CustomizeMenuActions = "CustomizeMenuActions";
+    settings.ClientSideEvents.CustomizeParameterEditors = "WebDocumentViewer_CustomizeParameterEditors";
+    //settings.ClientSideEvents.Init = "preloadfunc";
+    settings.ClientSideEvents.Init = "SetDefaultZoom";
+
+}).Bind(Model.Report).GetHtml()
+
+

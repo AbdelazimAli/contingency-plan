@@ -1,0 +1,68 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var admin = User.IsInRole("Admin");
+    string[] function = ViewData["Functions"] as string[];
+
+}
+<br />
+
+<div id="UserLogDiv"></div>
+
+<script>
+    var objectName = "UserLogs";
+    var gridname1 = "'UserLogDiv'";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadUserLog", "Users")",
+        objectName: "UserLogs",  // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+        gridName: "UserLogDiv",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        toolbar: kendo.template($("#Newtemplate").html()),
+    });
+
+</script>
+<script type="text/x-kendo-template" id="Newtemplate">
+    <div style="@(rtl ? "float: left" : "float: right")">
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('UserLogDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }       
+                 </ul>
+        </div>
+    </div>
+</script>
+
+
+
+
+
+
+
+
+

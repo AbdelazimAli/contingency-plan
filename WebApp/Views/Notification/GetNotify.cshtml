@@ -1,0 +1,40 @@
+﻿@using Model.ViewModel
+@using System.Web.Script.Serialization
+@model NavBarItemVM
+
+@{
+    Layout = null;
+}
+
+
+
+<table class="table">
+    <tr>
+        <td>
+            <span style="color:red">@MsgUtils.Instance.Trls("Subject:")</span>
+        </td>
+        <td colspan="3">
+            <span>@Model.From</span>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <span style="color:red">@MsgUtils.Instance.Trls("Message:")</span>
+        </td>
+        <td colspan="3">
+            <div id="editField">
+            </div>
+        </td>
+    </tr>
+</table>
+
+<script>
+
+    var model = @Html.Raw((new JavaScriptSerializer().Serialize(Model)));
+
+    $(document).ready(function(){        
+        $("#editField").append('<textarea id="editor">'+model.Message+'</textarea>')
+        var edit = $("#editor").kendoEditor({ resizable: { content: true, toolbar: true } }).data("kendoEditor");
+        $($("#editor").getKendoEditor().body).attr("contenteditable",false);
+    });
+</script>

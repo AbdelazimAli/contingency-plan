@@ -1,0 +1,188 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="pageTabs"></div>
+<script>
+    $(function () {
+        FormJs.DrawTabs("pageTabs");
+
+        $("#t_EmployeeTrainPath").click(function () {
+            $("#tab_TrainPathInformation").empty();
+            $('#tab_EmployeeTrainPath').load("@Url.Action("TrainPathPeople", "Training")?Id="+@Model.Id +"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        $("#t_TrainPathInformation").click(function () {
+            $("#tab_TrainPathInformation").append('<div id="TrainPathDiv"></div>');
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+            var formId = "TrainPathForm";
+            var Payrolls = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payrolls));
+            var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
+            var PeopleGroups = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroups));
+            var CompanyStuctures = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyStuctures));
+            var Positions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Positions));
+            var PayrollGrades = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrades));
+            var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+            var Qualification = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Qualification));
+            var course= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Course));
+
+            var read = "@Request.QueryString["Read"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "TrainPath", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormId = formId;
+                    data.TableName ="LeaveTypes";
+                    data.FormAction = "@Url.Action("DetailsTrainPath", "Training")";
+                    data.Culture = "@User.Identity.GetCulture()";
+                    data.rtl = @rtl.ToString().ToLower();
+                    if(read == 1) data.mode = 'show';
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = "@admin";
+                    $("#TrainPathDiv").Forms(data, model);
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                    $("#" + formId).on('blur', "#EndDate",function(){
+                        var elem = $(this);
+                        if($('#StartDate').val() != ""){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#StartDate').next("span.k-tooltip-validation").remove();
+                        }
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+
+                        if(elem.val()!=""){
+                            var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                            if(valueinDays > 0){
+                                if (elem && !elem.hasClass("k-invalid")) {
+                                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                                }
+                            }
+                        }
+                    });
+                    $("#" + formId).on('blur','#StartDate', function(){
+                        var elem = $(this);
+                        if(elem.val() != ""){
+                            var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                            if(valueinDays > 0 && $('#EndDate').val() != ""){
+                                if (elem && !elem.hasClass("k-invalid")) {
+                                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                                }
+                            }
+                            else{
+
+                                $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                                $('#EndDate').next("span.k-tooltip-validation").remove();
+                                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                                elem.next("span.k-tooltip-validation").remove();
+                            }
+                        }
+                    });
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payrolls, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroups, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", CompanyStuctures, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Positions, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrades, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Locations, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "Qualification", Qualification, model,{objectName: "Qualifications" });
+
+                    $("div[name=CourseGrid]").prepend('<div id="TrainPathCourseDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                    var gridname = "'TrainPathCourseDiv'";
+                    Grids.batchGrid({
+                        read: "@Url.Action("ReadTrainPathCourse", "Training")?TrainPathId=" +model.Id,
+                        create: "@Url.Action("CreateTrainPathCourse", "Training")",
+                        update: "@Url.Action("UpdateTrainPathCourse", "Training")",
+                        destroy: "@Url.Action("DeleteTrainPathCourse", "Training")",
+                        lang: "@User.Identity.GetCulture()",
+                        parentColumnName:"TrainPath_Id",
+                        parentColumnId:model.Id,
+                        objectName: "TrainPathCourses",
+                        admin: "@admin",
+                        lang: "@User.Identity.GetCulture()",
+                        toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                        recordName: "TrainCourse_Id",
+                        gridName: "TrainPathCourseDiv",
+                        height:300,
+                        columns: (read == 1 ? [{ field: "Delete", input: "none"},{ field: "TrainCourse_Id", values: course}]: [{ field: "Delete", input: ""},{ field: "TrainCourse_Id", values: course}]),
+                        select: { "TrainCourse_Id":course},
+                        save:function(e){
+                            var grid = $("#TrainPathCourseDiv").data("kendoGrid");
+                            if (e.values.TrainCourse_Id && e.values.TrainCourse_Id != e.model.TrainCourse_Id) {
+                                var mode= $("#TrainPathCourseDiv").data("kendoGrid").dataSource.data();
+                                var arr = [];
+                                for (var i = 0; i < mode.length; i++) {
+                                    arr.push(mode[i].TrainCourse_Id);
+                                }
+                                if(arr.includes(e.values.TrainCourse_Id )) {
+                                    var columnsArray=grid.dataSource.data();
+                                    grid.table.find(".errorCell").each(function () {
+                                        $(this).removeClass("errorCell k-invalid");
+                                    });
+                                    $(e.container[0]).addClass("k-invalid errorCell");
+                                    $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.TrainCourse_Id+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("Entered data already exists")<div class="k-callout k-callout-n"></div></div>'));
+                                }
+                                else $(e.container[0]).removeClass("k-invalid errorCell");
+                            }
+                        }
+                    });
+                    var sets = $("#" + formId).find(".set");
+                    for(var i=0; i<sets.length; i++){
+                        if($(sets[i]).children(".sections").children().length == 0)
+                            $(sets[i]).remove();
+                    }
+                },
+                error: function (data) {
+                }
+            });
+            // Find Button BackToindex and bind for Click
+            $('#TrainPathDiv').on('click',"#backToIndex",null, function(){
+                $("#renderbody").load(oldulr);
+            });
+            // Save  Form
+            $("#TrainPathDiv").on('click',"#saveChanges",null, function (e) {
+
+                if($('#TrainPathCourseDiv').find(".errorCell").length > 0) return ;
+                else{
+
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+
+
+                        saveClick("TrainPathCourseDiv");
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                }
+            });
+            function saveClick(name) {
+                if($("#TrainPathCourseDiv").find(".errorCell").length>0) return;
+                $('#' + name).data("kendoGrid").saveChanges();
+            }
+        });
+        $("#t_TrainPathInformation").click();
+
+    });
+</script>
+
+
+
+

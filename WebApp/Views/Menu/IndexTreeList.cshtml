@@ -1,0 +1,96 @@
+﻿
+@{
+    ViewBag.Title = "IndexTreeList";
+
+}
+<div id="treelist"></div>
+
+@section Scripts{
+
+<script>
+
+    $("#treelist").kendoTreeList({
+        height: 540,
+        editable: {
+            move: true
+        },
+        dragAndDrop: true,
+        columns: [
+            { field: "Name", type: "string" },
+            { field: "MenuLevelText", type: "string" }
+        ],
+        dataSource: {
+            transport: {
+                read: {
+                    url: "@Url.Action("ReadMenu","Menu")",
+                    datatype: "json"
+                },
+                update: {
+
+                    url: "@Url.Action("UpdateMenu", "Menu")" ,
+                    datatype:"json"
+                },
+                parameterMap: function (options, operation) {
+                    if (operation !== "read" && options.models) {
+                        options = kendo.stringify(options.models);
+                        return { models: kendo.stringify(options.models) }
+                    }
+
+                }
+            },
+            batch:true,
+            schema: {
+                model: {
+                    id: "Id",
+                    parentId: "ParentId",
+                    fields: {
+                        Id: { field: "Id", type: "number" },
+                        ParentId: { field: "ParentId", nullable: true },
+                    },
+                    expanded: true
+
+                }
+            }
+        },
+        drop: function (e) {
+            var dest = {};
+            dest.Id = e.destination.Id;
+            dest.MenuLevel = e.destination.MenuLevel;
+            dest.ParentId = e.destination.ParentId;
+            dest.Sort = e.destination.Sort;
+            dest.Order = e.destination.Order;
+       
+            var source = {};
+            source.Id = e.source.Id;
+            source.MenuLevel = e.source.MenuLevel;
+            source.ParentId = e.source.ParentId;
+            source.Sort = e.source.Sort;
+            source.CompanyId = e.source.CompanyId;
+            source.Name = e.source.Name;
+            source.Menu = e.source.Menu;
+            source.Url = e.source.Url;
+            source.Icon = e.source.Icon;
+
+            $.ajax({
+                url: "@Url.Action("DropMenuItem", "Menu")",
+                type: 'POST',
+                dataType: 'json',
+                data: JSON.stringify({source: source, dest: dest}),
+                contentType: 'application/json',
+                success: function (result) {
+                    if (result != "OK")
+                        toastr.error(result);
+                },
+                error: function (result) {
+                    // toastr.error(result.responseText);
+                    console.log(result);
+                }
+               }
+            );
+        }
+    });
+
+    </script>
+    
+    }
+

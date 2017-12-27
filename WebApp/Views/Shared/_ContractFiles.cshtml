@@ -1,0 +1,43 @@
+﻿@using Model.ViewModel.Personnel
+@model IEnumerable<ChartViewModel>
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+}
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th style="text-align:center">Icon</th>
+            <th style="text-align:center">Name</th>
+            <th style="text-align:center">Download</th>
+
+        </tr>
+    </thead>
+    <tbody>
+        
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td style="text-align:center">
+                    <span class="show">
+                        <img src="/Content/Free-file-icons/48px/vnd.openxmlformats-officedocument.wordprocessingml.document.png" />
+                    </span>
+                </td>
+                <td style="text-align:center">
+                    <p>
+                        @item.category
+                    </p>
+                </td>
+                <td style="text-align:center">
+                    <p class="name">
+                        <a href="@item.color" target="#">@item.category</a>
+                    </p>
+                </td>
+            </tr>
+        }
+
+    </tbody>
+</table>
+
+

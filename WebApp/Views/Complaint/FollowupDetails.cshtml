@@ -1,0 +1,145 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model ComplaintRequestViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+
+<br />
+<br />
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+
+
+<script>
+    var model;
+
+    FormJs.DrawTabs("pageTabs"); // "ComplaintFollw"
+
+    $("#t_WorkFollow").click(function(){
+        $('#tab_WorkFollow').load("@Url.Action("WorkFlow", "Log")?Source=Complaint"+@Model.Against+"&SourceId=@compantId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=ComplaintReqFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+
+    });
+
+    $("#t_AuditLog").click(function(){
+        $('#tab_AuditLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=ComplaintReqFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GenralInfo").click(function () {
+        $("#tab_GenralInfo").html("<div id='complaintFollowupDiv'></div>");
+        FollowUpForm();
+    });
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var formId = "FollowUpForm";
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    function FollowUpForm()
+    {
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var RejectReason = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RejectReason));
+        var ApprovalStatus = [{ id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },{ id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },{ id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+        var ComplainType = [{ id: 1, name: "@MsgUtils.Instance.Trls("Complaint")" }, { id: 2, name: "@MsgUtils.Instance.Trls("Grievance")" }, { id: 3, name: "@MsgUtils.Instance.Trls("Enquiry")" }];
+        var Against = [{ id: 1, name: "@MsgUtils.Instance.Trls("Employee")" }, { id: 2, name: "@MsgUtils.Instance.Trls("Manager")" }, { id: 3, name: "@MsgUtils.Instance.Trls("Procedure")" }, { id: 4, name: "@MsgUtils.Instance.Trls("ComplainTypeDecision")" }, { id: 5, name: "@MsgUtils.Instance.Trls("Other")" }];
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'ComplaintReqFollowUpForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("SaveFollowupDetails", "Complaint")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "ComplainRequests";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+
+            $("#complaintFollowupDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", ApprovalStatus, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ComplainType", ComplainType, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Against", Against, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "RejectReason", RejectReason, model);
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            @*$("#" + formId).find('#Documents').val('@MsgUtils.Instance.Trls("Documents")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');*@
+            if(read != 1) {
+                $("#"+ formId + " #RequestDate").data("kendoDatePicker").readonly();
+                $("#"+ formId + " #EmpId").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #ComplainType").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #Against").data("kendoDropDownList").readonly();
+                $("#"+ formId + " #Description").parents(".form-group").css("enable",false);
+            }
+            $("#" + formId).find("#CancelDesc").parents(".form-group").css("display","none");
+            $("#" + formId).find("#CancelReason").parents(".form-group").css("display","none");
+
+
+            if(model.ApprovalStatus != 9) $("#" + formId + " div[name='rejectSec']").parents(".set").css("display","none");
+
+            $("#complaintFollowupDiv").on("click","#saveChanges",null,function (e) {
+                if(!$("#" + formId + " .k-invalid").length) {
+                    FormJs.saveForm($("#"+formId), $(this),function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(ulr);
+                    });
+                }
+            });
+
+            $("#complaintFollowupDiv").on("change","#ApprovalStatus",null,function(){
+                var value = $(this).val();
+                if( value == 9)
+                {
+                    $("div[name='rejectSec']").parents(".set").css("display","");
+                }else
+                {
+                    $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none")
+                }
+                // value != 5 ? $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none") : $("div[name='rejectSec']").parents(".set").css("display","");
+
+            });
+            var additinalBtns=''; //'<input type="button" name="Documents" isvisible="true" class="btn btn-info back button" value="@MsgUtils.Instance.Trls("Documents")" id="Documents">';
+            if(read != 1)  additinalBtns += '<button  name="SaveChanges" isvisible="true" class="btn btn-success submit button "  onClick="return false;" id="saveChanges">@MsgUtils.Instance.Trls("SaveChanges")</button>';
+            //additinalBtns += '<input type="button" name="backToIndex" isvisible="true" class="btn btn-default back button" value="@MsgUtils.Instance.Trls("backToIndex")" id="backToIndex">';
+            $("#complaintFollowupDiv").append(additinalBtns);
+
+            $("#Documents").on("click", function() {
+                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=ComplaintRequest&SourceId="+ @Model.Id).center().open();
+                $("#Documents").fadeOut();
+            });
+        });
+
+
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("complaintFollowup")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr").length);
+                $("#docWindow").empty();
+            }
+        });
+
+
+    }
+
+    $("#t_GenralInfo").click();
+
+
+</script>
+

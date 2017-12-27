@@ -1,0 +1,46 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<div id="msgDiv"></div>
+
+<script>
+    Grids.indexGrid({
+        read: "@Url.Action("GetMessageTemp", "Notification")",
+        show: "@Url.Action("Details", "Notification")",
+        edit: "@Url.Action("Details", "Notification")",
+        del: "@Url.Action("DeleteMessageTemp", "Notification")",
+        objectName: "MsgTemplate",  // name of the page or table name used to create local db key
+        gridName: "msgDiv",
+        recordName: "Name",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{field:"Body",template:"<div class='MyBody'>#: Body #</div>"}],
+        dataBound: function (e) {
+            var grid= this.gridName;
+            $("#"+grid).find(".MyBody").each(function(){
+                var row = $(this).closest("tr");
+                var model = $("#"+grid).getKendoGrid().dataItem(row);
+                model.set("Body",decodeHtml(model.Body))
+            });
+        }
+    });
+    function decodeHtml(html)
+    {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        var bodyTxt=txt.value.replace(/<[^>]*>/g,'').replace(/&nbsp;/gi,'');
+        return bodyTxt.toString();
+    }
+</script>
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "Notification") },
+    { "Admin", admin}, { "GridName", "msgDiv" } , {"Functions",ViewBag.Functions}})

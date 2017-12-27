@@ -1,0 +1,266 @@
+﻿<div id="Jobtab" class="omegaform rtl">
+    <form action="/Job/Details/1028" method="post" version="0" objectname="Job" companyid="0" tablename="Jobs" formtitle="Jobs" culture="ar-EG" islocal="true" parentcolumn="CompanyId" parentid="0" id="JopForm" data-role="validator" novalidate="novalidate">
+        <div class="panel panel-default">
+            <div class="panel-heading row">
+                <div class="panel-title col-xs-12 col-sm-6">
+                    <span class="panelicon glyphicon glyphicon-pencil"> </span> <span class="paneltitle" name="Jobs" id="titleLbl" data-default=" الوظائف " style="display: inline;"><span class="lblSpan">  الوظائف </span></span>
+                </div>
+                <hr class="visible-xs-block clearfix">
+                <div class="editarea  col-sm-6 col-xs-12">
+                    <div class="switch">
+                        <input id="switchDesign" type="checkbox" class="k-valid">
+                        <div class="slider"></div>
+                        <span></span>
+                    </div>
+                    <button type="button" id="saveDesignBtn" class="btn btn-info" style="display: none;"><span class="glyphicon glyphicon-floppy-disk"> </span> حفظ </button>
+                    <button type="button" id="resetBtn" class="btn btn-danger" style="display: none;"><span class="glyphicon glyphicon-repeat"> </span> التعيين </button>
+                </div>
+                <div class="clearfix"></div>
+            </div>
+            <div class="panel-body sets-container " data-role="sortable" style="touch-action: none;">
+                <fieldset name="Basic Data" id="34" class="set panel lblEditable panel-default">
+                    <legend class="set-title ">
+                        <button type="button" class="btn btn-primary o-collabsebtn" data-parent="#JopForm" data-toggle="collapse" href="#Sec34" data-default="المعلومات الأساسية" id="34_0" style="display: inline;"><span class="glyphicon glyphicon-chevron-up"></span><span class="lblSpan">المعلومات الأساسية</span></button>
+                    </legend>
+                    <div id="Sec34" class="sections panel-body  collapse in" data-role="sortable" style="touch-action: none;">
+                        <div name="JobCodeSec" id="88" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="Code" class="control-label col-md-4 col-lg-4" data-default="الكود" id="88_0" style="display: inline;"><span class="lblSpan" style="color: rgb(213, 5, 5);">الكود</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="text" value="1" name="Code" isvisible="true" formreq="formreq" isunique="true" id="Code" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group checkbox">
+                                <label for="IsLocal" data-default="خاص بالشركة" id="88_1" style="display: inline;">
+                                    <input type="checkbox" name="IsLocal" isvisible="true" formreq="formreq" id="IsLocal"><span class="lblSpan" style="color: rgb(213, 5, 5);">خاص بالشركة</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div name="JobNameSec" id="89" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="Name" class="control-label col-md-4 col-lg-4" data-default="الاسم" id="89_0" style="display: inline;"><span class="lblSpan" style="color: rgb(213, 5, 5);">الاسم</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="text" value="محلل مالي" name="Name" isvisible="true" formreq="formreq" isunique="true" id="Name" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="NameInInsurance" class="control-label col-md-4 col-lg-4" data-default="المسمي التأميني" id="89_1" style="display: inline;"><span class="lblSpan">المسمي التأميني</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="text" value="محلل مالي" name="NameInInsurance" isvisible="true" id="NameInInsurance" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div name="payrollgradeSec" id="92" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="LName" class="control-label col-md-4 col-lg-4" data-default="الأسم المحلي" id="92_0" style="display: inline;"><span class="lblSpan">الأسم المحلي</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="text" value="محلل مالي" name="LName" isvisible="true" id="LName" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="DefaultGradeId" class="control-label col-md-4 col-lg-4" data-default="الدرجه المالية الافتراضيه" id="92_1" style="display: inline;"><span class="lblSpan">الدرجه المالية الافتراضيه</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span title="" class="k-widget k-dropdown k-header form-control" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="DefaultGradeId_listbox" aria-disabled="false" aria-busy="false" aria-activedescendant="d83bfd92-51fb-48dd-ab8a-52e2263b3109" style="cursor: pointer;">
+                                        <span unselectable="on" class="k-dropdown-wrap k-state-default">
+                                            <span unselectable="on" class="k-input"> </span><span unselectable="on" class="k-select" aria-label="select"><span class="k-icon k-i-arrow-s"></span></span>
+                                        </span>
+                                        <select allowed="true" name="DefaultGradeId" isvisible="true" id="DefaultGradeId" class="form-control" style="cursor: pointer; display: none;" objectname="PayrollGrades" data-role="dropdownlist">
+                                            <option value="" selected="selected"> </option>
+                                            <option value="145">G1.1</option>
+                                            <option value="146">G1.2</option>
+                                            <option value="147">G2.1</option>
+                                            <option value="148">G2.2</option>
+                                        </select>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div name="DateSec" id="91" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="StartDate" class="control-label col-md-4 col-lg-4" data-default="تاريخ بداية التأثير" id="91_0" style="display: inline;"><span class="lblSpan" style="color: rgb(213, 5, 5);">تاريخ بداية التأثير</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span class="k-widget k-datepicker k-header form-control" style="">
+                                        <span class="k-picker-wrap k-state-default">
+                                            <input type="text" value="2000-01-01" name="StartDate" isvisible="true" formreq="formreq" id="StartDate" class="form-control  k-input" data-type="date" data-role="datepicker" role="combobox" aria-expanded="false" aria-owns="StartDate_dateview" aria-disabled="false" style="width: 100%;"><span unselectable="on" class="k-select" aria-label="select" role="button" aria-controls="StartDate_dateview"><span class="k-icon k-i-calendar"></span></span>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="EndDate" class="control-label col-md-4 col-lg-4" data-default="تاريخ نهاية التأثير" id="91_1" style="display: inline;"><span class="lblSpan">تاريخ نهاية التأثير</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span class="k-widget k-datepicker k-header form-control" style="">
+                                        <span class="k-picker-wrap k-state-default">
+                                            <input type="text" name="EndDate" isvisible="true" id="EndDate" class="form-control  k-input" data-type="date" data-role="datepicker" role="combobox" aria-expanded="false" aria-owns="EndDate_dateview" aria-disabled="false" style="width: 100%;"><span unselectable="on" class="k-select" aria-label="select" role="button" aria-controls="EndDate_dateview"><span class="k-icon k-i-calendar"></span></span>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div name="JobClassesSec " id="90" class="form-horizontal section row">
+                            <div class="form-group ">
+                                <label for="IJobClasses" class="control-label col-md-2 col-lg-2" data-default="تصنيف الوظيفة" id="90_0" style="display: inline;"><span class="lblSpan">تصنيف الوظيفة</span></label>
+                                <!--</label-->
+                                <div class="col-md-10 col-lg-10">
+                                    <div class="k-widget k-multiselect k-header form-control" deselectable="on" title="" style="cursor: pointer;">
+                                        <div class="k-multiselect-wrap k-floatwrap" deselectable="on">
+                                            <ul role="listbox" deselectable="on" class="k-reset" id="IJobClasses_taglist"></ul>
+                                            <input class="k-input k-readonly" style="width: 25px" accesskey="" autocomplete="off" role="listbox" title="" aria-expanded="false" tabindex="0" aria-owns="IJobClasses_taglist IJobClasses_listbox" aria-disabled="false" aria-busy="false"><span deselectable="on" class="k-icon k-i-close" title="clear" role="button" tabindex="-1"></span><span class="k-icon k-i-loading k-loading-hidden"></span>
+                                        </div>
+                                        <select multiple="multiple" value="" name="IJobClasses" isvisible="true" id="IJobClasses" class="form-control" style="cursor: pointer; display: none;" data-role="multiselect" aria-disabled="false"></select><span style="font-family: cairo, tahoma; font-size: 14px; font-stretch: 100%; font-style: normal; font-weight: 400; letter-spacing: normal; text-transform: none; line-height: 18.34px; position: absolute; visibility: hidden; top: -3333px; left: -3333px;"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset name="Administration Data" id="35" class="set panel lblEditable panel-default">
+                    <legend class="set-title ">
+                        <button type="button" class="btn btn-primary o-collabsebtn" data-parent="#JopForm" data-toggle="collapse" href="#Sec35" data-default="بيانات الإدارة" id="35_0" style="display: inline;"><span class="glyphicon glyphicon-chevron-up"></span><span class="lblSpan">بيانات الإدارة</span></button>
+                    </legend>
+                    <div id="Sec35" class="sections panel-body  collapse in" data-role="sortable" style="touch-action: none;">
+                        <div name="PlannedSec " id="94" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="PlanCount" class="control-label col-md-4 col-lg-4" data-default="حجم العماله المخطط" id="94_0" style="display: inline;"><span class="lblSpan">حجم العماله المخطط</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="number" value="8" name="PlanCount" isvisible="true" id="PlanCount" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="PlanTurnOverRate" class="control-label col-md-4 col-lg-4" data-default="معدل الدوران المخطط" id="94_1" style="display: inline;"><span class="lblSpan">معدل الدوران المخطط</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="number" name="PlanTurnOverRate" isvisible="true" id="PlanTurnOverRate" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        <div name="PropagationSec " id="95" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="ProbationPeriod" class="control-label col-md-4 col-lg-4" data-default="فترة الاختبار بالشهور" id="95_0" style="display: inline;"><span class="lblSpan">فترة الاختبار بالشهور</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="number" name="ProbationPeriod" isvisible="true" id="ProbationPeriod" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group checkbox">
+                                <label for="PrimaryRole" data-default="دورا رئيسيا" id="95_1" style="display: inline;">
+                                    <input type="checkbox" checked="" name="PrimaryRole" isvisible="true" formreq="formreq" id="PrimaryRole"><span class="lblSpan" style="color: rgb(213, 5, 5);">دورا رئيسيا</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div name="ContractTemplSec" id="96" class="form-horizontal section row">
+                            <div class="form-group ">
+                                <label for="ContractTempl" class="control-label col-md-2 col-lg-2" data-default="نموذج عقد" id="96_0" style="display: inline;"><span class="lblSpan">نموذج عقد</span></label>
+                                <!--</label-->
+                                <div class="col-md-10 col-lg-10">
+                                    <input type="file" name="ContractTempl" isvisible="true" id="ContractTempl" class="form-control"><span> </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset name="Working Schedule" id="36" class="set panel lblEditable panel-default">
+                    <legend class="set-title ">
+                        <button type="button" class="btn btn-primary o-collabsebtn" data-parent="#JopForm" data-toggle="collapse" href="#Sec36" data-default="جدول العمل" id="36_0" style="display: inline;"><span class="glyphicon glyphicon-chevron-down"></span><span class="lblSpan">جدول العمل</span></button>
+                    </legend>
+                    <div id="Sec36" class="sections panel-body  collapse " data-role="sortable" style="touch-action: none;">
+                        <div name="WorkingHourSec" id="97" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="WorkHours" class="control-label col-md-4 col-lg-4"><span class="lblSpan">عدد ساعات العمل</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <input type="number" value="9" name="WorkHours" isvisible="true" id="WorkHours" class="form-control">
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="Frequency" class="control-label col-md-4 col-lg-4"><span class="lblSpan">المعدل</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span title="" class="k-widget k-dropdown k-header form-control" unselectable="on" role="listbox" aria-haspopup="true" aria-expanded="false" tabindex="0" aria-owns="Frequency_listbox" aria-disabled="false" aria-busy="false" aria-activedescendant="013cc1ff-0f22-48f4-aefd-dba80710b865" style="cursor: pointer;">
+                                        <span unselectable="on" class="k-dropdown-wrap k-state-default">
+                                            <span unselectable="on" class="k-input">يوم</span><span unselectable="on" class="k-select" aria-label="select"><span class="k-icon k-i-arrow-s"></span></span>
+                                        </span>
+                                        <select allowed="true" name="Frequency" isvisible="true" codename="Frequency" id="Frequency" class="form-control" data-role="dropdownlist" style="cursor: pointer; display: none;">
+                                            <option value=""> </option>
+                                            <option value="1" selected="selected">يوم</option>
+                                            <option value="2">اسبوع</option>
+                                            <option value="3">شهر</option>
+                                            <option value="4">سنه</option>
+                                        </select>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div name="TimeSec" id="98" class="form-inline section row">
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="StartTime" class="control-label col-md-4 col-lg-4"><span class="lblSpan">وقت بداية العمل</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span class="k-widget k-timepicker k-header form-control" style="">
+                                        <span class="k-picker-wrap k-state-default">
+                                            <input type="text" name="StartTime" isvisible="true" id="StartTime" class="form-control  k-input" data-type="time" data-role="timepicker" role="combobox" aria-expanded="false" aria-owns="StartTime_timeview" aria-disabled="false" style="width: 100%;"><span unselectable="on" class="k-select" aria-label="select" role="button" aria-controls="StartTime_timeview"><span class="k-icon k-i-clock"></span></span>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="form-group  col-md-6 col-lg-6">
+                                <label for="EndTime" class="control-label col-md-4 col-lg-4"><span class="lblSpan">وقت نهاية العمل</span></label>
+                                <!--</label-->
+                                <div class="col-md-8 col-lg-8">
+                                    <span class="k-widget k-timepicker k-header form-control" style="">
+                                        <span class="k-picker-wrap k-state-default">
+                                            <input type="text" name="EndTime" isvisible="true" id="EndTime" class="form-control  k-input" data-type="time" data-role="timepicker" role="combobox" aria-expanded="false" aria-owns="EndTime_timeview" aria-disabled="false" style="width: 100%;"><span unselectable="on" class="k-select" aria-label="select" role="button" aria-controls="EndTime_timeview"><span class="k-icon k-i-clock"></span></span>
+                                        </span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset id="37" class="set panel frozen panel-default">
+                    <div id="Sec37" class="sections panel-body  collapse in">
+                        <div name="btnSec" id="99" class="form-inline section row " style="direction: rtl;">
+                            <div class="form-group ">
+                                <!--</label-->
+                                <div>
+                                    <input type="button" name="saveChanges" isvisible="true" class="btn btn-success   submit button" value="حفظ التعديلات" onclick="return false;" id="saveChanges" accesskey="s">
+                                </div>
+                            </div>
+                            <div class="form-group ">
+                                <!--</label-->
+                                <div>
+                                    <input type="button" name="Contracts" isvisible="true" class="btn btn-success  button" id="Contracts" value="عقد">
+                                </div>
+                            </div>
+                            <div class="ModifyInfo">
+                                <div><b>المستخدم المُنشئ:&nbsp;</b> seham&nbsp;&nbsp;-&nbsp;&nbsp;<b>وقت الإدخال:&nbsp;</b> ١٨‏/١٠‏/٢٠١٦</div>
+                                <div><b>مستخدم التعديل:&nbsp;</b> seham&nbsp;&nbsp;-&nbsp;&nbsp;<b>تاريخ التعديل:&nbsp;</b> ١٦‏/٥‏/٢٠١٧</div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <input type="hidden" id="Id" name="Id" value="1028" class="">
+            </div>
+        </div>
+    </form>
+    <div id="addSelectWindow"></div>
+    <div class="modal fade" id="InfoPopupForm-Job" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" id="InfoBtn" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+                    <h4 class="modal-title" id="FormModalLabel">ColumnProperties</h4>
+                </div>
+                <div id="FormColumnProp-Job" class="modal-body" tabindex="0"></div>
+            </div>
+        </div>
+    </div>
+</div>

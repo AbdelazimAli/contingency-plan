@@ -1,0 +1,56 @@
+﻿
+
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var admin = User.IsInRole("Admin");
+    string[] function = ViewData["Functions"] as string[];
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Periods" } })
+<div id="PeriodDiv"></div>
+
+<script>
+    var addUrl = "@Url.Action("Details", "Discipline")";
+    RequestFilters.ApplayAllFilters([], {}, "PeriodDiv", "@Url.Action("ReadDisplinePeriod", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+    var SysType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SysType));
+    var Frequency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Frequency));
+
+    var columns = [
+                    {field:"SysType",values:SysType},
+                    {field:"Frequency",values:Frequency},
+                    { field: "Name", locked: true }
+    ];
+
+    Grids.indexGrid({
+        read: "@Url.Action("ReadDisplinePeriod", "Discipline")?MenuId=@Request.QueryString["MenuId"]",
+        show:"@Url.Action("Details", "Discipline")",
+        edit: "@Url.Action("Details", "Discipline")",
+        del: "@Url.Action("DeleteDisplinePeriod", "Discipline")",
+        objectName: "DisplinPeriod",  // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+        gridName: "PeriodDiv",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: columns,
+        toolbar:'<div></div>',
+        select: { "SysType": SysType ,"Frequency":Frequency },
+    });
+
+</script>
+
+
+
+
+
+
+
+

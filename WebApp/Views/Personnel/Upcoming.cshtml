@@ -1,0 +1,107 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetLanguage();
+}
+<style>
+    #upcomingDiv .title {
+        font-size: 18px;
+        font-weight: bold;
+        margin: 5px;
+        padding: 2px;
+    }
+
+    #upcomingDiv .sub-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin: 5px 5px 15px 15px;
+        color: #808080;
+    }
+
+    #upcomingDiv .details {
+        border: thin solid rgba(222, 222, 222, 0.40);
+        margin: 5px;
+        padding: 10px;
+    }
+
+    #holidaysDiv .details > div {
+        margin-bottom: 15px !important;
+    }
+
+    #leavesDiv .leaveItem {
+        text-align: center;
+    }
+
+    #leavesDiv img {
+        width: 50px;
+        height: 50px;
+    }
+
+</style>
+
+
+<div id="upcomingDiv" class="omegaform @(rtl ? "rtl" : "")" >
+    <div id="leavesDiv">
+        <div class="title">@MsgUtils.Instance.Trls("Who is off") :</div>
+        <div class="details">
+            <div class="sub-title">@MsgUtils.Instance.Trls("Today") :</div>
+            <div id="todayDiv"></div>
+            <hr />
+            <div class="sub-title">@MsgUtils.Instance.Trls("Tomorrow") :</div>
+            <div id="tomorrowDiv"></div>
+        </div>
+    </div>
+    <hr/>
+    <div id="holidaysDiv">
+        <div class="title">@MsgUtils.Instance.Trls("Holidays") :</div>
+        <div class="details"></div>
+    </div>
+</div>
+
+<script>
+    $(function () {
+        var upcomingModel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var holidays = upcomingModel.holidays, leaves = upcomingModel.leaves,
+            htmlTxt = "", todayMarkup = "", tomorrowMarkup = "";
+
+        //Leaves
+        for(var i=0; i<leaves.length; i++) {
+
+            if(leaves[i].Day == 1 ) //Today
+            {
+                todayMarkup += "<div class='col-md-2 leaveItem'>"
+                + "<span class='photo'><img src='"+ (leaves[i].HasImage ? + "../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/" + leaves[i].EmpId + ".jpeg?dummy=" + (new Date().getTime()) : "/SpecialData/Photos/noimage.jpg") +  "' class='img-circle'></span>"
+                + "<div><span>"+ leaves[i].Employee + "</span></div>"
+                + "</div>";
+            }
+            else if(leaves[i].Day == 2) //Tomorrow
+            {
+                tomorrowMarkup += "<div class='col-md-2 leaveItem'>"
+                    + "<span class='photo'><img src='" + (leaves[i].HasImage ? + "../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/" + leaves[i].EmpId + ".jpeg?dummy=" + (new Date().getTime()) : "/SpecialData/Photoss/noimage.jpg") +  "' class='img-circle'></span>"
+                    + "<div><span>"+ leaves[i].Employee + "</span></div>"
+                    + "</div>";
+            }
+        }
+        $("#leavesDiv .details #todayDiv").append(todayMarkup);
+        $("#leavesDiv .details #todayDiv").addClass("row");
+        $("#leavesDiv .details #tomorrowDiv").append(tomorrowMarkup);
+        $("#leavesDiv .details #tomorrowDiv").addClass("row");
+
+
+        //Holidays
+        for(var i=0; i<holidays.length; i++) {
+            htmlTxt += "<div><label>"+ holidays[i].Name +" &nbsp; : &nbsp;&nbsp;</label>" + parseServerDate(holidays[i].HoliDate) +"</div>";
+        }
+        $("#holidaysDiv .details").append(htmlTxt);
+
+
+        function parseServerDate(date) {
+            if (date && date.indexOf('/Date') != -1) return new Date(parseInt(date.substr(6))).toLocaleDateString("@culture");
+            else return date;
+        }
+
+    });
+</script>

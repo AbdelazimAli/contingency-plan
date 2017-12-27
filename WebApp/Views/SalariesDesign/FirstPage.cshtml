@@ -1,0 +1,93 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Payroll
+@model SalaryBasisDesignViewModel
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    }
+<div id="FirstPageDiv">
+  
+</div>
+
+<script>
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#" + oldPage[2] + " a").attr("href");
+
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+
+
+
+        var Basismodel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var puro = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Purpose));
+        var Base = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Basi));
+
+        var formId = "SalaryBasisFormPage1";
+        $.getJSON(url, { objectname: "SalaryBasisPage1", version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "InfoTables";
+            data.FormAction = "@Url.Action("DetailsFirstPage", "SalariesDesign")";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = "@admin";
+            data.rtl = @rtl.ToString().ToLower();
+            $("#FirstPageDiv").Forms(data, Basismodel);
+            FormJs.fillOptionsDynamic($("#"+formId),"Purpose",puro, Basismodel)
+            FormJs.fillOptionsDynamic($("#"+formId),"Basis",Base, Basismodel)
+            $(".form-control").not("span.k-dropdown:parent").not("span.k-datepicker:parent").css("height","15px");
+            $(".col-md-10,.col-md-8").css("width", "60%");
+            $("#"+formId).find(".panel").not(".set").append('<button class="submit" onclick="return false;" style="display:none"></button>');
+            $("#"+formId).on('change',"input[name='Purpose']",null,function(){
+                purposeValue = $(this).val();
+                if($("#SecondPageDiv").length != 0){
+                    if(purposeValue == 1){
+                        $("div[name='FormulaSec']").css("display","none");
+                        $("div[name='CellValueSec']").css("display","");
+                    }else{
+                        $("div[name='FormulaSec']").css("display","");
+                        $("div[name='CellValueSec']").css("display","none");
+                    }
+
+                }
+
+                //Grid Columns
+                if($("#LinkTableGridDiv").length != 0){
+                    var grid = $("#LinkTableGridDiv").data("kendoGrid");
+                    if(purposeValue == 1){
+                        grid.hideColumn('YesNoForm');
+                        grid.hideColumn('FormulaId');
+                        grid.showColumn('MinValue');
+                        grid.showColumn('MaxValue');
+                    }
+                    else{
+                        grid.showColumn('YesNoForm');
+                        grid.showColumn('FormulaId');
+                        grid.hideColumn('MinValue');
+                        grid.hideColumn('MaxValue');
+                    }
+                }
+
+
+
+
+                if(purposeValue != 2){
+                    $(Tabss.items()[3]).attr("style", "display:none");
+                    $(Tabss.items()[1]).attr("style", "display:''");
+                    $(Tabss.items()[2]).attr("style", "display:''");
+                }else
+                {
+                    $(Tabss.items()[3]).attr("style", "display:''");
+                    $(Tabss.items()[1]).attr("style", "display:none");
+                    $(Tabss.items()[2]).attr("style", "display:none");
+
+                }
+            });
+        });
+
+    });
+
+</script>

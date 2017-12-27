@@ -1,0 +1,169 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="CheckListDiv">
+</div>
+<script>
+    $(function () {
+        function checkDefault(Def,LisTyp){
+
+            if(Def==true && LisTyp!=""){
+                $.ajax({
+                    type: 'get',
+                    dataType: 'json',
+                    url: '/CheckList/CheckDefault',
+                    data:{Id:"@Model.Id",ListTypeId:LisTyp},
+                    success: function (res) {
+                        if(res.Default!=true){
+                            if(!($("#Default").hasClass("k-invalid"))){
+                                $("#Default").addClass("k-invalid").prop("aria-invalid", true);
+                                $("#Default").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='Default' role='alert'>This Type Already Made Default before</span>");
+                            }
+
+                        }else{
+                            $('#Default').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#Default").next().remove();
+                        }
+                    },
+                    error: function () {
+                    }
+                });
+            }
+        }
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var EmpId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+        var TaskCat= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TaskCat));
+        var Unit=[{value:1,text:"@MsgUtils.Instance.Trls("Minute")"},{value:2,text:"@MsgUtils.Instance.Trls("Hour")"}, {value:3,text:"@MsgUtils.Instance.Trls("Day")"},{value:4,text:"@MsgUtils.Instance.Trls("Week")"},{value:5,text:"@MsgUtils.Instance.Trls("Month")"}];
+        var ListType= [{id:1,name:"@MsgUtils.Instance.Trls("Employment Checklist")"}, {id:2,name:"@MsgUtils.Instance.Trls("New Employee Orientation")"}, {id:3,name:"@MsgUtils.Instance.Trls("Termination checklist")"}];
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        var formId = "CheckListForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            //async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "CheckList", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="CheckLists";
+                data.FormAction = "@Url.Action("Details", "CheckList")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                if(read == 1)
+                    data.mode = 'show';
+                $("#CheckListDiv").Forms(data, model);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+                $("#" + formId).on('blur','#StartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    if( $('#EndDate').hasClass("k-invalid")){
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next().remove();
+                    }
+                });
+                $("#"+formId).on('blur','#EndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+                $("div[name=ChecklistTaskGrid]").prepend('<div id="ChecklistTaskDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                var gridname = "'ChecklistTaskDiv'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadCheckListTask", "CheckList")?ListId=" +model.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "ChecklistTasks",
+                    admin: "@admin", // Admin role
+                    lang: "@User.Identity.GetCulture()",
+                    toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    recordName: "TaskNo",
+                    gridName: "ChecklistTaskDiv",
+                    height:250,
+                    columns: [(read == 1 ? { field: "Delete", input: "none"}: { field: "Delete", input: ""}),{field:"EmpId",values:EmpId},{field:"Unit",values:Unit},{field:"TaskCat",values:TaskCat},
+                        {
+                            field: "Required",
+                            template: '<input  type="checkbox" #:Required == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Required\',' + gridname + ')"/>'
+                        },
+                    ],
+                    select: { "EmpId":EmpId,"Unit":Unit,"TaskCat":TaskCat},
+                    fields:{EmpId:{defaultValue:null},CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false},Required:{editable:false}},
+
+                });
+                FormJs.fillOptionsDynamic($("#" + formId), "ListType", ListType, model);
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+                $("#CheckListDiv").on('click',"#saveChanges",null, function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    },Grids.sendData("ChecklistTaskDiv"));
+                });
+                $('#CheckListDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+                $('#Default').blur(function(){
+                    var ch=$(this).prop("checked");
+                    var ListType=$("#ListType").val();
+                    if(ch==true)
+                        checkDefault(ch,ListType);
+                });
+                $('#ListType').change(function(){
+                    var ListType=$(this).val();
+                    var ch=$("#Default").prop("checked");
+                    checkDefault(ch,ListType);
+                });
+            },
+            error: function (data) {
+            }
+        });
+    });
+
+
+
+</script>
+
+
+

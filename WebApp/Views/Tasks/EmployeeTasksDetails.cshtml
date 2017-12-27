@@ -1,0 +1,96 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.EmpTasksViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="docWindow"></div>
+<div id="empTasksDiv"></div>
+
+
+<script>
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    var taskStatus = [{ id: 0, name: '@MsgUtils.Instance.Trls("Darft")' }, { id: 1, name: '@MsgUtils.Instance.Trls("AssignedTo")' }, { id: 2, name: '@MsgUtils.Instance.Trls("Done")' },{ id: 3, name: '@MsgUtils.Instance.Trls("Canceled")' },{ id: 4, name: '@MsgUtils.Instance.Trls("NotDone")' }];
+    var units = [{id:0, name:  '@MsgUtils.Instance.Trls("Minute")'},{id:1, name:  '@MsgUtils.Instance.Trls("Hour")'},{id:2, name:  '@MsgUtils.Instance.Trls("Day")'},{id:3, name:  '@MsgUtils.Instance.Trls("Week")'},{id:4, name:'@MsgUtils.Instance.Trls("Month")'}];
+    var formId = "empTasksForm";
+
+    var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    var url = "@Url.Action("ReadFormInfo", "Pages")";
+    var read = "@Request.QueryString["Read"]";
+    $.getJSON(url, { objectname: 'EmployeeTasksForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+        @*data.FormAction = "@Url.Action("EmployeeTasksDetails", "Tasks")";*@
+        data.FormId = formId;
+        data.Culture = '@culture';
+        data.TableName = "EmpTasks";
+        data.companyId = "@compantId";
+        data.admin = '@admin';
+        data.rtl = @rtl.ToString().ToLower();
+        data.btns = ["back", "doc"];
+
+        if(model.Id != 0) 
+        {
+            //for text readonly
+            model.AssignedTime =  ParseDate(model.AssignedTime);
+            model.StartTime =  ParseDate(model.StartTime);
+            model.EndTime =  ParseDate(model.EndTime);
+        }
+        $("#empTasksDiv").Forms(data, model);
+
+        FormJs.fillOptionsDynamic($("#" + formId), "Status", taskStatus, model, {hasFilter: false});
+        FormJs.fillOptionsDynamic($("#" + formId), "Unit", units, model, {hasFilter: false});
+
+        if(model.Status != 1) $("#" + formId).find("#StartTask, #EndTask").attr("disabled", true);
+
+        $("#" + formId).find('#StartTask').val('@MsgUtils.Instance.Trls("Start Task")');
+        $("#" + formId).find('#EndTask').val('@MsgUtils.Instance.Trls("EndTask")');
+
+        $("#" + formId).on("click","#StartTask, #EndTask",null,function (e) {
+            var isStart = $(this).attr("id") == "StartTask";
+            var taskId = $("#" + formId + " #Id").val();
+            if(!isStart && model.StartTime == null) 
+                toastr.error("@MsgUtils.Instance.Trls("TaskNotStarted")");
+            else 
+                $.post("@Url.Action("SaveEmployeeTasks", "Tasks")", {Id : taskId, btn : isStart }, function(res){
+                    FormJs.postSuccessFunc($("#"+formId), $(this), res, function() {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        ulr = oldulr
+                        $("#renderbody").load(ulr);
+                    });
+                });
+        });
+
+        $("#" + formId).on("click", "#Documents",null, function() {
+            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=EmpTasksForm&SourceId="+ @Model.Id).center().open();
+            $("#Documents").fadeOut();
+        });
+    });
+
+    function ParseDate(date) {
+        if (date && date.indexOf('/Date') != -1) return kendo.toString(new Date(parseInt(date.substring(date.indexOf('(') + 1, date.indexOf(')')))), 'g')
+    }
+
+    $("#docWindow").kendoWindow ({
+        title: "@MsgUtils.Instance.Trls("Tasks")",
+        minWidth: "1000px",
+        width: "80%",
+        height: "80%",
+        actions: ["Minimize", "Maximize", "Close"],
+        visible: false,
+        close: function() {
+            $("#Documents").fadeIn();
+            $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+            $("#docWindow").empty();
+        }
+    });
+
+
+</script>
+

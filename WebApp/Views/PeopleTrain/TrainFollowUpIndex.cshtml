@@ -1,0 +1,254 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+
+
+<br />
+<div id="TrainFollowup"></div>
+
+<script>
+    var CancelReasons = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CanselReasons));
+    var Mangers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Mangers));
+    var Functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+    var approvalStatus = [
+         { value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' },
+         { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+         { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }
+    ];
+
+    function Exist(data){
+        if(data.HasImage)
+            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
+        else
+            return "url(/SpecialData/Photos/noimage.jpg)"
+    }
+
+    var columns = [
+              {
+                  field: "Employee",
+                  template: "<div class='k-people-photo' " +
+                                  "style='background-image: #:Exist(data)# '></div>" +
+                                  "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>", locked:true
+              },
+              {
+                  field: "ApprovalStatus", values: approvalStatus
+              },
+
+    ];
+    var gridname = "'TrainFollowup'";
+
+    Grids.indexGrid({
+        read: "@Url.Action("ReadTrainFollowUp", "PeopleTrain")?MenuId=@Request.QueryString["MenuId"]",
+        objectName:"PeopleTrainFollow",
+        tabeName: "PeopleTrain",
+        selectable: "row",
+        recordName: "Employee",
+        gridName: "TrainFollowup",
+        admin: "@admin",
+        columns: columns,
+        lang: "@User.Identity.GetCulture()",
+        select: { "ApprovalStatus": approvalStatus},
+        toolbar: kendo.template($("#Newtemplate").html())
+    });
+
+
+    function showRequest() {
+        drawForm(1);
+    }
+    function AcceptRefuFun() {
+        drawForm(0);
+    }
+    function CancelReq() {
+        var grid = $("#TrainFollowup").data("kendoGrid");
+        if (grid.dataItem(grid.select()) != null) {
+            FormJs.fillOptionsDynamic($("#LeaveCancel"), "CancelReason", CancelReasons, null, {hasFilter: false});
+
+            $("#LeaveCancel").modal("show");
+        } else
+            toastr.error("@MsgUtils.Instance.Trls("SelectRecord")");
+    }
+
+    function SendTo(value) {
+        if(value == 1)
+            SaveSendTo(value);
+        else if(value == 2) {
+            if($("#SendToM #DirectManager").prop('checked')) $("#SendToM #ManagerId").parents(".form-group").css("display", "none");
+            FormJs.fillOptionsDynamic($("#SendToM"), "ManagerId", Mangers, null, {hasFilter: false});
+
+            $("#SendToM").modal('show');
+            $("#SendToM #DirectManager").change(function() {
+                if(this.checked)
+                    $("#SendToM #ManagerId").parents(".form-group").css("display", "none");
+                else
+                    $("#SendToM #ManagerId").parents(".form-group").css("display", "");
+            });
+
+            $("#SendToM #Ok").click(function() {
+                var managerId = ($("#SendToM #DirectManager").prop('checked') == false ? $("#SendToM #ManagerId").val() : 0);
+                SaveSendTo(value, managerId);
+                $("#SendToM").modal("hide");
+            });
+        }
+    }
+
+    function SaveSendTo(value, managerId) {
+        var grid = $("#TrainFollowup").data("kendoGrid");
+        if (grid.dataItem(grid.select()) != null) {
+            $.post("/PeopleTrain/SendTo", { Id: grid.dataItem(grid.select()).Id, Send: value, ManagerId: managerId, version: "@Request.QueryString["Version"]" }, function (res) {
+                if (res == "Ok") {
+                    toastr.success("@MsgUtils.Instance.Trls("Sended Successfully")");
+                    grid.dataSource.read();
+                    grid.refresh();
+                } else toastr.error(res);
+            });
+        } else
+            toastr.error("@MsgUtils.Instance.Trls("SelectRecord")");
+    }
+
+    function drawForm(read) {
+        var grid = $("#TrainFollowup").data("kendoGrid");
+        if (grid.dataItem(grid.select()) != null) {
+            var formUrl = "@Url.Action("TrainFollowUpDetails", "PeopleTrain")?Id=" + grid.dataItem(grid.select()).Id + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=" + read +"&MenuId=@Request.QueryString["MenuId"]";
+            $("#renderbody").load(formUrl);
+        }
+        else
+            toastr.error("@MsgUtils.Instance.Trls("SelectRecord")");
+    }
+
+    //PeopleTrain
+    $("#LeaveCancel").on("click","#Ok",null,function(){
+        var grid = $("#TrainFollowup").data("kendoGrid");
+        $.post("/PeopleTrain/CancelReq", { Id: grid.dataItem(grid.select()).Id, Reason: $("#CancelReason").val(),Desc:$("#CancelDesc").val(), version: "@Request.QueryString["Version"]" }, function (res) {
+            if (res == "Ok") {
+                $("#LeaveCancel").modal("hide");
+                toastr.success("@MsgUtils.Instance.Trls("Cancelled Successfully")");
+                grid.dataSource.read();
+                grid.refresh();
+            } else toastr.error(res);
+        });
+    });
+</script>
+<script type="text/x-kendo-template" id="Newtemplate">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default btn-sm fa fa-eye" onclick="showRequest()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length>0)?!Array.Exists(function,f => f == "ShowRecord") :true)? "display:none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Show Record")</span></a>
+        <a class="btn btn-default btn-sm fa fa-thumbs-o-up" onclick="AcceptRefuFun()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "AcceptAndReject") : true) ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Accept/Reject")</span></a>
+        <a class="btn btn-default btn-sm fa fa-male" onclick="SendTo(1)" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "SendToEmp") : true) ? "display: none" : "")" accesskey="e"><span>&nbsp;@MsgUtils.Instance.Trls("SendToEmployee")</span></a>
+        <a class="btn btn-default btn-sm fa fa-user" onclick="SendTo(2)" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "SendToManager") : true) ? "display: none" : "")" accesskey="m"><span>&nbsp;@MsgUtils.Instance.Trls("SendToManager")</span></a>
+        <a class="btn btn-default btn-sm fa fa-ban" onclick="CancelReq()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "CancelRequest") : true) ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelRequest")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }    
+             </ul>
+        </div>
+    </div>
+</script>
+
+<div class="modal fade" id="LeaveCancel" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Cancel")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body omegaform @(rtl?"rtl":"")" tabindex="0">
+                <div class="set panel">
+                    <div class="panel-body">
+                        <div class="form-group row">
+                            <label for="CancelReason" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelReason")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <select allowed="true" name="CancelReason" isvisible="true" id="CancelReason" class="form-control k-valid" style="cursor: pointer;">
+                                    <option></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="CancelDesc" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("CancelDescription")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <textarea name="CancelDesc" isvisible="true" rows="2" id="CancelDesc" class="form-control" style="max-width: 995px;"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal" id="Cancel">@MsgUtils.Instance.Trls("Cancel")</button>
+                <button type="button" class="btn btn-primary submit" id="Ok">@MsgUtils.Instance.Trls("Ok")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="SendToM" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("SendToManager")</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body omegaform @(rtl? "rtl" : "" )" tabindex="0">
+                <div class="set panel">
+                    <div class="panel-body">
+                        <div class="form-group row">
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <input type="checkbox" id="DirectManager" name="DirectManager" checked /> <label>@MsgUtils.Instance.Trls("DirectManager") </label>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="ManagerId" class="control-label col-sm-2 col-md-2 col-lg-2">
+                                <span class="lblSpan">@MsgUtils.Instance.Trls("Manager")</span>
+                            </label>
+                            <div class="col-sm-10 col-md-10 col-lg-10">
+                                <select name="ManagerId" isvisible="true" id="ManagerId" class="form-control k-valid" style="cursor: pointer;">
+                                    <option></option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal" id="Cancel">@MsgUtils.Instance.Trls("Cancel")</button>
+                <button type="button" class="btn btn-primary submit" id="Ok">@MsgUtils.Instance.Trls("Ok")</button>
+            </div>
+        </div>
+    </div>
+</div>

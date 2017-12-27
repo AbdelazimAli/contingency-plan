@@ -1,0 +1,404 @@
+﻿@using System.Web.Script.Serialization
+
+<link href="~/Content/croppie.css" rel="stylesheet" />
+
+<script src="~/Scripts/croppie.js"></script>
+
+@{
+    Layout = null;
+}
+<style>
+    #modal {
+        z-index: 100;
+        height: 500px;
+        width: 450px;
+        background: white;
+        border: 1px solid #ccc;
+        -moz-box-shadow: 0 0 3px #ccc;
+        -webkit-box-shadow: 0 0 3px #ccc;
+        box-shadow: 0 0 3px #ccc;
+        text-align: center;
+    }
+
+    #avatar-upload-box {
+        height: inherit;
+        text-align: -webkit-center;
+    }
+
+    #xhrUploadCroppie {
+        width: -webkit-fill-available;
+    }
+
+    #xhrCancelCroppie {
+        width: -webkit-fill-available;
+    }
+
+    @@media (min-width: 1200px) {
+        .container {
+            width: 98% !important;
+        }
+    }
+
+    #croppie_form {
+        height: inherit;
+        width: 98%;
+    }
+
+    #progress {
+        width: 620px;
+        border: 1px solid #ccc;
+        display: none;
+        float: left;
+        height: 14px;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -ms-border-radius: 10px;
+        -o-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        background: -moz-linear-gradient(#66cc00, #4b9500);
+        background: -ms-linear-gradient(#66cc00, #4b9500);
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #66cc00), color-stop(100%, #4b9500));
+        background: -webkit-linear-gradient(#66cc00, #4b9500);
+        background: -o-linear-gradient(#66cc00, #4b9500);
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#66cc00', endColorstr='#4b9500');
+        -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#66cc00', endColorstr='#4b9500')";
+        background: linear-gradient(#66cc00, #4b9500);
+    }
+
+    #progress_percent {
+        float: right;
+    }
+
+    #upload_response {
+       
+        margin-top: 10px;
+        padding: 20px;
+        overflow: hidden;
+        display: none;
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        -moz-border-radius: 10px;
+        -ms-border-radius: 10px;
+        -o-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        box-shadow: 0 0 5px #ccc;
+        background: -moz-linear-gradient(#bbb, #eee);
+        background: -ms-linear-gradient(#bbb, #eee);
+        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #bbb), color-stop(100%, #eee));
+        background: -webkit-linear-gradient(#bbb, #eee);
+        background: -o-linear-gradient(#bbb, #eee);
+        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbb', endColorstr='#eee');
+        -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbb', endColorstr='#eee')";
+        background: linear-gradient(#bbb, #eee);
+    }
+
+    #progress_info{
+        margin-top: 60px;
+    text-align: center;
+
+    }
+</style>
+<div>
+    <form id="croppie_form" enctype="multipart/form-data" method="post">
+        <div id="avatar-upload-box" class="container">
+           
+            <div id="chooseF" class="row">
+                <div>
+                    <label for="image_file">@MsgUtils.Instance.Trls("selectfile")</label>
+                </div>
+                <div>
+                    <input type="file" accept="image/*" value="Choose Image" name="image_file" id="upload" />
+                </div>
+                <div id="nofile">@MsgUtils.Instance.Trls("Noselectfile")</div>
+
+            </div>
+
+            <div id="modal" class="row">
+                <div id="main-cropper"></div>
+
+            </div>
+
+            <div id="progress_info" class="container">
+                <div class="row">
+                    <div class="col-md-offset-1 col-md-9" id="progress"></div>
+
+                    <div class="col-md-2" id="progress_percent">&nbsp;</div>
+                    <div class="clear_both"></div>
+                </div>
+
+                <div class="row" id="speed">&nbsp;</div>
+                <div class="row" id="remaining">&nbsp;</div>
+                <div class="row" id="b_transfered">&nbsp;</div>
+                <div class="clear_both"></div>
+
+                <div class="row" id="upload_response"></div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <button id="xhrUploadCroppie" class="actionDone btn btn-success">Done</button>
+                </div>
+                <div class="col-md-2">
+                    <button id="xhrRotateCroppie" data-deg="-90" class="btn btn-primary">Rotate</button>
+                </div>
+                <div class="col-md-4">
+                    <button id="xhrCancelCroppie" class="actionCancel btn btn-danger">Cancel</button>
+                </div>
+
+            </div>
+            <div class="row">
+                <div id="error">@MsgUtils.Instance.Trls("imageFileonly")</div>
+                <div id="error2">@MsgUtils.Instance.Trls("erroruploading")</div>
+                <div id="abort">@MsgUtils.Instance.Trls("cancelUploading")</div>
+                <div id="warnsize">@MsgUtils.Instance.Trls("fileisbig")</div>
+            </div>
+        </div>
+    </form>
+</div>
+
+
+<script>
+
+
+    $(function () {
+
+
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Source = model.Source;
+        var SourceId = model.SourceId;
+        console.log("dataTemp",model);
+        console.log("dataTemp",model.Source);
+        console.log("dataTemp",model.SourceId);
+        var iBytesUploaded = 0;
+        var iBytesTotal = 0;
+        var iPreviousBytesLoaded = 0;
+        var iMaxFilesize = 6591456; // 1MB
+        var oTimer = 0;
+        var sResultFileSize = '';
+        function HideErrorElements() {
+            // hide different warnings
+            document.getElementById('upload_response').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('error2').style.display = 'none';
+            document.getElementById('abort').style.display = 'none';
+            document.getElementById('warnsize').style.display = 'none';
+            $('#xhrUploadCroppie').prop('disabled', true);
+            $('#xhrCancelCroppie').prop('disabled', true);
+        }
+        HideErrorElements();
+        function EmptyData() {
+            oImage.src = "";
+            pdf.src = "";
+            pdf.style.display = 'none';
+            oImage.style.display = 'none';
+
+            document.getElementById('nofile').style.display = 'block';
+            document.getElementById('image_file').value = '';
+            document.getElementById('fileinfo').style.display = 'none';
+            document.getElementById('progress_info').style.display = 'none';
+        }
+
+        function uploadProgress(e){ // upload process in progress
+            if (e.lengthComputable) {
+                iBytesUploaded = e.loaded;
+                iBytesTotal = e.total;
+                var iPercentComplete = Math.round(e.loaded * 100 / e.total);
+                var iBytesTransfered = bytesToSize(iBytesUploaded);
+
+                document.getElementById('progress_percent').innerHTML = iPercentComplete.toString() + '%';
+                document.getElementById('progress').style.width = (iPercentComplete * 4).toString() + 'px';
+                document.getElementById('b_transfered').innerHTML = iBytesTransfered;
+                if (iPercentComplete == 100) {
+                    var oUploadResponse = document.getElementById('upload_response');
+                    oUploadResponse.innerHTML = '<h1>"@MsgUtils.Instance.Trls("processing")"</h1>';
+                    oUploadResponse.style.display = 'block';
+                    document.getElementById('progress_info').style.display = 'block';
+
+
+                }
+            }
+            else {
+                document.getElementById('progress').innerHTML = 'unable to compute';
+            }
+        }
+
+
+
+        function uploadFinish(e) { // upload successfully finished
+            var oUploadResponse = document.getElementById('upload_response');
+
+            if (e.target.responseText !== '"OK"')
+                oUploadResponse.innerHTML = "<p>" + e.target.responseText + "</p>";
+            else
+                oUploadResponse.innerHTML = "<p>@MsgUtils.Instance.Trls("FileSuccessfullyUploaded")</p>";
+
+            oUploadResponse.style.display = 'block';
+            document.getElementById('progress_percent').innerHTML = '100%';
+            document.getElementById('progress').style.width = '620px';
+
+            document.getElementById('remaining').innerHTML = '00:00:00';
+            clearInterval(oTimer);
+
+        }
+
+        function uploadError(e) { // upload error
+            document.getElementById('error2').style.display = 'block';
+            clearInterval(oTimer);
+            $("#xhrUpload").show();
+        }
+
+        function uploadAbort(e) { // upload abort
+            document.getElementById('abort').style.display = 'block';
+            clearInterval(oTimer);
+        }
+
+        function secondsToTime(secs) { // we will use this function to convert seconds in normal time format
+            var hr = Math.floor(secs / 3600);
+            var min = Math.floor((secs - (hr * 3600)) / 60);
+            var sec = Math.floor(secs - (hr * 3600) - (min * 60));
+
+            if (hr < 10) { hr = "0" + hr; }
+            if (min < 10) { min = "0" + min; }
+            if (sec < 10) { sec = "0" + sec; }
+            if (hr) { hr = "00"; }
+            return hr + ':' + min + ':' + sec;
+        };
+
+        function bytesToSize(bytes) {
+            var sizes = ['Bytes', 'KB', 'MB'];
+            if (bytes == 0) return 'n/a';
+            var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+            return (bytes / Math.pow(1024, i)).toFixed(1) + ' ' + sizes[i];
+        };
+        function doInnerUpdates() { // we will use this function to display upload speed
+            var iCB = iBytesUploaded;
+            var iDiff = iCB - iPreviousBytesLoaded;
+
+            // if nothing new loaded - exit
+            if (iDiff == 0)
+                return;
+
+            iPreviousBytesLoaded = iCB;
+            iDiff = iDiff * 2;
+            var iBytesRem = iBytesTotal - iPreviousBytesLoaded;
+            var secondsRemaining = iBytesRem / iDiff;
+
+            // update speed info
+            var iSpeed = iDiff.toString() + 'B/s';
+            if (iDiff > 1024 * 1024) {
+                iSpeed = (Math.round(iDiff * 100 / (1024 * 1024)) / 100).toString() + 'MB/s';
+            } else if (iDiff > 1024) {
+                iSpeed = (Math.round(iDiff * 100 / 1024) / 100).toString() + 'KB/s';
+            }
+
+            document.getElementById('speed').innerHTML = iSpeed;
+            document.getElementById('remaining').innerHTML =  secondsToTime(secondsRemaining);
+        }
+        var basic;
+        if (Source === "ComoanyLogo" ) {
+            var basic = $('#main-cropper').croppie({
+                viewport: { width: 396, height: 130 },
+                boundary: { width: 450, height: 500 },
+                showZoomer: true,
+                enableZoom:true,
+                enforceBoundary:false,
+                enableOrientation: true,
+
+            });
+        }
+        else {
+            var basic = $('#main-cropper').croppie({
+                viewport: { width: 180, height: 180 },
+                boundary: { width: 450, height: 500 },
+                showZoomer: true,
+                enableZoom:true,
+                enforceBoundary:false,
+                enableOrientation: true,
+
+            });
+        }
+        
+
+        function readFile(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    $('#main-cropper').croppie('bind', {
+
+
+                        url: e.target.result
+                    });
+
+                }
+
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        $('#upload').on('change', function () {
+            readFile(this);
+            HideErrorElements();
+            document.getElementById('nofile').style.display = 'none';
+            $('#xhrUploadCroppie').prop('disabled', false);
+
+        });
+        $('#xhrUploadCroppie').on('click', function (e) {
+            $('#xhrCancelCroppie').prop('disabled', false);
+            e.preventDefault();
+            console.log("Done");
+            iPreviousBytesLoaded = 0;
+            document.getElementById('upload_response').style.display = 'none';
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('error2').style.display = 'none';
+            document.getElementById('abort').style.display = 'none';
+            document.getElementById('warnsize').style.display = 'none';
+            document.getElementById('progress_percent').innerHTML = '';
+            var oProgress = document.getElementById('progress');
+            oProgress.style.display = 'block';
+            oProgress.style.width = '0px';
+
+            $('#main-cropper').croppie('result', { type: 'blob', quality: 1 }).then((res) => {
+                var vFD = new FormData();
+                vFD.append('image_file', res);
+                console.log("FormData", vFD);
+                var bloody = new FileReader();
+                bloody.readAsDataURL(res);
+                bloody.addEventListener("load",function () {
+                    document.getElementById('myimage').src = bloody.result;
+
+                })
+
+                // create XMLHttpRequest object, adding few event listeners, and POSTing our data
+                var oXHR = new XMLHttpRequest();
+                oXHR.upload.addEventListener('progress', uploadProgress, false);
+                oXHR.addEventListener('load', uploadFinish, false);
+                oXHR.addEventListener('error', uploadError, false);
+                oXHR.addEventListener('abort', uploadAbort, false);
+
+                //var sourceId = $("#Id").val();
+
+                oXHR.open('POST', '/FileUpload/UploadOneFile?Source='+Source+'&SourceId=' + SourceId);
+                oXHR.send(vFD);
+
+                // set inner timer
+                oTimer = setInterval(doInnerUpdates, 300);
+
+            })
+
+        })
+        $('#xhrCancelCroppie').on('click', function (e) {
+            e.preventDefault();
+            console.log("cancel");
+        })
+
+        $("#xhrRotateCroppie").on('click', function (e) {
+            e.preventDefault();
+            $('#main-cropper').croppie('rotate', parseInt($(this).data('deg')));
+        })
+
+    })
+
+
+
+</script>

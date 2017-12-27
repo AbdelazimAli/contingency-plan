@@ -1,0 +1,31 @@
+﻿@model System.Web.Mvc.HandleErrorInfo
+@{
+    Layout = "~/Views/Account/Hrlogin.cshtml";
+    ViewBag.Title = "Error";
+}
+<div class="login-form">
+    <div class="login-right">
+        <div class="sap_tabs">
+            <div id="horizontalTab">
+                <div class="resp-tabs-container">
+                    <div class="tab-1 resp-tab-content" aria-labelledby="tab_item-0">
+                        <div class="login-top">
+                            <div class="text-danger">
+                                <h5>
+                                    <b>Sorry error occured in the system please</b>
+                                </h5>
+                                <h5>
+                                    <b>click on refresh button ..</b>
+                                </h5>
+                            </div>
+                            <h2 class="text-danger">Thank You</h2>
+                            <a href="/Account/Login" class="btn btn-submit"> Refresh</a>
+                            <div class="clear"> </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="clear"> </div>
+</div>

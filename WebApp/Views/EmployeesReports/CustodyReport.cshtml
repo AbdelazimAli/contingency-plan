@@ -1,0 +1,13 @@
+﻿
+@{
+    ViewBag.Title = "CustodyReport";
+    Layout = "~/Views/Shared/_HRLayout.cshtml";
+}
+
+<h2>CustodyReport</h2>
+
+
+@Html.DevExpress().ReportDesigner(settings =>
+{
+    settings.Name = "ReportDesigner";
+}).Bind(new CustodyReport()).GetHtml()

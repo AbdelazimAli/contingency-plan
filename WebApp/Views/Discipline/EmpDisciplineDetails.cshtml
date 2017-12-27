@@ -1,0 +1,523 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model EmpDisciplineFormViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+<br />
+<br />
+<div id="EmpDiscipline"></div>
+<div id="docWindow"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+    var DiscplinId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DiscplinId));
+    var record = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpDisplineObj));
+    var Investigate=@Html.Raw((new JavaScriptSerializer().Serialize(ViewBag.InvestigatId)));
+    var empId;
+    var desplinId;
+    $(function () {
+        function CheckSysType(desplinId){
+            $.ajax({
+                async: false,
+                url: "@Url.Action("GetDisplinDDl", "Discipline")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data:{desplinId:desplinId},
+                success: function (data) {
+                    FormJs.fillOptionsDynamic($("#" + formId), "ActDispline", data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "SuggDispline", data, model);
+                    var sys = $.grep(DiscplinId,function(el){return el.id == desplinId});
+                   
+                    if(sys.length>0){
+
+                        if(sys[0].Systype == 2)
+                        {
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","none");
+                            $("#" + formId).find("#EffectEDate").parents(".form-group").css("display","none");
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","");
+                            if( record.SuggPeriod == null && record.SuggNofDays != null)
+                            {
+                                if(read != 1)
+                                {
+                                    var dis= $("#" + formId).find("#SuggDispline").data("kendoDropDownList");
+                                    dis.value(record.SuggDispline);
+                                }
+                                $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","");
+                                $("#" + formId).find("#SuggNofDays").val(record.SuggNofDays).prop('disabled','true');
+                                $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","");
+
+                            }
+                            else if(record.SuggNofDays == null && record.SuggPeriod != null)
+                            {
+                                var dis= $("#" + formId).find("#SuggDispline").data("kendoDropDownList");
+                                dis.value(record.SuggDispline);
+                                $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","");
+                                $("#" + formId).find("#SuggPeriod").val(record.SuggPeriod).prop('disabled','true');
+                                $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","");
+
+                            }else if(record.SuggNofDays == null && record.SuggPeriod == null && record.ActualPeriod == null&& record.ActualNofDays == null )
+                            {
+                                var dis= $("#" + formId).find("#SuggDispline").data("kendoDropDownList");
+                                dis.value(record.SuggDispline);
+                                $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+
+                            }
+                            else if(record.ActualPeriod == null && record.ActualNofDays != null && record.SuggPeriod == null && record.SuggNofDays == null)
+                            {
+                                if(read != 1)
+                                {
+                                    var dis= $("#" + formId).find("#SuggDispline").data("kendoDropDownList");
+                                    dis.value(record.SuggDispline);
+                                }
+                                $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","");
+                                $("#" + formId).find("#ActualNofDays").val(record.ActualNofDays);
+                            }
+                            else if(record.ActualPeriod != null && record.ActualNofDays == null &&record.SuggPeriod == null && record.SuggNofDays == null)
+                            {
+                                if(read != 1)
+                                {
+                                    var dis= $("#" + formId).find("#SuggDispline").data("kendoDropDownList");
+                                    dis.value(record.SuggDispline);
+                                }
+                                $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+                                $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","");
+                                $("#" + formId).find("#ActualPeriod").val(record.ActualPeriod);
+
+                            }
+                        }
+                        else if(sys[0].Systype == 1)
+                        {
+
+                            $("#" + formId).find("#EffectEDate").css("display","none");
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","");
+                            $("#" + formId).find("#DeductPoint").val(record.DeductPoint)
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                        }
+                        else if(sys[0].Systype == null)
+                        {
+
+                            $("#" + formId).find("#EffectEDate").css("display","");
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","none");
+                            $("#" + formId).find("#DeductPoint").val(record.DeductPoint)
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                        }
+                    }
+                },
+                error: function (result) {
+                    console.log(result.responseText);
+                }
+            });
+
+
+        }
+        function checkBeforeSave(Discplin){
+            var sys = $.grep(DiscplinId,function(el){return el.id == Discplin});
+            if(sys.length>0){
+                if(sys[0].sysType == 1)
+                {
+                    $("#" + formId).find('#SuggDispline').data("kendoDropDownList").value('');
+                    $("#" + formId).find('#SuggPeriod').val('');
+                    $("#" + formId).find('#SuggNofDays').val('');
+                    $("#" + formId).find('#ActDispline').val('');
+                    $("#" + formId).find('#ActualPeriod').val('');
+                    $("#" + formId).find('#ActualNofDays').val('');
+                }
+                if(sys[0].Systype == 2)
+                {
+                    $("#" + formId).find("#DeductPoint").val('');
+                }
+            }
+        }
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var formId = "EmpDisplinForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+        //Send the serialized model and props to form.js
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "EmpDisciplines", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveEmpDiscipline", "Discipline")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "EmpDisciplines";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = '@admin';
+                data.btns = ["back", "doc"];
+                //data.HasPanel=false;
+                if(read == 1)
+                    data.mode = 'show';
+                data.rtl = @rtl.ToString().ToLower();
+              
+                //Append the form to the div
+                $("#EmpDiscipline").Forms(data, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model,{ remoteTableName: "People"});
+                FormJs.fillOptionsDynamic($("#" + formId), "DiscplinId", DiscplinId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Manager", EmpId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IWitness", EmpId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "InvestigatId", Investigate, model);
+               
+                if(model.Id ==0)
+                {
+                    $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                    $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                    $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","none");
+                    $("#" + formId).find('#ActDispline').val('');
+                    $("#" + formId).find("#ViolDate").data("kendoDatePicker").value('');
+                    $("#" + formId).find("#SuggPeriod").prop('disabled','true');
+
+                }else
+                {
+                    CheckSysType(model.DiscplinId); 
+                    if(model.InvestigatId != 0)
+                    {
+                        $("#" + formId).find('[name="DefenseSec"]').css("display","none");
+                        $("#" + formId).find('[name="WitnessSec"]').css("display","none");
+                        $("#" + formId).find('[name="SummarySec"]').css("display","none");
+                        $("#" + formId).find('[name="DescriptionSec"]').css("display","none");
+
+                    }
+
+                }
+                fillMultiSelect(model.InvestigatId,formId);
+                $("#EmpDiscipline").on("change","#DiscplinId",null,function(e){
+                    desplinId = $(this).attr("value");
+                    var sys = $.grep(DiscplinId,function(el){return el.id == desplinId});
+                    if(sys.length >0){
+                        if(sys[0].Systype == 2)
+                        {
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","none");
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                            if(record != null)
+                            {
+                                if( record.SuggPeriod == null)
+                                {
+                                    $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","");
+                                    $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","");
+                                }
+                                else if(record.SuggNofDays == null)
+                                {
+                                    $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","");
+                                    $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            $("#" + formId).find("#EffectEDate").css("display","none");
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","");
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                        }
+                    }
+                });
+               
+                function empChanged() {
+                    var empId = getEmpId();
+                    $.ajax({
+                        async: false,
+                        url: "@Url.Action("GetEmpInvestigation", "Discipline")",
+                        type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json',
+                    data:{EmpId:empId},
+                    success: function (data) {
+                        console.log(data);
+                        FormJs.fillOptionsDynamic($("#" + formId), "InvestigatId", data);
+                    }
+                    });
+                    var RepEmployees = EmpId.filter(function(item) {
+                        return item.id != empId;
+                    });
+                    console.log(RepEmployees);
+                   FormJs.fillOptionsDynamic($("#" + formId), "Manager", RepEmployees, model);
+                }
+                //for emp change (select & autocomplete)
+                if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', empChanged);
+                else $("#" + formId).on('change',  "#EmpId", empChanged);
+
+                function getEmpId() {
+                    var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                    return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+                }
+
+                $("#EmpDiscipline").on("change","#InvestigatId",null,function(e){
+                    var InvestigatId=$("#" + formId).find("#InvestigatId").val();
+                    fillMultiSelect(InvestigatId,formId);
+                    $.ajax({
+                        async: false,
+                        url: "@Url.Action("GetViolationInfo", "Discipline")",
+                        type: "GET",
+                        dataType: "json",
+                        contentType: 'application/json',
+                        data:{InvestigatId:InvestigatId},
+                        success: function (data) {
+                            $("#" + formId).find('#DiscplinId').data("kendoDropDownList").value(data.ViolationId);
+                            $("#" + formId).find("#ViolDate").data("kendoDatePicker").value(data.ViolDate);
+ 
+                        }
+                    });
+                    if(InvestigatId =="")
+                    {
+                        $("#" + formId).find('#DiscplinId').data("kendoDropDownList").value('');
+                       $("#" + formId).find("#ViolDate").data("kendoDatePicker").value('');
+
+                    }
+
+                });
+                function fillMultiSelect(InvestigatId,formId)
+                {
+                    if(InvestigatId=="" || InvestigatId==null){
+                        $("#" + formId).find('[name="DefenseSec"]').css("display","");
+                        $("#" + formId).find('[name="WitnessSec"]').css("display","");
+                        $("#" + formId).find('[name="SummarySec"]').css("display","");
+                        $("#" + formId).find('[name="DescriptionSec"]').css("display","");
+
+                    }
+                    else{
+                        $("#" + formId).find('[name="DefenseSec"]').css("display","none");
+                        $("#" + formId).find('[name="WitnessSec"]').css("display","none");
+                        $("#" + formId).find('[name="SummarySec"]').css("display","none");
+                        $("#" + formId).find('[name="DescriptionSec"]').css("display","none");
+
+                    }
+                }
+                //Translate The Button saveChanges from ColumnsTilte based on Culture
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#Documents').val('@MsgUtils.Instance.Trls("Documents")');
+
+                $("#" + formId).on('click','#saveChanges', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    var Discplin = $("#" + formId).find('#DiscplinId').val();
+                    checkBeforeSave(Discplin);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        model=res;
+                        $("#Documents").attr("disabled", false);
+
+                    });
+                });
+
+                $("#" + formId).on('click','#saveAndClose', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+
+                    var Discplin = $("#" + formId).find('#DiscplinId').val();
+                    checkBeforeSave(Discplin);
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        // res is saved company Id
+                        $("#" + formId + " #Id").val(res);
+                        model=res;
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+            }
+        });
+
+        $("#EmpDiscipline").on("change","#ActDispline",null,function(e){
+            var desplinId = $("#" + formId).find('#DiscplinId').val();
+            $.ajax({
+                async: false,
+                url: "@Url.Action("GetDisplinDDl", "Discipline")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data:{desplinId:desplinId},
+                success: function (data) {
+                    var value= $("#" + formId).find('#ActDispline').val();
+                    var sys = $.grep(data,function(el){return el.id == value});
+                    if(sys[0].value == 5 || sys[0].value == 6)
+                    {
+                        $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","");
+                        $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+
+                    }
+                    else if(sys[0].value == 4)
+                    {
+                        $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","");
+                        $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+
+                    }else
+                    {
+                        $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                        $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+
+                    }
+                }
+            });
+
+        });
+
+        $("#EmpDiscipline").on("blur","#ViolDate",null,function(e){
+
+            // var d = $("#" + formId).find("#ViolDate").data("kendoDatePicker").value();
+            var d = $(this).data("kendoDatePicker").value();
+            var dateobj = kendo.parseDate(d,"yyyy-MM-dd");
+            var date = kendo.toString(dateobj,"yyyy-MM-dd");
+            var desID=  $("#" + formId).find("#DiscplinId").attr("value");
+            var sys = $.grep(DiscplinId,function(el){return el.id == desID});
+            $.ajax({
+                async: false,
+                url: "@Url.Action("GetDesplinInfo", "Discipline")?desplinId="+desID,
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data:{violationDate:date},
+                success: function (data) {
+                    FormJs.fillOptionsDynamic($("#" + formId), "ActDispline", data.ActDisplinDDl, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "SuggDispline", data.SuggDisplinDDl, model);
+                    if(data.periodmodel !=null)
+                    {
+                        if(data.periodmodel.SysType == 2)
+                        {
+                            var DisPeriodNOId= data.periodmodel.DisPeriodNOId;
+                            var hidden = "<input type='hidden' id='PeriodId' name='PeriodId' value='"+DisPeriodNOId+"' />";
+                            $("#" + formId).append(hidden);
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","none");
+                            $("#" + formId).find('[name="SuggDisplineSec"]').css("display","");
+                            $("#" + formId).find('[name="ActDisplineSec"]').css("display","");
+                            $("#" + formId).find("#EffectEDate").css("display","none");
+                            $("#" + formId).find("#SuggDispline").data("kendoDropDownList").value(data.ReapetObj.Id);
+                            if(data.periodmodel.PeriodId="")
+                            {
+                                $("#" + formId).find("#EffectEDate").css("display","");
+                            }
+                            if(data.ReapetObj != null)
+                            {
+                                if(data.ReapetObj.DisplinType == 5 || data.ReapetObj.DisplinType == 6)
+                                {
+                                    $("#" + formId).find("#SuggPeriod").css("display","");
+                                    $("#" + formId).find("#SuggPeriod").val(data.ReapetObj.DenyPeriod).prop('disabled','true');
+                                    $("#" + formId).find("#ActualPeriod").css("display","");
+                                    $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","");
+                                    $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","");
+                                    $("#" + formId).find("#SuggDispline").data("kendoDropDownList").value(data.ReapetObj.Id);
+                                }
+                                else if(data.ReapetObj.DisplinType == 4)
+                                {
+
+                                    $("#" + formId).find("#SuggNofDays").css("display","");
+                                    $("#" + formId).find("#SuggNofDays").val(data.ReapetObj.NofDays).prop('disabled','true');;
+                                    $("#" + formId).find("#ActualNofDays").css("display","");
+                                    $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#SuggDispline").data("kendoDropDownList").value(data.ReapetObj.Id);
+
+                                }else
+                                {
+                                    $("#" + formId).find("#SuggDispline").data("kendoDropDownList").value(data.ReapetObj.Id);
+                                    $("#" + formId).find("#SuggPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#ActualPeriod").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#ActualNofDays").parents(".form-group").css("display","none");
+                                    $("#" + formId).find("#SuggNofDays").parents(".form-group").css("display","none");
+
+                                }
+
+                            }else
+                            {
+
+                                $("#" + formId).find('[name="SuggDisplineSec"]').css("display","none");
+                                $("#" + formId).find('[name="ActDisplineSec"]').css("display","none");
+                            }
+
+                        }else
+                        {
+                            $("#" + formId).find("#DeductPoint").parents(".form-group").css("display","");
+
+                        }
+                    }
+                    else
+                    {
+                        if(data.periodPoint!= null)
+                        {
+                            var DisPeriodNOId= data.periodPoint.DisPeriodNOId;
+                            var hidden = "<input type='hidden' id='PeriodId' name='PeriodId' value='"+DisPeriodNOId+"' />";
+                            $("#" + formId).append(hidden);
+                        }else
+                        {
+                            if ($("#ViolDate") && !$("#ViolDate").hasClass("k-invalid")) {
+                                $("#ViolDate").addClass("k-invalid").prop("aria-invalid", true);
+                                $("#ViolDate").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ViolDate' role='alert'>ViolationDateNotvalid</span>");
+                            }
+                        }
+
+                    }
+                }
+            });
+        });
+
+
+        if($("#" + formId + " #Id").length == 0)
+            $("#Documents").attr("disabled", true);
+
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("CompanyWindow")",
+            //position: {top: "10px", left: "10%"},
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function()
+            {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+        $("#Documents").on('click', function() {
+            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=EmpDisciplines&SourceId="+ @Model.Id).center().open();
+            $("#Documents").fadeOut();
+        });
+    });
+
+</script>
+
+
+
+
+
+

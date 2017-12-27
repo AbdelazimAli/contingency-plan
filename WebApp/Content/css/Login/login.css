@@ -1,0 +1,181 @@
+/*=================Variables=================*/
+/*-----Colors-----*/
+/*-----Media Query-----*/
+/*-----Transitions-----*/
+/*==============================================
+Main Style
+==============================================*/
+@font-face {
+  font-family: cairo;
+  font-style: normal;
+  font-weight: 400;
+  src: url(../../fonts/cairo-Regular.woff2) format("truetype"); }
+@font-face {
+  font-family: cairo;
+  font-style: normal;
+  font-weight: 700;
+  src: url(../../fonts/cairo-Bold.woff2) format("truetype"); }
+body {
+  font-family: cairo , tahoma;
+  background-color: #f1f1f1; }
+
+#particles-js {
+  position: fixed;
+  width: 100vw;
+  height: 100vh;
+  top: 0px;
+  left: 0px;
+  z-index: 1; }
+
+.company {
+  display: inline-block;
+  width: 100px;
+  height: 100px;
+  border-radius: 100%;
+  background-color: #fff;
+  position: relative;
+  z-index: 2;
+  margin-bottom: 20px; }
+  .company:after {
+    content: "";
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 20px;
+    background-color: #b4bcc8;
+    left: 50%; }
+  .company img {
+    width: 100%;
+    height: 100px;
+    border-radius: 100%; }
+
+.main {
+  display: table-cell;
+  width: 100vw;
+  height: 100vh;
+  vertical-align: middle;
+  text-align: center; }
+  .main .login-form {
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 10px 70px 0px;
+    z-index: 2;
+    position: relative;
+    background: #fff;
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto; }
+    .main .login-form .logo {
+      padding: 10px; }
+      .main .login-form .logo img {
+        border-radius: 100%;
+        height: 70px;
+        width: 70px;
+        border: #EEEEEE 4px solid; }
+    .main .login-form h1 {
+      font-size: 18px;
+      margin: 0px 0px 10px;
+      color: #666666;
+      font-weight: bold; }
+    .main .login-form h2 {
+      font-size: 12px;
+      margin: 0px 0px 20px;
+      color: #989898; }
+  .main .form-group {
+    position: relative; }
+    .main .form-group .text-input {
+      border: none;
+      border-bottom: #e0e0e0 1px solid;
+      width: 100%;
+      padding: 10px 0px;
+      box-shadow: inset #fff 0px 0px 0px 50px;
+      color: #9a9a9a; }
+      .main .form-group .text-input ~ span {
+        display: block;
+        position: absolute;
+        height: 1px;
+        background-color: #267aab;
+        right: 50%;
+        bottom: 0px;
+        left: 50%;
+        transition: 0.2s ease-in-out;
+        -webkit-transition: 0.2s ease-in-out; }
+      .main .form-group .text-input:focus {
+        outline: none; }
+        .main .form-group .text-input:focus ~ span {
+          right: 0px;
+          left: 0px; }
+  .main .login-right {
+    padding: 20px; }
+    .main .login-right .login-text {
+      overflow: hidden;
+      margin-bottom: 20px;
+      direction: ltr; }
+      .main .login-right .login-text > div {
+        float: right;
+        width: 50%; }
+      .main .login-right .login-text .form-check {
+        text-align: right; }
+        .main .login-right .login-text .form-check .checkbox-input {
+          height: 15px;
+          width: 15px;
+          background: #b4bcc8;
+          float: right;
+          margin: 3px 0px 0px 5px;
+          position: relative;
+          overflow: hidden; }
+          .main .login-right .login-text .form-check .checkbox-input span {
+            display: block;
+            border-width: 0px 0px 2px 2px;
+            border-color: #fff;
+            border-style: solid;
+            width: 11px;
+            height: 5px;
+            position: absolute;
+            top: 3px;
+            right: 2px;
+            z-index: 1;
+            transform: rotate(-45deg);
+            -ms-transform: rotate(-45deg);
+            -webkit-transform: rotate(-45deg);
+            opacity: 0;
+            transition: 0.2s ease-in-out;
+            -webkit-transition: 0.2s ease-in-out; }
+          .main .login-right .login-text .form-check .checkbox-input input {
+            opacity: 0;
+            width: 15px;
+            height: 15px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
+            cursor: pointer;
+            margin: 0px !important; }
+            .main .login-right .login-text .form-check .checkbox-input input:checked ~ span {
+              opacity: 1; }
+        .main .login-right .login-text .form-check label {
+          margin-bottom: 0px;
+          font-size: 12px;
+          font-weight: normal;
+          color: #989898; }
+      .main .login-right .login-text .forget {
+        text-align: left; }
+        .main .login-right .login-text .forget a {
+          font-size: 12px;
+          color: #989898; }
+    .main .login-right .submit .btn-submit {
+      width: 100%;
+      background-color: #2B3643;
+      border: none;
+      color: #fff;
+      font-size: 13px;
+      line-height: 35px;
+      margin-top: 30px;
+      transition: 0.2s ease-in-out;
+      -webkit-transition: 0.2s ease-in-out; }
+      .main .login-right .submit .btn-submit:hover {
+        background-color: #364150;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 10px 1px; }
+      .main .login-right .submit .btn-submit:focus, .main .login-right .submit .btn-submit:active {
+        outline: none;
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 0px 0px; }
+
+/*# sourceMappingURL=login.css.map */

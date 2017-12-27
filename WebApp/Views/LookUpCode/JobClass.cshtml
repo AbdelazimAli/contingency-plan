@@ -1,0 +1,42 @@
+﻿@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var grid = ViewData["GridName"];
+}
+<br>
+
+<div id="Jobs"></div>
+
+<script>
+    var objectName = "JobClasses";
+    var gridname = "'Jobs'";
+    Grids.batchGrid({
+        read: "@Url.Action("ReadJobClass", "LookUpCode")?MenuId=@Request.QueryString["MenuId"]",
+            create: "@Url.Action("CreateJobClass", "LookUpCode")",
+            update: "@Url.Action("UpdateJobClass", "LookUpCode")",
+            destroy:"@Url.Action("DeleteJobClass", "LookUpCode")",
+            admin: "@admin", // Admin role
+            lang:"@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name", // custom delete message
+            gridName: "Jobs",
+            fields: { CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false }, IsLocal: { editable: false } },
+            columns: [{
+                field: "IsLocal",
+                template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsLocal\',' + gridname + ')"/>'
+            }]
+    });
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Jobs" }, { "ObjectName", "JobClasses" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+

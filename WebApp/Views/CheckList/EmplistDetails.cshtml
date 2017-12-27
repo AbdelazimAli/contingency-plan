@@ -1,0 +1,284 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model EmpChkListViewModel
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+
+
+<div  id="EmpCheckListDiv">
+
+</div>
+
+<script>
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+
+
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var EmpId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+        var MangerId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+        var EmpIdGrid= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpIdGrid));
+        var functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+        var listType = [
+        { id: 1, name: '@MsgUtils.Instance.Trls("Employment Checklist")' },
+        { id: 2, name: '@MsgUtils.Instance.Trls("New Employee Orientation")' },
+        { id: 3, name: '@MsgUtils.Instance.Trls("Termination checklist")' },
+
+        ];
+        var ListStatus = [
+            { id: 0, name: '@MsgUtils.Instance.Trls("Darft")' },
+            { id: 1, name: '@MsgUtils.Instance.Trls("Done")' },
+            { id: 2, name: '@MsgUtils.Instance.Trls("Canceled")' },
+
+        ];
+        var GridListStatus = [
+            { value: 0, text: '@MsgUtils.Instance.Trls("Darft")' },
+            { value: 1, text: '@MsgUtils.Instance.Trls("Assigned to employee")' },
+            { value: 2, text: '@MsgUtils.Instance.Trls("Done")' },
+            { value: 3, text: '@MsgUtils.Instance.Trls("Canceled")' },
+            { value: 4, text: '@MsgUtils.Instance.Trls("Not done")' },
+        ];
+        var Unit =[
+        { value: 1, text: '@MsgUtils.Instance.Trls("Minute")' },
+        { value: 2, text: '@MsgUtils.Instance.Trls("Hour")' },
+        { value: 3, text: '@MsgUtils.Instance.Trls("Day")' },
+        { value: 4, text: '@MsgUtils.Instance.Trls("Week")' },
+        { value: 5, text: '@MsgUtils.Instance.Trls("Month")' },
+        ];
+
+        var TaskCat= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TaskCat));
+        var CheckList= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CheckList));
+        var formId = "EmpListForm";
+
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "EmpListForm", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="EmpChkLists";
+                data.FormAction = "@Url.Action("EmplistDetails", "CheckList")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                if(read == 1)
+                    data.mode = 'show';
+
+                $("#EmpCheckListDiv").Forms(data, model);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                if(read == 1)
+                    $("#"+formId).find('#CancelStatus').css('display',"none");
+
+                $("div[name=gridSec]").prepend('<div id="EmplistTaskDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div><br/><div class="form-inline col-lg-9 col-md-9 col-sm-9"><div class="form-group col-sm-2"><div><input type="button" name="UpdateStatus" class="btn btn-success  submit button" id="UpdateStatus" value="@MsgUtils.Instance.Trls("UpdateStatus")"/></div></div><div class="form-group"><div><input type="button" name="CancelStatus" class="btn btn-danger  submit button" id="CancelStatus" value="@MsgUtils.Instance.Trls("CancelStatus")"/></div></div></div>');
+
+                $("#" + formId).on('blur','#ListStartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#ListEndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#ListEndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ListStartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateMustlessEnd")</span>");
+                        }
+                    }
+                    if( $('#ListEndDate').hasClass("k-invalid")){
+                        $('#ListEndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#ListEndDate').next().remove();
+                    }
+                });
+                $("#"+formId).on('blur','#ListEndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#ListStartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ListEndDate' role='alert'>@MsgUtils.Instance.Trls("End must greater than start")</span>");
+                            }
+                        }
+                        if($('#ListStartDate').hasClass("k-invalid")){
+                            $('#ListStartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#ListStartDate").next().remove();
+                        }
+                    }
+                });
+                if(model.Id==0)
+                    $("#" + formId).find('#UpdateStatus').attr("disabled",true);
+
+                if(functions.length>0){
+                    if($.inArray("UpdateStatus",functions)==-1)
+                        $("#" + formId).find('#UpdateStatus').closest("div.form-group").remove();
+                    else if($.inArray("CancelTask",functions)==-1)
+                        $("#" + formId).find('#CancelStatus').closest("div.form-group").remove();
+                }
+                var gridname = "'EmplistTaskDiv'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadEmpListTask", "CheckList")?ListId=" +model.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "EmplistTasks",
+                    taskName: "EmpTasks",
+                    admin: "@admin", // Admin role
+                    lang: "@User.Identity.GetCulture()",
+                    toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right direction: rtl" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    recordName: "TaskCat",
+                    gridName: "EmplistTaskDiv",
+                    columns: [{
+                        field: "Required",
+                        template: '<input  type="checkbox" #:Required == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Required\',' + gridname + ')"/>'
+                    },
+                        {field:"Unit",values:Unit},{field:"ManagerId",values:EmpIdGrid},{field:"Status",values:GridListStatus},{field:"TaskCat",values:TaskCat},{field:"EmpId",values:EmpIdGrid},{ field: "Duration", editor: function (container, options) { $('#EmplistTaskDiv').data("kendoGrid").closeCell(); } }],
+                    select: {"Unit":Unit,"TaskCat":TaskCat,"EmpId":EmpIdGrid,"Status":GridListStatus,"ManagerId":EmpIdGrid},
+                    save:function(e){
+                        var grid = $('#EmplistTaskDiv').data("kendoGrid");
+                        var row = $("#EmplistTaskDiv [data-uid=" +e.model.uid + "]");
+                        var model = grid.dataItem(row);
+                        var valueinDays=0;
+                        var unitChnage=model.Unit;
+
+
+                        if(e.values.EndTime || e.values.StartTime || e.values.Unit )
+                        {
+                            if(e.values.EndTime || e.values.StartTime){
+                                grid.table.find(".errorCell").each(function () {
+                                    $(this).removeClass("errorCell k-invalid");
+                                });
+                            }
+                            if(e.values.EndTime && model.StartTime != null)
+                                valueinDays=(kendo.parseDate(e.values.EndTime)-kendo.parseDate(model.StartTime))/(1000*3600*24);
+                            else if(e.values.StartTime && model.EndTime != null)
+                                valueinDays=(kendo.parseDate(model.EndTime)-kendo.parseDate(e.values.StartTime))/(1000*3600*24);
+                            else
+                            {
+                                if(model.StartTime != null && model.EndTime != null)
+                                    valueinDays=(kendo.parseDate(model.EndTime)-kendo.parseDate(model.StartTime))/(1000*3600*24);
+                            }
+                            if(valueinDays<0 ){
+                                $(e.container[0]).addClass("k-invalid errorCell");
+                                $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+(e.values.StartTime==undefined?e.values.EndTime:e.values.StartTime)+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("End must greater than start")<div class="k-callout k-callout-n"></div></div>'));
+                            }
+                            else{
+                                if(e.values.Unit)
+                                    unitChnage=e.values.Unit;
+                                var value=0;
+                                switch(unitChnage){
+                                    case 1:
+                                        value =  parseInt(valueinDays*24*60);
+                                        break;
+                                    case 2 :
+                                        value=parseInt(valueinDays*24);
+                                        break;
+                                    case 5:
+                                        value= parseInt(valueinDays*0.0328767);
+                                        break;
+                                    case 4:
+                                        value = parseInt(valueinDays/7);
+                                        break;
+                                    default:
+                                        value=parseInt(valueinDays);
+                                        break;
+                                }
+                                model.set("Duration",value)
+                            }
+                        }
+                    }
+
+                });
+                FormJs.fillOptionsDynamic($("#" + formId), "ListType", listType, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model,{ remoteTableName: "People" });
+                FormJs.fillOptionsDynamic($("#" + formId), "ManagerId", MangerId, model,{ remoteTableName: "People" });
+                FormJs.fillOptionsDynamic($("#" + formId), "ListType", listType, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Status", ListStatus, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "ListId", CheckList, model);
+
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+
+                $("#EmpCheckListDiv").on('click',"#saveChanges",null, function (e) {
+                    if($("#"+formId).find(".errorCell").length>0) return;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    },Grids.sendData("EmplistTaskDiv"));
+                });
+                $("#EmpCheckListDiv").on('click',"#UpdateStatus",null, function (e) {
+                    $.ajax({
+                        url:"/CheckList/Updatestatus",
+                        data:{id:model.Id},
+                        success:function(res){
+                            var NewRes = res.split(" ")[1];
+                            if(NewRes=="AlreadyAssigned"){
+                                toastr.warning(res.split(" ")[0]+" "+"@MsgUtils.Instance.Trls("tasks assign to employee")");
+                                $("#UpdateStatus").attr("disabled",true);
+                            }else{
+                                if(res=="Updated")
+                                    toastr.success("@MsgUtils.Instance.Trls("The Next Status Updated")");
+                                else if(res=="OkNoTask"){
+                                    toastr.error("@MsgUtils.Instance.Trls("NoTasks")");
+                                    $("#UpdateStatus").attr("disabled",true);
+                                }else if(res=="OkCanceled"){
+                                    toastr.error("@MsgUtils.Instance.Trls("NoTasks")");
+                                    $("#UpdateStatus").attr("disabled",true);
+                                }
+                                else
+                                    toastr.error(res);
+                            }
+                        },
+                        error:function(){
+
+                        }
+                    });
+                });
+
+                $("#EmpCheckListDiv").on('click',"#CancelStatus",null, function (e) {
+                    if($("#"+formId).find(".errorCell").length>0) return;
+                    bootbox.confirm("@MsgUtils.Instance.Trls("cancelstatusbtn")",
+                     function (result) {
+                         if (result) {
+                                 $("#"+formId).find("#Status").data("kendoDropDownList").value("2");
+
+                                 FormJs.saveForm($("#"+formId), $(this), function () {
+                                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                 $("#renderbody").load(oldulr);
+                             },Grids.sendData("EmplistTaskDiv"));
+                         }
+                     });
+
+                });
+
+
+                $('#EmpCheckListDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+            },
+            error: function (data) {
+            }
+        });
+    });
+
+
+
+</script>
+
+
+

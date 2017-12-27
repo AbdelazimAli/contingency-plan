@@ -1,0 +1,67 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="SalaryVarDiv"></div>
+
+<script>
+    var PayrollId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollId));
+    var SalItemId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SalItemId));
+    var PayPeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayPeriodId));
+    var objectName = "SalaryVars";
+    Grids.indexGrid({
+        read: "@Url.Action("GetSalaryVar", "SalaryItem")",
+        edit: "@Url.Action("DetailsOfSalary", "SalaryItem")",
+        del: "@Url.Action("DeleteSalaryVar", "SalaryItem")",
+        show: "@Url.Action("DetailsOfSalary", "SalaryItem")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Payroll",
+        gridName: "SalaryVarDiv",
+        admin: "@admin",
+        columns : [{field:"PayrollId",values:PayrollId},{field:"SalItemId",values:SalItemId},{field:"PayPeriodId",values:PayPeriodId}],
+        select: { "PayrollId": PayrollId ,"SalItemId":SalItemId ,"PayPeriodId":PayPeriodId}
+        //dataBound:function(e)
+        //{
+        //    console.log(e);
+        //}
+
+    });
+</script>
+
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("DetailsOfSalary", "SalaryItem") },
+      { "Admin", admin}, { "GridName", "SalaryVarDiv" },{"objectName" , "SalaryVars"}, {"Functions",ViewBag.Functions} })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

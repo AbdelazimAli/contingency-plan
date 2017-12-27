@@ -1,0 +1,67 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+
+<br>
+
+<div id="PayReqDiv"></div>
+
+<script>
+    //Checkbox change
+    function PaidChanged(e, gridName) {
+        var dataItem = $("#" + gridName).data("kendoGrid").dataItem($(e).closest("tr"));
+        dataItem.dirty = true;
+        dataItem.Paid = $(e).is(":checked");
+    };
+
+    var BankIds = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BankId));
+
+    var payMethods = [{ value: 1, text: '@MsgUtils.Instance.Trls("Cash")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Cheque")' }, { value: 3, text: '@MsgUtils.Instance.Trls("Bank Transfer")' }];
+    var grid = "'PayReqDiv'";
+
+    Grids.batchGrid({
+        read: "@Url.Action("ApprovedPays", "PayRequest")?MenuId=@Request.QueryString["MenuId"]",
+        update:"@Url.Action("UpdatePaid", "PayRequest")",
+        objectName: "ApprovedPays",
+        tableName: "PayRequests",
+        gridName: "PayReqDiv",
+        recordName: "RequestNo",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        detailInit: detailInit,
+        fields: { RequestNo: { editable: false }, RequestDate: { editable: false }, Requester: { editable: false }, PayMethod: { editable: false }, PayPercent: { editable: false } },
+        columns: [{ field: "PayMethod", values: payMethods }, { field: "PayPercent", format: '{0}%' },
+            { field: "Paid", template: '<input id="#:Id#"  type="checkbox" #:Paid == true ? "checked" : ""# onchange="PaidChanged(this,' + grid + ')" />' }
+        ],
+        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + grid + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                 '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                 '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+    });
+
+
+    function detailInit(e) {
+        $("<div id='emp" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var grid2 = "'emp" + e.data.Id + "'";
+        Grids.indexGrid({
+            read: "@Url.Action("ApprovedPaysEmps", "PayRequest")?MenuId=@Request.QueryString["MenuId"]&RequestId=" +  e.data.Id,
+            objectName: "PayRequestEmployees",
+            gridName: "emp" + e.data.Id,
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: [{ field: "BankId", values: BankIds }, { field: "Stopped", template: '<input id="#:Id#" type="checkbox" #:Stopped == true ? "checked" : ""# disabled />' }],
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                     '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                     '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        });
+    }
+</script>

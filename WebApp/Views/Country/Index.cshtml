@@ -1,0 +1,86 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br>
+
+<div id="Countries"></div>
+
+    <script>
+        var objectName = "Countries";
+        var gridname = "'Countries'"
+        Grids.batchGrid({
+            read: "@Url.Action("ReadCountry", "Country")?MenuId=@Request.QueryString["MenuId"]",
+            create: "@Url.Action("CreateCountry", "Country")",
+            update: "@Url.Action("UpdateCountry", "Country")",
+            destroy: "@Url.Action("DeleteCountry", "Country")",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            objectName: "Countries",
+            recordName: "Name",
+            gridName: "Countries",
+            detailInit: detailInit,
+            columns: [{
+                field: "DayLightSaving",
+                template: '<input  type="checkbox" #:DayLightSaving == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'DayLightSaving\',' + gridname + ')"/>'
+            }],
+            fields: { CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false }, DayLightSaving: { editable: false } }
+        });
+        function detailInit(e) {
+
+            $("<div id='Country" + e.data.Id + "' />").appendTo(e.detailCell);
+            var gridname = "'Country" + e.data.Id + "'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadCity","Country")?Id=" + e.data.Id,
+                create: "@Url.Action("CreateCity", "Country")",
+                update: "@Url.Action("UpdateCity", "Country")",
+                destroy: "@Url.Action("DeleteCity", "Country")",
+                parentColumnName: "CountryId",
+                parentColumnId: e.data.Id,
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                objectName: "Cities",
+                toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right");@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
+                recordName: "Name",
+                gridName: 'Country' + e.data.Id,
+                detailInit:districtIntit
+
+            });
+        }
+        function districtIntit(e) {
+
+            $("<div id='City" + e.data.Id + "' />").appendTo(e.detailCell);
+
+            var gridname1 = "'City" + e.data.Id + "'";
+
+            Grids.batchGrid({
+                read: "@Url.Action("ReadDistrict","Country")?Id=" + e.data.Id,
+                create: "@Url.Action("CreateDistrict", "Country")",
+                update: "@Url.Action("UpdateDistrict", "Country")",
+                destroy: "@Url.Action("DeleteDistrict", "Country")",
+                parentColumnName: "CityId",
+                parentColumnId: e.data.Id,
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                objectName: "Districts",
+                toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname1 + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right") "><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
+                recordName: "Name",
+                gridName: 'City' + e.data.Id,
+            });
+        }
+
+    </script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "Countries" }, { "ObjectName", "Countries" }, { "Functions", ViewBag.Functions } })
+
+

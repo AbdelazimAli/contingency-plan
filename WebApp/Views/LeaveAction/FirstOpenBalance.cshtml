@@ -1,0 +1,283 @@
+﻿@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<style>
+    /*tree view*/
+    .k-treeview {
+        max-height: 400px;
+        overflow: scroll;
+    }
+    label{
+        color:black;
+    }
+</style>
+
+<br/>
+<div class="omegaform @(rtl ? "rtl" : "")">
+    <div class="form-group col-md-2">
+        &nbsp;&nbsp;
+        <!--Dept Filter-->
+        <div class="btn-group" style="@(rtl ? "float: right" : "float: left")">
+            <a href="" class="btn btn-success btn-circle btn-sm dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" data-close-others="true" aria-expanded="false">
+                @MsgUtils.Instance.Trls("Filter Department") <span class="fa fa-angle-down"></span>
+            </a>
+            <ul class="dropdown-menu pull-right" id="filterDept">
+                <li><a href="javascript:;" id="filterDeptItem"></a></li>
+            </ul>
+        </div>
+    </div>
+    &emsp;&emsp;
+    <div class="form-group col-md-4">
+        <label id="LeaveLbl" class="control-label col-md-4">@MsgUtils.Instance.Trls("LeaveType")</label>&nbsp;&nbsp;
+        <input id="ddlPicker" class="form-control" title="ddlPicker" />&nbsp;&nbsp;
+    </div>
+    <div class="form-group col-md-4">
+        <label id="FiscalLbl" class="control-label col-md-4" >@MsgUtils.Instance.Trls("FiscalYear")</label>&nbsp;&nbsp;
+        <input id="FiscalddlPicker" class="form-control" title="FiscalddlPicker" />&nbsp;
+    </div>
+    <div class="form-group col-md-2">
+        <button id="deptsFiletrBtn" style="@(rtl ? "float: right" : "float: left")">@MsgUtils.Instance.Trls("Confirm")</button>
+    </div>
+</div>
+&nbsp;&nbsp;
+<div id="LeaveActionDiv"></div>
+
+<script src="~/Scripts/app/tree.js"></script>
+<script>
+
+    var acuralLeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes));
+    var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GridLeaveTypes));
+    var Depts = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Dept));
+
+    $("#ddlPicker").kendoDropDownList({
+        valuePrimitive: true,
+        dataSource: acuralLeaveTypes,
+        dataTextField: "name",
+        dataValueField: "id",
+        optionLabel: " ",
+    });
+
+    $("#FiscalddlPicker").kendoDatePicker({culture: "@culture"});
+
+    var selectedDepts = [];
+    //to prevent toggle button when expand tree
+    $("#filterDept").on('click', 'li', function (e) { e.stopPropagation(); });
+
+    $("#filterDeptItem").TreeView({
+        dragAndDrop: false,
+        table: "CompanyStructures",
+        root: "Company",
+        lang: "@culture",
+        checkboxes: { checkChildren: true },
+        dataBound: function (e) {
+            var treeView = $("#filterDeptItem").data("kendoTreeView");
+            if(treeView)
+            treeView.expand(".k-item");
+        }
+    });
+
+    $("#ddlPicker").on("change",function()
+    {
+        var element =$(this);
+        console.log(element);
+        var ddlLeave = $("#ddlPicker").val();     
+        var date = new Date($("#FiscalddlPicker").val());
+        var grid = $("#LeaveActionDiv").data("kendoGrid");
+        if(grid)
+        {
+            grid.dataSource.data([]);
+        }
+        if($("#FiscalddlPicker").val() != "")
+        {
+            $.ajax({
+                async: false,
+                url: "@Url.Action("CheckPeriod", "LeaveAction")",
+                data: { Period:  date.toUTCString(),LeaveId : ddlLeave },
+                success: function (result) {
+                    result = result.split(',');
+                    $("#FiscalddlPicker").removeClass("k-invalid").prop("aria-invalid", false);
+                    $("#FiscalddlPicker").next("span.k-tooltip-validation").remove();
+                    $("#deptsFiletrBtn").removeAttr("disabled");
+
+                    if( result[0] == "ClosedPeriod")
+                    {
+                        result.shift();
+                        toastr.error(result);
+                        $("#FiscalddlPicker").addClass("k-invalid").prop("aria-invalid", true);
+                        $("#FiscalddlPicker").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='FiscalddlPicker' role='alert'>"+result+"</span>");
+                        $("#deptsFiletrBtn").attr("disabled","true");
+                    }
+                    else if(result[0] == "NotDefinedPeriod")
+                    {
+                        result.shift();
+                        toastr.error(result);
+                        $("#FiscalddlPicker").addClass("k-invalid").prop("aria-invalid", true);
+                        $("#FiscalddlPicker").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='FiscalddlPicker' role='alert'>"+result+"</span>");
+                        $("#deptsFiletrBtn").attr("disabled","true");
+
+                    }
+                }
+            });
+        }
+
+    });
+    $("#FiscalddlPicker").on("change",function()
+    {
+        var element =$(this);
+        var ddlLeave = $("#ddlPicker").val();
+        if(ddlLeave == "")
+        {
+            var x= $("#FiscalddlPicker").data("kendoDatePicker");
+            x.value("");
+            toastr.error("@MsgUtils.Instance.Trls("PleaseFillLeave")");
+            $("#LeaveActionDiv").data("kendoGrid").dataSource.data([]);
+            return;
+        }
+        var grid = $("#LeaveActionDiv").data("kendoGrid");
+        if(grid)
+        {            
+            grid.dataSource.data([]);
+        }
+        $.ajax({
+            async: false,
+            url: "@Url.Action("CheckPeriod", "LeaveAction")",
+            data: { Period:  $("#FiscalddlPicker").val(),LeaveId : ddlLeave },
+            success: function (result) {
+                result = result.split(',');
+            element.removeClass("k-invalid").prop("aria-invalid", false);
+            element.next("span.k-tooltip-validation").remove();
+            $("#deptsFiletrBtn").removeAttr("disabled");
+            if( result[0] == "ClosedPeriod")
+            {
+                result.shift();
+                toastr.error(result);
+                element.addClass("k-invalid").prop("aria-invalid", true);
+                element.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='FiscalddlPicker' role='alert'>"+result+"</span>");
+                $("#deptsFiletrBtn").attr("disabled","true");
+
+            }
+            else if(result[0] == "NotDefinedPeriod")
+            {
+                result.shift();
+                toastr.error(result);
+                element.addClass("k-invalid").prop("aria-invalid", true);
+                element.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='FiscalddlPicker' role='alert'>"+result+"</span>");
+                $("#deptsFiletrBtn").attr("disabled","true");
+
+            }
+        }
+    });
+
+    });
+    //filter Depts
+    $("#deptsFiletrBtn").click(function (e) {
+        console.log("here");
+        var treeView = $("#filterDeptItem").data("kendoTreeView");
+        var selectedDepts = [];
+        checkNodeIds(treeView.dataSource.view(), selectedDepts);
+        var dateKendo = FormJs.parseServerDate($('#FiscalddlPicker').val());
+        var ddlLeave = $("#ddlPicker").val();
+         
+        if($('#FiscalddlPicker').val() == "" || $("#ddlPicker").val() == "")
+        {
+            toastr.error("@MsgUtils.Instance.Trls("PleaseFillData")");
+            return;
+        }
+        var formatedDepts = selectedDepts.join(",");
+        var objectName = "ActionLeave";
+        var  gridname  = "LeaveActionDiv";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadLeaveAction", "LeaveAction")?LeaveId=" +ddlLeave+ "&FiscalYearDate=" + dateKendo +"&Departments="+formatedDepts,
+            admin: "@admin",
+            traditional: true,
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name",
+            toolbar: kendo.template($("#Newtemplate").html()),
+            gridName: "LeaveActionDiv",
+            height:500,
+            fields: { Code: { editable: false }, Employee: { editable: false }, Department: { editable: false },TypeId: { editable: false }},
+            columns: [{ field: "TypeId", values: LeaveTypes },{field:"Department", values:Depts},
+            {
+                field: "transQty", editor: function (container, options) {
+
+                    if(options.model.transQty >0)
+                    {
+                        $('#LeaveActionDiv').data("kendoGrid").closeCell();
+                    }
+                    else
+                    {
+                        var input = $('<input name="transQty" type="number" style="width: 90%; margin-bottom: 0"/>');
+                        input.appendTo(container);
+                    }
+                }
+            }],
+            select: { "TypeId": LeaveTypes ,"Department" :Depts}
+        });
+
+    });
+    function PostLeaveTransAjax() {
+        var grid = $("#LeaveActionDiv").data("kendoGrid");
+        var TransDate = new Date($('#FiscalddlPicker').val());      
+        if(grid)
+        {
+            var currentData = [], newRecords = [];
+            currentData = grid.dataSource.data();
+            if(currentData.length >0)
+            {
+                for(var i = 0; i < currentData.length; i++)
+                    newRecords.push(Grids.toValidJson(currentData[i]));
+                $.ajax({
+                    url: "/LeaveAction/PostLeaveTrans",
+                    type: "POST",
+                    data: { models: newRecords ,transDate :TransDate.toUTCString()},
+                    success: function (data) {
+                        if(data == "Ok")
+                        {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveSuccessfuly")")
+                            $("#LeaveActionDiv").data('kendoGrid').dataSource.read();
+                            $("#LeaveActionDiv").data('kendoGrid').refresh();
+                        }
+                        else
+                            toastr.error(data);
+
+                    }
+                });
+            }
+            else
+            {
+                toastr.error("@MsgUtils.Instance.Trls("NotExitEmployees")");
+                return;
+            }
+        }
+    }
+</script>
+<script type="text/x-kendo-template" id="Newtemplate">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default glyphicon glyphicon-plus " onclick="PostLeaveTransAjax()" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('LeaveActionDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('LeaveActionDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+            </ul>
+        </div>
+    </div>
+</script>
+

@@ -1,0 +1,101 @@
+﻿@model Model.ViewModel.FormColumnViewModel
+@using System.Web.Script.Serialization
+@{
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<div id="colPropDiv"></div>
+
+<script>
+    var types = [{ id: "", name: "@MsgUtils.Instance.Trls("default")" }, { id: "text", name: "@MsgUtils.Instance.Trls("text")" }, { id: "number", name: "@MsgUtils.Instance.Trls("number")" }, { id: "percent", name: "@MsgUtils.Instance.Trls("percent")" }, { id: "textarea", name: "@MsgUtils.Instance.Trls("textarea")" },
+           { id: "select", name: "@MsgUtils.Instance.Trls("select")" }, { id: "multiselect", name: "@MsgUtils.Instance.Trls("multiselect")" }, { id: "autocomplete", name: "@MsgUtils.Instance.Trls("autocomplete")" }, { id: "radioset", name: "@MsgUtils.Instance.Trls("radioset")"},
+           { id: "password", name: "@MsgUtils.Instance.Trls("password")" }, { id: "checkbox", name: "@MsgUtils.Instance.Trls("checkbox")" },
+           { id: "url", name: "@MsgUtils.Instance.Trls("url")" }, { id: "email", name: "@MsgUtils.Instance.Trls("email")" }, { id: "file", name: "@MsgUtils.Instance.Trls("file")" }, { id: "date", name: "@MsgUtils.Instance.Trls("date")" }, { id: "time", name: "@MsgUtils.Instance.Trls("time")" }, { id: "datetime", name: "@MsgUtils.Instance.Trls("datetime")"},
+           { id: "maskedtextbox", name: "@MsgUtils.Instance.Trls("maskedtextbox")" }, { id: "button", name: "@MsgUtils.Instance.Trls("button")" }, { id: "label", name: "@MsgUtils.Instance.Trls("label")" }, { id: "hidden", name: "@MsgUtils.Instance.Trls("hidden")" }];
+    var CodeName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CodeName));
+    var Columns = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Columns));
+    var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    $.getJSON("@Url.Action("ReadFormInfo", "Pages")", { objectname: 'FormColumnProp', version: "@Request.QueryString["Version"]" }, function (data) {
+        var formId = "columnPropForm";
+        data.FormAction = "@Url.Action("SaveColumnProp", "Pages")";
+        data.FormId = formId;
+        data.Culture = '@culture';
+        data.TableName = "FormColumns";
+        data.companyId = "@compantId";
+        data.rtl = @rtl.ToString().ToLower();
+        data.admin = "@admin";
+
+        $("#colPropDiv").Forms(data, model);
+        var myForm = $("#"+ formId);
+
+        FormJs.fillOptionsDynamic(myForm, "type", types, model, {hasFilter: false});
+        FormJs.fillOptionsDynamic(myForm, "CodeName", CodeName, model);
+        FormJs.fillOptionsDynamic(myForm, "Helpers", Columns, model);
+
+        myForm.find(".form-control").not(".k-dropdown").css("height", "25px");
+        myForm.find(".col-md-6.col-lg-6:not(.form-group)").removeClass("col-md-6 col-lg-6").addClass("col-md-4 col-lg-4");
+        myForm.find(".col-md-8.col-lg-8:not(.form-group)").removeClass("col-md-8 col-lg-8").addClass("col-md-6 col-lg-6");
+        myForm.find(".col-md-10.col-lg-10:not(.form-group)").removeClass("col-md-10 col-lg-10").addClass("col-md-8 col-lg-8");
+        $("#colPropDiv").find(".editarea.col-sm-6.col-xs-12").removeClass("col-sm-6 col-xs-12").addClass("col-sm-5 col-xs-10");
+
+        myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+        $("#" + formId).on('click','#saveChanges', function (e) {
+            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                var formWindow = myForm.closest("[data-role='window']").data("kendoWindow");
+                if(formWindow) formWindow.close();
+            });
+        });
+
+        //--------------Type--------------
+        typeChanged();
+        myForm.on('change', '#type', typeChanged);
+        function typeChanged(){
+            var typeVal = myForm.find('#type').val();
+
+            myForm.find('#CodeName').closest('.form-group').hide();
+            myForm.find('#min, #max, #minLength, #maxLength').closest('.section').hide();
+
+            if($.inArray(typeVal, ['select', 'multiselect', 'autocomplete', 'radioset']) != -1)
+                myForm.find('#CodeName').closest('.form-group').show();
+            else if(isString(typeVal)) {
+                myForm.find('#minLength, #maxLength').closest('.section').show();
+                myForm.find('#min').val('');
+                myForm.find('#max').val('');
+            }
+            else if(typeVal == 'number') {
+                myForm.find('#min, #max').closest('.section').show();
+                myForm.find('#minLength').val('');
+                myForm.find('#maxLength').val('');
+            }
+        };
+
+        function isString(type) {
+            return model.ColumnType == 'string' || $.inArray(type, ['', 'text', 'password', 'textarea', 'url', 'email']) != -1;
+        }
+
+        //--------------Unique--------------
+        uniqueChange();
+        myForm.on('change', '#isunique', uniqueChange);
+        function uniqueChange() {
+            if(myForm.find('#isunique').is(":checked")) myForm.find('#UniqueColumns').closest('.form-group').show();
+            else myForm.find('#UniqueColumns').closest('.form-group').hide();
+        }
+
+        //--------------formula--------------
+        $("#Helpers").on('change',function() {
+            $("#Formula").val($("#Formula").val() + " " + $(this).val());
+        });
+
+    });
+
+
+
+
+
+
+
+</script>

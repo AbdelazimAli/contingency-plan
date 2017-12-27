@@ -1,0 +1,55 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+}
+<style>
+    .k-chart {
+        padding: 5px;
+        margin: 10px 0px;
+        border: thin solid rgba(222, 222, 222, 0.40);
+    }
+
+    .noData {
+        opacity: .4;
+        filter: alpha(opacity=60);
+        text-align: center;
+        top: 50%;
+        position: absolute;
+        width: 100%;
+    }
+
+    #Leave .titleLbl {
+        text-align: center;
+        /*font-size: 18px;*/
+        margin-top: 4px;
+        font-weight: bold;
+    }
+</style>
+<br />
+<div>
+    <div class="row">
+        <button class="btn-xs btn-primary" onclick="Grids.ExportChart('EmpTask')">@MsgUtils.Instance.Trls("ExportImage")</button>
+        <div class="col-md-6"><div id="EmpTask"></div></div>
+    </div>
+    
+</div>
+<script >
+
+    var ManagerEmployeeTask  =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ManagerEmployeeTask));
+    $("#EmpTask").kendoChart({
+        dataSource: { data: ManagerEmployeeTask, group: { field: "category" }, sort: [{ field: "category", dir: "asc" }, { field: "myGroup", dir: "asc" }] },
+        seriesDefaults: { type: "column", labels: { visible: true, background: "transparent" } },
+        series: [{ field: "value", categoryField: "myGroup" }],
+      //  seriesColors: colors,
+        title: { align: "center", text: '@MsgUtils.Instance.Trls("Employee Tasks")' },
+        legend: { visible: true },
+        tooltip: { visible: true, template: "#:value# #:category#  " },
+        dataBound: function(e) {
+            var view = e.sender.dataSource.view();
+            (view.length === 0 ? $(this.element).after("<div class='noData'>@MsgUtils.Instance.Trls("No data available")</div>") :$(this.element).next('.noData').remove());
+        }
+    });
+
+</script>

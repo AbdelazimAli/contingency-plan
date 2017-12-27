@@ -1,0 +1,203 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.LeaveReqViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var allawEditStars = !User.Identity.IsSelfServiceUser();
+    string[] function = ViewData["Functions"] as string[];
+
+}
+<style>
+    #DeptsTree {
+        min-height: 150px;
+        max-height: 250px;
+    }
+
+    #NofErrors span {
+        font-weight: normal;
+    }
+
+    .NoErrorDiv.rtl {
+        direction: rtl;
+    }
+</style>
+
+<div id="leaveDiv"></div>
+<div id="docWindow"></div>
+<link href="~/Content/forms.css" rel="stylesheet" />
+<script src="~/Scripts/app/tree.js"></script>
+
+<script>
+
+    //Checkbox change
+    function ApproveChanged (e, gridName) {
+        var dataItem = $("#" + gridName).data("kendoGrid").dataItem($(e).closest("tr"));
+        //dataItem.dirty = true;
+        dataItem.Approve = $(e).is(":checked");
+    };
+
+    var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LeaveTypes))
+    var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender))
+    var calcOptions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CalcOptions))
+    var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+
+    var url = "@Url.Action("ReadFormInfo", "Pages")";
+    var read = "@Request.QueryString["Read"]";
+    var formId = "groupLeave", selectedDepts = [];
+
+    $.getJSON(url, { objectname: 'GroupLeave', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+        data.FormAction = "@Url.Action("SaveGroup", "Leave")";
+        data.FormId = formId;
+        data.Culture = '@culture';
+        data.TableName = "LeaveRequests";
+        data.companyId = "@compantId";
+        data.admin = '@admin';
+        data.rtl = @rtl.ToString().ToLower();
+
+        if(read == 1) data.mode = 'show';
+
+        $("#leaveDiv").Forms(data, model);
+        var myForm = $("#" + formId);
+
+        FormJs.fillOptionsDynamic(myForm, "TypeId", LeaveTypes, model);
+
+        myForm.find("#Depts").parent().append("<div id='DeptsTree'><div>");
+        myForm.find("#Depts").remove();
+
+        var deptsDiv = myForm.find("#DeptsTree");
+        myForm.find("#DeptsTree").TreeView({
+            dragAndDrop: false,
+            table: "CompanyStructures",
+            root: "Company",
+            lang: "@culture",
+            checkboxes: { checkChildren: true },
+            check: function (e) {
+                myForm.find("#TypeId").closest(".k-dropdown").removeClass("k-invalid");
+
+                var treeView = deptsDiv.data("kendoTreeView");
+                selectedDepts = [];
+                checkNodeIds(treeView.dataSource.view(), selectedDepts);
+
+                if(selectedDepts.length && LeaveTypes && LeaveTypes.length) {
+                    DeptsLeaves = LeaveTypes.filter(function(element) {
+                        if(element.isActive == false) return false;
+
+                        var leaveDepts = element.depts;
+                        if(leaveDepts) {
+                            leaveDepts = leaveDepts.split(",");
+                            for(var i=0; i<leaveDepts.length;i++) {
+                                if ($.inArray(Number(leaveDepts[i]), selectedDepts) != -1) return true;
+                            }
+                            return false; //Leave type have depts but not found in selectedDepts
+                        }
+                        return true;  //Leave type not have depts
+                    });
+                    FormJs.fillOptionsDynamic(myForm, "TypeId", DeptsLeaves, model);
+                }
+            },
+            dataBound: function (e) {
+                var treeView = deptsDiv.data("kendoTreeView");
+                treeView.expand(".k-item");
+            }
+        });
+
+
+        myForm.find("#TypeId").change(function(e) {
+            $.get("@Url.Action("GetCalcOptions", "Leave")", {typeId: $(this).val()}, function(result) {
+                calcOptions = result;
+                //myForm.find("#StartDate, #NofDays, #EndDate, #ReturnDate").val("");
+                if(myForm.find("#NofDays").val())
+                    myForm.find("#NofDays").blur();
+            });
+        });
+
+        myForm.on("blur", "#NofDays, #StartDate", function () {
+            var startDate = myForm.find("#StartDate").data("kendoDatePicker").value(),
+                NofDays = Number.parseFloat(myForm.find("#NofDays").val());
+
+            if(startDate && !isNaN(NofDays)) {
+                myForm.find("#EndDate").data("kendoDatePicker").value(LeaveRequestJs.addDays(startDate, Number(NofDays)));
+                myForm.find("#ReturnDate").data("kendoDatePicker").value(LeaveRequestJs.addDays(startDate, (Number(NofDays) + 1)));
+            }
+        });
+
+        var changeAfterCheck = true;
+        myForm.on('change', ':input:not(:button, [type="checkbox"])', function() { changeAfterCheck = true; });
+
+
+        myForm.find('#Approve').val('@MsgUtils.Instance.Trls("Approve")');
+        myForm.find('#Check').val('@MsgUtils.Instance.Trls("Check")');
+        myForm.find('#Approve').attr("disabled", true);
+
+        //----Draw Grid----
+        myForm.find(".section[name='checkSec']").append("<div id='checkGrid'></div>");
+        var gridname = "'checkGrid'";
+        Grids.indexGrid({
+            dataSource: { data: [] },
+            admin: "@admin",
+            lang: "@culture",
+            objectName: 'CheckGroupLeave',
+            gridName: "checkGrid",
+            pageable: false,
+            toolbar:'<div><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname+ ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>'+
+                    '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                    '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            columns: [{ field: "Approve", template: '<input id="#:Id#"  type="checkbox" #:Approve == true ? "checked" : ""# onchange="ApproveChanged(this,' + gridname + ')" />' }],
+        });
+        //----End Draw Grid----
+
+        var myGrid = myForm.find("#checkGrid");
+
+        myForm.on('click', '#Check', function() {
+            changeAfterCheck = false;
+
+            myForm.attr("action", "@Url.Action("CheckGroup", "Leave")");
+            FormJs.saveForm(myForm, null, function(res) {
+                myForm.find(".submit").attr("disabled", false);
+
+                if(res && res.length) {
+                    if(myForm.find("#NofErrors").length) myForm.find("#NofErrors").text(res[0].NofErrors);
+                    else myForm.find("[name='checkSec']").prepend('<div class="NoErrorDiv @(rtl ? "rtl": "")"><label class="label-control" > @MsgUtils.Instance.Trls("Number of Errors") : </label>&nbsp;&nbsp;<span id=NofErrors>' + res[0].NofErrors + '<span></div>');
+                }
+
+                myGrid = myForm.find("#checkGrid");
+                if(myGrid.data('kendoGrid'))
+                    myGrid.data('kendoGrid').dataSource.data(res);
+            }, selectedDepts);
+        });
+
+        myForm.on('click', '#Approve', function() {
+            var grid = myForm.find("#checkGrid").data("kendoGrid");
+
+            if(!grid || changeAfterCheck)
+                toastr.error("@MsgUtils.Instance.Trls("Pleasechckbeforclick")");
+            else {
+                var newRecords = [], gridData = grid.dataSource.data();
+
+                for(var i = 0; i < gridData.length; i++) {
+                    if(gridData[i].Approve == true && (gridData[i].ReasonCode == 2 || gridData[i].ReasonCode == 3)) {
+                        toastr.error("@MsgUtils.Instance.Trls("DoublicateStartDate")");
+                        return;
+                    }
+
+                    newRecords.push(Grids.toValidJson(gridData[i]));
+                }
+                myForm.attr("action", "@Url.Action("SaveGroup", "Leave")");
+
+                var deptsStr = Array(selectedDepts).join(",");
+                myForm.find("#Departments").val(deptsStr);
+
+                FormJs.saveForm(myForm, null, function(res) {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                }, newRecords);
+            }
+
+        });
+
+    });
+
+</script>

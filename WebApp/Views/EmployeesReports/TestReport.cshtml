@@ -1,0 +1,46 @@
+﻿@*@using System.Collections;
+@using System.ComponentModel;
+@using System.Drawing;
+@using DevExpress.XtraReports.UI;
+@using DevExpress.XtraReports.Parameters;*@
+
+
+
+@{
+    ViewBag.Title = "TestReport";
+    Layout = null;
+}
+
+
+
+@{ 
+    //to identify user_name
+    CustodyReport report = new CustodyReport();
+    //report.Parameters["username"].Value = User.Identity.Name;
+    //LookUpValueCollection _reportColumns = new LookUpValueCollection()
+    //        {
+    //            new LookUpValue("Id","Id"),
+    //            new LookUpValue("Name","Name"),
+    //            new LookUpValue("Category","Category"),
+    //         };
+    //StaticListLookUpSettings reportColumnsLookUpSettings = new StaticListLookUpSettings();
+    //reportColumnsLookUpSettings.LookUpValues.AddRange(_reportColumns);
+    //report.Parameters["SelectColumns"].LookUpSettings = reportColumnsLookUpSettings;
+    //report.Parameters["SelectColumns"].Value = new string[] { "Id", "Name", "Category" };
+
+}
+@*<script> 
+    $("span.dx-button-text").text("تنفيذ");
+</script>*@
+
+
+@*@Html.DevExpress().WebDocumentViewer(settings =>
+{
+    settings.Name = "WebDocumentViewer1";
+  
+}).Bind(report).GetHtml()*@
+
+
+
+
+

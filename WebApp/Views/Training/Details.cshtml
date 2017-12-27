@@ -1,0 +1,151 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    
+}
+
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+
+
+<div id="TrainCourseDiv">
+
+</div>
+
+<script>
+
+    $(function () {
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "TrainCourseForm";
+        var Payrolls = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payrolls));
+        var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
+        var PeopleGroups = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroups));
+        var CompanyStuctures = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyStuctures));
+        var Positions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Positions));
+        var PayrollGrades = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrades));
+        var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+        var Qualification = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Qualification));
+        var PrevCourses = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PrevCourses));
+
+        @*var CourseCat= [{id:1,name:"@MsgUtils.Instance.Trls("Administration")"}, {id:2,name:"@MsgUtils.Instance.Trls("English")"}, {id:3,name:"@MsgUtils.Instance.Trls("Computer Software")"},{id:4,name:"@MsgUtils.Instance.Trls("Computer Hardware")"},{id:5,name:"@MsgUtils.Instance.Trls("Network")"}];*@
+
+
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'TrainCourse', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Training")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "TrainCourses";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+            
+
+            $("#TrainCourseDiv").Forms(data, model);
+
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+            FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payrolls, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroups, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", CompanyStuctures, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Positions, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrades, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Locations, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Qualification", Qualification, model,{objectName: "Qualifications" });
+            //FormJs.fillOptionsDynamic($("#" + formId), "CourseCat", CourseCat, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IPrevCourses", PrevCourses, model);
+
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+           
+
+            
+            $("#" + formId).on('click','#saveChanges', function (e) {
+                if($("#" + formId).find(".k-invalid").length > 0) return ;
+                FormJs.saveForm($("#" + formId), $(this), function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                });
+            });
+            $("#" + formId).find('#backToIndex').on('click', function(){
+                $("#renderbody").load(oldulr);
+            });
+          
+            $("#" + formId).on('blur', "#EndDate",function(){
+                var elem = $(this);
+                if($('#StartDate').val() != ""){
+                    $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#StartDate').next("span.k-tooltip-validation").remove();
+                }
+                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                elem.next("span.k-tooltip-validation").remove();
+
+                if(elem.val()!=""){
+                    var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                        } 
+                    }
+                }
+            });
+            $("#" + formId).on('blur','#StartDate', function(){
+                        
+                var elem = $(this);
+                     
+                if(elem.val() != ""){
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    else{
+
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next("span.k-tooltip-validation").remove();
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+                    }
+                }
+            });
+
+        }); //end get form
+       
+       
+    });
+
+
+
+
+
+</script>
+
+
+
+
+

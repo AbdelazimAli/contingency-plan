@@ -1,0 +1,115 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<script src="~/Scripts/app/tree.js"></script>
+
+<div id="LeaveActionGroupDiv"></div>
+<style>
+div.k-treeview {
+    min-height: 300px;
+}
+.k-rtl .k-treeview .k-item{
+    padding: 0 16px 0 0;
+    direction: rtl;
+}
+</style>
+
+<script>
+    var model;
+    function changeTypeId(record){
+        $.ajax({
+            url:"@Url.Action("GetLeaveType", "LeaveAction")",
+            data:{LeaveId:record},
+            contentType:"application/json",
+            async:false,
+            success:function(res){
+                $("#PeriodId").empty();
+                $("#PeriodId").prepend("<option></option>");
+                FormJs.fillOptionsDynamic($("#LeaveActionGroupForm"), "PeriodId", res, model);
+            },
+            error:function(){
+            }
+        });
+    }
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "LeaveActionGroupForm";
+
+        var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));
+        var TypeId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TypeId));
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'GroupLeaveAction', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("GroupLeaveActionDetails", "LeaveAction")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "LeaveActions";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+
+            $("#LeaveActionGroupDiv").Forms(data, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", PeriodId, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "TypeId", TypeId, model);
+
+            var tree='<div id="deptTree"></div>';
+            $("#LeaveActionGroupDiv div[name='DepteptTree']").append(tree);
+
+            var arr=[];
+            $('#deptTree').TreeView({
+                showMenu:true,
+                table: "CompanyStructures",
+                titleTable:"",
+                lang: "@User.Identity.GetCulture()",
+                checkboxes:{checkChildren:true},
+                dataBound: function (e) {
+                    var treeView = $("#deptTree").data("kendoTreeView");
+                    treeView.expand(".k-item");
+                }
+            });
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            $("#" + formId).on('click','#saveChanges', function (e) {
+                var depts=[];
+                var treeView = $("#deptTree").data("kendoTreeView");
+                checkNodeIds(treeView.dataSource.view(), depts);
+                if(depts.length ==0){
+                    toastr.error("@MsgUtils.Instance.Trls("You must select Department")");
+                    return;
+                }
+                else
+                    FormJs.saveForm($("#" + formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                          $("#renderbody").load(oldulr);
+                    }, depts);
+            });
+
+            $("#LeaveActionGroupForm").on("change","#TypeId",null,function(e){
+                var record= $(this).val();
+                changeTypeId(record);
+            });
+
+        });
+    });
+</script>
+
+
+
+
+
+

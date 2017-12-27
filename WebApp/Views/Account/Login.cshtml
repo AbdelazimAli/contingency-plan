@@ -1,0 +1,263 @@
+﻿@using WebApp.Models
+@model LoginViewModel
+@{
+    Layout = "~/Views/Shared/_HRLoginLayout.cshtml";
+}
+
+<section id="loginForm">
+    @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { id = "form_sample_1", @class = "login-form", role = "form" }))
+    {
+        @Html.AntiForgeryToken()
+
+        <input type="hidden" id="userid" />
+        <input type="hidden" id="resetPassVal" />
+
+        <h3 class="form-title">Sign In</h3>
+        <div class="form-group">
+            <label class="control-label visible-ie8 visible-ie9">Username</label>
+            @Html.TextBoxFor(m => m.UserName, new { @class = "form-control form-control-solid placeholder-no-fix", autocomplete = "off", placeholder = "Enter UserName" })
+            <b>@Html.ValidationMessageFor(m => m.UserName, "", new { id = "userValidator", @class = "text-danger" })</b>
+        </div>
+        <div class="form-group">
+            <label class="control-label visible-ie8 visible-ie9">Password</label>
+            @Html.PasswordFor(m => m.Password, new { @class = "form-control form-control-solid placeholder-no-fix", autocomplete = "off", placeholder = "Enter password" })
+          <b>@Html.ValidationMessageFor(m => m.Password, "", new { id = "passValidator", @class = "text-danger" })</b>
+        </div>
+    <div id="resetpass">
+        <div class="form-group">
+            <label class="control-label visible-ie8 visible-ie9">Rest Password</label>
+                <input class="form-control form-control-solid placeholder-no-fix" type="password" autocomplete="off" placeholder="Enter Rest password" name="ResetPassword" id="rePass" required />
+        </div>
+        <div class="form-group">
+            <label class="control-label visible-ie8 visible-ie9">Confirm Password</label>
+                <input class="form-control form-control-solid placeholder-no-fix" type="password" autocomplete="off" placeholder="Enter Confirm" name="conFirm" id="conFirm" required />
+        </div>
+    </div>
+        <div class="form-actions">
+            <input type="button" id="log" value="Log in" class="btn btn-success uppercase" />
+            @*<label class="rememberme check">
+            </label>
+            @Html.CheckBoxFor(m => m.RememberMe)
+            @Html.LabelFor(m => m.RememberMe)*@
+        </div>
+        <p>
+            <h5><b><span style="font-family:Consolas; text-align:left; color:darkred; margin-left: 104px;" id="errorSpan"></span></b></h5>
+        </p>
+        <div class="create-account">
+
+        </div>
+
+
+    }
+</section>
+
+<style>
+    #resetpass {
+        display: none;
+    }
+</style>
+<script src="~/Scripts/jquery-2.2.4.js"></script>
+@section Scripts{
+  <script type="text/javascript">
+      $(function () {
+          var inc = 0;
+          var blocked = "";
+          var invalidpassword = "";
+          var invalidusername = "";
+          var Notmatches = "";
+          var oldUsername = [];
+          var lock = false;
+          var NumberBlock = 5;
+
+          $(document).ready(function () {
+              var checkval = false;
+              var res = false;
+
+              localStorage.setItem("Antiforgery", $("input[name='__RequestVerificationToken']").val());
+
+              $.ajax({
+                  type: 'post',
+                  dataType: 'json',
+                  cache: false,
+                  async: false,
+                  url: '/Account/LogOff',
+                  success: function () {
+                  },
+                  error: function () {
+                  }
+              });
+
+
+              $('#rePass').blur(function () {
+                  if ($(this).val().length === 0) {
+                      $('#errorSpan').text('Required Rest password');
+                  }
+              });
+
+
+              $('#rePass , #conFirm').keyup(function () {
+                  if ($('#rePass').val().length !== 0 && $('#conFirm').val().length !== 0) {
+
+                      if ($('#rePass').val() == $('#conFirm').val()) {
+                          $("#Password").val($('#rePass').val())
+                          $('#errorSpan').text('');
+                          $('#log').prop('disabled', false);
+                      }
+                      else {
+                          $('#log').prop('disabled', true);
+                          $('#errorSpan').text(Notmatches);
+                      }
+                  }
+              });
+
+
+              $('#UserName').blur(function () {
+                  var elem = $(this);
+                  if (elem.val().length != 0) {
+                      $.ajax({
+                          type: 'get',
+                          dataType: 'json',
+                          async: false,
+                          data: { id: elem.val() },
+                          url: '/Account/GetUserObj',
+                          success: function (data) {
+                              NumberBlock = data.NumberBlock;
+                              blocked = data.Block;
+                              oldUsername.push(elem.val());
+                              invalidpassword = data.invalidpass;
+                              invalidusername = data.invalidname;
+                              Notmatches = data.Notmatches;
+                              if (elem.val().length === 0)
+                                  console.log('error');
+                              else {
+
+                                  if (data.user === null) {
+                                      $('#errorSpan').text(invalidusername);
+                                      $('#log').attr('disabled', true);
+                                      $('#Password').attr('disabled', true);
+                                      $('#resetpass').hide();
+                                  }
+                                  else {
+                                      $('#Password').attr('disabled', false);
+                                      $('#userid').val(data.Id);
+                                      $('#log').attr('disabled', false);
+                                      $('#resetPassVal').val(data.ResetPassword);
+                                      $('#errorSpan').text('');
+
+                                      if (data.user.Locked === true) {
+                                          $('#errorSpan').text(blocked);
+                                          lock = true;
+                                          $('#log').attr('disabled', true);
+                                          $('#Password').attr('disabled', true);
+                                          $('#resetpass').hide();
+                                      }
+                                      else {
+                                          if (data.user.ResetPassword === true) {
+                                              $('#errorSpan').text('');
+                                              $('#log').attr('disabled', true);
+                                              $('#resetpass').show();
+                                              res = true;
+                                              lock = false;
+                                              $('#passValidator').hide();
+                                              $('#Password').remove();
+                                          }
+                                          else {
+                                              $('#Password').show();
+                                              $('#resetpass').hide();
+                                              lock = false;
+                                          }
+
+                                      }
+
+                                  }
+
+                              }
+                          },
+                          error: function () {
+                          }
+                      });
+                  }
+              });
+
+              $('#Password').blur(function () {
+                  var elem = $(this);
+                  if (elem.val().length != 0) {
+                      $.ajax({
+                          type: 'get',
+                          async: false,
+                          data: { id: elem.val(), userName: $('#UserName').val() },
+                          url: '/Account/DoesPasswordValid',
+                          success: function (data) {
+
+                              if (elem.val().length === 0) {
+                                  $('#resetpass').hide();
+                              }
+                              else {
+                                  if (data === 'True') {
+                                      $('#errorSpan').text('');
+                                      $('#Password').attr('disabled', false);
+                                      checkval = true;
+                                  }
+                                  else {
+                                      $('#errorSpan').text(invalidpassword);
+                                      $('#log').attr('disabled', false);
+                                      checkval = false;
+
+                                  }
+
+                              }
+
+
+                          },
+                          error: function () {
+                          }
+                      });
+                  }
+              });
+
+              document.addEventListener("keyup", function (e) {
+                  var elem = $('#log');
+                  if (e.keyCode == 13 && !elem.prop("disabled"))
+                      elem.click();
+              });
+
+              $('#log').click(function () {
+                  $("#UserName").blur();
+                  $("#Password").blur();
+                  var username = $("#UserName").val();
+                  if (oldUsername.length > 2) {
+                      var lastindex = oldUsername.length - 3;
+                      if (oldUsername[lastindex] != username) {
+                          inc = 0;
+                          lock = false;
+                      }
+                  }
+                  if (checkval == false && res == false ) {
+                      inc++;
+                      if (username && username.toLowerCase() != "admin" && inc >= NumberBlock) { ///ignor case
+                          $('#errorSpan').text(blocked);
+                          $.ajax({
+                              type: 'post',
+                              dataType: 'json',
+                              async: true,
+                              data: { name: username },
+                              url: '/Account/BlockUser',
+                              success: function () {
+                              },
+                              error: function () {
+                              }
+                          });
+                      }
+                  } else if(!lock){
+                      $('#form_sample_1').submit();
+                      $('#errorSpan').text('');
+                  } else {
+                      $('#errorSpan').text(blocked);
+                  }
+              });
+
+          });
+
+      });
+</script>
+  }

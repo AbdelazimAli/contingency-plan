@@ -1,0 +1,129 @@
+﻿@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+<style>
+  .BookPercent{
+            width: 80%;
+        height:90%;
+        margin:0 auto 0 ;
+       max-width:330px;
+    }
+     .SucessPercent ,.AttendPercent {
+         width: 80%;
+        /*height:90%;*/
+        /*margin:0 auto 0 ;*/
+       max-width:330px;
+    }
+</style>
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "TrainEvents" } })
+<div id="TEventDiv"></div>
+<script>
+    var addUrl = "@Url.Action("Details", "TrainEvent")";
+    RequestFilters.ApplayAllFilters([], {}, "TEventDiv", "@Url.Action("ReadTrainEvent", "TrainEvent")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var objectName = "TrainEvent";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadTrainEvent", "TrainEvent")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("Details", "TrainEvent")",
+        del: "@Url.Action("Delete", "TrainEvent")",
+        show: "@Url.Action("Details", "TrainEvent")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "TEventDiv",
+        admin: "@admin",
+        columns: [{ field: "BookPercent", template: "<div class='BookPercent'></div>" }, { field: "SucessPercent", template: "<div class='SucessPercent'></div>" }, { field: "AttendPercent", template: "<div class='AttendPercent'></div>" }],
+        dataBound: function (e) {
+            var gridName = this.gridName;
+            var cols = this.columns;
+            var progCol = $.grep(cols, function (el) { if (el.field == "BookPercent") return el });
+            $(".BookPercent").each(function () {
+                $(this).parent("td").attr("style", "padding: 0");
+                var model = e.sender.dataItem($(this).closest("tr"));
+                if (model != null) {
+                    $(this).kendoRadialGauge({
+                        pointer: {
+                            value: model.BookPercent,
+                            color: 'blue'
+                        },
+                        scale: {
+                            monitorUnit: 5,
+                            ranges: [{
+                                from: 0,
+                                to: 35,
+                                color: 'Red'
+                            },
+                          {
+                              from: 35,
+                              to: 70,
+                              color: '#ff7a00'
+                          },
+                        {
+                            from: 70,
+                            to: 100,
+                            color: 'Green'
+                        }]
+                        },
+                    });
+                }
+            });
+            var progCol = $.grep(cols, function (el) { if (el.field == "AttendPercent") return el });
+            $(".AttendPercent").each(function () {
+                $(this).parent("td").attr("style", "padding: 0");
+                var model = e.sender.dataItem($(this).closest("tr"));
+                if (model != null) {
+                    $(this).kendoProgressBar({
+                        value: model.AttendPercent,
+                        type: "percent",
+                        max: 100
+                    });
+                }
+            });
+            var progCol = $.grep(cols, function (el) { if (el.field == "SucessPercent") return el });
+            $(".SucessPercent").each(function () {
+                $(this).parent("td").attr("style", "padding: 0");
+                var model = e.sender.dataItem($(this).closest("tr"));
+                if (model != null) {
+                    $(this).kendoProgressBar({
+                        value: model.SucessPercent,
+                        type: "percent",
+                        max: 100
+                    });
+            }
+            })
+        },
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 5, pageSizes: [5, 10, 15, 20, 25, 30, 35] }
+    });
+
+</script>
+
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "TrainEvent") },
+      { "Admin", admin}, { "GridName", "TEventDiv" },{"objectName" , "TrainEvent"}, {"Functions",ViewBag.Functions} })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

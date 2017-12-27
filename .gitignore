@@ -1,0 +1,12 @@
+packages/
+*~
+*.sw[mnpcod]
+*.log
+*.tmp
+*.tmp.*
+log.txt
+*.sublime-project
+*.sublime-workspace
+.vscode/
+.vs/
+Hr.vssscc

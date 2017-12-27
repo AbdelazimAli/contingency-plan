@@ -1,0 +1,41 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+<br>
+<div id="EmpRelativeDiv"></div>
+<script>
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
+    var Rel=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Relations));
+
+    var objectName = "EmpRelatives";
+    var EmpRelGrid="'EmpRelativeDiv'"
+    Grids.batchGrid({
+        read: "@Url.Action("GetEmpRelative", "Assignment")?EmpId="+id,
+        update:"@Url.Action("UpdateEmpRelative", "Assignment")",
+        create:"@Url.Action("CreateEmpRelative", "Assignment")?EmpId="+id,
+        destroy:"@Url.Action("DeleteEmpRelative", "Assignment")",
+        admin:"@admin",
+        lang:"@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "EmpRelativeDiv",
+        columns: (@read == 1 ? [{ field: "Delete", input: "none"},{ field:"Relation",values:Rel}]: [{ field: "Delete", input: ""},{ field:"Relation",values:Rel}]),
+        columns: [{ field:"Relation",values:Rel}],
+        select: { "Relation":Rel},
+        fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+       
+    });
+</script>
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "EmpRelativeDiv" }, { "ObjectName", "EmpRelatives" }, { "Functions", ViewBag.Functions } })
+
+
+

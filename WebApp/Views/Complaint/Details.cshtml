@@ -1,0 +1,149 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.ComplaintRequestViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+
+}
+<br />
+<br />
+<div id="Complaint"></div>
+<div id="docWindow"></div>
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script>
+    var model;
+    var ComplainType = [{ id: 1, name: "@MsgUtils.Instance.Trls("Complaint")" }, { id: 2, name: "@MsgUtils.Instance.Trls("Grievance")" }, { id: 3, name: "@MsgUtils.Instance.Trls("Enquiry")" }];
+    var Against = [{ id: 1, name: "@MsgUtils.Instance.Trls("Employee")" }, { id: 2, name: "@MsgUtils.Instance.Trls("Manager")" }, { id: 3, name: "@MsgUtils.Instance.Trls("Procedure")" }, { id: 4, name: "@MsgUtils.Instance.Trls("Decision")" }, { id: 5, name: "@MsgUtils.Instance.Trls("Other")" }];
+    var ApprovalStatus = [ { id: 1, name: '@MsgUtils.Instance.Trls("Darft")' },
+         { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 3, name: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { id: 4, name: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 6, name: '@MsgUtils.Instance.Trls("Approved")' },
+         { id: 7, name: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { id: 8, name: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+    var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees))
+
+
+    $(function () {
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //tabs
+        var formId = "ComplaintForms";
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            //If you press on Button Show it will be read only
+            var read = "@Request.QueryString["Read"]";
+            //Send the serialized model and props to form.js
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: "ComplainRequestsForm", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("SaveComplaint", "Complaint")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "ComplainRequests";
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = '@admin';
+                    data.btns = ["back", "doc"];
+
+                    //data.HasPanel=false;
+                    if(read == 1)
+                        data.mode = 'show';
+                    data.rtl = @rtl.ToString().ToLower();
+
+                    data.reqbtns = ['Send'];
+
+                    if(funs && funs.length >0)
+                    {
+                        if($.inArray('Download',funs) >= 0)
+                            data.reqbtns.push('Download');
+                        if($.inArray('Upload',funs) >= 0)
+                            data.reqbtns.push('Upload');
+                    }
+
+                    //Append the form to the div
+                    $("#Complaint").Forms(data, model);
+                    //Translate The Button saveChanges from ColumnsTilte based on Culture
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "ComplainType", ComplainType, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "Against", Against, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", ApprovalStatus, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model, { remoteTableName: "People" });
+                    var hidden = "<input type='hidden' id='submit' name='submit' value=false />";
+                    $("#" + formId).append(hidden);
+
+                    //submitRequest
+                    $("#" + formId).on( 'click', '#saveChanges, #submitRequest', function (e) {
+                        if(!$("#" + formId + " .k-invalid").length) {
+                            var submit = $(this).attr("id") == "submitRequest";
+                            $("#" + formId + " #submit").val(submit);
+                            if(model.Id == 0) $("#" + formId + " #Id").val(0);
+                            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                                model = res;
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                $("#Documents").attr("disabled", false);
+                            });
+                        }
+                    });
+
+                    $("#Documents").on('click', function() {
+                        $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=ComplainRequests&SourceId="+ @Model.Id).center().open();
+                        $("#Documents").fadeOut();
+                    });
+                }
+
+            });
+
+          @*var additinalBtns = '<input type="button" name="backToIndex" isvisible="true" class="btn btn-default back button" value="@MsgUtils.Instance.Trls("backToIndex")" id="backToIndex">';
+              additinalBtns += '<input type="button" name="Documents" isvisible="true" class="btn btn-info back button" value="@MsgUtils.Instance.Trls("Documents")" id="Documents">';
+          $("#Complaint").append(additinalBtns);*@
+
+
+          if($("#" + formId + " #Id").val() == 0) $("#Documents").attr("disabled", true);
+
+        //----Documents----
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("CompanyWindow")",
+            //position: {top: "10px", left: "10%"},
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function(){
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+    });
+
+</script>
+
+
+
+
+

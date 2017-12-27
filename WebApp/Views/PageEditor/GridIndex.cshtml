@@ -1,0 +1,126 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    ViewBag.Title = "Index";
+}
+
+<br>
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<div id="Pages"></div>
+
+<script>
+    var objectName = "PageDivs";
+    var MenuName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.MenuName));
+
+    var objectName = "PageDivs";
+    var columns = [
+                    { field: "MenuId", values: MenuName },
+    ];
+    Grids.batchGrid({
+        read: "@Url.Action("ReadGrid", "PageEditor")",
+        update: "@Url.Action("UpdatePage", "PageEditor")",
+        create: "@Url.Action("CreatePage", "PageEditor")",
+        destroy:"@Url.Action("DeletePage", "PageEditor")",
+        admin:"@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "ObjectName", // custom delete message
+        gridName: "Pages",
+        columns: columns,
+        select: { "MenuId": MenuName },
+        detailInit: detailInit
+    });
+
+    function detailInit(e) {
+        var db = localStorage["Pages-grid-options"];
+        var newOptions = db ? JSON.parse(db) : {};
+        var size = newOptions.Size ? Number(newOptions.Size) - 50 : 550;
+
+        $("<div id='grid" + e.data.Id + "' style='height: " + size + "px'/>").appendTo(e.detailCell);
+
+        var gridname = "'grid" + e.data.Id + "'";
+
+        Grids.batchGrid({
+            read: "../../PageEditor/ReadColumnInfo?GridId=" + e.data.Id,
+            create: "@Url.Action("CreateGridColumn", "PageEditor")",
+            update: "@Url.Action("UpdateColumnInfo", "PageEditor")",
+            destroy:"@Url.Action("DeleteGridColumn", "PageEditor")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: "GridColumns",
+            parentColumnName: "GridId",
+            parentColumnId: e.data.Id,
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")"  accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            recordName: "ColumnName",
+            gridName: 'grid' + e.data.Id,
+            height:size,
+            columns: [
+                {
+                    field: "MaxLength", editor: function (container, options) {
+                        if ($.inArray(options.model.OrgColumnType, ['string', 'email', 'url']) >= 0) {
+                            var input = $('<input name="MaxLength" type="number" min="1" validationMessage="@MsgUtils.Instance.Trls("LengthGreaterThanZero")" style ="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }, {
+                    field: "MinLength", editor: function (container, options) {
+                        if ($.inArray(options.model.OrgColumnType, ['string', 'email', 'url']) >= 0) {
+                            var input = $('<input name="MinLength" type="number" min="0" validationMessage="@MsgUtils.Instance.Trls("LengthGreaterEqualZero")" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }, {
+                    field: "UniqueOrder", editor: function (container, options) {
+                        if (options.model.IsUnique == true) {
+                            var input = $('<input name="UniqueOrder" type="number" min="1" validationMessage="Unique Order should be greater than one, one is reserved for company" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }, {
+                    field: "Max", editor: function (container, options) {
+                        if (options.model.OrgColumnType == "number") {
+                            var input = $('<input name="Max" type="number" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }, {
+                    field: "Min", editor: function (container, options) {
+                        if (options.model.OrgColumnType == "number") {
+                            var input = $('<input name="Min" type="number" style="width: 90%; margin-bottom: 0"/>');
+                            input.appendTo(container);
+                        }
+                    }
+                }
+            ],
+            select: {
+                "ColumnType": [{value: "number", text: "@MsgUtils.Instance.Trls("number")" }, { value: "string", text: "@MsgUtils.Instance.Trls("string")" },
+                               { value: "button", text: "@MsgUtils.Instance.Trls("button")" },
+                               { value: "boolean", text: "@MsgUtils.Instance.Trls("boolean")" }, { value: "date", text: "@MsgUtils.Instance.Trls("date")" }],
+                "InputType": [{ value: "", text: "@MsgUtils.Instance.Trls("default")" }, { value: "input", text: "@MsgUtils.Instance.Trls("input")" }, { value: "email", text: "@MsgUtils.Instance.Trls("email")" }, { value: "url", text: "@MsgUtils.Instance.Trls("url")" }, { value: "editmask", text: "@MsgUtils.Instance.Trls("editmask")" },
+                               { value: "textarea", text: "@MsgUtils.Instance.Trls("textarea")" }, { value: "select", text: "@MsgUtils.Instance.Trls("select")" },
+                               { value: "hidden", text: "@MsgUtils.Instance.Trls("hidden")" }, { value: "radio", text: "@MsgUtils.Instance.Trls("radio")" }, { value: "autocomplete", velue: "@MsgUtils.Instance.Trls("autocomplete")" }]
+            }
+
+        });
+
+    }
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "Pages" }, { "ObjectName", "PageDivs" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+

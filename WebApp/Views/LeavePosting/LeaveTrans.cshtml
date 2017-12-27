@@ -1,0 +1,110 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+}
+
+<style>
+    #transDiv.rtl .lblName {
+        text-align: left !important;
+    }
+</style>
+
+<br />
+<div class="omegaform @(rtl ? "rtl" : "")" id="transDiv">
+    <div class="form-group row">
+        <label class="control-label col-md-1 lblName">@MsgUtils.Instance.Trls("Period")</label>
+        <div class="col-md-4"><select name="year" id="year" class="form-control" ></select></div>
+    </div>
+    <fieldset class=" set">
+        <legend>@MsgUtils.Instance.Trls("Leave Balances Summary")</legend>
+        <div id="alltrans"></div>
+    </fieldset>
+
+    <fieldset class=" set">
+        <legend>@MsgUtils.Instance.Trls("Leave Balances")</legend>
+        <div id="trans"></div>
+    </fieldset>
+</div>
+
+<script>
+    $("label.lblName").css('text-align', 'center !important'); 
+    var TransType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TransType));
+    var Years = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Years));
+    var selectedYear = "@ViewBag.currentYear";
+    var currentBalance = 0;
+
+    FormJs.fillOptionsDynamic($("#transDiv"), "year", Years, {year: selectedYear});
+
+    var grid2 = "'alltrans'";
+    Grids.indexGrid({
+        read: "@Url.Action("ReadLeaveTransSummary", "LeavePosting")?MenuId=@Request.QueryString["MenuId"]&YearId=" + selectedYear,
+        lang: "@culture",
+        objectName: "AllLeaveTrans",
+        gridName: "alltrans",
+        admin: "@admin",
+        selectable: "row",
+        columns: [{ field: "Employee", locked: true }],
+        toolbar: '<div style="@(rtl ? "float: left" : "float: right")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+grid2+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                 '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                 '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid2 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 50, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+        change: function(e) {
+            currentBalance = 0;
+            var summaryGrid = $('#alltrans').data('kendoGrid'), detailGrid = $('#trans').data('kendoGrid'),
+                model = summaryGrid.dataItem(summaryGrid.select());
+
+            if(detailGrid) {
+                detailGrid.dataSource.transport.options.read.url = "@Url.Action("ReadLeaveTrans", "LeavePosting")?PeriodId=" + model.PeriodId + "&EmpId=" + model.EmpId + "&TypeId=" + model.TypeId;
+                detailGrid.dataSource.read();
+            }
+        }
+    });
+
+    $("#transDiv").on('change', '#year', function(e) {
+        selectedYear = $(this).val();
+        var summaryGrid = $('#alltrans').data('kendoGrid'), detailGrid = $('#trans').data('kendoGrid');
+        if(summaryGrid) {
+            summaryGrid.dataSource.transport.options.read.url = "@Url.Action("ReadLeaveTransSummary", "LeavePosting")?MenuId=@Request.QueryString["MenuId"]&YearId=" + selectedYear;
+            summaryGrid.dataSource.read();
+        }
+
+        if(detailGrid)
+            detailGrid.dataSource.data([]);
+    });
+
+    var grid1 = "'trans'";
+    Grids.indexGrid({
+        read: "",
+        lang: "@culture",
+        objectName: "LeaveTrans",
+        gridName: "trans",
+        admin: "@admin",
+        //aggregate: [{ field: "DebitQty", aggregate: "sum" }, { field: "CreditQty", aggregate: "sum" }],
+        columns: [{ field: "Employee", locked: true }, {field:"TransType",values:TransType}, {field:"Balance", template: "#= kendo.toString(data.Balance, '0.00')#"}], 
+        toolbar: '<div style="@(rtl ? "float: left" : "float: right")"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('+grid1+')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+                 '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                 '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+        select: {"TransType": TransType},
+        sortable: false,
+        filterable: false,
+        scrollable: {
+            virtual: false,
+            endless: true
+        },
+        pageable: {
+            pageSize: 9999
+        }
+    });
+
+</script>

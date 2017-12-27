@@ -1,0 +1,126 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+<link href="~/Content/forms.css" rel="stylesheet" />
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="PayrollDiv"></div>
+<script>
+
+    $(function () {
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var Language =lang.getList("@culture");
+            var GradeName =[{id:1,name:"@MsgUtils.Instance.Trls("One segment")"}, {id:2,name:"@MsgUtils.Instance.Trls("Multiple segments")"}];
+            var Spiltter =[{id:".",name:"."}, {id:"/",name:"/"},{id:"-",name:"-"},{id:"\\",name:"\\"}];
+            var Account=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Account));
+            var SalaryItem=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SalaryItem));
+            var PayRollmodel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var formId = "PayrollSettingForm";
+            var read = "@Request.QueryString["Read"]";
+            var dataLevel= "@Request.QueryString["DataLevel"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'PayrollSetup', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" },
+                success: function (data) {
+                    data.FormId = formId;
+                    data.TableName ="PayrollSetup";
+                    data.FormAction = "@Url.Action("CreatePayroll", "Personnel")";
+                    data.Culture = "@User.Identity.GetCulture()";
+                    data.rtl = @rtl.ToString().ToLower();
+                    if(dataLevel  == 1) data.mode = 'show';
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = "@admin";
+                    $("#PayrollDiv").Forms(data, PayRollmodel);
+                    $("#" + formId).find('#generateGrades').val('@MsgUtils.Instance.Trls("GenerateGrads")');
+                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    var hidden = "<input type='hidden' id='submit' name='submit' value=false />";
+                    $("#" + formId).append(hidden);
+                    FormJs.fillOptionsDynamic($("#" + formId), "Spiltter", Spiltter, PayRollmodel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "DiffDebitAcct", Account, PayRollmodel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "DiffCreditAcct", Account, PayRollmodel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "DebitSettSal", SalaryItem, PayRollmodel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "CreditSettSal", SalaryItem, PayRollmodel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "GradeName", GradeName, PayRollmodel);
+                },
+                error: function (data) {
+                }
+            });
+        if(PayRollmodel.MultiCurr==false)
+        {
+            $("#" + formId).find('[name="CurrencydifferenceSec"]').css("display","none");
+        }
+        if(PayRollmodel.GradeName == 1)
+        {
+            $("#" + formId).find('[name="SpiltterSec"]').css("display","none");
+            $("#" + formId).find('[name="GroupSec"]').css("display","none");
+            $("#" + formId).find('[name="GradeSec"]').css("display","none");
+            $("#" + formId).find('[name="SubGradeSec"]').css("display","none");
+        }
+
+        $("#PayrollSettingForm").on("change","#MultiCurr",null,function(e){
+            if($(this).prop("checked") == true)
+            {
+                $("#" + formId).find('[name="CurrencydifferenceSec"]').css("display","");
+            }
+            else
+            {
+                $("#" + formId).find('[name="CurrencydifferenceSec"]').css("display","none");
+            }
+        });
+
+        $("#PayrollSettingForm").on("change","#GradeName",null,function(e){
+            if($(this).val() == 1)
+            {
+                $("#" + formId).find('[name="SpiltterSec"]').css("display","none");
+                $("#" + formId).find('[name="GroupSec"]').css("display","none");
+                $("#" + formId).find('[name="GradeSec"]').css("display","none");
+                $("#" + formId).find('[name="SubGradeSec"]').css("display","none");
+            }
+            else
+            {
+                $("#" + formId).find('[name="SpiltterSec"]').css("display","");
+                $("#" + formId).find('[name="GroupSec"]').css("display","");
+                $("#" + formId).find('[name="GradeSec"]').css("display","");
+                $("#" + formId).find('[name="SubGradeSec"]').css("display","");
+            }
+        });
+           //Grid
+
+        $("#PayrollDiv").on('click',"#saveChanges",null, function (e) {
+            var submit = $(this).attr("id") == "generateGrades";
+            $("#" + formId + " #submit").val(submit);
+            FormJs.saveForm($("#"+formId), $(this), function () {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            });
+        });
+        $("#" + formId).find('#generateGrades').on('click', function (e) {
+            var submit = $(this).attr("id") == "generateGrades";
+            $("#" + formId + " #submit").val(submit);
+            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+            });
+
+        });
+    });
+
+</script>
+
+
+
+

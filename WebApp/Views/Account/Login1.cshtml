@@ -1,0 +1,226 @@
+﻿@using WebApp.Models
+@model LoginViewModel
+@{
+    ViewBag.Title = "Log in";
+
+
+#line default
+#line hidden
+
+#line 4 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+    __o = null;
+}
+<html>
+<head>
+    <title>Enterprise HR | login </title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    @Styles.Render("~/Content/cssmin")
+    @Scripts.Render("~/bundles/modernizr")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    <link href="~/Content/animate.min.css" rel="stylesheet" />
+    <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+        <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  
+    <style>
+        .inspan {
+            position: relative;
+            top: 37px;
+            font-size: 25px;
+            left: 15px;
+        }
+
+        @@font-face {
+            font-family: 'threep';
+            src: url('/fonts/DroidKufi-Regular.ttf');
+        }
+
+        input, h3 {
+            font-family: threep, 'Comic Sans MS' !important;
+        }
+
+        input {
+            border-radius: 15px !important;
+            height: 50px !important;
+            line-height: 50px;
+            text-indent: 34px;
+        }
+
+        .pa {
+            font-weight: bold;
+            font-family: Cooper !important;
+            font-size: 2em !important;
+        }
+
+        .popover-mohmed .popover {
+            position: relative;
+            display: inline-block;
+            max-width: 700px !important;
+        }
+
+        .loginbody {
+            background: rgb(117,180,214); /* Old browsers */
+            background: -moz-linear-gradient(left, rgba(117,180,214,1) 10%, rgba(197,222,234,1) 35%, rgba(197,222,234,1) 67%, rgba(6,109,171,1) 100%); /* FF3.6-15 */
+            background: -webkit-linear-gradient(left, rgba(117,180,214,1) 10%,rgba(197,222,234,1) 35%,rgba(197,222,234,1) 67%,rgba(6,109,171,1) 100%); /* Chrome10-25,Safari5.1-6 */
+            background: linear-gradient(to right, rgba(117,180,214,1) 10%,rgba(197,222,234,1) 35%,rgba(197,222,234,1) 67%,rgba(6,109,171,1) 100%); /* W3C, IE10+, FF16+, Chrome26+, Opera12+, Safari7+ */
+            filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#75b4d6', endColorstr='#066dab',GradientType=1 ); /* IE6-9 */
+        }
+    </style>
+
+    <script>
+
+        function test() {
+            if ($("#pass").val().length > 0) {
+                $("#pass").addClass("pa");
+
+            }
+            else {
+                $("#pass").removeClass("pa")
+            }
+        }
+
+    </script>
+</head>
+<body class="loginbody">
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12 col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4 " style="margin-top:130px;">
+                <div class="popover-mohmed">
+                    <!-- NEW -->
+                    <div class="row">
+                        <h3 class="popover-title" style="border-bottom: none; background-color: transparent;">
+
+                            <img src="~/Content/images/onlinelogomaker-052916-1926 (1).png" class="img  img-responsive animated tada" style="height: 49px;margin-bottom:15px" />
+
+                        </h3>
+                    </div>
+                    <div class="row">
+                        <div class="popover bottom col-xs-12">
+
+                            <div class="arrow" style="left:10% !important"></div>
+
+                            <div class="popover-content" style="border-top:none;">
+                                <div class="login-panel panel panel-default">
+
+                                    <div class="panel-heading">
+
+                                        <h3 class="panel-title">Login</h3>
+                                    </div>
+                                    <div class="panel-body">
+                                       @using (Html.BeginForm("Login", "Account", new { ReturnUrl = ViewBag.ReturnUrl }, FormMethod.Post, new { @class = "form-horizontal", role = "form" }))
+                                       {   @Html.AntiForgeryToken()
+                                        @Html.AntiForgeryToken()
+                                            <fieldset>
+                                                <div class="form-group">
+                                                    <span class="glyphicon glyphicon-user inspan"></span>
+                                                    <input required="" class="form-control" id="user" placeholder="user name" name="Email" type="text">
+                                                </div>
+                                                <div class="form-group">
+                                                    <span class="glyphicon glyphicon-eye-open inspan"></span>
+                                                    <input required="" oninput="test();" id="pass" class="form-control" placeholder="password" name="Password" type="password" value="">
+                                                </div>
+                                                <div class="form-group" style="">
+                                                    <input type="checkbox" style="width:20px;margin-left: 3px;" id="rem" name="RememberMe" /> <label for="rem" style="cursor:pointer ; vertical-align:21px"> Remember me </label>
+                                                </div>
+                                                <button type="submit" class="btn   btn-block btn-primary">Login</button>
+                                                <p>
+                                                    @Html.ValidationSummary(true, "", new { @class = "text-danger" })
+                                                </p>
+                                            </fieldset>hidden
+"D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+               __o = Html.LabelFor(m => m.Email, new { @class = "col-md-2 control-label" });
+
+
+#line default
+#line hidden
+
+#line 10 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.TextBoxFor(m => m.Email, new { @class = "form-control" });
+
+
+#line default
+#line hidden
+
+#line 11 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-danger" });
+
+
+#line default
+#line hidden
+
+#line 12 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.LabelFor(m => m.Password, new { @class = "col-md-2 control-label" });
+
+
+#line default
+#line hidden
+
+#line 13 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.PasswordFor(m => m.Password, new { @class = "form-control" });
+
+
+#line default
+#line hidden
+
+#line 14 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-danger" });
+
+
+#line default
+#line hidden
+
+#line 15 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.CheckBoxFor(m => m.RememberMe);
+
+                                           r
+#line default
+#line hidden
+
+#line 16 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                       __o = Html.LabelFor(m => m.RememberMe);
+
+
+#line default
+#line hidden
+
+#line 17 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Html.ActionLink("Register as a new user", "Register");
+
+
+#line default
+#line hidden
+
+#line 18 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                           __o = Styles.Render("~/Content/css");
+
+
+#line default
+#line hidden
+                                           DefineSection("Scripts", () => {
+
+
+#line 19 "D:\Projects\HR\WebApp\Views\Account\Login2.cshtml"
+                                               __o = Scripts.Render("~/bundles/jqueryval");
+                                           }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div id="massage" hidden="" class="alert alert-danger col-xs-12 col-sm-8 col-sm-offset-2 col-md-4 col-md-offset-4 " role="alert" style="margin-top:10px;">
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span></button>
+                <div align="right" style="font-family:threep"> </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+</html>

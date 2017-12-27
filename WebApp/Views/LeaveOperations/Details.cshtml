@@ -1,0 +1,193 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.Personnel.LeaveOpViewModel
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+
+@Html.Partial("~/Views/Leave/_LeavesFunc.cshtml")
+
+<script>
+    $(function () {
+
+        FormJs.DrawTabs("pageTabs"); // "LeaveRequests"
+
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var btnType = model.btn, formId = "LeaveForm", myForm,
+            picker = "kendoDatePicker";
+
+        $("#t_WorkFlow").click(function () {
+            $('#tab_WorkFlow').load("@Url.Action("WorkFlow", "Log")" + "?Source=Leave&SourceId=@Model.TypeId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_AudiLog").click(function () {
+            $('#tab_AudiLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+        });
+
+        $("#t_GeneralInfo").click(function () {
+            $("#tab_GeneralInfo").html("<div id='leaveReqDiv'></div>");
+            LeaveRequestForm();
+        });
+
+        $("#t_GeneralInfo").click();
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+        function parseLeaveDate(date) {
+            if (date && date.indexOf('/Date') != -1) return new Date(parseInt(date.substr(6)));
+            else return new Date(date);
+        }
+
+        function LeaveRequestForm() {
+
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var read = "@Request.QueryString["Read"]";
+
+            var calcOptions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CalcOptions));
+            var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+
+            $.getJSON(url, { objectname: 'LeaveRequestForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+                data.FormAction = "@Url.Action("Details", "LeaveOperations")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "LeaveRequests";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@compantId";
+                data.btns = ["back", "doc"];
+
+                if(btnType == 3) {
+                    model.StartDate = model.ActualStartDate;
+                    model.EndDate = model.ActualEndDate;
+                }
+
+                $("#leaveReqDiv").Forms(data, model);
+                myForm = $("#" + formId);
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+                function Initialize() {
+                    var settings = {calender: calender, calcOptions: calcOptions, myForm: $("#" + formId), picker: picker};
+                    LeaveRequestJs.SetValues(settings);
+                }
+                Initialize();
+
+                LeaveRequestJs.DrawStars("NofDays", true, model.Stars); //Stars
+
+                function allowFraction() {
+                    var selectors = "#StartDate, #EndDate, #EditedStartDate, #EditedEndDate, #EditedReturnDate"; ///, #BreakEndDate, #BreakReturnDate
+                    if(calcOptions && calcOptions.AllowFraction) {
+                        LeaveRequestJs.ConvertDateTime(selectors, true);
+                        //picker = "kendoDateTimePicker";
+                    }
+                    else {
+                        LeaveRequestJs.ConvertDateTime(selectors, false);
+                        //picker = "kendoDatePicker";
+                    }
+                    Initialize();
+                }
+
+                //if(btnType != 3)
+                allowFraction();
+
+                //Btn: 1.Edit, 2.Cancel, 3.Break
+                if(btnType == 1) EditLeave();
+                else if(btnType == 2) CancelLeave();
+                else if(btnType == 3) BreakLeave();
+
+                $("#" + formId).on('click', '#saveChanges', function (e) {
+                    FormJs.saveForm($("#" + formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    });
+                });
+            });
+        }
+
+        function EditLeave() {
+            myForm.find("#CancelReason, #BreakReturnDate").closest(".set").remove();
+
+            ///Validate less than or equal today
+            var RequestDate = myForm.find("#RequestDate").data(picker).value();
+            myForm.find("#EditedStartDate").blur(function() {
+                var editStartDate = myForm.find("#EditedStartDate").data(picker).value();
+                if(editStartDate) editStartDate = editStartDate.setHours(0,0,0,0);
+
+                if(editStartDate <= new Date().setHours(0,0,0,0)) {
+                    FormJs.addFormError(formId, "EditedStartDate", "@MsgUtils.Instance.Trls("CantLessThanToday")");
+                }
+                else if(model.Period) {
+                    var periodStartDate = parseLeaveDate(model.Period.StartDate).setHours(0, 0, 0, 0),
+                        periodEndDate = parseLeaveDate(model.Period.EndDate).setHours(0, 0, 0, 0);
+
+                    if(editStartDate < periodStartDate || editStartDate > periodEndDate)
+                        FormJs.addFormError(formId, "EditedStartDate", "@MsgUtils.Instance.Trls("ExseedPeriodBoundries")");
+                }
+            });
+            ///Calculate End & Return Date
+            myForm.find("#EditedStartDate").change(function() {
+                var inputs = {StartDate: "EditedStartDate", EndDate: "EditedEndDate", ReturnDate: "EditedReturnDate", NofDays: "NofDays"};
+                LeaveRequestJs.SetValues(null, inputs);
+                LeaveRequestJs.ValidateNofDays();
+            });
+        }
+
+        function CancelLeave() {
+            myForm.find("#EditedStartDate, #BreakReturnDate").closest(".set").remove();
+        }
+
+        function BreakLeave() {
+            myForm.find("#CancelReason, #EditedStartDate").closest(".set").remove();
+
+            var startDate = myForm.find("#StartDate").data(picker).value(),
+                endDate = myForm.find("#EndDate").data(picker).value();
+            if(startDate) startDate.setHours(0,0,0,0);
+            if(endDate) endDate.setHours(0,0,0,0);
+
+            ///Validate Break End Date
+            myForm.find("#BreakReturnDate").blur(function() {
+                var breakReturnDate = myForm.find("#BreakReturnDate").data("kendoDatePicker").value();
+                if(breakReturnDate) breakReturnDate.setHours(0,0,0,0);
+
+                if(breakReturnDate <= new Date().setHours(0,0,0,0)) FormJs.addFormError(formId, "BreakReturnDate", "@MsgUtils.Instance.Trls("BreakDateLessThanOrEqualToday")");
+                else if(breakReturnDate > endDate) FormJs.addFormError(formId, "BreakReturnDate", "@MsgUtils.Instance.Trls("BreakDateGreaterThanEndDate")");
+            });
+
+            ///Calaculate NofDays and Balance
+            ///    BreakNofDays = BreakReturnDate - StartDate
+            ///    BalanceAfterBreak = Balance - BreakNofDays
+            myForm.find("#BreakReturnDate").change(function() {
+
+                var inputs = {StartDate: "StartDate", EndDate: "BreakEndDate", ReturnDate: "BreakReturnDate", NofDays: "NofDays"};
+                LeaveRequestJs.SetValues(null, inputs);
+
+                var BreakDays = LeaveRequestJs.CalcNofDays(), NofDays = myForm.find("#NofDays").val(),
+                    breakBalance = model.Balance + (NofDays - BreakDays);
+
+                if(BreakDays < 0 || BreakDays >= NofDays) {
+                    BreakDays = null;
+                    breakBalance = null;
+                }
+
+                var EndDate = kendo.toString(new Date(myForm.find("#BreakEndDate").data(picker).value()), "yyyy-MM-dd");
+                $.get('/LeaveOperations/EditStars', { RequestId: myForm.find('#Id').val(), EndDate: EndDate }, function(stars) {
+                    if(stars == 0)
+                        myForm.find(".rate_star[data-value]").removeClass("checked");
+                    else
+                        myForm.find(".rate_star[data-value=" + (stars > 5 ? 5 : stars) + "]").click();
+                });
+
+                myForm.find("#BreakNofDays").val(BreakDays);
+                myForm.find("#BreakBalDays").val(breakBalance);
+            });
+        }
+    });
+</script>

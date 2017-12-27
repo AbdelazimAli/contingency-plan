@@ -1,0 +1,72 @@
+﻿
+@using WebApp.Extensions
+@{ var admin = User.IsInRole("Admin");}
+
+<script type="text/x-kendo-template" id="template">
+    <div>
+        <a class="btn btn-default glyphicon glyphicon-plus" href="@ViewData["AddRecord"].ToString()" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-plus" href="@ViewData["ImportUser"].ToString()" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("ImportUser")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-plus" onclick="getRols()" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Roles")</span></a>
+              
+        
+          @{
+            var AdminMode = ViewData["Admin"].ToString();
+            var rtl = User.Identity.RTL();
+            var grid = ViewData["GridName"];
+        }
+        
+        <div class="btn-group" style="@(rtl ? "float: left" : "float: right")">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" style="@(rtl ? "text-align:justify" : "left: -90px")" id="toolsMenu">
+                @if (AdminMode == "True")
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('@grid')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+
+            </ul>
+        </div>
+    </div>
+    
+  
+</script>
+<div class="modal fade" id="RolesPopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Roles</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var objectName = "AspNetRoles";
+    function getRols() {
+        Grids.batchGrid({
+            read: "@Url.Action("ReadRoles", "Users")",
+            update: "@Url.Action("UpdateRole", "Users")",
+            create: "@Url.Action("CreateRole", "Users")",
+            destroy: "@Url.Action("DeleteRole", "Users")",
+            admin: "@User.IsInRole("Admin")", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName, // name of the page or table name used to create local db key
+            recordName: "Name", // custom delete message
+            gridName: "Role"
+        });
+        $('#RolesPopup').modal('show');
+    }
+   // @Html.Partial("_RoleGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "Role" } })
+
+</script>
+

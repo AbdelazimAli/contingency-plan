@@ -1,0 +1,53 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var count = ViewBag.count;
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br><br><br>
+<div id="pageTabs"></div>
+
+
+<script>
+    FormJs.DrawTabs("pageTabs");
+
+    $('#tab_FiscalYear').load("@Url.Action("FiscalYearIndex", "Period")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+   
+    //السنة المالية
+    $("#t_FiscalYear").click(function () {
+        $("#tab_Periods").empty();
+        $("#tab_OpenPeriods").empty();
+        $('#tab_FiscalYear').load("@Url.Action("FiscalYearIndex", "Period")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+    // فترات الإستحقاق
+    $("#t_Periods").click(function () {
+        $("#tab_FiscalYear").empty();
+        $("#tab_OpenPeriods").empty();
+        $('#tab_Periods').load("@Url.Action("Index", "Period")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    //تسويات
+    $("#t_OpenPeriods").click(function () {
+        $("#tab_FiscalYear").empty();
+        $("#tab_Periods").empty();
+        $('#tab_OpenPeriods').load("@Url.Action("OpenPeriodIndex", "Period")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+</script>
+
+
+
+
+
+
+
+
+

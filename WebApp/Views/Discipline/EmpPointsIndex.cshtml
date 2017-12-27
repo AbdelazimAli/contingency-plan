@@ -1,0 +1,173 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<div style="@(rtl?"float:right":"float:left")" >
+    <label style="font-size:medium">@MsgUtils.Instance.Trls("Choose Period")</label>&emsp;<input id="periodDiv" />&emsp;&emsp;&emsp;<button id="btncalc">@MsgUtils.Instance.Trls("Calculate")</button>&emsp;&emsp;&emsp;
+    <button id="btnPost" style="display: none;width:85px;">@MsgUtils.Instance.Trls("Post")</button>
+</div>
+<br><br>
+
+<div id="EmployeePointDiv"></div>
+<br><br>
+<div id="EmpPointsDiv"></div>
+<style>
+    .k-grid-content k-auto-scrollable{
+        height:2000px !important;
+    }
+</style>
+<script>
+    var result;
+    $.ajax({
+        url: "@Url.Action("ReadPeriods", "Discipline")",
+        async: false,
+        dataType: "json",
+        success: function (data) {
+            result = data;
+        },
+        error: function (result) {
+            console.log(result.responseText);
+        }
+    });
+    $("#periodDiv").kendoDropDownList({
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: result,
+        change: function (e) {
+            var readUrl = "@Url.Action("ReadEmloyeePoints", "Discipline")?periodId=" + this.value();
+            if ($("#EmployeePointDiv").data("kendoGrid") != undefined) $("#EmployeePointDiv").data("kendoGrid").dataSource.transport.options.read.url = readUrl;
+
+        }
+    });
+
+  //  var name = $("#periodDiv").data("kendoDropDownList").text();
+
+    $("#btncalc").on('click', function (e) {
+     //   $("#Post").css("display", "");
+        var gridname1 = "'EmployeePointDiv'";
+        var objectName = "EmployeePoints";
+        var Id = $("#periodDiv").val();
+        Grids.batchGrid({
+            read: "@Url.Action("ReadEmloyeePoints", "Discipline")?periodId=" + Id,
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name",
+            pageable: false,
+            height:800,
+            toolbar:'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid") </span></a></li>'+
+                    '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+            gridName: "EmployeePointDiv",
+            fields: { Emp: { editable: false }, Period: { editable: false }, TotalDeduction: { editable: false }, PointsAdd: { editable: false }, Balance: { editable: true } },
+        });
+
+        //if ($("#EmployeePointDiv").data("kendoGrid") == undefined)
+        //    $("#btnPost").css("display", "none");
+
+        //else
+            $("#btnPost").css("display", "");
+
+
+    })
+    $("#btnPost").on('click', function (e) {
+
+        //var newobj = $("#EmployeePointDiv").data("kendoGrid").dataSource.data();
+        //var res = [];
+        //for (var i = 0; i < newobj.length; i++) {
+        //    var item = { TotalDeduction:newobj[i].TotalDeduction, Emp:newobj[i].Emp, Period:newobj[i].Period, PointsAdd:newobj[i].PointsAdd, Balance:newobj[i].Balance, EmpId:newobj[i].EmpId, PeriodId:newobj[i].PeriodId};
+        //    res.push(item);
+        //}
+        //console.log(res);
+        var currentData = $("#EmployeePointDiv").data("kendoGrid").dataSource.data();
+        var newRecords = [];
+        for (var i = 0; i < currentData.length; i++) {
+            newRecords.push(Grids.toValidJson(currentData[i]));
+        }
+
+       // JSON.stringify(newobj);
+        $.ajax({
+            url: "/Discipline/postPoints",
+            type: "POST",
+            data: { newRecords: newRecords },
+            success: function (data) {
+                result = data;
+                $("#EmployeePointDiv").data("kendoGrid").dataSource.refresh();
+            },
+            error: function (result) {
+                //console.log(result.responseText);
+            }
+        });
+        var GridName = "'EmpPointsDiv'";
+        Grids.indexGrid({
+            objectName: "EmpPoints",
+            recordName: "Name",
+            gridName: "EmpPointsDiv",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            toolbar:'<div style="@(rtl ? "float: right" : "float: left")">&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu2"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + GridName + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li></ul></div></div>',
+            dataSource: newRecords
+        });
+        $("#btnPost").attr("disabled", "true");
+
+
+    });
+
+        @*if ($("#EmployeePointDiv").data("kendoGrid") != undefined) {
+            var dataArr = $("#EmployeePointDiv").data("kendoGrid").dataSource._data;
+
+            for (var i = 0; i < dataArr.length; i++) {
+                if ($("#EmpPointsDiv").data("kendoGrid") == undefined) $("#EmpPointsDiv").data("kendoGrid") == $("#EmployeePointDiv").data("kendoGrid");
+                if ($("#EmpPointsDiv").data("kendoGrid") != undefined) {
+
+                    $("#EmpPointsDiv").data("kendoGrid").dataSource.add({
+                        PeriodId: dataArr[i].PeriodId,
+                        EmpId: dataArr[i].EmpId,
+                        Balance: dataArr[i].Balance,
+                        Emp: dataArr[i].Emp,
+                        Period: dataArr[i].Period,
+                        CreatedUser: dataArr[i].CreatedUser,
+                        CreatedTime: new Date()
+                    });
+                    insertedRecord = $("#EmpPointsDiv").data("kendoGrid").dataSource._data;
+                    console.log(typeof (insertedRecord));
+                }
+            }
+            console.log(insertedRecord);
+            if (insertedRecord != null) {
+
+                $.ajax({
+                    url: "@Url.Action("postPoints", "Discipline")",
+                    data: { obj: insertedRecord },
+                    dataType: "json",
+                    success: function (data) {
+                        result = data;
+                    },
+                    error: function (result) {
+                        console.log(result.responseText);
+                    }
+                });
+            }
+        }*@
+
+
+</script>
+
+
+
+
+
+
+
+
+

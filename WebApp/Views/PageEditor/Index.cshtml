@@ -1,0 +1,203 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    ViewBag.Title = "Index";
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var admin = @User.IsInRole("Admin");
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<br>
+<div id="Pages"></div>
+<script>
+    var MenuName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.MenuName));
+    var objectName = "PageDivs";
+    var columns = [
+                    { field: "MenuId", values: MenuName }
+    ];
+
+        Grids.batchGrid({
+            read: "@Url.Action("ReadPage", "PageEditor")",
+            create: "@Url.Action("CreateForm", "PageEditor")",
+            update: "@Url.Action("UpdatePage", "PageEditor")",
+            destroy: "@Url.Action("DeletePage", "PageEditor")",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            objectName: "PageDivs",
+            recordName: "ObjectName", // custom delete message
+            gridName: "Pages",
+            columns: columns,
+            select: { "MenuId": MenuName },
+            detailInit: detailInit
+        });
+
+    function detailInit(e) {
+
+        var db = localStorage["Pages-grid-options"];
+        var newOptions = db ? JSON.parse(db) : {};
+        var size = newOptions.Size ? Number(newOptions.Size) - 50 : 550; 
+
+        $("<div id='FieldSet" + e.data.Id + "' style='height: " + size + "px'/>").appendTo(e.detailCell);
+            var gridname = "'FieldSet" + e.data.Id + "'";
+            var layout = [{ value: "form-horizontal", text: '@MsgUtils.Instance.Trls("form-horizontal")' }, { value: "form-vertical", text:'@MsgUtils.Instance.Trls("form-vertical")' }, { value: "form-inline", text: '@MsgUtils.Instance.Trls("form-inline")' }]
+            Grids.batchGrid({
+                read: "@Url.Action("ReadFieldSet", "PageEditor")?Id=" + e.data.Id,
+                create: "@Url.Action("CreateFieldSet", "PageEditor")",
+                update: "@Url.Action("UpdateFieldSet", "PageEditor")",
+                destroy: "@Url.Action("DeleteFieldSet", "PageEditor")",
+                admin: "@admin",
+                lang: "@User.Identity.GetCulture()",
+                parentColumnName: "PageId",
+                parentColumnId: e.data.Id,
+                objectName: "FieldSets",
+                toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                recordName: "Name",
+                height: size,
+                gridName: 'FieldSet' + e.data.Id,
+                detailInit: SectionInit,
+                columns: [{ field: "layout", values: layout }],
+                select: { "layout": layout }
+
+            });
+
+            function SectionInit(e) {
+                var layout = [{ value: "form-horizontal", text: '@MsgUtils.Instance.Trls("form-horizontal")' }, { value: "form-vertical", text: '@MsgUtils.Instance.Trls("form-vertical")' }, { value: "form-inline", text: '@MsgUtils.Instance.Trls("form-inline")' }]
+
+                $("<div id='Section" + e.data.Id + "' style='height: " + size + "px'/>").appendTo(e.detailCell);
+                var fieldSetId = e.data.Id;
+                var gridname2 = "'Section" + e.data.Id + "'";
+                FieldId = e.data.Id;
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadSection", "PageEditor")?Id=" + e.data.Id,
+                    create: "@Url.Action("CreateSection", "PageEditor")",
+                    update: "@Url.Action("UpdateSection", "PageEditor")",
+                    destroy: "@Url.Action("DeleteSection", "PageEditor")",
+                    admin: "@admin",
+                    parentColumnName: "FieldSetId", // hidden column that link master record with child record
+                    parentColumnId: e.data.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "Sections",
+                    toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname2 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveClick1(' + gridname2 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")"accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname2 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname2 + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    recordName: "Name",
+                    height: size,
+                    gridName: 'Section' + e.data.Id,
+                    detailInit: FormColumnsInit,
+                    save: function (e2) {
+                        if (e2.values.TempId && e2.values.TempId != e2.model.TempId) {
+                            e2.model.FieldSetDesc = $("#TempId :selected").text();
+                        }
+                    },
+
+                    columns: [
+                       {
+                           field: "layout", values: layout
+                       },
+                        {
+                            field: "FieldSetDesc", editor: function (container, options) {
+                                var input = "<select id='TempId' name='TempId' style='width: 80%; margin-bottom: 0; data-bind='value:TempId' >";
+                                $.ajax({
+                                    url: "@Url.Action("ReadFieldSets", "PageEditor")",
+                                    data: { FieldSetId: fieldSetId },
+                                    async: false,
+                                    dataType: "json",
+                                    success: function (data) {
+                                        for (var i = 0; i < data.length; i++) {
+                                            input += "<option value='" + data[i].id + "'>  Order: " + data[i].name + "</option>";
+
+                                        }
+                                    },
+                                    error: function (result) {
+                                        console.log(result.responseText);
+                                    }
+                                });
+                                input += "</select>";
+                                $(input).appendTo(container);
+                            }
+                        }
+                    ],
+                    select: { "layout": layout }
+
+                });
+
+                function FormColumnsInit(e) {
+
+                    $("<div id='Columns" + e.data.Id + "' style='height: " + size + "px'/>").appendTo(e.detailCell);
+
+                    gridname = "'Columns" + e.data.Id + "'";
+                    var sectionId = e.data.id;
+
+                    Grids.batchGrid({
+                        read: "@Url.Action("ReadFormColumns", "PageEditor")?Id=" + e.data.Id,
+                        create: "@Url.Action("CreateFormColumn", "PageEditor")",
+                        update: "@Url.Action("UpdateFormColumn", "PageEditor")",
+                        destroy: "@Url.Action("DeleteFormColumn", "PageEditor")",
+                        admin: "@admin",
+                        lang: "@User.Identity.GetCulture()",
+                        parentColumnName: "SectionId", // hidden column that link master record with child record
+                        parentColumnId: e.data.Id,
+                        objectName: "FormColumns",
+                        height: size,
+                        toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')"style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="saveClick1(' + gridname + ')"style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                        recordName: "Name",
+                        gridName: 'Columns' + e.data.Id,
+                        fields: { lg: { defaultValue: null }, sm: { defaultValue: null }, md: { defaultValue: null }, min: { defaultValue: null }, max: { defaultValue: null }, maxLength: { defaultValue: null }, minLength: { defaultValue: null } },
+                        save: function (e3) {
+                        if (e3.values.TempId && e3.values.TempId != e3.model.TempId) {
+                            e3.model.SectionDesc = $("#TempId :selected").text();
+                        }
+
+                    },
+                    columns: [
+                            {
+
+                                field: "type", editor: function (container, options) {
+                                    var input = '<select name="type" style="width: 80%; margin-bottom: 0; "><option value="email">email</option><option value="label">label</option><option value="multiselect">multiselect</option><option value="password">password</option><option value="autocomplete">autocomplete</option><option value="maskedtextbox">maskedtextbox</option><option value="file">file</option><option value="checkbox">checkbox</option><option value="select">select</option><option value="textarea">textarea</option><option value="radioset">radioset</option><option value="radio">radio</option><option value="url">url</option><option value="text">text</option><option value="date">date</option><option value="datetime">datetime</option><option value="time">time</option><option value="button">button</option><option value="number">number</option><option value="hidden">hidden</option></select>';
+                                    $(input).appendTo(container);
+
+                                }
+                            },
+                            {
+                                field: "SectionDesc", editor: function (container, options)
+                                {
+                                    var input = "<select id='TempId' name='TempId' style='width: 80%; margin-bottom: 0;'>";
+                                    $.ajax({
+                                        url: "@Url.Action("ReadSections", "PageEditor")",
+                                        data: { SectionId: sectionId },
+                                        async: false,
+                                        dataType: "json",
+                                        success: function (data) {
+                                            for (var i = 0; i < data.length; i++) {
+                                                input += "<option value='" + data[i].id + "'>  Order: " + data[i].name + "</option>";
+                                            }
+                                        },
+                                        error: function (result) {
+                                            console.log(result.responseText);
+                                        }
+                                    });
+
+                        input += "</select>";
+                        $(input).appendTo(container);
+                    }
+                }
+
+               ]
+           });
+         }
+
+            }
+      }
+    function saveClick1(name) {
+        $('#' + name).data("kendoGrid").saveChanges();
+        $('#' + name).data('kendoGrid').dataSource.read();
+        $('#' + name).data('kendoGrid').refresh();
+    }
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin}, { "GridName", "Pages" }, { "ObjectName", "PageDivs" }, { "Functions", ViewBag.Functions } })
+
+

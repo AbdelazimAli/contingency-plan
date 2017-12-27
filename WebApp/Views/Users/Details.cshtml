@@ -1,0 +1,222 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel
+@model UserViewModel
+@using WebApp.Extensions
+@{ var admin = User.IsInRole("Admin");}
+ 
+
+@{
+    ViewBag.Title = "Home Page";
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    var culture = User.Identity.GetLanguage();
+    Layout = null;
+}
+
+<div id="pageTabs"></div>
+<div id="userprof"></div><br />
+<br />
+
+    <script src="~/Scripts/typeahead.bundle.min.js"></script>
+    <script src="~/Scripts/cultures/lang.js"></script>
+    <script src="~/Scripts/cultures/timezone.js"></script>
+
+    <script>
+
+        function CompanyChanged(e, name) {
+            var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + $(e).attr("id")).closest("tr"));
+            dataItem.IsChecked = $(e).is(':checked');
+            dataItem.dirty = true;
+
+        }
+
+        $(function(){
+
+            FormJs.DrawTabs("pageTabs");
+            var timezoneSrc = timeZoneList.getTimeZone("@culture");
+            var culture = lang.getList("@culture");
+            var userfunctions =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions))
+            var company = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Company))
+            var country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Country))
+            var emp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Emp));
+
+            var myCulture = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Culture));
+            @*var Messages = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Messages));*@
+
+            var cultureList = []; //, msgList = [];
+            for(var i=0; i < culture.length; i++) {
+                if(myCulture && myCulture.indexOf(culture[i].id) != -1) {
+                    var obj = {id: culture[i].id, name: culture[i].name };
+                    cultureList.push(obj);
+                }
+
+                //if(Messages && Messages.indexOf(culture[i].id) != -1) {
+                //    var obj = {id: culture[i].id, name: culture[i].name };
+                //    msgList.push(obj);
+                //}
+            }
+
+            var user = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+            console.log(user);
+            var objectname = "UserProfile", formId = "UserProfile";
+            var read = ("@Request.QueryString["Read"]" == "" ? 0: "@Request.QueryString["Read"]");
+
+            $("#t_Loguser").click(function (){
+                $('#tab_Loguser').load("@Url.Action("UserLog","Users")?id="+user.Id+"&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+            });
+            $("#t_UserAuditTrail").click(function () {
+                $('#tab_UserAuditTrail').load("@Url.Action("Log", "Log")?Id="+user.Id+"&ObjectName=UserProfile&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+            });
+            $("#t_GeneralInf").click(function () {
+                $("#tab_GeneralInf").html("<div id='userprof'></div>");
+                //-- Form
+                $.ajax({
+                    async: false,
+                    url: "@Url.Action("ReadFormInfo","Pages")",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json',
+                    data: { objectname: objectname, version: "@version", roleId: "@Request.QueryString["RoleId"]"},
+                    success: function (data) {
+                        data.FormId = formId;
+                        data.TableName ="AspNetUsers";
+                        var menuTitle = $("#changemenu").find(".active > .ajaxify").text();
+                        data.Title = menuTitle == "" ? data.Title : menuTitle;
+                        data.FormAction = "@Url.Action("UserProfile", "Users", new { Id=TempData["id"]})";
+                        data.Culture = "@User.Identity.GetCulture()";
+                        data.rtl = @rtl.ToString().ToLower();
+                        if(read == 1) data.mode = 'show';
+
+                        data.companyId = "@User.Identity.GetDefaultCompany()";
+                        data.admin = "@admin";
+
+                        if(user.Id==null)
+                            user.SSUser = null;
+
+                        $("#userprof").Forms(data, user);
+                        var isSuper = "@ViewBag.isSuper";
+                        if(isSuper == 'False')
+                            $("#" + formId).find("#SuperUser").parent().parent().remove();
+                        if(user.Id != null)
+                            $("#" + formId).find("#Password").parents(".section").remove();
+                        else
+                            $("#" + formId).find("#ResetPassword").prop("checked", true);
+
+                        if(user.UserName == 'hradmin')
+                            $("#" + formId).find("#EmpId").parents(".section").remove();
+
+                        var Exportto = [{id:0,name:"@MsgUtils.Instance.Trls("Client")"}, {id:1,name:"@MsgUtils.Instance.Trls("Server")"}];
+                        var Infolog = [{id:0, name:"@MsgUtils.Instance.Trls("All")"}, {id:2, name:"@MsgUtils.Instance.Trls("Errors and warnings")"}, {id:3, name:"@MsgUtils.Instance.Trls("Errors only")"}, {id:4, name:"@MsgUtils.Instance.Trls("None")"}];
+
+                        FormJs.fillOptionsDynamic($("#" + formId), "ExportTo", Exportto, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "Infolog", Infolog, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "Culture", culture, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "Language", cultureList, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "TimeZone", timezoneSrc, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "DefaultCompany", company, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "DefaultCountry", country, user);
+                        FormJs.fillOptionsDynamic($("#" + formId), "EmpId", emp, user);
+
+                        //, #Messages
+                        $("#" + formId + " .form-control").filter(':has("#Language")').css("width", "100%");
+                        
+                        $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                        $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                        $("div[name=gridsSec]").prepend('<div class="form-group col-lg-12 col-md-12 col-sm-12"><div id="userRole" class="col-lg-5 col-sm-5 col-md-5 pull-left"></div><div id="userCompany" class="col-lg- col-sm-5 col-md-5 pull-right"></div></div>');
+                        $("#" + formId).on('click',"#saveChanges",null, function () {
+                            if($("#SSUser").length == 0 && user.Id == null)
+                                $("#"+formId).append('<input type="text" name="SSUser" value="true">');
+                            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                if(res !== undefined)
+                                    location.reload();
+                                else
+                                    $("#renderbody").load(oldulr);
+                            },(userfunctions!= null && userfunctions.length > 0 && ($.inArray("AddUserRole",userfunctions) > -1))?Grids.sendData("userRole"):"",Grids.sendData("userCompany"));
+                        });
+
+
+
+                        $("#" + formId).on('click','#backToIndex', function(){
+                            $("#renderbody").load(oldulr);
+                        });
+
+                        //-- Grids
+                        if(userfunctions!= null && userfunctions.length > 0 && ($.inArray("AddUserRole",userfunctions) > -1)){
+                            var gridname = "'userRole'";
+                            var UserId ="@Model.Id";
+                            var SSRole=$("#SSUser").val();
+                            Grids.batchGrid({
+                                read: "@Url.Action("GetUserRoles", "Users")?id="+UserId+"&SSRole="+SSRole,
+                                update: "@Url.Action("SaveRole", "Users")",
+                                lang: "@User.Identity.GetCulture()",
+                                objectName: "UserRoles", // name of the page or table name used to create local db key
+                                recordName: "Name", // custom delete message
+                                gridName: "userRole",
+                                admin: "@admin",
+                                height: 350 ,
+                                fields:
+                                {
+                                    Id: { type: "string", editable: false },
+                                    IsChecked: { type: "boolean" },
+                                    Name: { type: "string", editable: false},
+                                },
+                                toolbar: "<div></div>",
+                                columns:
+                                [{ template: '<input id="#:Id#" type="checkbox" #:IsChecked == true ? "checked" : ""#  '+(read == 1 ? "disabled": "")+' style="width:50px;" onchange="CompanyChanged(this, ' + gridname + ')" />'},
+                                 { field: "Name"}],
+                                readCompleted: function(e) {
+                                    // To remove AddNotification Button
+                                    $("#userRole .k-header-column-menu").click(function(){
+                                        $("#addNotifyMenu").remove();
+                                    });
+                                }
+                            });
+                        }
+                        gridname = "'userCompany'";
+                        Grids.batchGrid({
+                            read: "@Url.Action("GetCompanies", "Users")?id="+UserId,
+                            update: "@Url.Action("SaveUserCompany", "Users")",
+                            lang: "@User.Identity.GetCulture()",
+                            objectName: "UserCompany", // name of the page or table name used to create local db key
+                            recordName: "Name", // custom delete message
+                            gridName: "userCompany",
+                            admin: "@admin",
+                            height: 350 ,
+                            fields:
+                            {
+                                Id: { type: "number", editable: false },
+                                IsChecked: { type: "boolean" },
+                                Name:{ type: "string", editable: false},
+                            },
+                            toolbar: "<div></div>",
+                            columns:
+                            [{template: '<input id="#:Id#" type="checkbox" #:IsChecked == true ? "checked" : ""# '+(read == 1 ? "disabled": "")+'  style="width:50px;" onchange="CompanyChanged(this, ' + gridname + ')" />'},
+                             {field:"Name"}],
+                            readCompleted: function(e) {
+                                // To remove AddNotification Button
+                                $("#userCompany .k-header-column-menu").click(function(){
+                                    $("#addNotifyMenu").remove();
+                                })
+                            }
+                        });
+                    },
+                    error: function (data) {
+                    }
+                });
+
+                var oldPage = localStorage.getItem("menuhigh").split(",");
+                oldulr = $("#"+oldPage[2] + " a").attr("href");
+
+            });
+            $("#t_GeneralInf").click();
+
+
+
+        });
+
+    </script>
+   
+
+
+    

@@ -1,0 +1,57 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var admin = User.IsInRole("Admin");
+    string[] function = ViewData["Functions"] as string[];
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Disciplines" } })
+
+<div id="DisciplinDiv"></div>
+
+<script>
+    var addUrl = "@Url.Action("DisciplineDetails", "Discipline")";
+    RequestFilters.ApplayAllFilters([], {}, "DisciplinDiv", "@Url.Action("ReadDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+    var DisciplineClass = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DisciplineClass));
+    var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));
+
+    var columns = [{
+        field: "IsLocal",
+        template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# />'
+    },
+                    {field:"DisciplineClass",values:DisciplineClass},
+                    {field:"PeriodId",values:PeriodId},
+                    { field: "Name", locked: true },
+    ];
+    Grids.indexGrid({
+    read: "@Url.Action("ReadDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]",
+    show:"@Url.Action("DisciplineDetails", "Discipline")",
+    edit: "@Url.Action("DisciplineDetails", "Discipline")",
+    del: "@Url.Action("DeleteDiscipline", "Discipline")",
+    objectName: "Disciplines",  // name of the page or table name used to create local db key
+    recordName: "Name", // custom delete message
+    gridName: "DisciplinDiv",
+    admin: "@admin",
+    lang: "@User.Identity.GetCulture()",
+        columns: columns,
+        toolbar:'<div></div>',
+    select: { "DisciplineClass": DisciplineClass ,"PeriodId":PeriodId }
+    });
+
+</script>
+
+
+
+
+
+
+

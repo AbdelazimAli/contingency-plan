@@ -1,0 +1,431 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<style>
+
+    .test {
+        background-color: red;
+    }
+
+    .statement {
+        color: orange;
+    }
+
+    #editor {
+        width: 859px;
+        border: 2px solid grey;
+        height: 108px;
+        text-align: left;
+        padding: 10px;
+        background-color: white;
+        color: blue;
+        font-size: 14px;
+        font-family: monospace;
+    }
+    /*.ui-autocomplete {
+    position:absolute;
+    cursor:default;
+    z-index:9999 !important;
+    }*/
+</style>
+
+<div id="Menus"></div>
+<script>
+
+    var objectName = "Menus";
+    var menus;
+    var result = [{ value: 0 , text:'@MsgUtils.Instance.Trls("Menu")' }, { value: 1 , text:'@MsgUtils.Instance.Trls("Page")'}, { value: 2, text:'@MsgUtils.Instance.Trls("Page Tab")'}]
+    var getMenus = function () {
+        $.ajax({
+            async: false,
+            url: "@Url.Action("GetParentMenus", "Menu")",
+            data: { companyId: 0 },
+            dataType: "json",
+            success: function (result) {
+                menus = result;
+            },
+            error: function (result) {
+                console.log(result.responseText);
+            }
+        });
+    };
+    getMenus();
+    Grids.batchGrid({
+        read: "@Url.Action("ReadMenu","Menu")",
+        update:"@Url.Action("UpdateMenu","Menu")",
+        create:"@Url.Action("CreateMenu","Menu")",
+        destroy:"@Url.Action("DeleteMenu","Menu")",
+        admin:"@admin", // Admin role
+        lang:"@User.Identity.GetCulture()",
+        objectName: objectName, // name of the page or table name used to create local db key
+        recordName: "Name", // custom delete message
+        gridName: "Menus",
+        sortable: false,
+        detailInit:detailInit,
+        save: function (e) {
+           if (e.values.ParentId && e.values.ParentId != e.model.ParentId) {
+                var name = $.grep(menus, function (x) {
+                    if (x.id == e.values.ParentId)
+                        return true;
+                    return false;
+                })[0].name;
+                e.model.ParentName = name;
+            }
+        },
+        saveChanges: function(){
+            getMenus();
+        },
+        columns: [
+                 {
+                     field: "Name",
+                     editor: function (container, options) {
+                         if (options.model.Name == "") {
+                             var input = $('<input name="Name" type="text" style="width: 90%; margin-bottom: 0"/>');
+                             input.appendTo(container);
+                         } else {
+                             var input = $('<input name="Name"  readonly type="text" style="width: 90%; margin-bottom: 0"/>');
+                             input.appendTo(container);
+                         }
+
+                     },
+                        template: "#if('@User.Identity.RTL()' == 'True'){#<div class='glyphicon glyphicon-minus' style='font-style:italic; font-weight: bold; margin-Right: #: MenuLevel * 20 + 10 #px'> #: Name # </div>#}else{#<div class='glyphicon glyphicon-minus' style='font-style:italic; font-weight: bold; margin-left: #: MenuLevel * 20 + 10 #px'> #: Name # </div>#}#",
+                     },
+
+                     {
+                         field: "Icon",
+                         editor: function (container, options) {
+                             var input = '<select data-style="btn-primary" name="Icon" data-width="auto" ">';
+                             $.ajax({
+                                 url: "../Scripts/app/GlyphIcons.json",
+                                 async: false,
+                                 success: function (data) {
+                                     for (var i = 0; i < data.Glyph.length; i++) {
+                                     //    input += '<option data-icon="' + data.Glyph[i].name + '"><p><span class=" ' + data.Glyph[i].name + ' "></span><p>1 </option>';
+                                       //  input += '<option data-content="<i class='+ data.Glyph[i].name +'></i>" ></option>';
+
+                                         input += '<option data-icon="' + data.Glyph[i].name + '">' + data.Glyph[i].name + '</option>';
+                                     }
+
+                                 },
+                                 error: function () {
+                                 }
+                             });
+                             input += "</select>";
+                             $(input).appendTo(container);
+
+                         }
+                     },
+
+                         {
+                          field: "ParentName", editor: function (container, options) {
+                            if (options.model.MenuLevel > 0) {
+                                var data = $.grep(menus, function (x) {
+                                    if (x.level == options.model.MenuLevel - 1)
+                                        return true;
+                                    return false;
+                                });
+                                var input = "<select name='ParentId' style='width: 80%; margin-bottom: 0;'>";
+                                for (var i = 0; i < data.length; i++) {
+                                    input += "<option value='" + data[i].id + "'>" + data[i].name + "</option>";
+                                }
+
+                                input += "</select>";
+                                $(input).appendTo(container);
+                            }
+                        }
+                       },
+
+                      {
+                          field: "Url", editor: function (container, options) {
+                              if (options.model.MenuLevel > 0) {
+                                  var input = $('<input name="Url" type="text" style="width: 90%; margin-bottom: 0"/>');
+                                  input.appendTo(container);
+                              }
+                          }
+                      },
+                      {
+                          field: "MenuLevel",values:result
+                      },
+                      {
+                          field: "Title",
+                          template: "<div class='#: Icon #' readonly style='font-style:italic; font-weight: bold; margin-left: #: MenuLevel * 20 + 10 #px'> #: Title # </div>"
+                      },
+                      {
+                          field: "WhereClause",
+                          editor: WhereClausefunc
+                        }
+        ],
+        select :{"MenuLevel":result}
+    });
+
+    function detailInit(e) {
+
+        if (e.data.MenuLevel != 0) {
+        $("<div id='Function" + e.data.Id + "'/>").appendTo(e.detailCell);
+        var gridname = "'Function" + e.data.Id + "'";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadFunction", "Menu")?Id=" + e.data.Id,
+            create: "@Url.Action("CreateFunction", "Menu")",
+            update: "@Url.Action("UpdateFunction", "Menu")",
+            destroy: "@Url.Action("DeleteFunction", "Menu")",
+            admin: "@admin", // Admin role
+            lang: "@User.Identity.GetCulture()",
+            parentColumnName: "MenuId",
+            parentColumnId: e.data.Id,
+            objectName: "Functions",
+            toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')"style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            recordName: "Name",
+            gridName: 'Function' + e.data.Id,
+
+        });
+    }
+    }
+
+    function WhereClausefunc(container, options) {
+        var input1 = '<div class="ui-widget"><center><div id="editor"  contenteditable="true"></div></center></div>';
+        var input = $('<textarea id="addDetails" rows="3" style="width: 90%; margin-bottom: 0; background: transparent; border: none" readonly maxlength="100"></textarea>');
+
+        input.attr("name", options.field);
+
+        input.appendTo(container)
+
+        $('#addDetails').focus(function (e) {
+
+           
+            e.preventDefault();
+            $('#whereClausePopup').modal('show');
+            $('#bodyContainer').html(input1);
+
+            var availableTags = [];
+            var logicalArr = ["And", "Or", ">=", "=>", "<=","=","@@User","@@Company"];
+            currentItem = $("#Menus").data("kendoGrid").dataItem($(e.currentTarget).closest("tr"));
+            var whereclauseText =currentItem.WhereClause
+
+            var ColumnsList = currentItem.ColumnList;
+            availableTags = ColumnsList.split(",");
+            availableTags.push("And", "Or", ">=", "=>", "<=", "=", "@@User", "@@Company", "(", ")");
+            //$.ajax({
+
+            //    url: "/Menu/Menucolumns",
+            //    data: { TableName: TableName },
+            //    contentType:"application/json;",
+            //    async:false,
+            //    success: function (res) {
+
+            //        availableTags = res;
+            //        availableTags.push("And", "Or", ">=", "=>", "<=","=","@@User","@@Company","(",")");
+            //    },
+            //    error: function () { }
+            //});
+
+
+            if(whereclauseText != null){
+                var word = whereclauseText.replace(/[\s]+/g, " ").trim().split(" ");
+                myfunc(word);
+
+
+            }
+            function split(val) {
+                return val.split(" ");
+            }
+            function extractLast(term) {
+                return split(term).pop();
+            }
+
+
+            $("#editor").on("keydown keyup keydown", function (event) {
+
+                if (event.keyCode === $.ui.keyCode.TAB &&
+                        $("#editor").data("autocomplete").menu.active) {
+                    event.preventDefault();
+                }
+
+                if (event.keyCode == 32) {
+                    var text = $(this).text().replace(/[\s]+/g, " ").trim();
+                    var word = text.split(" ");
+                    myfunc(word);
+
+                    //// Set cursor postion to end of text
+                    var child = $(this).children();
+                    var range = document.createRange();
+                    var sel = window.getSelection();
+                    range.setStart(child[child.length - 1], 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    $(this)[0].focus();
+                }
+            }).autocomplete({
+                minLength: 0,
+                source: function (request, response) {
+                    // delegate back to autocomplete, but extract the last term
+                    response($.ui.autocomplete.filter(
+                        availableTags, extractLast(request.term)));
+                },
+                focus: function () {
+                    // prevent value inserted on focus
+                    return false;
+                },
+                appendTo: "#bodyContainer",
+                select: function (event, ui) {
+                    var terms = split(ui.item.value);
+                    // remove the current input
+                    terms.pop();
+                    // add the selected item
+                    terms.push(ui.item.value);
+                    // add placeholder to get the comma-and-space at the end
+                    terms.push("");
+                    var text = $(this).text().replace(/[\s]+/g, " ").trim();
+                    var word = text.split(" ");
+                    var x = [];
+                    for (var i = 0 ; i < word.length - 1; i++) {
+                        x.push(word[i])
+                    }
+                    var valuex = ui.item.value;
+                    var newx = "";
+
+                    $.each(x, function (index, value) {
+                        if ((! isNaN(value)) || (value.indexOf('\'')>=0)) {
+                            newx += "<span class='other' style='color:brown;'>" + value + "&nbsp;</span>";
+
+                        } else if (($.inArray(value, logicalArr) == -1) && ($.inArray(value, availableTags) >= 0)) {
+                            newx += "<span class='statement' style='color:black;'>" + value + "&nbsp;</span>";
+                        } else if (($.inArray(value, logicalArr) >= 0) && ($.inArray(value, availableTags) >= 0)) {
+                            newx += "<span class='statement' style='color:blue;'>" + value + "&nbsp;</span>";
+                        }
+                        else {
+                            newx += "<span class='statement' style='color:red;'>" + value + "&nbsp;</span>";
+                        }
+                    });
+
+                    if (($.inArray(valuex, logicalArr) == -1) && ($.inArray(valuex, availableTags) >= 0)) {
+                        newx += "<span class='statement' style='color:black;'>" + valuex + "&nbsp;</span>";
+                    } else if (($.inArray(valuex, logicalArr) >= 0) && ($.inArray(valuex, availableTags) >= 0)) {
+                        newx += "<span class='statement' style='color:blue;'>" + valuex + "&nbsp;</span>";
+                    }
+
+                    $(this).html(newx);
+
+                    this.value = terms.join(" ");
+                    var child = $(this).children();
+                    var range = document.createRange();
+                    var sel = window.getSelection();
+                    range.setStart(child[child.length - 1], 1);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    $(this)[0].focus();
+
+
+                    return false;
+                },
+                open: function (event, ui) {
+                    var input = $(event.target),
+                        widget = input.autocomplete("widget"),
+                        style = $.extend(input.css([
+                            "font",
+                            "border-left",
+                            "padding-left"
+                        ]), {
+                            position: "absolute",
+                            visibility: "hidden",
+                            "padding-right": 0,
+                            "border-right": 0,
+                            "white-space": "pre"
+                        }),
+                        div = $("<div/>"),
+                        pos = {
+                            my: "left top",
+                            collision: "none"
+                        },
+                        offset = -7;
+                    widget.css("width", "");
+                    div
+                        .text(input.val().replace(/\S*$/, ""))
+                        .css(style)
+                        .insertAfter(input);
+                    offset = Math.min(
+                        Math.max(offset + div.width(), 0),
+                        input.width() - widget.width()
+                    );
+                    div.remove();
+
+                    pos.at = "left+" + offset + " bottom";
+                    input.autocomplete("option", "position", pos);
+
+                    widget.position($.extend({ of: input }, pos));
+                }
+            });
+
+            $("#saveChanges").click(function () {
+                var row = $("#Menus [data-uid=" + currentItem.uid + "]");
+
+
+                var td = $(row).find("#grid_active_cell");
+               var wheretext= $("#editor").text();
+               $(td).text(wheretext);
+
+               model = $("#Menus").data("kendoGrid").dataItem(row);
+               model.set("WhereClause", wheretext);
+               model.dirty = true;
+               $('#whereClausePopup').modal('hide');
+            });
+            function myfunc(word){
+                var newH = "";
+
+                $.each(word, function (index, value) {
+                    if ((!isNaN(value)) || (value.indexOf('\'') >= 0)) {
+                        newH += "<span class='other' style='color:brown;'>" + value + "&nbsp;</span>";
+
+                    } else if (($.inArray(value, logicalArr) == -1) && ($.inArray(value, availableTags) >= 0)) {
+                        newH += "<span class='statement' style='color:black;'>" + value + "&nbsp;</span>";
+
+                    } else if (($.inArray(value, logicalArr) >= 0) && ($.inArray(value, availableTags) >= 0)) {
+                        newH += "<span class='statement' style='color:blue;'>" + value + "&nbsp;</span>";
+                    }
+                    else {
+
+                        newH += "<span class='statement' style='color:red;'>" + value + "&nbsp;</span>";
+                    }
+                });
+                $("#editor").html(newH);
+        }
+        });
+
+
+
+    }
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "gridName", "Menus"}, { "ObjectName", "Menus" }, { "Functions", ViewBag.Functions } })
+
+<div class="modal fade" id="whereClausePopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">WhereClause</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
+
+            </div>
+
+            <div class="modal-footer" style="text-align: center;">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><span>@MsgUtils.Instance.Trls("Cancel")</span></button>
+                <button type="button" class="btn submit btn-primary" id="saveChanges"><span>@MsgUtils.Instance.Trls("SaveChanges")</span></button>
+            </div>
+
+        </div>
+    </div>
+</div>

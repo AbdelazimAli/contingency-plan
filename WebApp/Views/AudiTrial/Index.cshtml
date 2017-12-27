@@ -1,0 +1,193 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewBag.Functions as string[];
+}
+<style>
+    .esss{
+        padding-top:5px;
+    }
+</style>
+<br />
+
+<div id="AudiDiv"></div>
+<script>
+    var gridname="'AudiDiv'";
+    var toolbar = '<div><div style="@(rtl ? "float: right; " : "float: left;")">' +
+       '&nbsp;&nbsp; <a style="height:30px;" class="btn btn-default btn-sm fa fa-eye" onclick="AudiTrailEditor()" accesskey="s"><span >&nbsp;@MsgUtils.Instance.Trls("Show Data")</span></a></div>&nbsp;&nbsp;&nbsp;' +
+       '&nbsp;&nbsp;<div style="@(rtl ? "float: right" : "float: left")">&nbsp;<div class="btn-group"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+       '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+       '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';
+
+    Grids.indexGrid({
+        read: "@Url.Action("ReadAudiTrials", "AudiTrial")?MenuId=@Request.QueryString["MenuId"]",
+        objectName: "AudiTrail",
+        gridName: "AudiDiv",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        selectable: "row",
+        toolbar: toolbar,
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+    });
+
+       function AudiTrailEditor(){
+           var grid = $("#AudiDiv").data("kendoGrid");
+           var objectname = grid.dataItem(grid.select()).ObjectName;
+           var URL = grid.dataItem(grid.select()).URL;
+           var DivType = grid.dataItem(grid.select()).DivType;
+           var companyId = grid.dataItem(grid.select()).CompanyId;
+           var Ver = grid.dataItem(grid.select()).Version;
+           var menuId = 0;
+        //int CompanyId,string objectName,byte version
+           $.ajax({
+               url: "@Url.Action("GetMenuId", "AudiTrial")",
+               data: { CompanyId: companyId, objectName: objectname, version: Ver },
+               async: false,
+               success: function (res) {
+                   menuId = res;
+               },
+               error: function (e) {
+
+               }
+           });
+
+
+
+           if (objectname == 'CompanyStructure' || objectname == 'MenuForm') {
+            $('#AudiTrailPopup').modal('hide');
+               bootbox.alert('@MsgUtils.Instance.Trls("Can't open this object ")'+ objectname)
+                                }
+
+           else if (URL == null) {
+            $('#AudiTrailPopup').modal('hide');
+               bootbox.alert('@MsgUtils.Instance.Trls("URL not Found")')
+                                }
+
+           else {
+               var flag = false;
+               // in case form
+               if (grid.dataItem(grid.select()).DivType == "Form") {
+                   var url = URL.replace("Index", "Details") + "?id=" + grid.dataItem(grid.select()).SourceId + "&version=" + grid.dataItem(grid.select()).Version +
+                       "&MenuId=" + grid.dataItem(grid.select()).MenuId + "&Read=1&RoleId=@Session["RoleId"]";
+                   ulr = url;
+                $.ajax({
+                   url: url,
+                    async: false,
+                    success: function (res) {
+                           //console.log(res)
+                           if (res.indexOf("<!DOCTYPE html>") != -1)
+                               bootbox.alert('@MsgUtils.Instance.Trls("This record is deleted")')
+                                                else {
+                            $('#AudiTrailPopup').modal('show');
+                            $('#AudiTrailPopup #AudiTrailEdite').html(res);
+                            $('#AudiTrailEdite div> :button[id="backToIndex"]').remove();
+                            $('#AudiTrailEdite div> :button[id="Documents"]').remove();
+                           }
+                       },
+                    error: function (e) {
+
+                       }
+                   });
+                $('#AudiTrailEdite div> :button[id="backToIndex"]').remove();
+                $('#AudiTrailEdite div> :button[id="Documents"]').remove();
+                $("#renderbody").on("ajaxStop", function () {
+                    $('#AudiTrailEdite div> :button[id="backToIndex"]').remove();
+                    $('#AudiTrailEdite div> :button[id="Documents"]').remove();
+                   });
+               } else if (grid.dataItem(grid.select()).DivType == "Grid") {
+                $("#AudiTrailPopup #AudiTrailEdite").empty();
+                   flag = true;
+
+                $.ajax({
+                   url: URL,
+                    async: false,
+                    success: function (res) {
+
+                           if (res.indexOf("<!DOCTYPE html>") != -1)
+                               bootbox.alert("This record is deleted")
+                                                else {
+                            $('#AudiTrailPopup').modal('show');
+                            $('#AudiTrailPopup #AudiTrailEdite').prepend(res);
+                            $('#AudiTrailEdite div> div[class="modal-content"]').css("height", "300px");
+                               //  $('#AudiTrailPopup').css("height", "400px");
+                           }
+                       },
+                    error: function (e) {
+
+                       }
+                   });
+
+                $("#renderbody").on("ajaxStop", function () {
+
+                       if (flag) {
+                           if ($("#AudiTrailPopup .k-grid").data("kendoGrid") == undefined) return null;
+                        else {
+                               var record = $("#AudiTrailPopup .k-grid").data("kendoGrid").dataSource.data()
+                                       .filter(function (element) {
+                                   return element.Id == grid.dataItem(grid.select()).SourceId;
+                               });
+
+                               if (record == undefined) {
+                                $('#AudiTrailPopup').modal('hide');
+                                   bootbox.alert('@MsgUtils.Instance.Trls("This record is deleted ")');
+                               }
+
+                               else {
+                                $("#AudiTrailPopup .k-grid").data("kendoGrid").dataSource.data(record);
+                               }
+
+                            $('#AudiTrailPopup a[class="k-pager-refresh k-link"]').remove();
+                            $('#AudiTrailPopup button[data-toggle="dropdown"]').remove();
+                            $('#AudiTrailPopup a[class^="k-button"').remove();
+                               //  $("#AudiTrailPopup .k-grid-content").css("height", "200px")
+                           }
+                           flag = false;
+                       }
+
+                   });
+               }
+           }
+       }
+
+</script>
+
+<div class="modal fade" id="AudiTrailPopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div id="AudiTrailEdite" class="modal-body" tabindex="0" >
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">@MsgUtils.Instance.Trls("Close")</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,162 @@
+﻿
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string Cu = User.Identity.GetCulture().Split('-')[0];
+}
+<style>
+    #Tabsstrib > ul > li {
+        font-weight: lighter;
+        line-height: 1;
+        width: 33.33%;
+        background: indigo;
+    }
+    #Tabsstrib > ul {
+        margin-left: -6px !important;
+        margin-right: 0px !important;
+    }
+    .k-state-selected {
+        background-color: green;
+        border-color: green;
+    }
+    #Tabsstrib >ul>li>span{
+            color: lime;
+    }
+</style>
+<br />
+<div id="PageDiv" class="col-sm-12">
+    <div id="PrograssBar" style="height:15px;width:inherit " >
+
+    </div>
+    <div id="Tabsstrib" >
+    </div>
+    <div id="Buttons" style="@(rtl?"float:left":"float:right")">
+        <input type="button" id="Prevbtn"   onclick="return false;" disabled="disabled" class="btn btn-primary submit button" value="@MsgUtils.Instance.Trls("Previous")"/>
+        <input type="button" id="Nextbtn"  onclick="return false;" class="btn btn-primary submit button" value="@MsgUtils.Instance.Trls("Next")">
+        <input type="button" id="Subbtn"   onclick="return false;" class="btn btn-success submit button" value="@MsgUtils.Instance.Trls("Submit")">
+
+    </div>
+</div>
+<script>
+  
+     
+    var Salaryitem="@Request.QueryString["SalaryItem"]";
+    var purposeValue = 1;
+    var CurrentIndex = 0;
+    var purposeValue = 1;
+
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#" + oldPage[2] + " a").attr("href");
+
+    $("#Subbtn").addClass("hidden");
+    var progress = $("#PrograssBar").kendoProgressBar({
+        type: "value",
+        showStatus: false,
+        min: 0,
+        max: 3,
+        value: 1,
+        animation: {
+            duration: 600
+        }
+    }).data("kendoProgressBar");
+    var Tabss =  $("#Tabsstrib").kendoTabStrip({
+        animation: {
+            open: {
+                effects:"fadeIn"
+            }
+        },
+        dataTextField:"Name",
+        dataContentUrlField:"Url",
+        dataSource: [{ Name:"@MsgUtils.Instance.Trls("FirstPage")", Url: "@Url.Action("FirstPage","SalariesDesign")?Version=@Request.QueryString["Version"]&RoleId=@Request.QueryString["RoleId"]" },
+                     { Name: "@MsgUtils.Instance.Trls("SecondPage")", Url: "@Url.Action("SecondPage","SalariesDesign")?Version=@Request.QueryString["Version"]&RoleId=@Request.QueryString["RoleId"]" },
+                     { Name: "@MsgUtils.Instance.Trls("ThirdPage")", Url: "@Url.Action("ThirdPage","SalariesDesign")?Version=@Request.QueryString["Version"]&RoleId=@Request.QueryString["RoleId"]"},
+                     { Name: "@MsgUtils.Instance.Trls("FourthPage")", Url: "@Url.Action("FourthPage","SalariesDesign")?Version=@Request.QueryString["Version"]&RoleId=@Request.QueryString["RoleId"]"},
+    ]
+    }).data("kendoTabStrip");
+
+    var ProgValue = progress.value();
+        var chil = Tabss.tabGroup.children();
+
+    for (var i = 0; i < chil.length; i++) {
+        Tabss.enable(chil[i], false);
+    }
+    Tabss.select(CurrentIndex);
+    $(Tabss.items()[3]).attr("style", "display:none");
+    $(function () {
+        $("#Buttons").on('click', "#Prevbtn", null, function () {
+
+            if (purposeValue != 2)
+                CurrentIndex--;
+            else
+                CurrentIndex = CurrentIndex - 3;
+
+            Tabss.select(CurrentIndex);
+
+            if (CurrentIndex == 0) {
+                $("#Prevbtn").attr("disabled", true);
+                $("#Nextbtn").removeClass("hidden");
+                $("#Subbtn").addClass("hidden");
+            } else {
+                $("#Nextbtn").removeClass("hidden");
+                $("#Subbtn").addClass("hidden");
+            }
+
+            progress.value(--ProgValue);
+        });
+        $("#Buttons").on('click', "#Nextbtn", null, function () {
+            $("#SalaryBasisFormPage1").find(".submit").click();
+            $("#SalaryBasisFormPage2").find(".submit").click();
+
+            purposeValue = $("input[name='Purpose']:checked").val()
+            if (purposeValue != 2)
+                CurrentIndex++;
+            else
+                CurrentIndex = CurrentIndex + 3;
+
+            Tabss.select(CurrentIndex);
+
+            if (CurrentIndex > 0)
+                $("#Prevbtn").attr("disabled", false);
+
+
+            if (CurrentIndex == 3 || CurrentIndex == 2) {
+                $("#Nextbtn").addClass("hidden");
+                $("#Subbtn").removeClass("hidden");
+            } else {
+                if (!$("#Subbtn").hasClass("hidden"))
+                    $("#Subbtn").addClass("hidden");
+            }
+
+            progress.value(++ProgValue);
+
+        });
+
+        $("#Buttons").on('click', "#Subbtn", null, function () {
+            var salaryItemobj = "@Request.QueryString["SalaryItem"]";
+
+            if (salaryItemobj)
+                oldulr = "@Url.Action("Details", "SalaryItem")?id=" + salaryItemobj + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]";
+
+            FormJs.saveForm("#SalaryBasisFormPage1", this, function (res) {
+                if (purposeValue != 2) {
+                    if (res.EndDate != null)
+                        res.EndDate = kendo.toString(new Date(parseInt(res.EndDate.substr(6))), "yyyy-MM-ddTHH:mm:ss");
+                    if (res.StartDate != null)
+                        res.StartDate = kendo.toString(new Date(parseInt(res.StartDate.substr(6))), "yyyy-MM-ddTHH:mm:ss");
+
+                    FormJs.saveForm("#SalaryBasisFormPage2", this, function (data) {
+                    }, res, Grids.sendData("LinkTableGridDiv"));
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                }
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                $("#renderbody").load(oldulr);
+            }, (purposeValue == 2 ? Grids.sendData("RangeTableGridDiv") : null));
+
+        });
+    });
+</script>

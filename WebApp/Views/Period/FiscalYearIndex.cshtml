@@ -1,0 +1,95 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+<br>
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    var count = ViewBag.count;
+    Layout = null;
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+}
+
+<div style="@(rtl?"float:right":"float:left")">
+    <label style="font-size:medium">@MsgUtils.Instance.Trls("FiscalName")</label>&emsp;
+    <input type="text" id="nameTxt" />&emsp;&emsp;&emsp;
+    <label id="startLbl" style="font-size:medium; @(count == 0 ?"": "display: none")">@MsgUtils.Instance.Trls("StartFiscalDate")</label>&emsp;
+    <input id="dateTimePicker" title="dateTimePicker" style="@(count == 0 ?"":"display: none" )" />&emsp;
+    <button id="btndisplay">@MsgUtils.Instance.Trls("AddFiscal")</button>&emsp;&emsp;&emsp;
+</div>
+<br><br><br>
+<div id="FiscalDiv"></div>
+<style>
+    .k-grid-content k-auto-scrollable {
+        height: 2000px !important;
+    }
+</style>
+<script>
+   
+    $("#dateTimePicker").kendoDatePicker({});
+    // Grid display Fiscal years
+    var objectName = "FiscalYear";
+      Grids.batchGrid({
+            read: "@Url.Action("ReadFiscal", "Period")",
+            destroy: "@Url.Action("DeleteFiscal", "Period")",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name",
+            toolbar: '<div style="@(rtl ? "float: right" : "float: left")">&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu2"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid("FiscalDiv")"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li></ul></div></div>',
+            gridName: "FiscalDiv",
+            height:500,
+            fields: { Name: { editable: false }, EndDate: { editable: false }, StartDate: { editable: false }},
+        });
+
+    // click button Add
+    $("#btndisplay").on('click', function (e) {
+        var name = $("#nameTxt").val();
+        var date = $("#dateTimePicker").val();
+        var flag = true;
+        if ($("#dateTimePicker").not(":hidden").length > 0)
+            if (isEmptyOrWhitespace(date))
+                flag = false;
+        console.log(flag);
+        if (name != "" && flag)
+        {
+            $.ajax({
+                url: "/Period/AddFiscal",
+                type: "POST",
+                data: { name:name,date:date },
+                success: function (data) {
+                    if (data == "Ok") {
+                        $("#FiscalDiv").data('kendoGrid').dataSource.read();
+                        $("#FiscalDiv").data('kendoGrid').refresh();
+                        $("#startLbl").remove();
+                        $("#dateTimePicker").closest(".k-datepicker").remove();
+
+                    }else
+                    {
+                        toastr.error(data);
+                    }
+                },
+                error: function (result) {
+                    //console.log(result.responseText);
+                }
+            });
+        }
+        else
+        {
+            toastr.error("@MsgUtils.Instance.Trls("EnterNameDate")");
+        }
+    })
+</script>
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,346 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+<link href="~/Content/forms.css" rel="stylesheet" />
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+<div id="payrollDiv"></div>
+<script>
+    var Status = [{ value: 0, text: "New" }, { value: 1, text: "Opened" }, { value: 2, text: "Closed" }];
+    var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+    var PayrollDue=[];
+    var endDateArr=[];
+    function ChangePeriodName(record,formId,model,read){
+        if(record=="" || record==null)
+            $("fieldset[name=Period]").css("display","none");
+        else{
+            //close date part
+            $.get("@Url.Action("GetEndSubPeriods", "Payroll")", {PeriodId :record}, function (list) {
+                endDateArr=list;
+            });
+            // Sub period part
+            $("fieldset[name=Period]").css("display","");
+            if(read !=1)
+                $.get("@Url.Action("GetPeriods", "Payroll")", {PeriodId :record}, function (list) {
+                    FormJs.fillOptionsDynamic($("#" + formId), "Period", list, model);
+                    if($("#SubperiodDiv").data("kendoGrid") !=undefined)  {
+                        var period=$("#Period").val();
+                        $("#SubperiodDiv").data("kendoGrid").dataSource.transport.options.read.url = "@Url.Action("ReadSubperiod", "Payroll")?Period="+period;
+                        $("#SubperiodDiv").data("kendoGrid").dataSource.read();
+                    }
+                });
+        }
+    }
+   
+    function holidays(date , res ,offset) {
+        var isDisabled;
+        if(date) {
+            //WeekEnds
+            if (calender && (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2))
+                isDisabled = true;
+
+            //Custom Holidays
+            for (var i = 0; i < calender.CustomHolidays.length; i++) {
+                var holiDate = new Date(parseInt(calender.CustomHolidays[i].substr(6)));
+                if (holiDate.getYear() == date.getYear() && holiDate.getMonth() == date.getMonth() && holiDate.getDate() == date.getDate()) {
+                    isDisabled = true;
+                    break;
+                }
+            }
+            //Standard Holidays
+            for (var i = 0; i < calender.StanderdHolidays.length; i++) {
+                if ((date.getMonth() + 1) == calender.StanderdHolidays[i].SMonth && date.getDate() == calender.StanderdHolidays[i].SDay) {
+                    isDisabled = true;
+                    break;
+                }
+            }
+        }
+
+        if(offset !=undefined){
+            if(isDisabled && offset >=0){
+                var  SDateOp= res.setDate(date.getDate()+1);
+                date=new Date(parseInt(SDateOp));
+            }  
+            else if(isDisabled && offset <0){
+                var  SDateOp= res.setDate(date.getDate()-1);
+                date=new Date(parseInt(SDateOp));
+            } 
+            return { flag:isDisabled ,date: date} ;
+        }
+        else 
+            return isDisabled;
+    }
+    function ChangePeriod(record,read){
+        if($("#PayrollDueDiv").data("kendoGrid") !=undefined) {
+            var grid=$("#PayrollDueDiv").data("kendoGrid").dataSource.data();
+            for (var i = 0; i < grid.length; i++) {
+                PayrollDue.push({value: grid[i].Id, text:grid[i].Name});
+            }
+        }
+        $("div[name=SubperiodSec]").html('<div id="SubperiodDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+        var gridname = "'SubperiodDiv'";
+        Grids.batchGrid({
+            read: "@Url.Action("ReadSubperiod", "Payroll")?Period=" +record,
+            lang: "@User.Identity.GetCulture()",
+            objectName: "SubPeriod",
+            tableName: "SubPeriods",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+            recordName: "Name",
+            gridName: "SubperiodDiv",
+            fields:{PayDueId:{defaultValue:null},PaySalaryDate:{defaultValue:null},CalcSalaryDate:{defaultValue:null},CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+            columns:(read == 1 ? [
+                { field: "Delete", input: "none"},
+                { field: "PayDueId", values: PayrollDue },
+                { field: "Status", values: Status },
+            ]: [
+                { field: "Delete", input: ""}, 
+                { field: "PayDueId", values: PayrollDue },
+                { field: "Status", values: Status },
+                  { field: "PaySalaryDate",editor: function (container, options) {
+                      var COffst= $("#PayOfstDays").val();
+                      var SalaryDate;
+                      var SDateOp;
+                      var finaldate;
+                      var offset=Number(COffst);
+                      var result = new Date(options.model.EndDate);
+                      SDateOp= result.setDate(result.getDate()+offset);
+                      SalaryDate=new Date(parseInt(SDateOp));
+                      var objholiday= holidays(new Date(SalaryDate),result,offset);
+                      if(objholiday.flag ==true)
+                          finaldate= holidays(new Date(objholiday.date),result,offset);
+                    
+                      var input='<input name="PaySalaryDate" id="PaySalaryDate" />'
+                      $(input).appendTo(container);
+                      $("#PaySalaryDate").kendoDatePicker({
+                          value:(options.model.PaySalaryDate==null?(finaldate != undefined? new Date(finaldate.date) : SalaryDate):options.model.PaySalaryDate),
+                          culture: "@culture",
+                          disableDates: holidays,
+                      });
+                      options.model.PaySalaryDate = (options.model.PaySalaryDate==null?(finaldate != undefined? new Date(finaldate.date) : SalaryDate):options.model.PaySalaryDate);
+                      var id=options.model.uid;
+                      var record=$("#SubperiodDiv").data("kendoGrid").dataItem($("[data-uid='" +id+"']"));
+                      record.dirty = true;
+                  }
+                  },
+                { field: "CalcSalaryDate",editor: function (container, options) {
+                    var COffst= $("#CalcOfstDays").val();
+                    var SalaryDate;
+                    var SDateOp;
+                    var finaldate;
+                    var offset=Number(COffst);
+                    var result = new Date(options.model.EndDate);
+                    SDateOp= result.setDate(result.getDate()+offset);
+                    SalaryDate=new Date(parseInt(SDateOp));
+                    var objholiday= holidays(new Date(SalaryDate),result,offset);
+                    if(objholiday.flag ==true)
+                        finaldate= holidays(new Date(objholiday.date),result,offset);
+                    
+                    var input='<input name="CalcSalaryDate" id="SalaryDate" />'
+                    $(input).appendTo(container);
+                    $("#SalaryDate").kendoDatePicker({
+                        value:(options.model.CalcSalaryDate==null?(finaldate != undefined? new Date(finaldate.date) : SalaryDate):options.model.CalcSalaryDate),
+                        culture: "@culture",
+                        disableDates: holidays,
+                    });
+                    options.model.CalcSalaryDate = (options.model.CalcSalaryDate==null?(finaldate != undefined? new Date(finaldate.date) : SalaryDate):options.model.CalcSalaryDate);
+                    var id=options.model.uid;
+                    var record=$("#SubperiodDiv").data("kendoGrid").dataItem($("[data-uid='" +id+"']"));
+                    record.dirty = true;
+                }
+                }
+            ]),
+            select: { "Status": Status ,"PayDueId": PayrollDue },
+            dataBound:function(e){
+                var arr=[];
+                if($("#PayrollDueDiv").data("kendoGrid") !=undefined) {
+                    var grid=$("#PayrollDueDiv").data("kendoGrid").dataSource.data();
+                    for (var i = 0; i < grid.length; i++) {
+                        if(grid[i].Id==0 )
+                            grid[i].Id=-(i+1);
+                        arr.push({value: grid[i].Id, text:grid[i].Name });
+                    }
+                    if($("#SubperiodDiv").data("kendoGrid") !=undefined){
+                        var grid1= $("#SubperiodDiv").data("kendoGrid").columns;
+                        for (var i = 0; i < grid1.length; i++) {
+                            if(grid1[i].field=="PayDueId")
+                                grid1[i].values=arr;
+                        }
+                    }
+                }
+            },
+        });
+    }
+  
+    $(function () {
+        
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model;
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+    
+        var PayMethod= [{id:1,name:"@MsgUtils.Instance.Trls("Cash")"}, {id:2,name:"@MsgUtils.Instance.Trls("Cheque")"}, {id:3,name:"@MsgUtils.Instance.Trls("Bank Transfer")"}];
+        var DistPercent= [{id:1,name:"@MsgUtils.Instance.Trls("Fixed percentage")"}, {id:2,name:"@MsgUtils.Instance.Trls("Variable percentage")"}];
+        var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));
+        var BankId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BankId));
+        var AccrualSalAcct = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AccrualSalAcct));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "payrollForm";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "Payroll", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="Payrolls";
+                data.FormAction = "@Url.Action("Details", "Payroll")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                if(read == 1) data.mode = 'show';
+                $("#payrollDiv").Forms(data, model);
+
+                ChangePeriodName(model.PeriodId,formId,model,read)
+
+                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+                $("#" + formId).on('blur','#StartDate', function(){
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    if( $('#EndDate').hasClass("k-invalid")){
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next().remove();
+                    }
+                });
+                $("#"+formId).on('blur','#EndDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                            }
+                        }
+                        if($('#StartDate').hasClass("k-invalid")){
+                            $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $("#StartDate").next().remove();
+                        }
+                    }
+                });
+
+                //Leave Range Grid
+                $("div[name=PayrollDueSec]").prepend('<div id="PayrollDueDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+                var gridname = "'PayrollDueDiv'";
+                Grids.batchGrid({
+                    read: "@Url.Action("ReadPayrollDue", "Payroll")?PayrollId=" +model.Id,
+                    lang: "@User.Identity.GetCulture()",
+                    objectName: "PayrollDue",
+                    tableName: "PayrollDues",
+                    admin: "@admin",
+                    lang: "@User.Identity.GetCulture()",
+                    toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                    recordName: "Name",
+                    gridName: "PayrollDueDiv",
+                    fields:{CreatedUser:{editable:false},CreatedTime:{editable:false},ModifiedUser:{editable:false},ModifiedTime:{editable:false}},
+                    columns:(read == 1 ? [{ field: "Delete", input: "none"}]: [{ field: "Delete", input: ""}]),
+                });
+
+                FormJs.fillOptionsDynamic($("#" + formId), "PayMethod", PayMethod, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "DistPercent", DistPercent, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "AccrualSalAcct", AccrualSalAcct, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "BankId", BankId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", PeriodId, model);
+
+                var sets = $("#" + formId).find(".set");
+                for(var i=0; i<sets.length; i++){
+                    if($(sets[i]).children(".sections").children().length == 0)
+                        $(sets[i]).remove();
+                }
+
+                $('#payrollDiv').on('click',"#backToIndex",null, function(){
+                    $("#renderbody").load(oldulr);
+                });
+
+                $("#payrollDiv").on("change","#PeriodId",null,function(e){
+                    var record= $(this).val();
+                    ChangePeriodName(record,formId,model,read);
+                });
+
+                $("#payrollDiv").on("change","#Period",null,function(e){
+                    var record= $(this).val();
+                    ChangePeriod(record,read);
+                });
+                // check close date
+                $("#"+formId).on('blur','#FirstCloseDate',function(){
+                    var pName=$("#PeriodId").val();
+                    if(pName=="" || pName==null) {
+                        if ($("#FirstCloseDate") && !$("#PeriodId").hasClass("k-invalid")) {
+                            $("#FirstCloseDate").addClass("k-invalid").prop("aria-invalid", true);
+                            $("#FirstCloseDate").after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PeriodId' role='alert'>@MsgUtils.Instance.Trls("select periodName first")</span>");
+                        }
+                    }
+                    else{
+                        if(endDateArr.length >0){
+                            var elem = $(this);
+                            var record = new Date($(this).data("kendoDatePicker").value());
+                            var date=[];
+                            for (var i = 0; i < endDateArr.length; i++) {
+                                var x= new Date(parseInt((endDateArr[i]).substr(6)));
+                                date.push({month: x.getMonth(), day: x.getDate()});
+                            }
+                            var oper=date.find(r => r.month == record.getMonth() && r.day == record.getDate());
+                            if(oper==undefined){
+                                if (elem && !elem.hasClass("k-invalid")) {
+                                    elem.addClass("k-invalid").prop("aria-invalid", true);
+                                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='FirstCloseDate' role='alert'>@MsgUtils.Instance.Trls("not in endDate of Subperiods")</span>");
+                                }
+                            }
+                            else{
+                                if($('#FirstCloseDate').hasClass("k-invalid")){
+                                    $('#FirstCloseDate').removeClass("k-invalid").prop("aria-invalid", false);
+                                    $("#FirstCloseDate").next().remove();
+                                }
+                            }
+                        }
+                    }
+                });
+                $("#payrollDiv").on('click',"#saveChanges",null, function (e) {
+                    var grid=$("#PayrollDueDiv").data("kendoGrid").dataSource.data()
+                    for (var i = 0; i  < grid.length; i++) {
+                        if(grid[i].Id==0)
+                            grid[i].Id=(-(i+1))
+                    }
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        $("#renderbody").load(oldulr);
+                    },Grids.sendData("PayrollDueDiv"),($("#SubperiodDiv").data("kendoGrid") !=undefined ?Grids.sendData("SubperiodDiv") : null));
+                });
+            }
+        });
+    });
+
+</script>
+
+
+

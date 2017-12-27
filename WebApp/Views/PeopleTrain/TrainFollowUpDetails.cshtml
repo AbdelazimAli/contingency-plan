@@ -1,0 +1,137 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+
+}
+
+
+
+<script src="~/Scripts/typeahead.bundle.min.js"></script>
+<script src="~/Scripts/cultures/lang.js"></script>
+
+<div id="pageTabs"></div>
+
+
+
+<script>
+
+    FormJs.DrawTabs("pageTabs");
+
+    function changePlannedHours(record){
+        $.ajax({
+            url:"@Url.Action("GetPlanedHoure", "PeopleTrain")",
+            data:{courseId:record},
+        contentType:"application/json",
+        async:false,
+        success:function(res){
+            $("#PlanedHour").text(res);
+        },
+        error:function(){
+        }
+    });
+    }
+
+
+    $("#t_WorkFollow").click(function(){
+        @*console.log('ID'+@Model.Id);
+        console.log('Role'+'@Request.QueryString["RoleId"]');
+        console.log('ID'+@compantId);*@
+        $('#tab_WorkFollow').load("@Url.Action("WorkFlow", "Log")"+"?Source=Training&SourceId=@compantId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=PeopleTrainFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_AuditLog").click(function(){
+        $('#tab_AuditLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=PeopleTrainFollowUpForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GenralInfo").click(function () {
+        $("#tab_GenralInfo").html("<div id='PeopleTraineF'></div>");
+        FollowUpForm();
+    });
+
+    var formId = "PeopleTrainForm";
+    var oldPage = localStorage.getItem("menuhigh").split(",");
+    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+
+    function  FollowUpForm() {
+        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var RejectReason= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.RejectReason));
+        var CurrCode  = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CurrCode));
+        var EventId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EventId));
+        var PersonId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
+        var CourseId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CourseId));
+        var Status= [{id:0,name:"@MsgUtils.Instance.Trls("Request")"},{id:1,name:"@MsgUtils.Instance.Trls("Ingoing")"}, {id:2,name:"@MsgUtils.Instance.Trls("Completed")"}, {id:3,name:"@MsgUtils.Instance.Trls("Fail")"}];
+        var Adwarding= [{id:1,name:"@MsgUtils.Instance.Trls("Company")"}, {id:2,name:"@MsgUtils.Instance.Trls("Employee")"}, {id:3,name:"@MsgUtils.Instance.Trls("Other")"}];
+        var ApprovalStatus = [ { id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },
+         { id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },
+         { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+        var read = "@Request.QueryString["Read"]";
+        $.getJSON(url, { objectname: 'PeopleTrainFollowUpForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("TrainFollowUpDetails", "PeopleTrain")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "TrainCourses";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            if(read == 1) data.mode = 'show';
+
+            $("#PeopleTraineF").Forms(data, model);
+            $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+
+            if(model.ApprovalStatus != 9) $("#" + formId + " div[name='rejectSec']").css("display","none");
+
+            FormJs.fillOptionsDynamic($("#" + formId), "Status", Status, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EventId", EventId, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Adwarding", Adwarding, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "CourseId", CourseId, model, { objectName: "TrainCourse" });
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", PersonId, model,{ remoteTableName: "People"});
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", ApprovalStatus, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "Curr", CurrCode, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "RejectReason", RejectReason, model);
+
+            changePlannedHours(model.CourseId);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+
+            $("#" + formId).on('click','#SaveChanges', function (e) {
+                if($("#" + formId).find(".k-invalid").length > 0) return ;
+                FormJs.saveForm($("#" + formId), $(this), function () {
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    $("#renderbody").load(oldulr);
+                });
+            });
+            $("#PeopleTraineF").on("change","#ApprovalStatus",null,function(){
+                var value = $(this).val();
+                value != 9 ? $("#"+ formId + " div[name='rejectSec']").css("display","none") : $("div[name='rejectSec']").css("display","");
+
+            });
+            $("#" + formId).find('#backToIndex').on('click', function(){
+                $("#renderbody").load(oldulr);
+            });
+
+
+
+        });
+    }
+    $("#t_GenralInfo").click();
+
+
+
+</script>
+
+
+
+
+
+

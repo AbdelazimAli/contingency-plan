@@ -1,0 +1,245 @@
+/*=================Variables=================*/
+
+/*-----Colors-----*/
+
+$white: #fff;
+$black: #000;
+$main_color: #2B3643;
+$main_border: #5b6b7d;
+$sec_color: #364150;
+$text_gray: #666666;
+$text_blue: #32c5d2;
+$text_side: #b4bcc8;
+$bg_gray: #EEEEEE;
+$bg_blue: #36C6D3;
+$bg_blue_h: #26a1ab;
+$devider: #435060;
+
+/*-----Media Query-----*/
+
+$lg: 1200px;
+$md: 992px;
+$sm: 768px;
+$xs: 420px;
+
+/*-----Transitions-----*/
+
+$fast: .3s ease-in-out;
+$v_fast: .2s ease-in-out;
+$slow: .7s ease-in-out;
+$v_slow: .5s ease-in-out;
+
+/*==============================================
+Main Style
+==============================================*/
+@font-face {
+    font-family: cairo;
+    font-style: normal;
+    font-weight: 400;
+    src: url(../../fonts/cairo-Regular.woff2) format('truetype');
+}
+
+@font-face {
+    font-family: cairo;
+    font-style: normal;
+    font-weight: 700;
+    src: url(../../fonts/cairo-Bold.woff2) format('truetype');
+}
+
+body{
+    font-family: cairo , tahoma;
+    background-color: #f1f1f1;
+}
+
+#particles-js {
+    position: fixed;
+    width: 100vw;
+    height: 100vh;
+    top: 0px;
+    left: 0px;
+    z-index: 1;
+}
+
+.company{
+    display: inline-block;
+    width: 100px;
+    height: 100px;
+    border-radius: 100%;
+    background-color: $white;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 20px;
+    &:after{
+        content: "";
+        display: block;
+        position: absolute;
+        width: 1px;
+        height: 20px;
+        background-color: $text_side;
+        left: 50%;
+    }
+    img{
+        width: 100%;
+        height: 100px;
+        border-radius: 100%;
+    }
+}
+
+.main {
+    display: table-cell;
+    width: 100vw;
+    height: 100vh;
+    vertical-align: middle;
+    text-align: center;
+    .login-form {
+        box-shadow: rgba(0, 0, 0, 0.2) 0px 10px 70px 0px;
+        z-index: 2;
+        position: relative;
+        background: $white;
+        width: 100%;
+        max-width: 480px;
+        margin: 0 auto;
+        .logo{
+            padding: 10px;
+            // background-color: $sec_color;
+            img{
+                border-radius:100%;
+                height: 70px;
+                width: 70px;
+                border: $bg_gray 4px solid;
+            }
+        }
+        h1{
+            font-size: 18px;
+            margin: 0px 0px 10px;
+            color: $text_gray;
+            font-weight: bold;
+        }
+        h2{
+            font-size: 12px;
+            margin: 0px 0px 20px;
+            color: #989898;
+        }
+    }
+    .form-group{
+        position: relative;
+        .text-input{
+            border: none;
+            border-bottom: #e0e0e0 1px solid;
+            width: 100%;
+            padding: 10px 0px;
+            box-shadow: inset $white 0px 0px 0px 50px;
+            color: #9a9a9a;
+            ~span{
+                display: block;
+                position: absolute;
+                height: 1px;
+                background-color: #267aab;
+                right: 50%;
+                bottom: 0px;
+                left: 50%;
+                transition: $v_fast;
+                -webkit-transition: $v_fast;
+            }
+            &:focus{
+                outline: none;
+                ~ span{
+                    right: 0px;
+                    left: 0px;
+                }
+            }
+        }
+    }
+    .login-right{
+        padding: 20px;
+        .login-text{
+            overflow: hidden;
+            margin-bottom: 20px;
+            direction: ltr;
+            >div{
+                float: right;
+                width: 50%;
+            }
+            .form-check{
+                text-align: right;
+                .checkbox-input{
+                    height: 15px;
+                    width: 15px;
+                    background: $text_side;
+                    float: right;
+                    margin: 3px 0px 0px 5px;
+                    position: relative;
+                    overflow: hidden;
+                    span{
+                        display: block;
+                        border-width: 0px 0px 2px 2px;
+                        border-color: $white;
+                        border-style: solid;
+                        width: 11px;
+                        height: 5px;
+                        position: absolute;
+                        top: 3px;
+                        right: 2px;
+                        z-index: 1;
+                        transform: rotate(-45deg);
+                        -ms-transform: rotate(-45deg);
+                        -webkit-transform: rotate(-45deg);
+                        opacity: 0;
+                        transition: $v_fast;
+                        -webkit-transition: $v_fast;
+                    }
+                    input{
+                        opacity: 0;
+                        width: 15px;
+                        height: 15px;
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        z-index: 2;
+                        cursor: pointer;
+                        margin: 0px !important;
+                        &:checked{
+                            ~span{
+                                opacity: 1;
+                            }
+                        }
+                    }
+                }
+                label{
+                    margin-bottom: 0px;
+                    font-size: 12px;
+                    font-weight: normal;
+                    color: #989898;
+                }
+            }
+            .forget{
+                text-align: left;
+                a{
+                    font-size: 12px;
+                    color: #989898;
+                }
+            }
+        }
+        .submit{
+            .btn-submit{
+                width: 100%;
+                background-color: $main_color;
+                border: none;
+                color: $white;
+                font-size: 13px;
+                line-height: 35px;
+                margin-top: 30px;
+                transition: $v_fast;
+                -webkit-transition: $v_fast;
+                &:hover{
+                    background-color: $sec_color;
+                    box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 10px 1px;
+                }
+                &:focus,&:active{
+                    outline: none;
+                    box-shadow: rgba(0, 0, 0, 0.3) 0px 0px 0px 0px;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,149 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.Personnel
+@model MessageViewModel
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="MessageDiv"></div>
+<div id="docWindow"></div>
+<script>
+
+    $(function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
+        var PeopleGroups= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroups));
+        var Employees= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var Depts = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Depts));
+        var formId = "EmpMessageForm";
+        var  emplymentModel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'EmpMessageForm', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SaveMessages", "Message")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "Employements";
+                data.admin = '@admin';
+                data.rtl = @rtl.ToString().ToLower();
+                data.btns = ["back", "doc"];
+                if(model.Sent == true)
+                    data.mode = 'show';
+
+                $("#MessageDiv").Forms(data, model);
+                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+                $("#" + formId).find('#Save').val('@MsgUtils.Instance.Trls("Save")');
+                $("#" + formId).find('#Send').val('@MsgUtils.Instance.Trls("submitRequest")');
+
+                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroups, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IDepts", Depts, model);
+                FormJs.fillOptionsDynamic($("#"+formId),"IEmployees",Employees,model)
+                if(model.All == true)
+                {
+                    $("#" + formId).find('[name="ToSec"]').css("display","none");
+                }
+                $("#MessageDiv").on("change","#All",null,function(e){
+                    if($(this).prop("checked")==true)
+                    {
+                        $("#" + formId).find('[name="ToSec"]').css("display","none");
+                    }
+                    else{
+                        $("#" + formId).find('[name="ToSec"]').css("display","");
+                    }
+                });
+
+                $("#Body").kendoEditor({
+                    resizable :{
+                        content:true,
+                        toolbar:true
+                    }
+                });
+
+                if(model.Sent)
+                {
+                    var editor=  $("#Body").data("kendoEditor");
+                    editor.body.contentEditable=false;
+                    $('.k-editor-toolbar-wrap').hide();
+                   // var editor= $("#Body").data("kendoEditor");
+                    var editorcontent=editor.value();
+                    var txt= decodeHtml(editorcontent);
+                    editor.value(txt);
+
+                }
+                function decodeHtml(html)
+                {
+                    var txt = document.createElement("textarea");
+                    txt.innerHTML = html;
+                    var bodyTxt=txt.value.replace(/<[^>]*>/g,'').replace(/&nbsp;/gi,'');
+                    return bodyTxt.toString();
+                }
+                var hiddenFields = "<input type='hidden' name='Check' id='Check' value='False'/>";
+                $("#" + formId).append(hiddenFields);
+                //TextBody
+                var hiddenField = "<input type='hidden' name='TextBody' id='TextBody' value='"+decodeHtml($("#Body").val())+"'/>";
+                $("#" + formId).append(hiddenField);
+                $("#" + formId).on('click','#Save', function (e) {
+
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                       // $("#renderbody").load(oldulr);
+                    });
+                });
+                $("#" + formId).on('click','#Send', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    $('#Check').val("true");
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                         $("#renderbody").load(oldulr);
+                    });
+                });
+                $("#Documents").on('click', function() {
+                    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=EmpMessageForm&SourceId="+ @Model.Id).center().open();
+                    $("#Documents").fadeOut();
+                });
+
+                if($("#" + formId + " #Id").val() == 0)
+                    $("#Documents").attr("disabled", true);
+
+                //----Documents----
+                $("#docWindow").kendoWindow ({
+                    title: "@MsgUtils.Instance.Trls("Documents")",
+                    //position: {top: "10px", left: "10%"},
+                    minWidth: "1000px",
+                width: "80%",
+                height: "80%",
+                actions: ["Minimize", "Maximize", "Close"],
+                visible: false,
+                close: function() {
+                    $("#Documents").fadeIn();
+                    $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                    $("#docWindow").empty();
+                }
+            });
+
+            }
+        });
+    });
+</script>
+
+
+
+
+

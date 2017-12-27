@@ -1,0 +1,235 @@
+﻿@using System.Web.Script.Serialization
+@{ 
+    var HrLetts = ViewData["Letts"];
+}
+<style>
+    .tab-content{
+        display: inline-block;
+    }
+    .imgSec {
+            margin-top: 50px;
+            text-align: center;
+            float: right;
+        }
+    .k-rtl .imgSec {
+            direction: rtl;
+            float: left;
+        }
+    /*------Pic------*/
+    .imgSec .picDiv {
+            border: 1px solid #CCC;
+            background-color: transparent;
+            display: inline-block;
+            height: 180px;
+            width: 180px;
+            align-items: center;
+        }
+
+    /*.imgSec .picDiv:hover {
+            background-color: rgba(238, 238, 238, 0.32);
+        }*/
+
+    .imgSec .picBtns button {
+        text-align: center;
+        height: 20px;
+        float: none;  
+    }
+    /*------end Pic------*/
+
+    /*------Name------*/
+    #detailsDiv .nameLbl{
+        padding: 8px;
+        background-color: #4290b8;
+        color: #FFF;
+        font-weight: 400;
+        font-size: 14px;
+        position: relative;
+        display: inline-table;
+        min-width: 80%;
+        max-width: 92%;
+        overflow: hidden;
+    }
+
+    .afterName, .beforeName {
+            border: 18px solid transparent;
+            display: inline-block;
+            position: absolute;
+        }
+
+     .beforeName {
+            border-color: #4290b8 #4290b8 #4290b8 transparent;
+            left: 8px;
+        }
+     .afterName{
+            border-color: #4290b8 transparent #4290b8 #4290b8;
+            right : 8px;
+        }
+    /*------end Name------*/
+
+    .space {
+        max-height: 20px;
+        min-height: 20px;
+        overflow: hidden;
+        margin: 4px 0 3px;
+    }
+
+    /*------Progress------*/
+    .progress {
+        width: 100%;
+    }
+    .progressDiv, #btnsDiv {
+        text-align: start;
+    }
+    /*------end Progress------*/
+
+    .btnsDiv {
+        display: inline-flex;
+    }
+
+
+</style>
+
+<script>
+
+
+    var personName = (model.localName ? model.localName : (model.FirstName ? model.FirstName + " " + model.Familyname : ""));
+
+
+    personName = (personName.length > 16 ? String(personName).substr(0, 14) + ".." : personName);
+    
+    
+    var pagesList = @Html.Raw((new JavaScriptSerializer()).Serialize(HrLetts));
+    
+    
+    var downloadLetters = @Html.Raw((new JavaScriptSerializer().Serialize(ViewData["Func"])));
+    
+    
+    pagesList.push({text:"@MsgUtils.Instance.Trls("Contract")",value:"0"});
+    
+    
+    $(".tab-content").addClass("col-lg-10 col-sm-12 col-md-12");
+    
+    
+    var markup = "<div class='form-group col-lg-2 col-sm-5 col-md-5 imgSec'><div class='picDiv'><img src='' id='myimage' style='height:inherit; width:inherit' /></div>"
+        + "<div class='picBtns'><button class='col-sm-5 btn-xs btn-default' value='Browse' onclick='drawPic(this,event)' id='browse' >@MsgUtils.Instance.Trls("Browse")</button><button type='button' class='col-sm-5 btn-xs btn-default' onclick='drawPic(this,event)' value='Camera' id='Camera'>@MsgUtils.Instance.Trls("Camera")</button>"
+        + "</div><div class='space'></div><div id='detailsDiv'><div class='beforeName'></div><p class='nameLbl'><i class='ace-icon " + (model.EmpStatus ? " fa fa-circle stat" + model.EmpStatus : "") + "'></i>&nbsp;&nbsp;<span id='personName'>" + personName + "<span></p><div class='afterName'></div></div>"
+        + "<div class='progressDiv'><span>@MsgUtils.Instance.Trls("Documents"): </span><div id='docProgress' class='progress'></div>"
+        + "<span>@MsgUtils.Instance.Trls("Profile"): </span><div id='profileProgress' class='progress'></div></div>"
+        + "<div class='space'></div>"
+        + "<div id='EmpLetterDiv' class='form-group'><span>@MsgUtils.Instance.Trls("EmpLetters")<span><div><input id='selectLetter' class='form-control'><button class='col-sm-7 btn-xs btn-default' style='text-align: center; float: initial;' value='Download' onclick='MerageLetter(this,event)' id='downloadHr' >@MsgUtils.Instance.Trls("Download")</button></div><div class='space'></div></div>"
+        + '<div class="btnsDiv"><button id="Documents" name="Documents" onclick="return false;" class="btn btn-sm btn-info back button" accesskey="d"><span class="fa fa-link"></span>@MsgUtils.Instance.Trls("Documents") <span id="nofdocs" class="badge badge-red">' + model.Attachments + '</span></button><button id="backToIndex" name="backToIndex" onclick="return false;" class="btn btn-sm btn-warning back button " accesskey="b"> @MsgUtils.Instance.Trls("backToIndex") </button></div>'
+        + "</div>";
+
+    //for small window problem
+    $(".tab-content").parent().prepend(markup);
+    if ($(".nameLbl").height() > 20) {
+        $(".afterName").remove();
+        $(".beforeName").remove();
+        $(".nameLbl").width("100%");
+    }
+        if($.inArray("DownloadLetters",downloadLetters) == -1)
+            $("#EmpLetterDiv").remove();
+
+        $.get("@Url.Action("GetImage", "Pages")", { id: model.Id, source: "EmployeePic" }, function (res) {
+
+            document.getElementById("myimage").src = (res == false ? "/Content/Photos/systemnoimage.jpg" : 'data:image/jpg;base64,' + res);
+        });
+
+
+    //for ToolTip on status fa
+    var empstatus = ["@MsgUtils.Instance.Trls("Not employee yet")", "@MsgUtils.Instance.Trls("Active")", "@MsgUtils.Instance.Trls("Suspended")", "@MsgUtils.Instance.Trls("Terminated")", "","","","","","","","@MsgUtils.Instance.Trls("In Leave")", "@MsgUtils.Instance.Trls("New Employee")"];
+    $('.imgSec .nameLbl i').each(function () {
+        $(this).attr("data-toggle", "tooltip");
+        $(this).attr("data-placement", "bottom");
+        $(this).attr("title", empstatus[model.EmpStatus]);
+        $(this).css("z-index", 2);
+        $(this).tooltip();
+    });
+
+
+    //-----Documents - Progress Bars-----
+    updateDocProgress();
+
+    function updateDocProgress() {
+        var docProgress = $("#docProgress");
+        docProgress.empty();
+
+        docProgress.kendoProgressBar({
+            value: model.Docs,
+            type: "percent",
+            max: 100
+        });
+
+        docProgress.hover(function () {
+            var me = $(this);
+            $.get("@Url.Action("GetMissAttach", "People")", { Id: model.Id, Gender: model.Gender, Nationality: model.Nationality }, function (e) {
+                me.popover({ content: e }).popover('show');
+                me.attr('data-content', e).data('bs.popover').setContent();
+            });
+        }, function () {
+            $(this).popover('hide');
+        });
+    }
+
+    //-----End Documents-----
+
+    //-----Profile - Progress Bars-----
+    $("#profileProgress").kendoProgressBar({
+        value: model.profileProgress,
+        type: "percent",
+        max: 100
+    });
+    //-----End Profile-----
+
+    function updateEmpProgress(isDoc) {
+        if (model.Id) {
+            $.get("@Url.Action("UpdateProgress", "People")", { Id: model.Id, IsDoc: isDoc, version: "@Request.QueryString["Version"]" }, function (result) {
+                if (isDoc) {
+                    $("#docProgress").data("kendoProgressBar").value(result.value);
+                    $("#Documents #nofdocs").text(result.attachments);
+                }
+                else
+                    $("#profileProgress").data("kendoProgressBar").value(result.value);
+            });
+        }
+    }
+
+    $('#backToIndex').on('click', function () {
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        var oldulr = $("#" + oldPage[2] + " a").attr("href");
+        $("#renderbody").load(oldulr);
+    });
+
+
+    function MerageLetter(elem,e){
+        var value =  $("#selectLetter").data("kendoDropDownList").value();
+        if(value != ""){
+            $.ajax({
+                url:"/Letters/MergeLetters?EmpId="+model.Id+"&fileName="+value,
+                type:"POST",
+                success:function(res){
+
+                    if(res.Exist || res.Path != "")
+                        location.href = res.Path;
+                    else if(res.Path=="InUse")
+                        toastr.error("@MsgUtils.Instance.Trls("FileinUse")");
+                    else
+                        toastr.error("@MsgUtils.Instance.Trls("NoLetters")");
+
+                },error:function(err){
+                    console.log(err)
+                }
+            });
+
+        }else
+            toastr.error("@MsgUtils.Instance.Trls("SelectRecord")");
+    }
+    $("#selectLetter").kendoDropDownList({
+        valuePrimitive: true,
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: pagesList,
+        optionLabel:" ",
+
+    });
+</script>

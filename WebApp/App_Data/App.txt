@@ -1,0 +1,4 @@
+﻿CustomerName: DoubleClick
+ProductKey: AEAMW-FS7L5-2QSMC-AN4QH-8CMPS
+EmployeeCount: 100
+Fearures: 111001110011

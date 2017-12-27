@@ -1,0 +1,27 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+}
+
+<div id="ReportDiv"></div>
+
+<script>
+    var CustodyId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CustodyId));
+    var grid = "'ReportDiv'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetCustodyReport", "Custody")?Id="+CustodyId,
+        objectName: "RecieveCustodyReport",
+        gridName: "ReportDiv",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>'
+    });
+</script>
+

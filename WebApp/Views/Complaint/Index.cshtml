@@ -1,0 +1,75 @@
+﻿
+@using WebApp.Extensions
+
+@{
+
+    ViewBag.Title = "Index";
+    Layout = null;
+}
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "ComplainRequest" } })
+
+<div id="complaintDiv"></div>
+
+<script>
+    var addUrl = "@Url.Action("Details", "Complaint")";
+    RequestFilters.ApplayAllFilters([], {}, "complaintDiv", "@Url.Action("GetComplaintRequest", "Complaint")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+
+    var ComplainType = [{ value: 1, text: "@MsgUtils.Instance.Trls("Complaint")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Grievance")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Enquiry")" }];
+    var Against = [{ value: 1, text: "@MsgUtils.Instance.Trls("Employee")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Manager")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Procedure")" }, { value: 4, text: "@MsgUtils.Instance.Trls("Decision")" }, { value: 5, text: "@MsgUtils.Instance.Trls("Other")" }];
+    var ApprovalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
+         { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
+         { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
+         { value: 4, text: '@MsgUtils.Instance.Trls("ManagerReview")' },
+         { value: 5, text: '@MsgUtils.Instance.Trls("Accepted")' },
+         { value: 6, text: '@MsgUtils.Instance.Trls("Approved")' },
+         { value: 7, text: '@MsgUtils.Instance.Trls("Cancel before accepted")' },
+         { value: 8, text: '@MsgUtils.Instance.Trls("Cancel after accepted")' },
+         { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }];
+    var objectName = "ComplainRequest";
+    Grids.indexGrid({
+        read: "@Url.Action("GetComplaintRequest", "Complaint")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("Details", "Complaint")",
+        del: "@Url.Action("DeleteComplaint", "Complaint")",
+        show: "@Url.Action("Details", "Complaint")",
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Employee",
+        gridName: "complaintDiv",
+        admin: "@admin",
+        columns: [{ field: "Employee", locked: true }, { field: "ComplainType", values: ComplainType }, { field: "Against", values: Against }, { field: "ApprovalStatus", values: ApprovalStatus }],
+        toolbar:'<div></div>',
+        select: { "ComplainType": ComplainType, "Against": Against, "ApprovalStatus": ApprovalStatus },
+        dataBound: function (e) {
+            var gridName = this.gridName;
+            $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                var row = $(this).closest("tr");
+                var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 1) $(this).toggle(); //hide delete btn
+                else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+            });
+        }
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+

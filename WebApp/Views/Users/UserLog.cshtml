@@ -1,0 +1,68 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+@{
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    int.TryParse(Request.QueryString["Version"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+<br>
+<div id="LogUser"></div>
+<script>
+
+    var objectName="UserLogs";
+    var gridname1 = "'LogUser'";
+    var id = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.id));
+    Grids.indexGrid({
+        read: "@Url.Action("GetUserLog", "Users")?Id="+id,
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name",
+        gridName: "LogUser",
+        admin: "@admin",
+        toolbar: kendo.template($("#Newtemplate").html()),
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 100, pageSizes: [50, 100, 150, 200, 300, 400, 500] },
+    });
+</script>
+<script type="text/x-kendo-template" id="Newtemplate">
+    <div style="@(rtl ? "float: left" : "float: right")">
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (admin)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('LogUser')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('LogUser')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('TrainFollowup')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }    
+            </ul>
+        </div>
+    </div>
+</script>
+
+
+
+
+

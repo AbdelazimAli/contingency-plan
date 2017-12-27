@@ -1,0 +1,52 @@
+﻿@using WebApp.Extensions
+@using System.Web.Script.Serialization
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    int dataLevel = 4, read = 0;
+    var rtl = User.Identity.RTL();
+    var culture = User.Identity.GetCulture();
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+
+
+<br />
+<div id="ServSettlement"></div>
+
+<script>
+
+    function Exist(data){
+        if(data.HasImage)
+            return "url(/SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
+        else
+            return "url(/SpecialData/Photos/noimage.jpg)"
+    }
+
+    var columns = [
+              {
+                  field: "Employee",
+                  template: "<div class='k-people-photo' " +
+                                  "style='background-image: #:Exist(data)# '></div>" +
+                                  "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>", locked:true
+              }
+    ];
+    Grids.indexGrid({
+        read: "@Url.Action("ReadMedicalFollowUp","Medical")?MenuId=@Request.QueryString["MenuId"]",
+        objectName: "ServiceSettlement",
+        tabeName: "BenefitRequests",
+        recordName: "Employee",
+        gridName: "ServSettlement",
+        admin: "@admin",
+        columns: columns,
+        lang: "@User.Identity.GetCulture()"
+
+    });
+
+</script>
+@Html.Partial("_IndexGrid", new ViewDataDictionary {
+    { "AddRecord", @Url.Action("Details", "Medical") },
+    { "Admin", admin}, { "GridName", "ServSettlement" } , {"Functions",ViewBag.Functions}})
+
+

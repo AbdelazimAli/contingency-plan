@@ -1,0 +1,917 @@
+﻿@using Microsoft.AspNet.Identity
+@using WebApp.Extensions
+@using WebApp.Models
+@using Model.ViewModel
+
+
+<!DOCTYPE html>
+
+@{
+    var identity = User.Identity;
+}
+<html lang="en" class="no-js">
+
+<head>
+    <meta charset="utf-8" />
+    <title>HR Enterprise</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta content="width=device-width, initial-scale=1" name="viewport" />
+    @Styles.Render("~/Content/cssmin")
+    <link href="/assets/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/assets/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css" />
+    @if (identity.RTL())
+    {
+        <link href="~/Content/kendo.rtl.min.css" rel="stylesheet" />
+    }
+
+    @Scripts.Render("~/bundles/modernizr")
+
+    <style>
+        #timeout {
+            display: none;
+        }
+    </style>
+    <link href="~/Content/css/style.css" rel="stylesheet" />
+</head>
+<body class='@(identity.RTL() ? "k-rtl" : "") page-header-fixed page-quick-sidebar-over-content page-sidebar-closed-hide-logo page-container-bg-solid page-footer-fixed' onload="StartTimers();">
+    @*///////////  onload="StartTimers();" onmousemove="ResetTimers();" *@
+
+    <!-- BEGIN HEADER -->
+
+
+    <header class="navbar navbar-fixed-top">
+        <!-- BEGIN HEADER INNER left -->
+        <!-- BEGIN LOGO -->
+        <div class="logo">
+            <a href="#">
+                <img src="~/Content/img/logo.png" />
+            </a>
+        </div>
+        @*<a href="javascript:;" class="menu-toggler responsive-toggler" data-toggle="collapse" data-target=".navbar-collapse">
+            </a>*@
+
+        <ul class="nav navbar-nav">
+            <li class="dropdown mega sibling-item">
+                <a></a>
+                
+            </li>
+            <li class="dropdown mega sibling-menu">
+                <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown"></a>
+                <ul class="dropdown-menu">
+                    <li class="sub-scroll">
+                        
+                    </li>
+                </ul>
+            </li>
+            <li class="dropdown mega" id="mega">
+                <a href="javascript:;" class="dropdown-toggle">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 320">
+                        <path id="Forma_1" d="M501.332,0H10.667a10.667,10.667,0,0,0,0,21.334H501.333A10.667,10.667,0,1,0,501.332,0Zm0,149.333H10.667a10.667,10.667,0,0,0,0,21.334H501.333A10.667,10.667,0,1,0,501.332,149.333Zm0,149.334H10.667a10.667,10.667,0,1,0,0,21.333H501.333A10.667,10.667,0,1,0,501.332,298.667Z" />
+                    </svg>
+                </a>
+                @Html.Action("MegaMenuContent", "Home")
+            </li>
+            <li class="dropdown dropdown-extended dropdown-inbox" id="header_notification_bar">
+                <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 434 512">
+                        <path d="M400.615,347.915v-97.48c0-85.8-59.128-158.031-138.766-178.1a50.078,50.078,0,1,0-89.7,0C92.512,92.4,33.384,164.638,33.384,250.434v97.48a50.084,50.084,0,0,0,16.693,97.3h85.141a83.466,83.466,0,0,0,163.564,0h85.141A50.084,50.084,0,0,0,400.615,347.915ZM217,33.391a16.7,16.7,0,1,1-16.692,16.7A16.713,16.713,0,0,1,217,33.391Zm0,445.218a50.255,50.255,0,0,1-47.2-33.5h94.412A50.258,50.258,0,0,1,217,478.609Zm166.924-66.783H50.077a16.7,16.7,0,0,1,0-33.392H83.462a16.7,16.7,0,0,0,0-33.392H66.769V250.433c0-82.854,67.394-150.261,150.231-150.261S367.23,167.579,367.23,250.433v94.609H350.524a16.7,16.7,0,0,0,0,33.392h33.4A16.7,16.7,0,0,1,383.923,411.826ZM217,133.565a116.991,116.991,0,0,0-116.846,116.87,16.693,16.693,0,1,0,33.385,0A83.564,83.564,0,0,1,217,166.957,16.7,16.7,0,0,0,217,133.565Z" />
+                    </svg>
+                    <span class="badge"></span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li class="external">
+                        <h3>
+                            <span class="bold"></span>
+                        </h3>
+                    </li>
+                    <li class="list">
+                        <ul class="dropdown-menu-list scroll"></ul>
+                    </li>
+                </ul>
+            </li>
+            <li class="dropdown dropdown-extended dropdown-inbox" id="header_msg_bar">
+                <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 367">
+                        <path d="M461.913,0H50.087C21.236,0,0,23.74,0,50.045v266.91A50.123,50.123,0,0,0,50.087,367H461.913A50.123,50.123,0,0,0,512,316.955V50.045A50.125,50.125,0,0,0,461.913,0ZM50.087,33.363H461.913a16.81,16.81,0,0,1,10.529,3.811L267.792,241.656a16.706,16.706,0,0,1-23.583,0L39.558,37.175A16.817,16.817,0,0,1,50.087,33.363ZM478.609,316.955a16.709,16.709,0,0,1-16.7,16.683H50.087a16.709,16.709,0,0,1-16.7-16.683V78.2L220.6,265.248a50.154,50.154,0,0,0,70.8,0L478.608,78.2V316.955h0Z" />
+                    </svg>
+                    <span class="badge"></span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li class="external">
+                        <h3>عنوان القائمة</h3>
+                    </li>
+                    <li class="list">
+                        <ul class="dropdown-menu-list scroll">
+                            <!--Messages will appear here-->
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+            <li class="dropdown dropdown-extended dropdown-inbox" id="header_task_bar">
+                <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+                        <path class="cls-1" d="M461.913,66.783h-16.7v-16.7a50.087,50.087,0,1,0-100.174,0v16.7H166.957v-16.7a50.087,50.087,0,1,0-100.174,0v16.7h-16.7A50.144,50.144,0,0,0,0,116.87V461.913A50.144,50.144,0,0,0,50.087,512H461.913A50.144,50.144,0,0,0,512,461.913V116.87A50.144,50.144,0,0,0,461.913,66.783Zm-83.478-16.7a16.7,16.7,0,0,1,33.392,0V116.87a16.7,16.7,0,0,1-33.392,0V50.087Zm-278.261,0a16.7,16.7,0,1,1,33.392,0V116.87a16.7,16.7,0,0,1-33.392,0V50.087ZM478.609,461.913a16.715,16.715,0,0,1-16.7,16.7H50.087a16.715,16.715,0,0,1-16.7-16.7V244.87H478.608V461.913h0Zm0-250.435H33.391V116.87a16.715,16.715,0,0,1,16.7-16.7h16.7v16.7a50.087,50.087,0,0,0,100.174,0v-16.7H345.044v16.7a50.087,50.087,0,0,0,100.174,0v-16.7h16.7a16.715,16.715,0,0,1,16.7,16.7v94.608h0Zm-50.092,66.783H361.734a16.7,16.7,0,1,0,0,33.392h66.783A16.7,16.7,0,1,0,428.517,278.261Zm0,66.782H361.734a16.7,16.7,0,1,0,0,33.392h66.783A16.7,16.7,0,1,0,428.517,345.043Zm0,66.783H361.734a16.7,16.7,0,1,0,0,33.392h66.783A16.7,16.7,0,1,0,428.517,411.826ZM289.387,278.261H222.6a16.7,16.7,0,0,0,0,33.392h66.783A16.7,16.7,0,1,0,289.387,278.261Zm0,66.782H222.6a16.7,16.7,0,0,0,0,33.392h66.783A16.7,16.7,0,1,0,289.387,345.043Zm0,66.783H222.6a16.7,16.7,0,0,0,0,33.392h66.783A16.7,16.7,0,1,0,289.387,411.826ZM150.256,278.261H83.474a16.7,16.7,0,1,0,0,33.392h66.783A16.7,16.7,0,1,0,150.256,278.261Zm0,66.782H83.474a16.7,16.7,0,0,0,0,33.392h66.783A16.7,16.7,0,1,0,150.256,345.043Zm0,66.783H83.474a16.7,16.7,0,0,0,0,33.392h66.783A16.7,16.7,0,1,0,150.256,411.826Z" />
+                    </svg>
+                    <span class="badge"></span>
+                </a>
+                <ul class="dropdown-menu">
+                    <li class="external">
+                        <h3>عنوان القائمة</h3>
+                    </li>
+                    <li class="list">
+                        <ul class="dropdown-menu-list scroll">
+                            <!--Tasks will appear here-->
+                            @*<li>
+                                    <a href="inbox.html?a=view">
+                                        <span class="cont-img">
+                                            <img src="/assets/admin/layout3/img/avatar2.jpg" alt="">
+                                        </span>
+                                        <span class="subject">
+                                            <span class="from">
+                                                Lisa Wong
+                                            </span>
+                                            <span class="time">Just Now </span>
+                                        </span>
+                                        <span class="message">
+                                            Vivamus sed auctor nibh congue nibh. auctor nibh auctor nibh...
+                                        </span>
+                                    </a>
+                                </li>*@
+                        </ul>
+                    </li>
+                </ul>
+            </li>
+
+            @*<li class="dropdown dropdown-extended dropdown-tasks" id="header_task_bar">
+                    <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+                        <i class="glyphicon glyphicon-calendar"></i>
+                        <span class="badge">
+                            3
+                        </span>
+                    </a>
+                    <ul class="dropdown-menu extended tasks">
+                        <li class="external">
+                            <h3>You have <span class="bold">12 pending</span> tasks</h3>
+                            <a href="page_todo.html">view all</a>
+                        </li>
+                        <li class="list">
+                            <ul class="dropdown-menu-list scroll">
+                                <li>
+                                    <a href="javascript:;">
+                                        <span class="task">
+                                            <span class="desc">New release v1.2 </span>
+                                            <span class="percent">30%</span>
+                                        </span>
+                                        <span class="progress">
+                                            <span style="width: 40%;" class="progress-bar progress-bar-success" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"><span class="sr-only">40% Complete</span></span>
+                                        </span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </li>*@
+            <li class="dropdown dropdown-user">
+                <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+                    <img id="nav-user-img" alt="@MsgUtils.Instance.Trls("Employeeprofile")" src="" />
+                    <span>&nbsp; @identity.Name</span>
+                </a>
+                <ul class="dropdown-menu dropdown-menu-default">
+                    @if (identity.Name != "")
+                    {
+                        <li>
+                            <a onclick="updateHistory('/Users/ViewProfile')">
+                                <span>&nbsp; @identity.Name</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="loginLink"><span>&nbsp; @MsgUtils.Instance.Trls("LogOut")</span></a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li>
+                            <a id="loginLink"><span>&nbsp; @MsgUtils.Instance.Trls("LogOut")</span></a>
+                        </li>
+                    }
+
+                </ul>
+            </li>
+
+            <!-- END QUICK SIDEBAR TOGGLER -->
+        </ul>
+        <!-- END TOP NAVIGATION MENU -->
+        <!-- END HEADER INNER -->
+        <!-- BEGIN HEADER INNER right -->
+        <!-- END HEADER INNER -->
+    </header>
+    <!-- END HEADER -->
+    <div class="clearfix">
+    </div>
+    <!-- BEGIN CONTAINER -->
+    <div class="page-container">
+        <!-- BEGIN SIDEBAR -->
+        <aside class="page-sidebar-wrapper">
+
+            @* Menu Layout Partial*@
+
+            <ul class="page-sidebar-menu" id="changemenu" data-keep-expanded="false" data-auto-scroll="true" data-slide-speed="200">
+                <!-- DOC: To remove the sidebar toggler from the sidebar you just need to completely remove the below "sidebar-toggler-wrapper" LI element -->
+                <!-- DOC: To remove the search box from the sidebar you just need to completely remove the below "sidebar-search-wrapper" LI element -->
+                <li class="sidebar-search-wrapper" id="menuBar">
+                    <div class="sidebar-search " action="extra_search.html" method="POST">
+                        <div class="toggle-menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 13 28">
+                                <path id="Forma_1" data-name="Forma 1" class="cls-1" d="M6.481,16.987c-0.625,0-1.23-.03-1.8-0.086a0.4,0.4,0,0,0-.354.144,0.462,0.462,0,0,0-.1.392L6.151,27.631A0.439,0.439,0,0,0,6.568,28a0.41,0.41,0,0,0,.3-0.134,0.449,0.449,0,0,0,.119-0.231l1.888-10.21a0.483,0.483,0,0,0-.1-0.39,0.41,0.41,0,0,0-.358-0.149A16.886,16.886,0,0,1,6.481,16.987ZM9.844,0.652A7.778,7.778,0,0,0,6.569,0,6.109,6.109,0,0,0,2.284,1.359a1.631,1.631,0,0,0-.48,1.1,1.67,1.67,0,0,0,.6,1.223,31.231,31.231,0,0,1-.784,6.781A2.7,2.7,0,0,0-.007,12.689c0,1.864,2.857,3.322,6.5,3.321,2.551,0,4.8-.711,5.872-1.858A2.153,2.153,0,0,0,13,12.692,2.4,2.4,0,0,0,11.887,10.8a0.491,0.491,0,0,0-.04-0.051,0.291,0.291,0,0,0-.109-0.077A36.065,36.065,0,0,1,10.723,3.7c0.048-.042.092-0.084,0.133-0.129a1.607,1.607,0,0,0,.478-1.11A2.169,2.169,0,0,0,9.844.652Z" />
+                            </svg>
+                        </div>
+                        <div class="input-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="بحث...">
+                            <span class="input-group-btn">
+                                <a href="javascript:;" id="seacrhBtn" class="btn"><i class="icon-magnifier"></i></a>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- END RESPONSIVE QUICK SEARCH FORM -->
+                </li>
+            </ul>
+            <div class="scroll"></div>
+
+            <!-- END SIDEBAR MENU -->
+        </aside>
+        <!-- END SIDEBAR -->
+        <!-- BEGIN CONTENT -->
+        <div class="page-content-wrapper">
+            <div class="page-content">
+                <img id="loadingImg" src="~/img/ajax-loader.gif" />
+                <img id="LoadingDeleteImg" class="hide" src="~/img/loading-image.gif" />
+                <div id="renderbody" class="page-content-body">
+                    @RenderBody()
+                </div>
+                <div class="col-md-12 col-sm-12">
+                    <div id="timeout" style="@(identity.RTL()?"text-align: right;":"")">
+                        <h4 style="color: navy;">
+                            "@MsgUtils.Instance.Trls("Sessiontime")"
+                        </h4>
+                        <p>
+                            "@MsgUtils.Instance.Trls("youlogafter30sec")"
+                            <br />
+                            "@MsgUtils.Instance.Trls("toremainwork")"
+                        </p>
+                    </div>
+                    <div id="NotificationsMsgs">
+
+                    </div>
+                    <!-- BEGIN PORTLET-->
+                    <!-- END PORTLET-->
+                </div>
+            </div>
+        </div>
+
+    </div>
+    <!-- END CONTAINER -->
+    <!-- BEGIN FOOTER -->
+    <div class="page-footer">
+    </div>
+    <!-- END PAGE LEVEL SCRIPTS -->
+    <!-- END PAGE LEVEL SCRIPTS -->
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/bootstrap")
+    @RenderSection("scripts", false)
+
+    <script src="@string.Concat("/Scripts/cultures/kendo.culture.", identity.GetCulture(), ".min.js")"></script>
+    <script src="@string.Concat("/Scripts/messages/kendo.messages.", identity.GetMessages(), ".min.js")"></script>
+
+    <script type="text/javascript">
+        $.get("@Url.Action("GetImage", "Pages")", { id: @identity.GetEmpId(), source: "EmployeePic" }, function (res) {
+
+
+            document.getElementById("nav-user-img").src = (res ? 'data:image/jpg;base64,' + res : "/Content/Photos/systemnoimage.jpg");
+        });
+        // Prevent Back
+        //history.pushState(null, null, location.href);
+        //window.onpopstate = function () { history.go(1); }
+
+        //Global Variable Section
+        var warningTimer = 0;
+        var timeoutTimer = 0;
+        var closeBrowser = false;
+        var ulr=null;
+        var userShutDown = "@identity.GetShutdownInMin()";
+
+        // Start timers.
+        function StartTimers() {
+            if (userShutDown != "" && userShutDown != "0") {
+                warningTimer = setTimeout("IdleWarning()", (Number(userShutDown) * 60000) - 30000);
+                timeoutTimer = setTimeout("IdleTimeout()", Number(userShutDown) * 60000);
+                closeBrowser = false;
+            }
+        }
+
+        function ToggleMenu(elem) {
+            var Parent = $(elem).parent().parent();
+            if (Parent.hasClass("page-sidebar-menu-closed"))
+                localStorage.setItem("MenuToggle", "");
+            else
+                localStorage.setItem("MenuToggle", "page-sidebar-menu-closed");
+        }
+
+        // Show idle timeout warning dialog.
+        function IdleWarning() {
+            closeBrowser = true;
+            $("#timeout").dialog({
+                modal: true
+            });
+        }
+
+        // Logout the user.
+        function IdleTimeout() {
+            if (closeBrowser) {
+                sessioncacheDelete();
+                window.location.pathname = 'Account/SessionOff';
+            }
+        }
+
+        function sessioncacheDelete() {
+            $.ajax({
+                type: 'post',
+                dataType: 'json',
+                cache: false,
+                url: '/Account/CloseBrowser',
+                success: function () {
+                    closeBrowser = false;
+                },
+                error: function () {
+
+                }
+            });
+        }
+        // end session
+
+        // Remove timers
+        function RemoveTimers() {
+
+            clearTimeout(timeoutTimer);
+            clearTimeout(warningTimer);
+            StartTimers();
+        }
+
+        //Change Comapany
+        function companyChange(sel) {
+            var val = $(sel).val();
+            $.ajax({
+                url: "/Home/Changecompany?Id=" + val,
+                type: "POST",
+                success: function () {
+                    location.reload();
+                },
+                error: function (err) {
+                }
+            });
+        }
+
+        $(function () {
+            Metronic.init();
+            QuickSidebar.init();
+            App.init();
+
+            var MenuToggle = localStorage["MenuToggle"];
+            if (MenuToggle != "")
+                $("#ToggleMenu").click();
+
+            var companiesArray = JSON.parse(localStorage["Companies"]);
+            var Userdefaultcompany = "@identity.GetDefaultCompany()";
+            for (var i = 0; i < companiesArray.length; i++) {
+
+                if (companiesArray[i].Id == Userdefaultcompany)
+                    $("#Usercompanies").append('<option  selected value="' + companiesArray[i].Id + '">' + companiesArray[i].Name + '</option>')
+                else
+                    $("#Usercompanies").append('<option  value="' + companiesArray[i].Id + '">' + companiesArray[i].Name + '</option>')
+            }
+            if (!($.grep(companiesArray, function (item) { return item.Id == Userdefaultcompany }).length > 0))
+                $("#Usercompanies").append('<option selected value="' + Userdefaultcompany + '"></option>')
+            $("button.ui-dialog-titlebar-close").click(function () {
+                RemoveTimers();
+            });
+
+ 
+
+
+            $("body,.modal").on("mousemove", function () {
+                if (userShutDown != "" && userShutDown != "0") {
+                    closeBrowser = false;
+                    RemoveTimers();
+                }
+            });
+
+            function LogOffUser() {
+                $.ajax({
+                    type: 'post',
+                    dataType: 'json',
+                    cache: false,
+                    async: false,
+                    url: '/Account/LogOff',
+                    success: function () {
+                        localStorage.setItem("ulr", null);
+                        localStorage.removeItem("NewMenu");
+
+                    },
+                    error: function () {
+                    }
+                });
+                window.onbeforeunload = LogOffUser;
+            }
+
+            $('#loginLink').click(function () {
+                LogOffUser();
+                $.ajax({
+                    //dataType: 'json',
+                    contentType: 'application/HTML',
+                    cache: false,
+                    url: '/Account/Login',
+                    success: function () {
+                        location.reload();
+                    },
+                    error: function () {
+                    }
+                });
+
+            });
+
+            function sessioncacheDelete() {
+                $.ajax({
+                    type: 'post',
+                    dataType: 'json',
+                    cache: false,
+                    url: '/Account/CloseBrowser',
+                    success: function () {
+
+                    },
+                    error: function () {
+                        alert("Error");
+                    }
+                });
+            }
+
+            //NavBar DropDown -- (msgs & tasks & notifications)
+            function getNavBar() {
+                function drawItems(name, data, url, allUrl) {
+                    var d = [];
+                    if (!$.isArray(data))
+                        d.push(data);
+                    else
+                        d = data;
+
+                    var elements = $("#header_" + name + "_bar");
+                    var elementList = elements.find(".dropdown-menu-list.scroll");
+                    var nameLbl = (name == 'msg' ? '@MsgUtils.Instance.Trls("messages")' : (name == 'task' ? '@MsgUtils.Instance.Trls("tasks")' : name == 'notification' ? '@MsgUtils.Instance.Trls("notification")' : ''));
+                    elements.find(".external h3").html("@MsgUtils.Instance.Trls("You have") <span class='bold'>" + d.length + " " + nameLbl + "</span>");
+                    if (allUrl && d.length > 1) elements.find(".external h3").append("<a class='ajaxify' href='" + allUrl + "'>@MsgUtils.Instance.Trls("viewall")</a>");
+
+
+                    elementList.empty();
+                    var markup = "";
+                    var ReadCount = 0;
+                    for (var i = 0; i < d.length; i++) {
+                        if (!d[i].Read) ReadCount++;
+                        var elementUrl = (url ? url + '?id=' + d[i].Id + '&Version=0&Read=' + (d[i].Read !== undefined ? d[i].Read : "") + '' : '#');
+                        markup += "<li class=" + ((name == 'notification' && !d[i].Read) ? 'active' : '') + " id='" + d[i].Id + "'><a class= " + (name == 'notification' ? 'window' : 'ajaxify') + "  " + (url ? " href='" + elementUrl + "'" : "") + "><div class='cont-img'><img src='" + (d[i].PicUrl == 'noimage.jpg' ? "/SpecialData/Photos/" + d[i].PicUrl : "/SpecialData/Photos/" +@User.Identity.GetDefaultCompany().ToString() +"/" + d[i].PicUrl + "?dummy=" + (new Date().getTime())) + "'></div>"
+                        + "<div class='cont-txt'><span class='from'>" + (d[i].From ? d[i].From : "") + "</span>"
+                        + "</span><span class='message'>" + (d[i].Message ? EncodeHtml(d[i].Message) : "") + "</span>"
+                        + (d[i].MoreInfo ? "<span class='message'>" + d[i].MoreInfo + "</span>" : "")
+                        + "</div></a></li>";
+                    }
+
+                    if (name == "notification") {
+                        if (ReadCount != 0) {
+                            elements.find(".badge").text(ReadCount);
+                        }
+                    }
+                    else {
+                        if (d.length > 0) {
+                            elements.find(".badge").text(d.length);
+                        }
+                    }
+
+
+                    elementList.append(markup);
+                    //if (url || allUrl) BindAjaxify(elements, name);
+
+                    function EncodeHtml(msg) {
+                        var txt = document.createElement("textarea");
+                        msg.replace(/&amp;/gi, '&')
+                        txt.innerHTML = msg;
+                        var bodyTxt = txt.value.replace(/<[^>]*>/g, '');
+                        return bodyTxt.toString();
+                    }
+                }
+
+                $.get("@Url.Action("EmployeeNavBar", "Home")", null, function (result) {
+                    //$(".dropdown-user img").prop("src", "SpecialData/Photos/" + (result.empImage == "noimage.jpg" ? 'noimage.jpg' : @identity.GetDefaultCompany() + "/" + result.empImage) + "?dummy=" + (new Date().getTime()))
+                    drawItems('task', result.tasks, '@Url.Action("EmployeeTasksDetails", "Tasks")');
+                    drawItems('msg', result.msgs, '@Url.Action("EmployeeMessagesDetails", "Message")');
+                    drawItems('notification', result.Notify, '@Url.Action("GetNotify","Notification")', '@Url.Action("GetAllNotifications", "Notification")?Version=0');
+
+
+                });
+            }
+
+            getNavBar();
+            drawMenu();
+
+        });
+
+
+        // Change Menu Active on Click Region
+        function change(el, event) {
+            //$("#accordion")
+
+
+            
+            if (!$(el).hasClass("panel")) {
+                $(".active").removeClass("active");
+                $(el).closest("li").addClass("active");
+                localStorage.setItem("openedMenu", $(el).closest("li").attr("id"));
+                localStorage.setItem("menuhigh", $(el).closest(".menuHeads").attr("id") + "," + $(el).closest(".menuChild").attr("id") + "," + $(el).closest("li").attr("id"));
+
+            }
+            
+
+        }
+
+        $("#changemenu").ready(function () {
+            var newMenu = localStorage.getItem("NewMenu");
+
+            if (newMenu != null) {
+                var arr = newMenu.split(",");
+                $("#" + arr[2]).children("a").click();
+            }
+
+        });
+        // End region NewTabe
+
+        function drawMenu() {
+            var menus = JSON.parse(localStorage["Menus"]);
+            var menuHeads = $.grep(menus, function (el) { return el.ParentId == null });
+            //new Way
+            var markup = '<ul class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">';
+
+            for (var i = 0; i < menuHeads.length; i++) {
+
+                if (menuHeads[i].Url && menuHeads[i].Name == "Dashboard") {
+                    var click = "updateHistory('" + menuHeads[i].Url + "?RoleId=" + menuHeads[i].RoleId + "&MenuId=" + menuHeads[i].Id + "&Version=" + menuHeads[i].Version + "&SSMenu=" + menuHeads[i].SSMenu + "&DataLevel=" + menuHeads[i].DataLevel + "')";
+                    markup += '<li class="panel" id="m_' + menuHeads[i].Id + '" onclick="change(this,event)">' +
+                    '<div class="panel-heading" role="tab" id="heading-' + menuHeads[i].Id + '">' +
+                        '<h4 class="panel-title">' +
+                            '<a class="collapsed menuHeads single-link" onclick="' + click + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i>' + menuHeads[i].Title + '</a>' +
+                        '</h4>' +
+                    '</div>';
+                }
+                else {
+                    markup += '<li class="panel" id="m_' + menuHeads[i].Id + '" onclick="change(this,event)">' +
+                    '<div class="panel-heading" role="tab" id="heading-' + menuHeads[i].Id + '">' +
+                        '<h4 class="panel-title">' +
+                            '<a class="collapsed menuHeads" id="menuHeads-' + menuHeads[i].Id + '"  role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-' + menuHeads[i].Id + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i>' + menuHeads[i].Title + '</a>' +
+                        '</h4>' +
+                    '</div>';
+                }
+
+                var children = false;
+                for (var j = 0; j < menus.length; j++) {
+
+                    if (menus[j].ParentId == menuHeads[i].Id) {
+                        children = true;
+                        break;
+                    }
+                    else {
+                        children = false;
+                    }
+
+                }
+                if (children) {
+                    markup += '<div id="collapse-' + menuHeads[i].Id + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-' + menuHeads[i].Id + '">' +
+                   '<div class="panel-body">' +
+                       '<ul>';
+                    markup += getChild(menus, menuHeads[i].Id, markup);
+                    markup += '</ul>';
+
+                }
+                else {
+                    markup += '</li>'
+                }
+
+            }
+            markup += "</ul>"
+            $("aside .scroll").html(markup);
+
+
+            ///BindAjaxify($("body"));
+            searchInMenu(menus);
+
+            //end new way
+            //open last menu
+            if (localStorage.getItem("openedMenu")) {
+                var nodeId = localStorage.getItem("openedMenu").toString();
+                //var oldulr = $("#" + nodeId + " a").attr("href");
+                //$("#renderbody").load(oldulr);
+
+                $("#" + nodeId).addClass("active");
+
+
+
+                var parentId = $("#" + nodeId).attr("data-parentid"); //97
+
+                while ($("#anchor-" + parentId).attr("data-parentid")) {
+
+                    $("#collapse-" + parentId).addClass("in");
+                    $("#anchor-" + parentId).removeClass('collapsed');
+                    parentId = $("#anchor-" + parentId).attr("data-parentid");
+                }
+                $("#collapse-" + parentId).addClass("in");
+                $("#menuHeads-" + parentId).removeClass('collapsed');
+
+            }
+            //end open last menu
+
+      
+            ulr = localStorage.getItem("ulr");
+           
+            if (ulr) {
+                updateHistory(ulr);
+            }
+            else if (localStorage.getItem("openedMenu")) {
+                var nodeId = localStorage.getItem("openedMenu").toString();
+                $("#" + nodeId + " a").click();
+
+            }
+            else if (localStorage.getItem("megaMenuItem")) {
+                var menuItemId = localStorage.getItem("megaMenuItem");
+                $("#" + menuItemId + ">a").click();
+            }
+            else {
+                $("a.single-link").click();
+            }
+
+            function getChild(menusarr, parentId, markup) {
+                var nwhtml = "";
+                for (var i = 0; i < menusarr.length; i++) {
+                    if (menusarr[i].ParentId == parentId && menusarr[i].NodeType != 0) {
+                        var dataLevel = menusarr[i].DataLevel || 0;
+                        nwhtml += '<li id="m_' + menusarr[i].Id + '" data-parentId="' + menusarr[i].ParentId + '" onclick="change(this,event)"><h4 class="panel-title"><a onclick="updateHistory(\''+'' + menusarr[i].Url + '?RoleId=' + menusarr[i].RoleId + '&MenuId=' + menusarr[i].Id + '&Version=' + menusarr[i].Version + '&SSMenu=' + menusarr[i].SSMenu + '&DataLevel=' + dataLevel + ''+'\')">' + menusarr[i].Title + '</a></h4></li>';
+
+
+                    }
+                    else if (menusarr[i].ParentId == parentId && menusarr[i].NodeType == 0) {
+                        nwhtml += '<li class="panel" id="m_' + menusarr[i].Id + '" >' +
+                        '<div class="panel-heading" role="tab" id="heading-' + menusarr[i].Id + '" >' +
+                        '<h4 class="panel-title">' +
+                            '<a class="collapsed menuChild" data-parentId="' + menusarr[i].ParentId + '" id="anchor-' + menusarr[i].Id + '" role="button" data-toggle="collapse" href="#collapse-' + menusarr[i].Id + '" aria-expanded="false" aria-controls="collapse-' + menusarr[i].Id + '">' + menusarr[i].Title + '</a>' +
+                        '</h4>' +
+                        '</div>' +
+                    '<div id="collapse-' + menusarr[i].Id + '" class="panel-collapse collapse" role="tabpanel" aria-labelledby="heading-' + menusarr[i].Id + '">' +
+                        '<div class="panel-body">';
+
+
+
+                        var children = false;
+                        for (var j = 0; j < menusarr.length; j++) {
+
+                            if (menusarr[j].ParentId == menusarr[i].Id) {
+                                children = true;
+                                break;
+                            }
+                            else {
+                                children = false;
+                            }
+
+                        }
+                        if (children) {
+                            
+                            nwhtml += '<ul>';
+                            nwhtml += getChild(menusarr, menusarr[i].Id, markup);
+                            nwhtml += '</ul>';
+                        }
+                        else {
+                            nwhtml += '</div></div></li>';
+
+                        }
+                    }
+                }
+
+                markup = nwhtml;
+                return markup;
+            }
+
+            //Search In Menu
+            function searchInMenu(menuList) {
+                var menuSource = new Bloodhound({
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace('Title'),
+                    queryTokenizer: Bloodhound.tokenizers.whitespace,
+                    local: menuList //Menus from localStorage
+                });
+
+                var menuSearch = $("#menuBar");
+                menuSearch.find("#searchInput").typeahead({
+                    minLength: 1,
+                    highlight: true,
+                    hint: true
+                },
+                {
+                    name: 'searchInput',
+                    display: 'Title',
+                    source: menuSource,
+                    limit: 5
+                }).on("typeahead:select", function (e, item) {
+                    if (item.Id) {
+                        menuSearch.find("#searchInput").prop("menu-id", item.Id);
+                        clickMenu(item.Id)
+                    }
+                });
+
+                menuSearch.find("#seacrhBtn").click(function (e) {
+                    var menuId = menuSearch.find("#searchInput").prop("menu-id");
+                    clickMenu(menuId)
+                });
+
+                function clickMenu(menuId) {
+
+
+                   
+                    $('#m_' + menuId + ' a').click();
+
+
+
+                    $('#m_' + menuId).addClass("active");
+
+
+
+                    var parentId = $('#m_' + menuId).attr("data-parentid"); //97
+
+                    while ($("#anchor-" + parentId).attr("data-parentid")) {
+
+                        $("#collapse-" + parentId).addClass("in");
+                        $("#anchor-" + parentId).removeClass('collapsed');
+                        parentId = $("#anchor-" + parentId).attr("data-parentid");
+                    }
+                    $("#collapse-" + parentId).addClass("in");
+                    $("#menuHeads-" + parentId).removeClass('collapsed');
+                }
+            }
+            //End Search In Menu
+        }
+        // End Draw Menu Region
+
+
+        // Reduce notifications & msgs & tasks badge 1 onclick  Region
+        function DeleteNotify(name) {
+            var elements = $("#header_" + name + "_bar");
+            var val = elements.find(".badge").text();
+            if (val == 0) {
+                elements.find(".badge").empty()
+            }
+            if (val > 0)
+                elements.find(".badge").text(--val);
+        }
+
+        // Binding ajax Anchors
+        @*function BindAjaxify(container, name) {
+
+            var running = false;
+
+            $(container).find("a.window").on("click", function (e) {
+                e.preventDefault();
+                $(this).closest("li").css("background-color", '');
+                var notfurl = $(this).attr('href');
+                var Read = notfurl.split('Read=');
+                if (Read[1] == "false" || Read[1] == "") {
+                    DeleteNotify(name);
+                    $(this).attr("href", Read[0] + "Read=true");
+                }
+                $("#NotificationsMsgs").data("kendoWindow").refresh(notfurl).center().open();
+            });
+
+            $(container).find("a.ajaxify").on("click", function (e) {
+                
+                
+                e.preventDefault();
+                if (running) return;
+                if (name && $(this).text() != "@MsgUtils.Instance.Trls("viewall")") DeleteNotify(name);
+                ulr = $(this).attr("href");
+                localStorage.setItem("ulr", ulr);
+                $("#loadingImg").show();
+                $("#renderbody").on("ajaxComplete", function () {
+                   
+                    running = false;
+                    $("#loadingImg").hide();
+                    BindAjaxify($("#renderbody"));
+                });
+
+                //$("#renderbody").load(ulr);
+                updateHistory(ulr);
+                running = true;
+            });
+        }*@
+
+        function AppendNotifyElement(name, d, url) {
+
+            var elements = $("#header_" + name + "_bar");
+            var elementList = elements.find(".dropdown-menu-list.scroll");
+            var nameLbl = (name == 'msg' ? '@MsgUtils.Instance.Trls("messages")' : (name == 'task' ? '@MsgUtils.Instance.Trls("tasks")' : name == 'notification' ? '@MsgUtils.Instance.Trls("notification")' : ''));
+            var val = elements.find(".badge").text();
+            var plusvalue = 1;
+            if (!isNaN(val.split(nameLbl)[0])) {
+                plusvalue = Number(val.split(nameLbl)[0].trim());
+                plusvalue++;
+            }
+            elements.find(".external h3 > span.bold").text(plusvalue + " " + nameLbl);
+            elements.find(".badge").text(plusvalue);
+            var markup = "";
+            var elementUrl = (url ? url + '?id=' + d.Id + '&Version=0&Read=' + (d.Read !== undefined ? d.Read : "") + '' : '#');
+            markup += "<li style='background-color:blanchedalmond' id='" + d.Id + "'><a class='window'" + (url ? " href='" + elementUrl + "'" : "") + "><div class='cont-img'><img src='" + (d.PicUrl == 'noimage.jpg' ? "/SpecialData/Photos/" + d.PicUrl : "/SpecialData/Photos/" +@User.Identity.GetDefaultCompany().ToString() +"/" + d.PicUrl + "?dummy=" + (new Date().getTime())) + "'></div>"
+            + "<div class='cont-txt'><span class='from'>" + (d.From ? d.From : "") + "</span>"
+            + "</div><span class='message'>" + (d.Message ? EncodeHtml(d.Message) : "") + "</span>"
+            + (d.MoreInfo ? "<span class='message'>" + d.MoreInfo + "</span>" : "")
+            + "</span></a></li>";
+            elementList.prepend(markup);
+
+            elements.find(".external h3").html("@MsgUtils.Instance.Trls("You have") <span class='bold'>" + elementList.find('li').length + " " + nameLbl + "</span>");
+
+            //BindAjaxify(elementList.children().first("li"), name);
+        }
+        //End NavBar DropDown -- (msgs & tasks)
+
+
+        //Notification Kendo Window
+        $("#NotificationsMsgs").kendoWindow({
+            title: "@MsgUtils.Instance.Trls("ReadNotification")",
+            minWidth: "1000px",
+            width: "50%",
+            height: "50%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+
+        });
+        //End Notification Kendo window
+
+        var stack = [];
+        var menus = [];
+        var megaModuleIds = [];
+        var megaMenuItems = [];
+        function updateHistory(path, parm) {
+            ulr = path;
+            history.pushState("waleed", null, null);
+            stack.push(ulr);
+            $("#renderbody").load(ulr, parm);
+            localStorage.setItem("ulr", ulr);
+            if (localStorage.getItem("menuhigh")) {
+                menus.push(localStorage.getItem("menuhigh").split(',')[2]);
+            }
+
+        }
+
+        window.addEventListener("popstate", function (event) {
+            if (event.state == "waleed") {
+                
+                var menu = menus[menus.length - 1];
+                if (menu != undefined) change('#' + menu);
+                menus.pop();
+
+                //var length = stack.length > 0 ? stack.length - 1 : 0;
+                
+                if (stack.length>1) {
+                    stack.pop();
+                }
+                ulr = stack[stack.length - 1];
+                history.pushState("waleed", null, null); // disable forword button
+                $("#renderbody").load(ulr);
+                localStorage.setItem("ulr", ulr);
+
+            }
+        });
+
+    </script>
+    <footer>
+
+        <div class="page-footer-inner">
+            <p>
+                <span>@MsgUtils.Instance.Trls("Time Zone"):@identity.GetTimeZone()</span>
+                <span>@MsgUtils.Instance.Trls("Language"):@identity.GetCulture()</span>
+            </p>
+            <select id="Usercompanies" onchange="companyChange(this)"></select>
+            <!--                 <span class="col-lg-2 col-md-2 col-sm-2 col-xs-2" >@identity.Name</span>
+             -->
+        </div>
+
+        <a class="scroll-to-top" id="back-to-top" role="button" title="Click to return on the top page" data-toggle="tooltip" data-placement="right">
+
+        </a>
+
+        <script type="text/javascript" src="~/Content/js/jquery.mousewheel.min.js"></script>
+        <script type="text/javascript" src="~/Content/js/jquery.mCustomScrollbar.min.js"></script>
+        <script type="text/javascript" src="~/Content/js/style.js"></script>
+    </footer>
+
+
+</body>
+<!-- END BODY -->
+</html>

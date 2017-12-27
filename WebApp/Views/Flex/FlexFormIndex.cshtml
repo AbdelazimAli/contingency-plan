@@ -1,0 +1,45 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    Layout = null;
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "FlexDiv" }, { "HasDepts", "false" }, { "Functions", function }, { "HasRange", "false" }, { "TableName", "Job" } })
+<div id="FlexDiv"></div>
+
+<script>
+    $(function () {
+        var addUrl = "@Url.Action("FlexFormDetails", "Flex")";
+        RequestFilters.ApplayAllFilters([], {}, "Flex", "@Url.Action("ReadFlexForms", "Flex")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+        var grid = "'FlexForms'";
+        Grids.indexGrid({
+            // 1-Questionnaire
+            read: "@Url.Action("ReadFlexForms", "Flex")?FormType=1&MenuId=@Request.QueryString["MenuId"]",
+            edit: "@Url.Action("FlexFormDetails", "Flex")",
+            show: "@Url.Action("FlexFormDetails", "Flex")",
+            del: "@Url.Action("DeleteFlexForm", "Flex")",
+            admin: "@admin",
+            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
+                  '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                  '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+            lang: "@User.Identity.GetCulture()",
+            objectName: "FlexForms",
+            recordName: "ColumnName",
+            gridName: "FlexDiv"
+        });
+    });
+</script>
+
+
+
+
+
+
+
+
+
+
+
+

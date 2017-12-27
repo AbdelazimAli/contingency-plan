@@ -1,0 +1,211 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel.Personnel
+@model LeaveReqViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.IsInRole("Admin");
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var isSSMenu = ViewBag.isSSMenu;
+}
+
+<style>
+    .omegaform .rate_row{
+        display: inline-block;
+        margin-left: 90px;
+    }
+    .omegaform.rtl .rate_row {
+        margin-right: 90px;
+        margin-left: 0px;
+    }
+</style>
+
+<br />
+<br />
+<div id="pageTabs"></div>
+<div id="docWindow"></div>
+
+@Html.Partial("~/Views/Leave/_LeavesFunc.cshtml")
+
+<script>
+    var model;
+
+    FormJs.DrawTabs("pageTabs"); // "LeaveFollowUp"
+
+    $("#t_WorkFLow").click(function(){
+        $('#tab_WorkFLow').load("@Url.Action("WorkFlow", "Log")?Source=Leave&SourceId=@Model.TypeId&DocumentId=@Model.Id&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_AudiLog").click(function(){
+        $('#tab_AudiLog').load("@Url.Action("Log", "Log", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_GeneralInfo").click(function () {
+        $("#tab_GeneralInfo").html("<div id='leaveFollowupDiv'></div>");
+        FollowUpForm();
+    });
+
+        // Back to index
+        var oldPage = localStorage.getItem("menuhigh").split(",");
+        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        var formId = "FollowUpForm";
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+
+    function parseLeaveDate(date) {
+        if (date && date.indexOf('/Date') != -1) return kendo.toString(new Date(parseInt(date.substr(6))), "yyyy-MM-dd"); //.toLocaleDateString();
+        else return date;
+    }
+    function FollowUpForm()
+    {
+        var isSSMenu = "@isSSMenu" == "True";
+        var Employees = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees))
+        var calcOptions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CalcOptions));
+        var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender));
+
+        var ApprovalStatus = [{ id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },{ id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },{ id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+
+        var read = "@Request.QueryString["Read"]";
+
+        $.getJSON(url, { objectname: 'LeaveReqFollowUpForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("FollowupDetails", "LeavePosting")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "LeaveRequests";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            data.btns = ["back", "doc"];
+
+            var StartDate = parseLeaveDate(model.StartDate);
+            //model.StartDate =  parseLeaveDate(model.StartDate);
+            //model.EndDate =  parseLeaveDate(model.EndDate);
+            //model.ReturnDate =  parseLeaveDate(model.ReturnDate);
+            //model.ActualStartDate =  parseLeaveDate(model.ActualStartDate);
+            //model.ActualEndDate =  parseLeaveDate(model.ActualEndDate);
+
+            $("#leaveFollowupDiv").Forms(data, model);
+
+            FormJs.fillOptionsDynamic($("#" + formId), "ReplaceEmpId", Employees, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "ApprovalStatus", ApprovalStatus, model);
+
+            ///Employee Tasks
+            $("#" + formId).find(".section[name='tasksSec']").append("<div id='empTasksGrd'></div>");
+
+            LeaveRequestJs.DrawEmpTasks("empTasksGrd", model.EmpId, StartDate);
+
+            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+
+            var picker = "kendoDatePicker";
+
+            if(read != 1) {
+                $("#"+ formId + " #RequestDate").data(picker).readonly();
+                $("#"+ formId + " #StartDate").data(picker).readonly();
+                $("#"+ formId + " #EndDate").data(picker).readonly();
+                $("#"+ formId + " #ReturnDate").data(picker).readonly();
+            }
+
+            $("#" + formId + " div[name='acceptSec']").parents(".set").remove();
+
+            if(model.ApprovalStatus != 9) $("#" + formId + " div[name='rejectSec']").parents(".set").css("display","none");
+            if(model.ApprovalStatus != 5) {
+                //$("#" + formId + " div[name='acceptSec']").parents(".set").css("display","none");
+                if(read != 1) $("#" + formId + " #ReplaceEmpId").data("kendoDropDownList").enable(false);
+            }
+
+
+            function Initialize(isReInitial) {
+                var settings = { calender: calender, calcOptions: calcOptions, myForm: $("#" + formId), picker: picker };
+                //var inputs = {StartDate: "ActualStartDate", EndDate: "ActualEndDate", ReturnDate: null, NofDays: "ActualNofDays"};
+                LeaveRequestJs.SetValues(settings);
+            }
+            Initialize(false);
+
+            LeaveRequestJs.DrawStars("NofDays", true, model.Stars); ///Stars  read == 1
+
+            function allowFraction() {
+                if(calcOptions && calcOptions.AllowFraction) {
+                    LeaveRequestJs.ConvertDateTime("#StartDate, #EndDate, #ReturnDate", true); //, #ActualStartDate, #ActualEndDate
+                    picker = "kendoDateTimePicker";
+                }
+                else {
+                    LeaveRequestJs.ConvertDateTime("#StartDate, #EndDate, #ReturnDate", false);
+                    picker = "kendoDatePicker";
+                }
+
+                Initialize(true);
+            }
+
+            if(read != 1) allowFraction();
+
+            $("#leaveFollowupDiv").on("change","#ApprovalStatus",null,function(){
+                var value = $(this).val();
+                value != 9 ? $("#"+ formId + " div[name='rejectSec']").parents(".set").css("display","none") : $("div[name='rejectSec']").parents(".set").css("display","");
+
+                if($("#" + formId + " #ReplaceEmpId").prop("type") != "text") {
+                    if(value != 5)
+                        $("#" + formId + " #ReplaceEmpId").data("kendoDropDownList").enable(false);
+                    else
+                        $("#" + formId + " #ReplaceEmpId").data("kendoDropDownList").enable(true);
+                }
+
+                if(value == 5) checkPlan();
+            });
+
+            //$("#" + formId).on("blur" , "#ActualStartDate, #ActualNofDays", LeaveRequestJs.ValidateNofDays);
+
+            function checkPlan() {
+                return $.get('/LeavePosting/CheckLeavePlan', {requestId: $("#" + formId + " #Id").val() }, function(errors) {
+                    if(errors) {
+                        if(isSSMenu) toastr.error(errors);
+                        else  toastr.warning(errors);
+                    }
+                });
+            }
+
+
+            $("#leaveFollowupDiv").on("click","#saveChanges",null,function (e) {
+
+                checkPlan().then(function(error) { 
+                    if(error && isSSMenu)
+                        return false;
+                    else
+                        FormJs.saveForm($("#"+formId), $(this),function () {
+                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                            $("#renderbody").load(ulr);
+                        });
+                });
+
+            });
+        });
+    }
+        $("#Documents").on("click", function() {
+            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveRequest&SourceId="+ @Model.Id).center().open();
+            $("#Documents").fadeOut();
+        });
+
+        $("#docWindow").kendoWindow ({
+            title: "@MsgUtils.Instance.Trls("LeaveRequestWindow")",
+            minWidth: "1000px",
+            width: "80%",
+            height: "80%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $("#Documents").fadeIn();
+                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                $("#docWindow").empty();
+            }
+        });
+
+
+
+    $("#t_GeneralInfo").click();
+
+
+</script>
+

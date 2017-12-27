@@ -1,0 +1,61 @@
+﻿
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.IsInRole("Admin");
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+}
+
+<div id="Currency"></div>
+
+    <script>
+      
+        var objectName = "Currencies";
+        var RoundMethodArr = [{ value: 2, text: "@MsgUtils.Instance.Trls("Downward")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Rounding Up")" }, { value: 1, text: "@MsgUtils.Instance.Trls("Normal")" }]
+        var CalcRoundArr = [{ value: 6, text: "0.001" }, { value: 5, text: "0.01" }, { value: 4, text: "0.1" }, { value: 3, text: "0.25" }, { value: 2, text: "0.5" }, { value: 1, text: "1" }, { value: 10, text: "10" }]
+        var PayRoundArr = [{ value: 6, text: "0.001" }, { value: 5, text: "0.01" }, { value: 4, text: "0.1" }, { value: 3, text: "0.25" }, { value: 2, text: "0.5" }, { value: 1, text: "1" }, { value: 10, text: "10" }]
+        var gridname = "'Currency'"
+        Grids.batchGrid({
+            read: "@Url.Action("ReadCurrency", "Country")?MenuId=@Request.QueryString["MenuId"]",
+            update: "@Url.Action("UpdateCurrency", "Country")",
+            create: "@Url.Action("CreateCurrency", "Country")",
+            destroy:"@Url.Action("DeleteCurrency", "Country")",
+            admin: "@admin", // Admin role
+            lang:"@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name", // custom delete message
+            gridName: "Currency",
+            fields: { IsMultiplyBy: { editable: false }, Referenced: { editable: false }, Suffix: { editable: false } },
+            columns: [ { field: "RoundMethod", values: RoundMethodArr },
+                       { field: "CalcRoundRule", values: CalcRoundArr } ,
+                       { field: "PayRoundRule", values: PayRoundArr },
+                        { field: "Name", locked: true },
+                         {
+                             field: "IsMultiplyBy",
+                             template: '<input  type="checkbox" #:IsMultiplyBy == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'IsMultiplyBy\',' + gridname + ')"/>'
+                         }, {
+                             field: "Referenced",
+                             template: '<input  type="checkbox" #:Referenced == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Referenced\',' + gridname + ')"/>'
+                         }, {
+                             field: "Suffix",
+                             template: '<input  type="checkbox" #:Suffix == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'Suffix\',' + gridname + ')"/>'
+                         }
+            ],
+            select: { "RoundMethod": RoundMethodArr, "CalcRoundRule": CalcRoundArr, "PayRoundRule": PayRoundArr },
+           
+    });
+
+    </script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "Currency" }, { "ObjectName", "Currencies" }, { "Functions", ViewBag.Functions } })
+
+
+
+
+
+
+
+

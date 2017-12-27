@@ -1,0 +1,192 @@
+﻿
+@using WebApp.Extensions
+@using System.Web.Script.Serialization
+
+
+@{
+    Layout = null;
+}
+
+@{ var AdminMode = User.IsInRole("Admin");
+
+    var rtl = User.Identity.RTL();
+    int dataLevel = 0, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+
+}
+
+<br>
+<div id="EmpDiv"></div>
+<div id="EmpWindow"></div>
+
+<script>
+    var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+    var Status = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Status));
+    var NationalId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.NationalId));
+    var EmpCode = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GenEmpCode));
+
+        var columns = [ {field:"PersonType",values:PersonType},{field:"Status",values:Status}];
+        var objectName = "Employee";
+        Grids.indexGrid({
+            read: "@Url.Action("ReadEmployee", "People")?Id=@ViewBag.id",
+            lang: "@User.Identity.GetCulture()",
+            objectName: objectName,
+            recordName: "Name",
+            gridName: "EmpDiv",
+            admin: "@AdminMode",
+            columns: columns,
+            select: {"PersonType":PersonType,"Status":Status},
+            toolbar: kendo.template($("#Newtemplate").html())
+        });
+    $("#EmpWindow").kendoWindow ({
+        title: "@MsgUtils.Instance.Trls("Employement")",
+        minWidth: "500px",
+        width: "25%",
+        height: "55%",
+        actions: ["Minimize", "Maximize", "Close"],
+        visible: false,
+        close: function() {
+            $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();          
+            $("#EmpWindow").empty();
+        }
+    });
+
+    function getWindow() {
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ChkBeforeEmployment", "People")",
+            data: { EmpId: model.Id },
+            dataType: "json",
+            success: function (result) {
+                result = result.split(',');
+                if( result[0]=="OK" || result[0]=="SystemWarningDocuments"){
+                    if(EmpCode==3){
+                        if(NationalId != null )
+                        {
+                            toastr.warning(result[1]);
+                            $("#EmpWindow").data("kendoWindow").refresh("/People/EmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+                            $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeOut();
+                        }
+                        else
+                       {
+                            toastr.error("@MsgUtils.Instance.Trls("YouMustInsertNationalId")");
+                        }
+                    }else
+                    {
+                        toastr.warning(result[1]);
+                        $("#EmpWindow").data("kendoWindow").refresh("/People/EmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+                        $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeOut();
+                    }
+                }
+                else
+
+                    toastr.error(result[1]);
+                    
+            },
+            error: function (result) {
+                console.log(result.responseText);
+            }
+        });
+    };
+
+    function correctWindow(){
+        if(EmpCode==3){
+            if(NationalId != null )
+            {
+               $("#EmpWindow").data("kendoWindow").refresh("/People/CorrectEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+               $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+            }else
+            {
+                toastr.error("@MsgUtils.Instance.Trls("YouMustInsertNationalId")");
+            }
+        }else
+        {
+            $("#EmpWindow").data("kendoWindow").refresh("/People/CorrectEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+            $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+        }
+    };
+
+    function updateWindow(){
+        if(EmpCode==3){
+            if(NationalId != null )
+            {
+                $("#EmpWindow").data("kendoWindow").refresh("/People/UpdateEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+                $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+            }else
+            {
+                toastr.error("@MsgUtils.Instance.Trls("YouMustInsertNationalId")");
+            }
+        }else
+        {
+            $("#EmpWindow").data("kendoWindow").refresh("/People/UpdateEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+            $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+        }
+    };
+
+    function suspendeWindow(){
+        if(EmpCode == 3){
+            if(NationalId != null )
+            {
+                $("#EmpWindow").data("kendoWindow").refresh("/People/SuspendEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+                $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+            }
+            else
+            {
+                toastr.error("@MsgUtils.Instance.Trls("YouMustInsertNationalId")");
+            }
+        }else
+        {
+            $("#EmpWindow").data("kendoWindow").refresh("/People/SuspendEmpDetails?Id=@ViewBag.id&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]").center().open();
+            $(".btn.glyphicon.glyphicon-edit.ajaxify.btn-default").fadeOut();
+        }
+    };
+</script>
+<script type="text/x-kendo-template" id="Newtemplate">
+    <div style="@(rtl ? "float: right" : "float: left")">
+        <a class="btn btn-default glyphicon glyphicon-plus " onclick="getWindow()"  style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "AddEmployement") : true) || ViewBag.AddMode == false ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Add Employement")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-edit" onclick="correctWindow()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "Correct") : true)|| ViewBag.AddMode == true ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Correct")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-edit" onclick="updateWindow()" style="@(dataLevel < 2 || read == 1 ||((function != null && function.Length>0)?!Array.Exists(function,f => f == "Update") :true)|| ViewBag.AddMode == true ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Update")</span></a>
+        <a class="btn btn-default glyphicon glyphicon-edit" onclick="suspendeWindow()" style="@(dataLevel < 2 || read == 1 ||((function != null && function.Length>0)?!Array.Exists(function,f => f == "Suspension") :true)|| ViewBag.AddMode == true ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Suspension")</span></a>
+        &nbsp;
+        <div class="btn-group">
+            <button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" id="toolsMenu">
+                @if (AdminMode)
+                {
+                    <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('EmpDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
+                }
+                <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('EmpDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
+                @if (function != null && function.Length > 0)
+                {
+                    if (Array.Exists(function, f => f == "ExportExcel"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl('EmpDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>
+                    }
+                    if (Array.Exists(function, f => f == "ExportPdf"))
+                    {
+                        <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('EmpDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
+                    }
+                }    
+            </ul>
+        </div>
+    </div>
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
