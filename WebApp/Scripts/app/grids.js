@@ -279,11 +279,13 @@ var Grids = function () {
                            ((dataLevel == 3) && (bname == "delete")))
                             continue;
 
-                        if (column.command == undefined) column.command = {};
-                        if (column.command.text == undefined) column.command.text = msg[dbColumns[i].name] || dbColumns[i].name;
-                        if (column.command.click == undefined) column.command.click = (bname == "edit" ? editRecord : (bname == "show" ? showRecord : (args.del || args.destroy ? deleteRecord : deleteClick))); //for grid in form
-                        if (column.id == undefined) column.id = dbColumns[i].name;
-                        column.command.className = "k-grid-" + dbColumns[i].name;
+                        column.title = " ";
+                        if (bname == "edit") column.command = { name: bname, text: " ", click: editRecord }; //k-sprite fa fa-search
+                        else if (bname == "delete") column.command = { name: bname, imageClass: "k-icon k-i-delete", text: " ", click: (args.del || args.destroy ? deleteRecord : deleteClick) };
+                        else if (bname == "show") column.command = { name: bname, text: " ", imageClass: "k-icon k-i-search", click: showRecord };
+                        else if (column.command == undefined) column.command = { name: dbColumns[i].name, text: msg[dbColumns[i].name] || dbColumns[i].name };
+                        column.id = dbColumns[i].name;
+                        
                     } else {
                         if (column.field == undefined) column.field = dbColumns[i].name;
                         if (args.gridType == "batch" && dbColumns[i].input && dbColumns[i].input != "none" && column.editor == undefined) column.editor = customEditor(args.gridName, args.select, dataLevel);
@@ -293,9 +295,7 @@ var Grids = function () {
                         if (column.filterable.cell == undefined) column.filterable.cell = {};
                         if (column.filterable.cell.suggestionOperator == undefined) column.filterable.cell.suggestionOperator = "contains";
 
-                        if (dbColumns[i].type == "date") if (dbColumns[i].name.toLowerCase().indexOf("time") != -1) column.format = "{0:hh:mm tt}"; else column.format = "{0:d}";
-                        if (dbColumns[i].type == "time") { column.format = "{0:HH:mm}"; column.editor = customEditor(args.gridName, args.select, dataLevel); }
-
+                        if (dbColumns[i].type == "date") if (dbColumns[i].name.toLowerCase().indexOf("datetime") != -1) column.format = "{0:G}"; else if (dbColumns[i].name.toLowerCase().indexOf("time") != -1) column.format = "{0:hh:mm tt}"; else column.format = "{0:d}";
                     }
                    
                     column.width = dbColumns[i].width;
@@ -410,7 +410,6 @@ var Grids = function () {
     }
 
     var indexGrid = function (args) {
-
         // Initialize arguments
         admin = args.admin || "False";
         // Ajax get sqlserver db info
@@ -433,9 +432,7 @@ var Grids = function () {
 
                 var dataSource = (args.dataSource == undefined ? {
                     transport: {
-                        read: args.read,
-                        
-                       
+                        read: args.read
                     },
                     schema: {
                         model: {
@@ -458,20 +455,24 @@ var Grids = function () {
                 }
 
                 $('#' + args.gridName).kendoGrid({
-                    //pdf: {
-                    //    allPages: true,
-                    //    fileName : "ExportPdf.pdf"
-                    //    avoidLinks: true,
-                    //    paperSize: "A4",
-                    //    margin: { top: "2cm", left: "1cm", right: "1cm", bottom: "1cm" },
-                    //    landscape: true,
-                    //    repeatHeaders: true,
-                    //    template: $("#page-template").html(),
-                    //    scale: 0.8
-                    //},
+                    pdf: {
+                        allPages: true,
+                        avoidLinks: true,
+                        paperSize: "A4",
+                        margin: {
+                            top: "2cm",
+                            left: "1cm",
+                            right: "1cm",
+                            bottom: "1cm"
+                        },
+                        landscape: true,
+                        repeatHeaders: true,
+                        template: $("#page-template").html(),
+                        scale: 0.5
+                    },
                     dataSource: dataSource,
                     height: args.height || db.Size || 700,
-                  //  toolbar: args.toolbar || kendo.template($("#template").html()),
+                    //toolbar: args.toolbar || kendo.template($("#template").html()),
                     scrollable: args.scrollable || {
                         virtual: true
                     },
@@ -479,12 +480,6 @@ var Grids = function () {
                         allPages: true,
                         fileName:"ExportXsl.xlsx"
                     },
-                    //pdfExport: function (e) {
-                    //    e.promise.done(function () {
-                    //        $("#" + args.gridName).find(".k-grid-toolbar").css("display", "");
-                    //        $("#" + args.gridName).find(".k-grouping-header").css("display", "");
-                    //    });
-                    //},
                     groupable: (args.groupable == undefined ? true : args.groupable),
                     sortable: (args.sortable == undefined ? true : args.sortable),
                     reorderable: (args.reorderable == undefined ? true : args.reorderable),
@@ -501,7 +496,7 @@ var Grids = function () {
                     columnReorder: columnReorder(args.gridName),
                     columnShow: columnsHide(args.gridName),
                     columnMenuInit: menuInit(args.gridName),
-                    dataBound: (args.dataBound ? function (e) { dataBound(args.gridName); args.dataBound(e); } : dataBound(args.gridName))
+                    dataBound: (args.dataBound ? function (e) { dataBound(args.gridName); args.dataBound(e) } : function (e) { dataBound(args.gridName)})
                 });
 
                 $('#' + args.gridName).attr("editUrl", args.edit);
@@ -551,25 +546,27 @@ var Grids = function () {
     }
 
     function Ok(data, name) {
-            var result = JSON.parse(data.responseText);
-            var message = "";
+        var result = JSON.parse(data.responseText);
+        var message = "";
 
-            if (result.Errors) {
-                for (var i = 0; i < result.Errors.length; i++) {
-                    for (var k = 0; k < result.Errors[i].errors.length; k++) {
-                        message += result.Errors[i].errors[k].message;
-                    }
+        if (result.Errors) {
+            for (var i = 0; i < result.Errors.length; i++) {
+                for (var k = 0; k < result.Errors[i].errors.length; k++) {
+                    message += result.Errors[i].errors[k].message;
                 }
             }
-            if (message.length === 0) {
+        }
+        if (message.length === 0) {
             $('#' + name).attr("hasErrors", "false");
             var dataChanged = $('#' + name).attr("dataChanged");
-            if (dataChanged == "true") changed(name, "Data", false);
+            if (dataChanged == "true") {
+                changed(name, "Data", false);
                 toastr.success(msg.SaveComplete);
             } else {
-            $('#' + name).attr("hasErrors", "true");
+                $('#' + name).attr("hasErrors", "true");
                 toastr.error(message.replace(/;/g, "<br/>"));
             }
+        }
     }
 
     function setErrors(parms, name) {
@@ -655,240 +652,246 @@ var Grids = function () {
         }
 
         // Ajax get sqlserver db info
-        $.getJSON("../../Pages/GetGrid", { objectName: args.objectName, version: args.version || $.urlParam('Version') || 0 },
-            function (d) {
-                lang = args.lang;
-                kendo.culture(lang);
-                //if ($.inArray(lang.split('-')[0], ["ps", "ar", "ur", "ku", "fa"]) >= 0) $("body").addClass("k-rtl");
-                args.gridType = "batch";
-                beforeCreateGrid(d, args);
-                var db = loadLocalStorage(args);
+        if (args.objectName) {
+            $.getJSON("../../Pages/GetGrid", { objectName: args.objectName, version: args.version || $.urlParam('Version') || 0 },
+                function (d) {
+                    beforeCreateGrid(d, args);
+                    drawGrid();
+                });
+        } else drawGrid();
+
+        function drawGrid() {
+            lang = args.lang;
+            kendo.culture(lang);
+            //if ($.inArray(lang.split('-')[0], ["ps", "ar", "ur", "ku", "fa"]) >= 0) $("body").addClass("k-rtl");
+            args.gridType = "batch";
+            var db = loadLocalStorage(args);
 
 
-                if (args.height == undefined) {
-                    $('#' + args.gridName).replaceWith('<div id="' + args.gridName + 'splt" style="height: ' + (db.Size ? Number(db.Size) + 75 : 675) + 'px">');
-                    $('#' + args.gridName + 'splt').append('<div id="' + args.gridName + '"></div><div></div>');
-                }
+            if (args.height == undefined) {
+                $('#' + args.gridName).replaceWith('<div id="' + args.gridName + 'splt" style="height: ' + (db.Size ? Number(db.Size) + 75 : 675) + 'px">');
+                $('#' + args.gridName + 'splt').append('<div id="' + args.gridName + '"></div><div></div>');
+            }
 
-                var transport = {
-                    read: {
-                        url: args.read,
-                        dataType: "json", // "jsonp" is required for cross-domain requests; use "json" for same-domain requests
-                        contentType: "application/json",
-                        complete: (args.readCompleted ? args.readCompleted : undefined)
-                    },
-                    parameterMap: function (data, type) {
-                        if (type !== "read" && data.models) {
-                            var result = {}; // define result as jave script object
-                            for (var i = 0; i < data.models.length; i++) {
-                                var record = data.models[i];
-                                if (record.Id == null) record.Id = 0;
-                                record[args.parentColumnName] = args.parentColumnId;
+            var transport = {
+                read: {
+                    url: args.read,
+                    dataType: "json", // "jsonp" is required for cross-domain requests; use "json" for same-domain requests
+                    contentType: "application/json",
+                    complete: (args.readCompleted ? args.readCompleted : undefined)
+                },
+                parameterMap: function (data, type) {
+                    if (type !== "read" && data.models) {
+                        var result = {}; // define result as jave script object
+                        for (var i = 0; i < data.models.length; i++) {
+                            var record = data.models[i];
+                            if (record.Id == null) record.Id = 0;
+                            record[args.parentColumnName] = args.parentColumnId;
 
-                                var hasValues = false;
-                                for (var member in record) {
-                                    if (member == "NewValues" || member == "OldValues") {
-                                        hasValues = true;
-                                        result["options" + "[" + i + "]." + member] = record[member];
-                                    } else if (member.toLowerCase().indexOf("date") != -1) {
-                                        result["models" + "[" + i + "]." + member] = kendo.toString(record[member], 'd');
-                                    } else if (member.toLowerCase().indexOf("time") != -1 && record[member]) {
-                                        result["models" + "[" + i + "]." + member] = toDateTime(String(record[member]));
-                                    } else
-                                        result["models" + "[" + i + "]." + member] = record[member];
-                                }
-
-                                if (!hasValues) {
-                                    result["options" + "[" + i + "].NewValues"] = { ColumnName: 'NoColumn' };
-                                    result["options" + "[" + i + "].OldValues"] = { ColumnName: 'NoColumn' };
-                                }
+                            var hasValues = false;
+                            for (var member in record) {
+                                if (member == "NewValues" || member == "OldValues") {
+                                    hasValues = true;
+                                    result["options" + "[" + i + "]." + member] = record[member];
+                                } else if (member.toLowerCase().indexOf("date") != -1) {
+                                    result["models" + "[" + i + "]." + member] = kendo.toString(record[member], 'd');
+                                } else if (member.toLowerCase().indexOf("time") != -1 && record[member]) {
+                                    result["models" + "[" + i + "]." + member] = toDateTime(String(record[member]));
+                                } else
+                                    result["models" + "[" + i + "]." + member] = record[member];
                             }
-                            return result;
+
+                            if (!hasValues) {
+                                result["options" + "[" + i + "].NewValues"] = { ColumnName: 'NoColumn' };
+                                result["options" + "[" + i + "].OldValues"] = { ColumnName: 'NoColumn' };
+                            }
                         }
+                        return result;
                     }
+                }
+            };
+
+            if (args.update) {
+                transport.update = {
+                    url: args.update,
+                    dataType: "json",
+                    type: "POST",
+                    complete: _Ok
                 };
+            }
 
-                if (args.update) {
-                    transport.update = {
-                        url: args.update,
-                        dataType: "json",
-                        type: "POST",
-                        complete: _Ok
-                    };
-                }
+            if (args.create) {
+                transport.create = {
+                    url: args.create,
+                    dataType: "json",
+                    type: "POST",
+                    complete: _Ok
+                };
+            }
 
-                if (args.create) {
-                    transport.create = {
-                        url: args.create,
-                        dataType: "json",
-                        type: "POST",
-                        complete: _Ok
-                    };
-                }
+            if (args.destroy) {
+                transport.destroy = {
+                    url: args.destroy, //specify the URL which should destroy the records. This is the Destroy method of the HomeController.
+                    type: "POST", //use HTTP POST request as by default GET is not allowed by ASP.NET MVC
+                    complete: _Ok
+                };
+            }
 
-                if (args.destroy) {
-                    transport.destroy = {
-                        url: args.destroy, //specify the URL which should destroy the records. This is the Destroy method of the HomeController.
-                        type: "POST", //use HTTP POST request as by default GET is not allowed by ASP.NET MVC
-                        complete: _Ok
-                    };
-                }
+            var dataLevel = $.urlParam('DataLevel');
+            //var read = $.urlParam('Read') || 0;
 
-                var dataLevel = $.urlParam('DataLevel');
-                //var read = $.urlParam('Read') || 0;
-
-                if (args.gridName == "ColumnProp") { dataLevel = 2;  }  //{ dataLevel = 2; read = 0; }
-                $('#' + args.gridName).kendoGrid({
-                    dataSource:(args.dataSource === undefined ? new kendo.data.DataSource({
-                        transport: transport,
-                        batch: true,
-                        pageSize: args.pageable === false ? 1000 : db.pageSize,
-                        filter: args.filter,
-                        schema: {
-                            errors: "Errors",
-                            model: {
-                                id: "Id",
-                                fields: args.fields
-                            }
-                        },
-                        scrollable: {
-                            virtual: true
-                        },
-                        error: errorHandler('#' + args.gridName),
-                        sync: function (e) {
-                            var name = '#' + $(e.currentTarget).closest("[data-role=grid]").attr("id");
-
-                            for (var i = 0; i < pages.length; i++) {
-                                $(name + " .k-grid-pager > ul li:eq(" + pages[i].page + ")")
-                                    .addClass("relative-pos")
-                                    .append("<span class='badge'>" + pages[i].count + "</span>");
-                            }
-                            pages = [];
+            if (args.gridName == "ColumnProp") { dataLevel = 2; }  //{ dataLevel = 2; read = 0; }
+            $('#' + args.gridName).kendoGrid({
+                dataSource: (args.dataSource === undefined ? new kendo.data.DataSource({
+                    transport: transport,
+                    batch: true,
+                    pageSize: args.pageable === false ? 1000 : db.pageSize,
+                    filter: args.filter,
+                    schema: {
+                        errors: "Errors",
+                        model: {
+                            id: "Id",
+                            fields: args.fields
                         }
-                    }): new kendo.data.DataSource({
-                        data: args.dataSource,
-                        batch: true,
-                        pageSize: args.pageable === false ? 1000 : db.pageSize,
-                        filter: args.filter,
-                        schema: {
-                            errors: "Errors",
-                            model: {
-                                id: "Id",
-                                fields: args.fields
-                            }
-                        },
-                        scrollable: {
-                            virtual: true
-                        },
-                        error: errorHandler('#' + args.gridName),
-                        sync: function (e) {
-                            var name = '#' + $(e.currentTarget).closest("[data-role=grid]").attr("id");
+                    },
+                    scrollable: {
+                        virtual: true
+                    },
+                    error: errorHandler('#' + args.gridName),
+                    sync: function (e) {
+                        var name = '#' + $(e.currentTarget).closest("[data-role=grid]").attr("id");
 
-                            for (var i = 0; i < pages.length; i++) {
-                                $(name + " .k-grid-pager > ul li:eq(" + pages[i].page + ")")
-                                    .addClass("relative-pos")
-                                    .append("<span class='badge'>" + pages[i].count + "</span>");
-                            }
-                            pages = [];
+                        for (var i = 0; i < pages.length; i++) {
+                            $(name + " .k-grid-pager > ul li:eq(" + pages[i].page + ")")
+                                .addClass("relative-pos")
+                                .append("<span class='badge'>" + pages[i].count + "</span>");
                         }
-                    })),
-                    serverPaging: args.serverPaging || false,
-                    serverFiltering: args.serverFiltering || false,
-                    serverSorting: args.serverSorting || false,
-                    navigatable: (args.navigatable == undefined ? true : args.navigatable),
-                    sortable: (args.sortable == undefined ? true : args.sortable),
-                    reorderable: (args.reorderable == undefined ? true : args.reorderable),
-                    pageable: (args.pageable == undefined ? { refresh: true, pageSizes: true, buttonCount: 3 } : { numeric: args.pageable, previousNext: args.pageable, messages: { display: "{2} " + msg.rows } }),  //for number of elements if not pagable
-                    filterable: (args.filterable == undefined ? db.filterable || { mode: "menu,row" } : args.filterable),
-                    columnMenu: (args.columnMenu == undefined ? db.columnMenu : args.columnMenu),
-                    resizable: true,
-                    height: args.height || db.Size,
-                    toolbar: args.toolbar || kendo.template($("#template").html()),
-                    columns: args.columns,
-                    //pdf: {
-                    //    allPages: true,
-                    //    fileName: "ExportPdf.pdf"
-                    //    avoidLinks: true,
-                    //    paperSize: "A4",
-                    //    margin: { top: "2cm", left: "1cm", right: "1cm", bottom: "1cm" },
-                    //    landscape: true,
-                    //    repeatHeaders: true,
-                    //    template: $("#page-template").html(),
-                    //    scale: 0.8
-                    //},
-                    excel: {
-                        allPages: true,
-                        fileName: "ExportXsl.xlsx"
+                        pages = [];
+                    }
+                }) : new kendo.data.DataSource({
+                    data: args.dataSource,
+                    batch: true,
+                    pageSize: args.pageable === false ? 1000 : db.pageSize,
+                    filter: args.filter,
+                    schema: {
+                        errors: "Errors",
+                        model: {
+                            id: "Id",
+                            fields: args.fields
+                        }
                     },
-                    //pdfExport: function (e) {
-                    //    e.promise.done(function () {
-                    //        $("#" + args.gridName).find(".k-grid-toolbar").css("display", "");
-                    //        $("#" + args.gridName).find(".k-grouping-header").css("display", "");
-                    //    });
-                    //},
-                    detailInit: args.detailInit,
-                    detailExpand: args.detailExpand,
-                    detailCollapse: args.detailCollapse,
-                    columnHide: columnsHide(args.gridName),
-                    columnResize: columnReorder(args.gridName),
-                    columnReorder: columnReorder(args.gridName),
-                    columnShow: columnsHide(args.gridName),
-                    selectable: args.selectable,
-                    dataBound: (args.dataBound ? function (e) { dataBound(args.gridName); args.dataBound(e); } : dataBound(args.gridName)),
-                    saveChanges: args.saveChanges,
-                    save: function (e) {
-                        e.model.Page = e.sender.dataSource.page();
-
-                        var dataChanged = $('#' + args.gridName).attr("dataChanged");
-                        if (dataChanged != "true") changed(args.gridName, "Data", true);
-
-                        if (args.save) args.save(e);
+                    scrollable: {
+                        virtual: true
                     },
-                    columnMenuInit: menuInitB(args.gridName),
-                    editable: (args.editable === true ? true : dataLevel < 2 ? false : true), // (read == 1 || dataLevel < 2 || args.editable === false ? false : true),
-                    change: args.change
-                });
+                    error: errorHandler('#' + args.gridName),
+                    sync: function (e) {
+                        var name = '#' + $(e.currentTarget).closest("[data-role=grid]").attr("id");
 
-                $('#' + args.gridName).attr("objectName", args.objectName);
-                $('#' + args.gridName).attr("tableName", args.tableName || args.objectName);
-                $('#' + args.gridName).attr("recordName", args.recordName);
-                $('#' + args.gridName).attr("deleteUrl", args.destroy);
-                $('#' + args.gridName).attr("hasErrors", "false");
-                $('#' + args.gridName).attr("dataChanged", "false");
-                $('#' + args.gridName).attr("designChanged", "false");
-                $('#' + args.gridName).attr("gridType", args.gridType);
+                        for (var i = 0; i < pages.length; i++) {
+                            $(name + " .k-grid-pager > ul li:eq(" + pages[i].page + ")")
+                                .addClass("relative-pos")
+                                .append("<span class='badge'>" + pages[i].count + "</span>");
+                        }
+                        pages = [];
+                    }
+                })),
+                serverPaging: args.serverPaging || false,
+                serverFiltering: args.serverFiltering || false,
+                serverSorting: args.serverSorting || false,
+                navigatable: (args.navigatable == undefined ? true : args.navigatable),
+                sortable: (args.sortable == undefined ? true : args.sortable),
+                reorderable: (args.reorderable == undefined ? true : args.reorderable),
+                pageable: (args.pageable == undefined ? { refresh: true, pageSizes: true, buttonCount: 3 } : { numeric: args.pageable, previousNext: args.pageable, messages: { display: "{2} " + msg.rows } }),  //for number of elements if not pagable
+                filterable: (args.filterable == undefined ? db.filterable || { mode: "menu,row" } : args.filterable),
+                columnMenu: (args.columnMenu == undefined ? db.columnMenu : args.columnMenu),
+                resizable: true,
+                height: args.height || db.Size,
+                toolbar: args.toolbar === "<div></div>" ? undefined : (args.toolbar || kendo.template($("#template").html())),
+                columns: args.columns,
+                //pdf: {
+                //    allPages: true,
+                //    fileName: "ExportPdf.pdf"
+                //    avoidLinks: true,
+                //    paperSize: "A4",
+                //    margin: { top: "2cm", left: "1cm", right: "1cm", bottom: "1cm" },
+                //    landscape: true,
+                //    repeatHeaders: true,
+                //    template: $("#page-template").html(),
+                //    scale: 0.8
+                //},
+                excel: {
+                    allPages: true,
+                    fileName: "ExportXsl.xlsx"
+                },
+                //pdfExport: function (e) {
+                //    e.promise.done(function () {
+                //        $("#" + args.gridName).find(".k-grid-toolbar").css("display", "");
+                //        $("#" + args.gridName).find(".k-grouping-header").css("display", "");
+                //    });
+                //},
+                detailInit: args.detailInit,
+                detailExpand: args.detailExpand,
+                detailCollapse: args.detailCollapse,
+                columnHide: columnsHide(args.gridName),
+                columnResize: columnReorder(args.gridName),
+                columnReorder: columnReorder(args.gridName),
+                columnShow: columnsHide(args.gridName),
+                selectable: args.selectable,
+                dataBound: (args.dataBound ? function (e) { dataBound(args.gridName); args.dataBound(e); } : dataBound(args.gridName)),
+                saveChanges: args.saveChanges,
+                save: function (e) {
+                    e.model.Page = e.sender.dataSource.page();
 
+                    var dataChanged = $('#' + args.gridName).attr("dataChanged");
+                    if (dataChanged != "true") changed(args.gridName, "Data", true);
 
-                redrawGrid(0, args.gridName, 'batch');
-
-                $(".glyphicon-plus").hover(function (e) {
-                    $(this).toggleClass("btn-default").toggleClass("btn-success");
-                });
-
-                $(".glyphicon-ok").hover(function (e) {
-                    $(this).toggleClass("btn-default").toggleClass("btn-primary");
-                });
-
-                $(".glyphicon-ban-circle").hover(function (e) {
-                    $(this).toggleClass("btn-default").toggleClass("btn-warning");
-                });
-
-                $(".glyphicon-cog").hover(function (e) {
-                    $(this).toggleClass("btn-default").toggleClass("btn-primary");
-                });
-                $('#' + args.gridName).on('hover', ".errorCell", function (e) {
-                    if(e.type != "mouseenter")
-                        $(this).find("div.k-invalid-msg").addClass('hidden');
-                    else
-                        $(this).find("div.k-invalid-msg").removeClass('hidden');
-                });
-                
-                $('#' + args.gridName).ready(function () {
-                    gridReady(db, args.gridName);
-                });
-
-                IntialNotifyWind(args.gridName);
+                    if (args.save) args.save(e);
+                },
+                columnMenuInit: (args.objectName ? menuInitB(args.gridName) : undefined),
+                editable: (args.editable === true ? true : dataLevel < 2 ? false : true), // (read == 1 || dataLevel < 2 || args.editable === false ? false : true),
+                change: args.change
             });
+
+            $('#' + args.gridName).attr("objectName", args.objectName);
+            $('#' + args.gridName).attr("tableName", args.tableName || args.objectName);
+            $('#' + args.gridName).attr("recordName", args.recordName);
+            $('#' + args.gridName).attr("deleteUrl", args.destroy);
+            $('#' + args.gridName).attr("hasErrors", "false");
+            $('#' + args.gridName).attr("dataChanged", "false");
+            $('#' + args.gridName).attr("designChanged", "false");
+            $('#' + args.gridName).attr("gridType", args.gridType);
+
+
+            redrawGrid(0, args.gridName, 'batch');
+
+            $(".glyphicon-plus").hover(function (e) {
+                $(this).toggleClass("btn-default").toggleClass("btn-success");
+            });
+
+            $(".glyphicon-ok").hover(function (e) {
+                $(this).toggleClass("btn-default").toggleClass("btn-primary");
+            });
+
+            $(".glyphicon-ban-circle").hover(function (e) {
+                $(this).toggleClass("btn-default").toggleClass("btn-warning");
+            });
+
+            $(".glyphicon-cog").hover(function (e) {
+                $(this).toggleClass("btn-default").toggleClass("btn-primary");
+            });
+            $('#' + args.gridName).on('hover', ".errorCell", function (e) {
+                if (e.type != "mouseenter")
+                    $(this).find("div.k-invalid-msg").addClass('hidden');
+                else
+                    $(this).find("div.k-invalid-msg").removeClass('hidden');
+            });
+
+            $('#' + args.gridName).ready(function () {
+                gridReady(db, args.gridName);
+            });
+
+            IntialNotifyWind(args.gridName);
+        }
 
 
         $("#" + args.gridName).on("change", "input[type='checkbox']", null, function () {
@@ -956,10 +959,10 @@ var Grids = function () {
         }
         else {
             if (otherFlag == "false") {
-                onbeforeunload = function (event) {
-                    event.returnValue = msg;
-                    return msg;
-                };
+                //onbeforeunload = function (event) {
+                //    event.returnValue = msg;
+                //    return msg;
+                //};
                 if (orgClickHandler == null) {
                     orgClickHandler = [];
 
@@ -1107,6 +1110,7 @@ var Grids = function () {
     //}
 
     function CheckBoxChanged(el, columnName, gridName) {
+      
         var dataItem = $("#" + gridName).data("kendoGrid").dataItem($(el).closest("tr"));
         dataItem[columnName] = $(el).is(':checked');
         dataItem.dirty = true;
@@ -1488,7 +1492,7 @@ var Grids = function () {
             }
         }
     }
-    
+  
     var deleteRecord = function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -1544,17 +1548,13 @@ var Grids = function () {
     var editRecord = function (e) {
         e.preventDefault();
         var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
-        ulr = $(e.currentTarget).closest("[data-role=grid]").attr("editUrl") + '/' + dataItem.Id + '?Read=0&Version=' + $.urlParam('Version') + '&DataLevel=' + $.urlParam('DataLevel') + '&RoleId=' + $.urlParam('RoleId') + '&MenuId=' + $.urlParam('MenuId');
-       // $("#renderbody").load(ulr);
-        updateHistory(ulr);
+        updateHistory($(e.currentTarget).closest("[data-role=grid]").attr("editUrl") + '/' + dataItem.Id + '?Read=0&Version=' + $.urlParam('Version') + '&DataLevel=' + $.urlParam('DataLevel') + '&RoleId=' + $.urlParam('RoleId') + '&MenuId=' + $.urlParam('MenuId')+'&SSMenu='+$.urlParam('SSMenu'));
     }
 
     var showRecord = function (e) {
         e.preventDefault();
         var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
-        ulr = $(e.currentTarget).closest("[data-role=grid]").attr("editUrl") + '/' + dataItem.Id + '?Read=1&Version=' + $.urlParam('Version') + '&DataLevel=' + $.urlParam('DataLevel') + '&RoleId=' + $.urlParam('RoleId') + '&MenuId=' + $.urlParam('MenuId');
-       // $("#renderbody").load(ulr);
-        updateHistory(ulr);
+        updateHistory($(e.currentTarget).closest("[data-role=grid]").attr("editUrl") + '/' + dataItem.Id + '?Read=1&Version=' + $.urlParam('Version') + '&DataLevel=' + $.urlParam('DataLevel') + '&RoleId=' + $.urlParam('RoleId') + '&MenuId=' + $.urlParam('MenuId') + '&SSMenu=' + $.urlParam('SSMenu'));
     }
 
     function columnsHide(name) {
@@ -1724,20 +1724,21 @@ var Grids = function () {
     }
 
     function saveAsPdf(name) {
-        //var grid = $('#' + name).data("kendoGrid");
+        var grid = $('#' + name).data("kendoGrid");
+        grid.saveAsPdf();
 
-        $("#" + name).find(".k-grid-toolbar").css("display", "none");
-        $("#" + name).find(".k-grouping-header").css("display", "none");
-        kendo.drawing.drawDOM("#" + name, {
-            avoidLinks:true,
-            pageSize: "A4"
-        }).done(function (group) {
-            kendo.drawing.pdf.saveAs(group, "ExportPdf.pdf");
-            $("#" +name).find(".k-grid-toolbar").css("display", "");
-            $("#" + name).find(".k-grouping-header").css("display", "");
-        });
-
-        //grid.saveAsPdf();
+        //$("#" + name).find(".k-grid-toolbar").css("display", "none");
+        //$("#" + name).find(".k-grouping-header").css("display", "none");
+        //kendo.drawing.drawDOM("#" + name, {
+        //    avoidLinks: true,
+        //    multiPage: true,
+        //    margin: "2cm",
+        //    pageSize: "A4"
+        //}).then(function (group) {
+        //    kendo.drawing.pdf.saveAs(group, "ExportPdf.pdf");
+        //    $("#" +name).find(".k-grid-toolbar").css("display", "");
+        //    $("#" + name).find(".k-grouping-header").css("display", "");
+        //});
     }
     function ExportChart(name) {
         var chart = $("#" + name).data("kendoChart");

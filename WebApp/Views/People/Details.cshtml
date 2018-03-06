@@ -1,53 +1,228 @@
-﻿
-@using System.Web.Script.Serialization
+﻿@using System.Web.Script.Serialization
+@using Model.Domain
 @using WebApp.Extensions
 @using Model.ViewModel.Personnel
 @model PeoplesViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
     var version = Request.QueryString["Version"];
+    string basicdata = "disabled", contract = "disabled", papers = "disabled", assignmet = "disabled", userprofile = "disabled";
+    switch (Model.Status)
+    {
+        case PersonStatus.New:
+        case PersonStatus.BasicData:
+            basicdata = "active current";
+            break;
+        case PersonStatus.Contract:
+            basicdata = "active done";
+            contract = "active current";
+            break;
+        case PersonStatus.Papers:
+            basicdata = "active done";
+            contract = "active done";
+            papers = "active current";
+            break;
+        case PersonStatus.Assignment:
+            basicdata = "active done";
+            contract = "active done";
+            papers = "active done";
+            assignmet = "active current";
+            break;
+        case PersonStatus.UserProfile:
+            basicdata = "active done";
+            contract = "active done";
+            papers = "active done";
+            assignmet = "active done";
+            userprofile = "active current";
+            break;
+        default:
+            basicdata = "active done";
+            contract = "active done";
+            papers = "active done";
+            assignmet = "active done";
+            userprofile = "active done";
+            break;
+    }
 }
+@Html.Partial("_FormButtons")
+<script>
+        LoadGoogleMapsScripts();
+</script>
+<div id="pageTabs" class="col-lg-10 col-sm-12 col-md-9">
+    <div class="tab-group">
+        <div class="steps-label">
+            <ul>
+                <li data-width="step-1" class="@basicdata">
+                    <span class="progress-link"><span class="fill"></span></span>
+                    <span class="icon"></span>
+                    <ul class="nav nav-tabs step-1 active">
+                        <li class="active">
+                            <a id="t_GeneralInformation" href="#tab_GeneralInformation" data-menuid="60" data-toggle="tab">
 
+                                <span>@MsgUtils.Instance.Trls("GeneralInformation")</span>
+                            </a>
+                        </li>
+                    </ul><!-- /.step-1 -->
+                </li>
+                <li data-width="step-2" class="@contract">
+                    <span class="progress-link"><span class="fill"></span></span>
+                    <span class="icon"></span>
+                    <ul class="nav nav-tabs step-2">
+                        <li>
+                            <a id="t_Qualifications" href="#tab_Qualifications" data-menuid="62" data-toggle="tab">
 
-<div id="pageTabs"></div>
+                                <span>@MsgUtils.Instance.Trls("Qualifications")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_EmployeeTraining" href="#tab_EmployeeTraining" data-menuid="66" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("EmployeeTraining")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_Employement" href="#tab_Employement" data-menuid="59" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("Employement")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_EmployeeHistory" href="#tab_EmployeeHistory" data-menuid="69" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("EmployeeHistory")</span>
+                            </a>
+                        </li>
+                    </ul><!-- /.step-1 -->
+                </li>
+                <li data-width="step-3" class="@papers">
+                    <span class="progress-link"><span class="fill"></span></span>
+                    <span class="icon"></span>
+                    <ul class="nav nav-tabs step-3">
+                        <li>
+                            <a id="t_EmpAttachment" href="#tab_EmpAttachment" data-menuid="6701" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("EmpAttachment")</span>
+                            </a>
+                        </li>
+                    </ul><!-- /.step-1 -->
+                </li>
+                <li data-width="step-4" class="@assignmet">
+                    <span class="progress-link"><span class="fill"></span></span>
+                    <span class="icon"></span>
+                    <ul class="nav nav-tabs step-4">
+                        <li>
+                            <a id="t_Assignments" href="#tab_Assignments" data-menuid="63" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("Assignments")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_AssignmentsHistory" href="#tab_AssignmentsHistory" data-menuid="64" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("AssignmentsHistory")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_EmployeeRelative" href="#tab_EmployeeRelative" data-menuid="68" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("EmployeeRelative")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_EmployeeBenefits" href="#tab_EmployeeBenefits" data-menuid="67" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("EmployeeBenefits")</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a id="t_MedicalServices" href="#tab_MedicalServices" data-menuid="70" data-toggle="tab">
+
+                                <span>@MsgUtils.Instance.Trls("MedicalServices")</span>
+                            </a>
+                        </li>
+                    </ul><!-- /.step-1 -->
+                </li>
+                <li data-width="step-5" class="@userprofile">
+                    <span class="progress-link"><span class="fill"></span></span>
+                    <span class="icon"></span>
+                    <ul class="nav nav-tabs step-5">
+                        <li>
+                            <a id="t_EmpUserProfile" href="#tab_EmpUserProfile" data-menuid="6690" data-toggle="tab">
+                                <span>@MsgUtils.Instance.Trls("EmpUserProfile")</span>
+                            </a>
+                        </li>
+                    </ul><!-- /.step-1 -->
+                </li>
+            </ul>
+        </div>
+    </div><!-- /.tab-group -->
+</div>
+<!--     <ul class="nav nav-tabs" id="menu_tabs"">
+            <li>
+                <a id="t_AudiLog" href="#tab_AudiLog" data-menuid="61" data-toggle="tab">سجل التدقيق</a>
+            </li>
+    </ul>
+ -->
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="tab_GeneralInformation"></div>
+    <div class="tab-pane fade" id="tab_Qualifications"></div>
+    <div class="tab-pane fade" id="tab_EmployeeTraining"></div>
+
+    <div class="tab-pane fade" id="tab_Employement"></div>
+    <div class="tab-pane fade" id="tab_EmployeeHistory"></div>
+
+    <div class="tab-pane fade" id="tab_Assignments"></div>
+    <div class="tab-pane fade" id="tab_AssignmentsHistory"></div>
+
+    <div class="tab-pane fade" id="tab_EmpUserProfile"></div>
+    
+    <div class="tab-pane fade" id="tab_EmpAttachment"></div>
+    
+    <div class="tab-pane fade" id="tab_EmployeeRelative"></div>
+    <div class="tab-pane fade" id="tab_EmployeeBenefits"></div>
+    <div class="tab-pane fade" id="tab_MedicalServices"></div>
+    <div class="tab-pane fade" id="tab_AudiLog"></div>
+</div>
+
 <div id="People"></div>
 <div id="docWindow"></div>
 <div id="ProfPic"></div>
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
 
 <script>
     var model;
     var flag;
-    var OrgHandler=[];
-    function drawaddress(id){
+    //var OrgHandler=[];
+
+     @*function drawaddress(id){
         var url = $('#AddressPopup').data('url');
         $.get(url+"?Version=@Request.QueryString["Version"]", {addressId: id}, function(data) {
             $('#bodyContainer').html(data);
             $('#AddressPopup').modal('show');
         });
     }
-    //function ChangeVarSubAmt(formId,elem){
-    //    //if(elem!=""){
-    //    //    $('#VarSubAmt11').text(parseFloat(elem*0.11).toFixed(2));
-    //    //    $('#VarSubAmt24').text(parseFloat(elem*0.24).toFixed(2));
-    //    //}else{
-    //    //    $('#VarSubAmt11').text("");
-    //    //    $('#VarSubAmt24').text("");
-    //    //}
-    //}
-    //function ChangeBasicSubAmt(formId,elem){
-    //    //if(elem!=""){
-    //    //    $('#BasicSubAmt14').text(parseFloat(elem*0.14).toFixed(2));
-    //    //    $('#BasicSubAmt26').text(parseFloat(elem*0.26).toFixed(2));
-    //    //}else{
-    //    //    $('#BasicSubAmt14').text("");
-    //    //    $('#BasicSubAmt26').text("");
-    //    //}
-    //}
+   function ChangeVarSubAmt(formId,elem){
+        //if(elem!=""){
+        //    $('#VarSubAmt11').text(parseFloat(elem*0.11).toFixed(2));
+        //    $('#VarSubAmt24').text(parseFloat(elem*0.24).toFixed(2));
+        //}else{
+        //    $('#VarSubAmt11').text("");
+        //    $('#VarSubAmt24').text("");
+        //}
+    }
+    function ChangeBasicSubAmt(formId,elem){
+        //if(elem!=""){
+        //    $('#BasicSubAmt14').text(parseFloat(elem*0.14).toFixed(2));
+        //    $('#BasicSubAmt26').text(parseFloat(elem*0.26).toFixed(2));
+        //}else{
+        //    $('#BasicSubAmt14').text("");
+        //    $('#BasicSubAmt26').text("");
+        //}
+    }*@
+
     function drawPic(elem,e){
         var myelem = elem;
         $("#ProfPic").kendoWindow({
@@ -64,536 +239,262 @@
 
         });
 
-        if($(elem).attr("id")!="browse")
-            $("#ProfPic").data("kendoWindow").refresh("/People/Pic?EmpId="+model.Id).center().open();
-        else
-            $("#ProfPic").data("kendoWindow").refresh("/People/CropPic?Source=EmployeePic&SourceId="+model.Id).center().open();
-
-        $(myelem).addClass("hidden");
-
+        if($(elem).attr("id")!="browse"){
+            $("#ProfPic").data("kendoWindow").refresh("/People/Pic?EmpId=@Model.Id").center().open();
+        }
     }
 
     $(function () {
-
-        FormJs.DrawTabs("pageTabs"); // "People"
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
-        var other =$("#menu_tabs > li > a:not('#t_GeneralInformation')");
-        //Assignment Functions
-        function disableAnchor(){
-            for (var i = 0; i < other.length; i++) {
-                if ($(other[i]).data("events") !== undefined) {
-                    var clicks = $(other[i]).data("events").click;
-                    if (clicks) {
-                        for (var j = 0; j < clicks.length; j++) {
-                            var obj = {selector:$(other[i]).attr("id"),click:clicks[j].handler};
-                            OrgHandler.push(obj);
-                            $(other[i]).parent("li").addClass("disabled");
-                        }
-                    }
-                }
-            }
-        }
-
-        function ExceptSelector(assign){
-            for (var i = 0; i < OrgHandler.length; i++) {
-                if(OrgHandler[i].selector =="t_Assignments" || OrgHandler[i].selector == "t_AssignmentsHistory"){
-                    if(!assign){
-                        $(other[i]).click(OrgHandler[i].click);
-                        $(other[i]).parent("li").removeClass("disabled");
-                    }
-                }else{
-                    $(other[i]).click(OrgHandler[i].click);
-                    $(other[i]).parent("li").removeClass("disabled");
-
-                }
-            }
-        }
-
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
-
-        var ObjectName='People';
+        var ObjectName='PeopleForm';
         var QualificationId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.QualificationId));
-        var KafeelId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.KafeelId));
         var ProviderId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ProviderId));
-        var LocationId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LocationId));
-        var LocationList = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LocationList));
-        var BirthLocation = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.birthLocation));
         var Nationality = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Nationality));
-        var Age = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Age));
-        var ExpYear = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ExpYear));
-        var EmpCode = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GenEmpCode));
-        var sequence= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.sequence));
-        var nationalId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.nationalId));
-        var Employee=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Emp));
-        var PersnType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
-        @*var MilitaryStat = [{id:1,name:"@MsgUtils.Instance.Trls("Performed")"},{id:2,name:"@MsgUtils.Instance.Trls("Exempt")"},{id:3,name:"@MsgUtils.Instance.Trls("Deferred")"},{id:4,name:"@MsgUtils.Instance.Trls("Underage")"}];*@
-        $("#t_Employement").click(function (){
-            $("[id^='tab_']").empty();
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').load("@Url.Action("EmpDetails", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
 
-        $("#t_EmployeeBenefits").click(function (){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_EmployeeBenefits').load("@Url.Action("EmpBenefitIndex","Assignment")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignmentsForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_EmployeeRelative").click(function (){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_EmployeeRelative').load("@Url.Action("EmpRelativeIndex", "Assignment")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignmentsForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_AssignmentsHistory").click(function (){
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_AssignmentsHistory').load("@Url.Action("AssignmentHistory", "Assignment")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
+    // 1-Save  2-Save&New 3-Save&Close 4-Correct  5-Update
+    // 6-Download  7-upload  8-Send
+        // 9-Activate 10-Attachment 11-Exit
+    $("#t_Employement").click(function (){
+        //$("[id^='tab_']").empty();
+        $("#tab_Assignments,#tab_EmpUserProfile,#tab_GeneralInformation").empty();
+        showToolbar([4,5,11], '#EmpForm');
+        //if ($('#tab_Employement').html().length == 0)
+        $('#tab_Employement').load("@Url.Action("EmpDetails", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
 
-        $("#t_AudiLog").click(function (){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_AudiLog').load("@Url.Action("Log", "Log")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
+    $("#t_EmployeeBenefits").click(function (){
+        showToolbar([]);
+        if ($('#tab_EmployeeBenefits').html().length == 0)
+            $('#tab_EmployeeBenefits').load("@Url.Action("EmpBenefitIndex","Assignment")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignmentsForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
 
-        $("#t_Qualifications").click(function (){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_Qualifications').load("@Url.Action("Qualifications", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_FlexData").click(function(){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_Employement').empty();
-            $('#tab_FlexData').load("@Url.Action("FlexData", "Flex")?id="+model.Id+"&objectName="+ObjectName+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_EmployeeTraining").click(function(){
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_EmployeeTraining').load("@Url.Action("EmployeeTraining", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_EmployeeHistory").click(function(){
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $("#tab_GeneralInformation").empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $('#tab_EmployeeHistory').load("@Url.Action("EmployementHistory", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_Assignments").click(function () {
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $("#tab_GeneralInformation").empty();
-            $("#tab_Assignments").load("@Url.Action("Details", "Assignment")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_MedicalServices").click(function () {
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $("#tab_EmployeeCustody").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_GeneralInformation").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $("#tab_MedicalServices").load("@Url.Action("MedicalService", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
-        $("#t_EmployeeCustody").click(function () {
-            $("#tab_GeneralInformation").empty();
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
-            $("#tab_EmployeeCustody").load("@Url.Action("EmployeeCustody", "People")?id="+model.Id+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-        });
+    $("#t_EmployeeRelative").click(function (){
+        showToolbar([]);
+        if ($('#tab_EmployeeRelative').html().length == 0)
+            $('#tab_EmployeeRelative').load("@Url.Action("EmpRelativeIndex", "Assignment")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=AssignmentsForm&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
 
-        var formId = "PeopleForms";
+    $("#t_AssignmentsHistory").click(function (){
+        showToolbar([]);
+        if ($('#tab_AssignmentsHistory').html().length == 0)
+            $('#tab_AssignmentsHistory').load("@Url.Action("AssignmentHistory", "Assignment")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
 
-        $("#t_GeneralInformation").click(function () {
-            $("#tab_AssignmentsHistory").empty();
-            $("#tab_Assignments").empty();
-            $('#tab_EmployeeTraining').empty();
-            $('#tab_EmployeeBenefits').empty();
-            $("#tab_MedicalServices").empty();
-            $('#tab_EmployeeRelative').empty();
-            $('#tab_AudiLog').empty();
-            $('#tab_Qualifications').empty();
-            $('#tab_FlexData').empty();
-            $('#tab_Employement').empty();
+    $("#t_EmpUserProfile").click(function (){
+        $("#tab_Assignments,#tab_Employement,#tab_GeneralInformation").empty();
+        showToolbar([1,3,11], '#UserProfile');
+        //if ($('#tab_EmpUserProfile').html().length == 0)
+        $('#tab_EmpUserProfile').load("@Url.Action("EmpUserProfile", "UserProfile")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
 
-            disableAnchor();
-            $(other).off('click');
-            $(other).parent("li").addClass("disabled");
-            if(model.Id != 0){
-                if(Employee == null )
-                    ExceptSelector(1);
-                else if(Employee.SysCodeId == 1 || Employee.SysCodeId == 2 || Employee.SysCodeId == 4)
-                    ExceptSelector(0);
+    $("#t_AudiLog").click(function (){
+        showToolbar([]);
+        if ($('#tab_AudiLog').html().length == 0)
+            $('#tab_AudiLog').load("@Url.Action("Log", "Log")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&ObjectName=&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_Qualifications").click(function (){
+        showToolbar([]);
+        if ($('#tab_Qualifications').html().length == 0)
+            $('#tab_Qualifications').load("@Url.Action("Qualifications", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_FlexData").click(function(){
+        showToolbar([]);
+        if ($('#tab_FlexData').html().length == 0)
+            $('#tab_FlexData').load("@Url.Action("FlexData", "Flex")?id=@Model.Id&objectName="+ObjectName+"&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_EmployeeTraining").click(function(){
+        showToolbar([]);
+        if ($('#tab_EmployeeTraining').html().length == 0)
+            $('#tab_EmployeeTraining').load("@Url.Action("EmployeeTraining", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_EmployeeHistory").click(function(){
+        showToolbar([]);
+        if ($('#tab_EmployeeHistory').html().length == 0)
+            $('#tab_EmployeeHistory').load("@Url.Action("EmployementHistory", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_Assignments").click(function () {
+        $("#tab_EmpUserProfile,#tab_Employement,#tab_GeneralInformation").empty();
+        showToolbar([4,5,11], '#AssignmentForm');
+        //if ($('#tab_Assignments').html().length == 0)
+        $("#tab_Assignments").load("@Url.Action("Details", "Assignment")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+    $("#t_MedicalServices").click(function () {
+        showToolbar([]);
+        if ($('#tab_MedicalServices').html().length == 0)
+            $("#tab_MedicalServices").load("@Url.Action("MedicalService", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+    $("#t_EmployeeCustody").click(function () {
+        showToolbar([]);
+        if ($('#tab_EmployeeCustody').html().length == 0)
+            $("#tab_EmployeeCustody").load("@Url.Action("EmployeeCustody", "People")?id=@Model.Id&MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+    });
+
+    $("#t_EmpAttachment").click(function () {
+        showToolbar([]);
+        //$("#tab_GeneralInformation,#tab_Assignments,#tab_EmpUserProfile,#tab_Employement").empty();
+
+        //if ($('#tab_EmpAttachment').html().length == 0)
+        $("#tab_EmpAttachment").load("@Url.Action("Index", "EmploymentPapers")?EmpID=@Model.Id");
+
+        @*$("#tab_EmpAttachment").load("@Url.Action("Edit", "FileUpload")?Source=People&SourceId="+model.Id+"");*@
+    });
+
+    var formId = "PeopleForms";
+
+    $("#t_GeneralInformation").click(function () {
+        showToolbar([1,2,3,11], '#PeopleForms');
+        $("#tab_Assignments,#tab_EmpUserProfile,#tab_Employement").empty();
+        $("#tab_GeneralInformation").html("<div id='People'></div>")
+        var read = "@Request.QueryString["Read"]";
+
+        $.ajax({
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "PeopleForm", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormAction = "@Url.Action("SavePeople", "People")";
+                data.FormId = formId;
+                data.Culture = '@culture';
+                data.TableName = "People";
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = '@admin';
+                if(read == 1) data.mode = 'show';
+                data.rtl = '@rtl.ToString().ToLower()';
+
+
+                //Append the form to the div
+                var me = $("#People").Forms(data, model);
+                var url = '@Url.Action("FillDropdownlists", "People")?id=@Model.Id&BirthCountry=@Model.BirthCountry&CountryId=@Model.CountryId&BirthCity=@Model.BirthCity&BirthDstrct=@Model.BirthDstrct&CityId=@Model.CityId&DistrictId=@Model.DistrictId';
+                do_AjaxCall_WithMethod(url,'','GET',function(data){
+                    FormJs.fillOptionsDynamic($("#" + formId), "QualificationId", data.QualificationId, model, { objectName: "Qualifications" });
+                    FormJs.fillOptionsDynamic($("#" + formId), "ProviderId", data.ProviderId, model, { objectName: "Providers" });
+                    FormJs.fillOptionsDynamic($("#" + formId), "Nationality", data.Nationality, model,{objectName:"Countries"});
+
+                    $("#" + formId).find("#BirthLocation").typeahead('val', data.BirthLocation);
+                    $("#" + formId).find("#Location").typeahead('val', data.Location);
+                    model.Location = data.Location;
+                    model.BirthLocation = data.BirthLocation;
+                });
+
+                FormJs.fillOptionsDynamic($("#" + formId), "BirthLocation", null, model, {remoteTableName : 'World'});
+                FormJs.fillOptionsDynamic($("#"+ formId), "Location", null, model, {remoteTableName : 'World'});
+                $("#" + formId).append("<input type='hidden' name='HasImage' id='HasImage' value='" + (model.HasImage)+"'>");
+                $("#" + formId).find('[name="TaxFamlyCntSec"]').css("display","none");
+
+                if(model.SubscripDate==null)
+                    $("div[name^='BasicSubAmt']").css("display","none");
                 else
-                    ExceptSelector(1);
-            }
-            $("#tab_GeneralInformation").html("<div id='People'></div>");
-            var url = "@Url.Action("ReadFormInfo", "Pages")";
-            //If you press on Button Show it will be read only
-            var read = "@Request.QueryString["Read"]";
-            //Send the serialized model and props to form.js
-            $.ajax({
-                url: "@Url.Action("ReadFormInfo","Pages")",
-                type: "GET",
-                dataType: "json",
-                contentType: 'application/json',
-                data: { objectname: "People", version:"@version", roleId: "@Request.QueryString["RoleId"]"},
-                success: function (data) {
-                    data.FormAction = "@Url.Action("SavePeople", "People")";
-                    data.FormId = formId;
-                    data.Culture = '@culture';
-                    data.TableName = "People";
-                    data.companyId = "@User.Identity.GetDefaultCompany()";
-                    data.admin = '@admin';
-                    if(read == 1)
-                        data.mode = 'show';
-                    data.rtl = @rtl.ToString().ToLower();
-                    //data.btns = ["back", "doc"];
-                    model.Age = Age;
-                    model.ExpYear = ExpYear;
-                    //Append the form to the div
-                    $("#People").Forms(data, model);
-                    //Make Hiddenfield for Address
-                    var hiddenFields = "<input type='hidden' name='AddressId' id='myAddress' value='" + (model.AddressId != null ? model.AddressId : "") + "'>";
-                    hiddenFields+=  "<input type='hidden' name='HasImage' id='HasImage' value='" + (model.HasImage)+"'>";
-                    hiddenFields+=  "<input type='hidden' name='HoAddressId' id='HoAddressId' value='" + (model.HoAddressId != null ? model.HoAddressId : "") + "'>";
-                    $("#" + formId).append(hiddenFields);
+                    $("div[name^='BasicSubAmt']").css("display","");
 
-                    //Fill The autocomplete for TimeZone with Id and value
-                    FormJs.fillOptionsDynamic($("#" + formId), "QualificationId", QualificationId, model, { objectName: "Qualifications" });
-                    FormJs.fillOptionsDynamic($("#" + formId), "KafeelId", KafeelId, model, { objectName: "Kafeel" });
-                    FormJs.fillOptionsDynamic($("#" + formId), "ProviderId", ProviderId, model, { objectName: "Providers" });
-                    FormJs.fillOptionsDynamic($("#" + formId), "LocationId", LocationId, model, { objectName: "FormLocation" });
-                    FormJs.fillOptionsDynamic($("#" + formId), "BirthLocation", LocationList, model, {remoteTableName : 'World'});
-                    FormJs.fillOptionsDynamic($("#" + formId), "Nationality", Nationality, model,{objectName:"Countries"});
-                    //FormJs.fillOptionsDynamic($("#" + formId), "MilitaryStat", MilitaryStat, model);
-                    $("#" + formId).find("#BirthLocation").typeahead('val', BirthLocation); //To bind bith location
-                    var hiddenFields = "<input type='hidden' name='sequence' id='sequence' value='"+sequence+"'/>"
-                    $("#" + formId).append(hiddenFields);
-                    $("#" + formId).find('[name="TaxFamlyCntSec"]').css("display","none");
-                    
-                    if(model.SubscripDate==null)
-                        $("div[name^='BasicSubAmt']").css("display","none");
-                    else
-                        $("div[name^='BasicSubAmt']").css("display","");
+                //$('#' + formId + ' [name="MobileSec"] input').css('width', '100%');
 
-                    $('#' + formId + ' [name="MobileSec"] input').css('width', '100%');
-
-                    if(model.Id == 0)
-                    {
-                        if(EmpCode ==1)
-                        {
-                            $("#" + formId).find("#Code").prop('disabled','true');
-                            $("#" + formId).find("#Code").val(sequence);
-                        }
-                        else if(EmpCode ==3)
-                        {
-                            $("#" + formId).find("#Code").prop('disabled','true');
-                            if(nationalId != null)
-                                $("#" + formId).find("#Code").val(nationalId);
-                        }
-                    }
-                    else
-                    {
-                        if(EmpCode ==1)
-                        {
-                            $("#" + formId).find("#Code").prop('disabled','true');
-                            if(Employee !=null)
-                                $("#" + formId).find("#Code").val(Employee.Code);
-                            else
-                                $("#" + formId).find("#Code").val(sequence);
-                        }else if(EmpCode ==3)
-                        {
-                            if(Employee !=null)
-                            {
-                                $("#" + formId).find("#Code").prop('disabled','true');
-                                $("#" + formId).find("#Code").val(Employee.Code);
-                            }
-                            else if(nationalId != null)
-                                $("#" + formId).find("#Code").val(nationalId);                          
-                            else
-                                $("#" + formId).find("#Code").val();
-                        }else if(EmpCode == 2)
-                        {
-                            if(Employee !=null)
-                                $("#" + formId).find("#Code").val(Employee.Code);
-                            else
-                                $("#" + formId).find("#Code").val(sequence);
-
-                        }
-                    }
-
-                    if(Employee !=null )
-                    {
-
-                        if(read!=1)
-                            $("#"+ formId ).find("#StartDate").data("kendoDatePicker").readonly();
-                        var dropDownList;
-                        if(read!=1)
-                        {
-
-                            $("#" + formId).find("#StartDate").data("kendoDatePicker").value(Employee.StartDate)
-                            $("#" + formId).find('#PersonType').getKendoDropDownList().value(Employee.PersonType);
-                            dropDownList= $("#" + formId).find("#PersonType").data("kendoDropDownList");
-                            dropDownList.enable(false);
-
-                        }else{
-
-                            $("#" + formId).find("#StartDate").text(kendo.toString(new Date(parseInt(Employee.StartDate.substr(6))).toLocaleDateString("@User.Identity.GetCulture()") ,"yyyy-MM-dd"));
-                            if(PersnType) { //solve bug in show
-                                var type = $.grep(PersnType,function(el){if(Employee.PersonType==el.value) return el;});
-                                $("#" + formId).find('#PersonType').text(type[0].text);
-                            }
-
-                        }
-                    }
-
-                    if(model.Id ==0)
-                    {
-                        var dropDownList=  $("#" + formId).find("#PersonType").data("kendoDropDownList");
-                        dropDownList.enable(false);
-                        $("#"+ formId ).find("#StartDate").data("kendoDatePicker").readonly();
-                        $("#" + formId).find("#Code").attr("disabled", true);
-                        $("#" + formId).find("#BirthDate").data("kendoDatePicker").value('');
-                        $("#" + formId).find("#StartDate").data("kendoDatePicker").value('');
-
-                    }
-                    if(model.HasCV == false)
-                    {
-                        $("#UpdtCVDate").parent().parent().css("display","none");
-                        $('label[for="UpdtCVDate"]').css("display","none");
-                        $("#HasCV").parent().parent().addClass("col-lg-offset-2 col-lg-1");
-                    }
-
-                    $("#People").on("change","#HasCV",null,function(e){
-                        if($(this).prop("checked")==true)
-                        {
-                            $('label[for="UpdtCVDate"]').css("display","");
-                            $("#UpdtCVDate").parent().parent().css("display","");
-                            $("#HasCV").parent().parent().removeClass("col-lg-offset-2 col-md-offset-2 col-sm-offset-2 col-lg-1 col-md-1 col-sm-1");
-                        }
-                        else
-                        {
-                            $('label[for="UpdtCVDate"]').css("display","none");
-                            $("#UpdtCVDate").parent().parent().css("display","none");
-                            $("#HasCV").parent().parent().addClass("col-lg-offset-2 col-md-offset-2 col-sm-offset-2 col-lg-1 col-md-1 col-sm-1");
-                        }
+                $("#" + formId + " #Location").on("typeahead:select",
+                   function (e, location) {
+                       $("#" + formId +' #CountryId').val(location.country);
+                       $("#" + formId +' #CityId').val(location.city);
+                       $("#" + formId +' #DistrictId').val(location.dist);
+                   });
+                $("#" + formId + " #BirthLocation").on("typeahead:select",
+                    function (e, location) {
+                        $("#" + formId +' #BirthCountry').val(location.country);
+                        $("#" + formId +' #BirthCity').val(location.city);
+                        $("#" + formId +' #BirthDstrct').val(location.dist);
+                        $("#" + formId +' #Nationality').getKendoDropDownList().value(location.country);
                     });
-                    $("#People").on("change","#MaritalStat",null,function(e)
+
+                if(model.Id ==0)
+                {
+                    $("#" + formId).find("#BirthDate").data("kendoDatePicker").value('');
+                    $("#" + formId).find("#JoinDate").data("kendoDatePicker").value('');
+                }
+                if(read ==1)
+                {
+
+                    $("#ShowMap").hide();
+                    LoadMap(model.Longitude,model.Latitude);
+                }
+
+                if(model.Id > 0)
+                {
+                    if($('#Longitude').val() != "" && $('#Latitude').val() != "")
                     {
-                        var id = $(this).val();
+                        LoadMap();
+
+                    }
+                }
+
+                function maritalStat()
+                {
+                    var id = $('#MaritalStat').val();
+                    if (id.length > 0){
                         var datasource = $("#MaritalStat").data("kendoDropDownList").dataSource.data();
                         var val = datasource.find(c => c.id == id);
                         if(val.SysCode == 1)
                             $("#" + formId).find('[name="TaxFamlyCntSec"]').css("display","none");
                         else
                             $("#" + formId).find('[name="TaxFamlyCntSec"]').css("display","");
+                    }
+                }
 
-                    });
+                $("#MaritalStat").on("change", function(e){maritalStat()});
+                maritalStat();
 
-                    if(model.MilitaryStat == 1)
-                    {
-                        $("#" + formId).find('[name="MilResDateSec"]').css("display","");
+                function militaryStat()
+                {
+                    var id = $('#MilitaryStat').val();
+                    if (id.length == 0 || id != 1) {
+                        $("#" + formId).find('[name="MilitaryDateSec"]').css("display","none");
+                        $("#" + formId).find('[name="MilCertGradeSec"]').css("display","none");
+                        $('#MilitaryNo').parent().parent().css("display","none");
+                    } else {
+                        $("#" + formId).find('[name="MilitaryDateSec"]').css("display","");
                         $("#" + formId).find('[name="MilCertGradeSec"]').css("display","");
+                        $('#MilitaryNo').parent().parent().css("display","");
+                    }
+                }
+                $("#MilitaryStat").on("change", function(e){militaryStat()});
+                militaryStat();
+
+                $("#"+formId).on('blur','#BirthDate',function(e){
+                    var element = $(this);
+                    if(element.data("kendoDatePicker").value() != null)
+                    {
+                        var elem = $("#" + formId).find("#BirthDate").data("kendoDatePicker").value().getFullYear();
+                        var max = $("#" + formId).find("#Age").attr('max');
+                        var min = $("#" + formId).find("#Age").attr('min');
+                        var maxAge = max ==undefined ? 100 : max;
+                        var minAge = min ==undefined ? 18 : min;
+                        var timeNow = new Date().getFullYear();
+                        var chkTime = timeNow-elem;
+                        if( chkTime <= minAge || chkTime >= maxAge )
+                        {
+                            $("#" + formId).find("#Age").text(chkTime);
+                            element.addClass("k-invalid").prop("aria-invalid", true);
+                            element.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='BirthDate' role='alert'>@MsgUtils.Instance.Trls("BirthDateMustBeInRangeAg")</span>");
+                        }
+                        else
+                        {
+                            $("#" + formId).find("#Age").text(chkTime);
+                            $('#BirthDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#BirthDate').next("span.k-tooltip-validation").remove();
+                        }
                     }
                     else
-                    {
-                        $("#" + formId).find('[name="MilResDateSec"]').css("display","none");
-                        $("#" + formId).find('[name="MilCertGradeSec"]').css("display","none");
-                    }
-                    // check performed Military status
-                    $("#People").on("change","#MilitaryStat",null,function(e)
-                    {
-                        if($(this).val() == 1)
-                        {
+                        $("#" + formId).find("#Age").text(0);
+                });
 
-                            $("#" + formId).find('[name="MilResDateSec"]').css("display","");
-                            $("#" + formId).find('[name="MilCertGradeSec"]').css("display","");
-
-                        }
-                        else
-                        {
-                            $("#" + formId).find('[name="MilResDateSec"]').css("display","none");
-                            $("#" + formId).find('[name="MilCertGradeSec"]').css("display","none");
-                        }
-                    });
-
-
-
-                    if(EmpCode==3){
-                        $("#People").on("change","#NationalId",null,function(e){
-                            var n =  $("#" + formId).find("#NationalId").val();
-                            $("#" + formId).find("#Code").val(n);
-                        });
-                    }
-                    //Translate The Button saveChanges from ColumnsTilte based on Culture
-                    $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
-                    $("#" + formId).find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
-                    $("#" + formId).find('#ImpotEmployees').val('@MsgUtils.Instance.Trls("ImpotEmployees")');
-
-                    $("#"+formId).on('blur','#PersonType',function(){
-                        var element =$(this);
-                        $.ajax({
-                            async: false,
-                            url: "@Url.Action("ChkBeforeEmployment", "People")",
-                            data: { EmpId: model.Id },
-                            dataType: "json",
-                            success: function (result) {
-                                result = result.split(',');
-                                element.removeClass("k-invalid").prop("aria-invalid", false);
-                                element.next("span.k-tooltip-validation").remove();
-                                if( result[0]=="OK" || result[0]=="SystemWarningDocuments")
-                                {
-                                    result.shift();
-                                    toastr.warning(result);
-                                }
-                                else
-                                {
-                                    result.shift();
-                                    toastr.error(result);
-                                    element.addClass("k-invalid").prop("aria-invalid", true);
-                                    element.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='PersonType' role='alert'>"+result+"</span>");
-
-                                }
-                            }
-                        });
-                    });
-                    $("#"+formId).find("#Code").parent().removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    $("#"+formId).find("#PersonType").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
-                    $("#"+formId).find("Label[for='PersonType']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    $("#"+formId).find("#StartDate").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
-                    $("#"+formId).find("Label[for='StartDate']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    //Enhance design section Experince
-                    $("#"+formId).find("#ExpYear").parent().removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    $("#"+formId).find("#JoinDate").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
-                    $("#"+formId).find("Label[for='JoinDate']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    $("#"+formId).find("#StartExpDate").parents("div:first").removeClass(" col-md-6 col-lg-6").addClass(" col-md-8 col-lg-8");
-                    $("#"+formId).find("Label[for='StartExpDate']").removeClass(" col-md-6 col-lg-6").addClass(" col-md-4 col-lg-4");
-                    
-                    $("#"+formId).on('blur','#BirthDate',function(e){
-                        var element = $(this);
-                        if(element.data("kendoDatePicker").value() != null)
-                        {
-                            var elem =   $("#" + formId).find("#BirthDate").data("kendoDatePicker").value().getFullYear();
-                            var max =$("#" + formId).find("#Age").attr('max');
-                            var min =$("#" + formId).find("#Age").attr('min');
-                            var maxAge = max ==undefined ? 150 :max;
-                            var minAge = min ==undefined ? 0 :min;
-                            var timeNow =new Date().getFullYear();
-                            var chkTime= timeNow-elem;
-                            if( chkTime <= minAge || chkTime >= maxAge )
-                            {
-                                $("#" + formId).find("#Age").val(chkTime);
-                                element.addClass("k-invalid").prop("aria-invalid", true);
-                                element.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='BirthDate' role='alert'>@MsgUtils.Instance.Trls("BirthDateMustBeInRangeAg")</span>");
-                            }
-                            else
-                            {
-                                $("#" + formId).find("#Age").val(chkTime);
-                                $('#BirthDate').removeClass("k-invalid").prop("aria-invalid", false);
-                                $('#BirthDate').next("span.k-tooltip-validation").remove();
-                            }
-                        }
-                        else
-                            $("#" + formId).find("#Age").val(0);
-                        
-                    });
-
-                    $("#" + formId).on('blur','#JoinDate', function(){
-                        var elem = $(this);
-                        var valueinDays=($("#StartExpDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
-                        if(valueinDays > 0 && $('#StartExpDate').val() != ""){
+                $("#" + formId).on('blur','#JoinDate', function(){
+                    var val = $(this).data("kendoDatePicker").value(), elem = $(this);
+                    if (elem != "") {
+                        var valueinDays = $("#StartExpDate").data("kendoDatePicker").value() - val;
+                        if(valueinDays > 0 && $('#StartExpDate').val() != "") {
                             if (elem && !elem.hasClass("k-invalid") && !$("#StartExpDate").hasClass("k-invalid")) {
                                 elem.addClass("k-invalid").prop("aria-invalid", true);
                                 elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='JoinDate' role='alert'>@MsgUtils.Instance.Trls("JoinDateGrTStartExpDate")</span>");
@@ -601,224 +502,219 @@
                         }
                         else
                         {
-
                             $('#StartExpDate').removeClass("k-invalid").prop("aria-invalid", false);
                             $('#StartExpDate').next("span.k-tooltip-validation").remove();
                             elem.removeClass("k-invalid").prop("aria-invalid", false);
                             elem.next("span.k-tooltip-validation").remove();
                         }
-                    });
-                    $("#" + formId).on('change','#SubscripDate', function(){
-                        var elem = $(this);
-                        $("div[name^='BasicSubAmt']").css("display","");
-                    });
+                        if ($('#StartExpDate').val() == "") {
+                            $('#ExpYear').text(new Date().getFullYear() - $("#JoinDate").data("kendoDatePicker").value().getFullYear());
+                        }
+                    }
+                });
 
-                    $("#"+formId).on('blur','#StartExpDate',function(){
-                        var elem = $(this);
-                        if(elem.data("kendoDatePicker").value() != null)
-                        {
-                            var year = elem.data("kendoDatePicker").value().getFullYear();
-                            var timeNow =new Date().getFullYear();
-                            var expYear= timeNow-year;
-                            $("#" + formId).find("#ExpYear").val(expYear);
+                $("#" + formId).on('change','#SubscripDate', function(){
+                    var elem = $(this);
+                    $("div[name^='BasicSubAmt']").css("display","");
+                });
+
+                $("#"+formId).on('blur','#StartExpDate',function(){
+                    var elem = $(this);
+                    if (elem.val() != "") {
+                        $('#ExpYear').text(new Date().getFullYear() - elem.data("kendoDatePicker").value().getFullYear());
+                    } else if ($('#JoinDate').val() != "") {
+                        $('#ExpYear').text(new Date().getFullYear() - $("#JoinDate").data("kendoDatePicker").value().getFullYear());
+                    } else $('#ExpYear').text('0');
+
+                    if(elem.val()!="" && $("#JoinDate").data("kendoDatePicker").value()!=""){
+                        var valueinDays=(elem.data("kendoDatePicker").value()-$("#JoinDate").data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
+                            if (elem && !elem.hasClass("k-invalid") && !$("#JoinDate").hasClass("k-invalid")) {
+                                elem.addClass("k-invalid").prop("aria-invalid", true);
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartExpDate' role='alert'>@MsgUtils.Instance.Trls("StartExpDateLThanJoinDate")</span>");
+                            }
                         }
                         else
-                            $("#" + formId).find("#ExpYear").val(0);
-
-                        if(elem.val()!=""){
-                            var valueinDays=(elem.data("kendoDatePicker").value()-$("#JoinDate").data("kendoDatePicker").value())/(1000*3600*24);
-                            if(valueinDays > 0){
-                                if (elem && !elem.hasClass("k-invalid") && !$("#JoinDate").hasClass("k-invalid")) {
-                                    elem.addClass("k-invalid").prop("aria-invalid", true);
-                                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartExpDate' role='alert'>@MsgUtils.Instance.Trls("StartExpDateLThanJoinDate")</span>");
-                                }
-                            }
-                            else
-                            {
-
-                                $('#JoinDate').removeClass("k-invalid").prop("aria-invalid", false);
-                                $('#JoinDate').next("span.k-tooltip-validation").remove();
-                                elem.removeClass("k-invalid").prop("aria-invalid", false);
-                                elem.next("span.k-tooltip-validation").remove();
-                            }
+                        {
+                            $('#JoinDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#JoinDate').next("span.k-tooltip-validation").remove();
+                            elem.removeClass("k-invalid").prop("aria-invalid", false);
+                            elem.next("span.k-tooltip-validation").remove();
                         }
-                    });
+                    }
+                });
 
 
-                    $("#" + formId).on('blur','#IssueDate', function(){
-                        var elem = $(this);
-                        var valueinDays=(elem.data("kendoDatePicker").value()-$("#ExpiryDate").data("kendoDatePicker").value())/(1000*3600*24);
-                        if(valueinDays > 0 && $('#ExpiryDate').val() != ""){
+                $("#" + formId).on('blur','#IssueDate', function() {
+                    var elem = $(this);
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#ExpiryDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#ExpiryDate').val() != "") {
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='IssueDate' role='alert'>@MsgUtils.Instance.Trls("IssueDateLThanExpiryDate")</span>");
+                        }
+                    }
+                    else{
+
+                        $('#ExpiryDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#ExpiryDate').next("span.k-tooltip-validation").remove();
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+                    }
+
+                });
+
+                $("#"+formId).on('blur','#ExpiryDate',function(){
+                    var elem = $(this);
+                    if(elem.val()!=""){
+                        var valueinDays=($("#IssueDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                        if(valueinDays > 0){
                             if (elem && !elem.hasClass("k-invalid")) {
                                 elem.addClass("k-invalid").prop("aria-invalid", true);
-                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='IssueDate' role='alert'>@MsgUtils.Instance.Trls("IssueDateLThanExpiryDate")</span>");
+                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ExpiryDate' role='alert'>@MsgUtils.Instance.Trls("ExpiryDateMustGTIssueDate")</span>");
                             }
                         }
-                        else{
+                        else
+                        {
 
-                            $('#ExpiryDate').removeClass("k-invalid").prop("aria-invalid", false);
-                            $('#ExpiryDate').next("span.k-tooltip-validation").remove();
+                            $('#IssueDate').removeClass("k-invalid").prop("aria-invalid", false);
+                            $('#IssueDate').next("span.k-tooltip-validation").remove();
                             elem.removeClass("k-invalid").prop("aria-invalid", false);
                             elem.next("span.k-tooltip-validation").remove();
                         }
 
-                    });
-
-                    $("#"+formId).on('blur','#ExpiryDate',function(){
-                        var elem = $(this);
-                        if(elem.val()!=""){
-                            var valueinDays=($("#IssueDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
-                            if(valueinDays > 0){
-                                if (elem && !elem.hasClass("k-invalid")) {
-                                    elem.addClass("k-invalid").prop("aria-invalid", true);
-                                    elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='ExpiryDate' role='alert'>@MsgUtils.Instance.Trls("ExpiryDateMustGTIssueDate")</span>");
-                                }
-                            }
-                            else
-                            {
-
-                                $('#IssueDate').removeClass("k-invalid").prop("aria-invalid", false);
-                                $('#IssueDate').next("span.k-tooltip-validation").remove();
-                                elem.removeClass("k-invalid").prop("aria-invalid", false);
-                                elem.next("span.k-tooltip-validation").remove();
-                            }
-
-                        }
-                    });
-
-                    $("#"+formId).on('change','input[name="Gender"]',function(){
-                        var val= $(this).val();
-                        var OldValue = $("#HasImage").val();
-                        if(model.Id == 0 && OldValue=="false"){
-                            if(val == "1")
-                                $("#myimage").attr("src","/SpecialData/Photos/noimage.jpg?dummy=?" + (new Date().getTime()));
-                            else
-                                $("#myimage").attr("src","/SpecialData/Photos/Fnoimage.jpg?dummy=?" + (new Date().getTime()));
-                        }
-                    });
-
-                    $("#" + formId).on('click','#saveChanges', function (e) {
-                        //BirthCity
-                        var city=$("#" + formId).find('#BirthCity').val();
-                        if(city ==null)
-                            $("#" + formId).find('#BirthCity').val(0);
-                        var distruct=$("#" + formId).find('#BirthDstrct').val();
-                        if(distruct ==null)
-                            $("#" + formId).find('#BirthDstrct').val(0);
-                        var country =$("#" + formId).find('#BirthCountry').val();
-                        if(country ==null)
-                            $("#" + formId).find('#BirthCountry').val(0);
-                        if($("#" + formId).find(".k-invalid").length > 0) return ;
-                        FormJs.saveForm($("#" + formId), $(this) ,function (res) {
-                            console.log(res);
-                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                            if(model.Id == 0){
-                                $.getJSON('/People/ChangePicId',{Id:res.Id},function(data){
-                                   
-                                });
-                            }
-                            $("#Documents").attr("disabled", false);
-                            model = res;
-                            //update name
-                            var name = (model.localName ? (model.localName.length > 20 ? String(model.localName).substr(0, 17) + "..." : model.localName) : (model.FirstName + " " + model.Familyname));
-                            $(".nameLbl #personName").text(name);
-                            updateDocProgress(); //update Documents progress bar
-                            updateEmpProgress(false); //update profile progress bar
-                            if(res.Code != null)
-                                ExceptSelector(0);
-                            else
-                                ExceptSelector(1);
-                        });
-                    });
-
-                    $("#" + formId).on('click','#saveAndClose', function (e) {
-                        if($("#" + formId).find(".k-invalid").length > 0) return ;
-                        FormJs.saveForm($("#" + formId), $(this), function (res) {
-                            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                            if(model.Id == 0){
-                                $.getJSON('/People/ChangePicId',{Id:res.Id},function(data){
-                                });
-                            }
-                            $("#renderbody").load(oldulr);
-                        });
-
-                    });
-
-                    $("#" + formId + " #BirthLocation").on("typeahead:select",
-                        function (e, location) {
-                            var l= $("#" + formId +' #BirthCountry').val(location.country);
-                            $("#" + formId +' #BirthCity').val(location.city);
-                            $("#" + formId +' #BirthDstrct').val(location.dist);
-                            $("#" + formId +' #Nationality').getKendoDropDownList().value(location.country);
-                        });
-
-                    $("#Documents").on('click', function() {
-                        $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=People&SourceId="+ @Model.Id).center().open();
-                        $("#Documents").fadeOut();
-                    });
-                }
-            });
-
-            //  Showing The Address Popup on focus field
-            $("#People").on("focus","#Address",null,function(e){
-                e.preventDefault();
-                var id = $("#myAddress").val() || 0;
-                flag=0;
-                drawaddress(id);
-
-            });
-
-            $("#People").on("focus","#HostAddress",null,function(e){
-                e.preventDefault();
-                var id = $("#HoAddressId").val() || 0;
-                flag=1;
-                drawaddress(id);
-
-            });
-            //  Save Address Form
-            $("#AddressPopup").on("click","#saveAddress",null,function(e){
-                e.preventDefault();
-                FormJs.saveForm($("#AddressForm"), $(this), function(data) {
-                    var addres=  data.Address1  + (data.Address2 ? ", " + data.Address2 : "") + (data.Address3 ? ", " + data.Address3 : "");
-                    if(flag==0){
-                        $("#People").find('#Address').val(addres);
-                        $("#myAddress").val(data.Id);
-                    }else
-                    {
-                        $("#People").find('#HostAddress').val(addres);
-                        $("#HoAddressId").val(data.Id);
                     }
-                    $('#AddressPopup').modal('hide');
                 });
 
-            });
+                $("#"+formId).on('change','input[name="Gender"]',function(){
+                    var val= $(this).val();
+                    var OldValue = $("#HasImage").val();
+                    if(model.Id == 0 && OldValue=="false"){
+                        if(val == "1")
+                            $("#myimage").attr("src","/SpecialData/Photos/noimage.jpg?dummy=?" + (new Date().getTime()));
+                        else
+                            $("#myimage").attr("src","/SpecialData/Photos/Fnoimage.jpg?dummy=?" + (new Date().getTime()));
+                    }
+                });
+                //start region Google Map
+                $("#" + formId).find('#ShowMap').val('@MsgUtils.Instance.Trls("ShowMap")');
 
-        });
-        $("#t_GeneralInformation").click();
-       // ☻ ALT + Number
-        if($("#" + formId + " #Id").val() == 0)
-            $("#Documents").attr("disabled", true);
+                if($('#Longitude').val() == "" || $('#Latitude').val() == "")
+                    $("#ShowMap").attr("disabled","disabled");
 
-        //----Documents----
-        $("#docWindow").kendoWindow ({
-            title: "@MsgUtils.Instance.Trls("Documents")",
-            //position: {top: "10px", left: "10%"},
-            minWidth: "1000px",
-            width: "80%",
-            height: "80%",
-            actions: ["Minimize", "Maximize", "Close"],
-            visible: false,
-            close: function() {
-                $("#Documents").fadeIn();
-                $("#docWindow").empty();
-                updateEmpProgress(true);
+                $("#Latitude,#Longitude").on("blur change",function()
+                {
+                    if($('#Longitude').val() != "" && $('#Latitude').val() != "")
+                        $("#ShowMap").removeAttr("disabled");
+                    else
+                        $("#ShowMap").attr("disabled","disabled");
+                });
+                $("#ShowMap").on("click",function(){
+                    LoadMap();
+                });
+                function LoadMap(_Lng,_Lat) {
+                    setTimeout(function(){
+                        var Lng = $('#Longitude').val();
+                        var Lat = $('#Latitude').val();
+                        if(_Lng) Lng =_Lng;
+                        if(_Lat) Lat = _Lat
+                        $("div[name=GoogleMapSec]").load('/GoogleMaps/ShowMapPartial?Lng='+ Lng +'&Lat='+ Lat +'&Height=400', function(responseTxt, statusTxt, xhr)
+                        {
+                            if (statusTxt == "success") {
+
+                            }
+                            if (statusTxt == "error")
+                                alert("Error: " + xhr.status + ": " + xhr.statusText);
+                        });
+                    },500);
+                }
+                //End Region
+
+                $("#b1").off('click').on('click',function (e) {
+                    //BirthCity
+                    var selector=$("#" + formId).find('#BirthCity');
+                    if(selector.val()==null) selector.val(0);
+                    selector=$("#" + formId).find('#BirthDstrct');
+                    if(selector.val()==null) selector.val(0);
+                    selector=$("#" + formId).find('#BirthCountry');
+                    if(selector.val()==null) selector.val(0);
+                    selector=$("#" + formId).find('#CityId');
+                    if(selector.val()==null) selector.val(0);
+                    selector=$("#" + formId).find('#DistrictId');
+                    if(selector.val()==null) selector.val(0);
+                    selector=$("#" + formId).find('#CountryId');
+                    if(selector.val()==null) selector.val(0);
+
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+
+                    FormJs.saveForm($("#" + formId), $(this) ,function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        if (model.Id == 0){
+                            $('div.tab-group > div > ul > li > ul > li:nth-child(2)').removeClass('disabled');
+                            $('div.tab-group > div > ul > li > ul > li:nth-child(3)').removeClass('disabled');
+                            $('div.tab-group > div > ul > li:nth-child(1)').removeClass('current').addClass('done');
+                            $('div.tab-group > div > ul > li:nth-child(2)').removeClass('disabled').addClass('active').addClass('current');
+                            $("#t_Employement").click();
+                        }
+
+                        model = res;
+                        //update name
+                        var name = (model.localName ? (model.localName.length > 20 ? String(model.localName).substr(0, 17) + "..." : model.localName) : (model.FirstName + " " + model.Familyname));
+                        $(".nameLbl #personName").text(name);
+                        updateDocProgress(); //update Documents progress bar
+                        updateEmpProgress(false); //update profile progress bar
+                    }, false);
+                });
+
+                $("#b2").off('click').on('click', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        model = res;
+                        $("[id^='tab_']").not('#tab_GeneralInformation').empty();
+                        $('#profile-info').remove();
+                        $.get("@Url.Action("_Profile", "People")", function(d) {
+                            $(".tab-content").append(d);
+                        });
+                    }, true);
+                });
+
+                $("#b3").off('click').on('click', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        updateHistory(oldUlr);
+                    }, false);
+                });
             }
         });
     });
+    
+    $('div.tab-group > div > ul > li:nth-child(1) > ul > li').removeClass('active');
+    switch("@Model.Status") {
+        case 'Contract':
+            $("#t_Employement").click();
+            break;
+        case 'Papers':
+            $("#t_EmpAttachment").click();
+            break;
+        case 'Assignment':
+            $("#t_Assignments").click();
+            break;
+        case 'UserProfile':
+            $("#t_EmpUserProfile").click();
+            break;
+        default:
+            $("#t_GeneralInformation").click();
+    }
 
+    // ☻ ALT + Number
+    $(".tab-content").wrap("<div class='col-lg-10 col-sm-12 col-md-9 main-view'></div>");
+    $('.page-content>.main-view').removeClass('main-view');
+    });
 </script>
 
-<div class="modal fade" id="AddressPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+@*<div class="modal fade" id="CropPic" tabindex="1" role="dialog" data-keyboard="true" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -826,10 +722,77 @@
                 <h4 class="modal-title" id="myModalLabel">Address</h4>
             </div>
             <div id="bodyContainer" class="modal-body" tabindex="0">
+                @Html.Partial("CropPic", new { Source = "EmployeePic", SourceId = Model.Id })
             </div>
         </div>
     </div>
-</div>
+</div>*@
 
-@Html.Partial("_Profile", new ViewDataDictionary { { "Letts", ViewBag.Letters }, { "Func", ViewBag.Functions } })
+@Html.Partial("_Profile", Model)
 
+<script type="text/javascript">
+    $(document).ready(function(){
+        var tabMarkUp =$('.tab-group');
+        $('.main-view .tab-content').prepend(tabMarkUp);
+        $('.main-view .tab-content .btns-form').insertAfter('.tab-group');
+        function drawSteps(){
+            var allLength=$('.steps-label>ul>li li').length;
+            var allWidth=$('.steps-label').outerWidth();
+            var width=0;
+            var length=0;
+            $('.steps-label>ul>li').each(function(){
+                var totalWidth=0;
+                $(this).find('a>span').each(function(){
+                    totalWidth += $(this).width()+20;
+                });
+                if (totalWidth<=allWidth) {
+                    $('.steps-label>ul>li li').addClass('full-txt')
+                }
+                if ($(this).find('li.active').length!==0){
+                    $(this).width(totalWidth);
+                    width=$(this).outerWidth();
+                    length=$(this).find('li').length;
+                }
+                else{
+                    if (width!=undefined) {
+                        var maxWidth=(allWidth-width)/(allLength-length);
+                        $(this).find('li').css('max-width',maxWidth);
+                    }
+                }
+            });
+        }
+
+        drawSteps();
+        setTimeout(function(){
+            $('.steps-label ul li').addClass('shown')
+            var delayTime=0;
+            $('.steps-label .icon').each(function(){
+                var selector=$(this);
+                setTimeout(function(){
+                    $(selector).addClass('shown');
+                },delayTime);
+                delayTime+=100;
+            });
+        },300);
+
+        $('.tab-group .nav-tabs li a').each(function(){
+            $(this).on('click' ,function(){
+                var activeTab=$(this).closest('li[data-width]').siblings('li').find('.active').attr('id');
+                $(this).closest('li[data-width]').siblings('li').find('.active').removeClass('active');
+                $('#'+activeTab).removeClass('active');
+            });
+        });
+
+        $(window).scroll(function () {
+            var scroll = $(window).scrollTop();
+            var top = $('.main-view').offset().top;
+            if (scroll>top+20) {
+                $('.tab-group,.btns-form').css('top', scroll-35);
+            }
+            else {
+                $('.tab-group,.btns-form').css('top', '0');
+            }
+        });
+
+    });
+</script>

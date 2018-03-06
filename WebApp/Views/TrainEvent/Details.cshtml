@@ -4,7 +4,7 @@
 @model TrainEventFormViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -132,8 +132,8 @@
         });
     }
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var model;
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         var CostFlag= [{id:1,name:"@MsgUtils.Instance.Trls("Employee")"}, {id:2,name:"@MsgUtils.Instance.Trls("Total")"}];
@@ -214,7 +214,7 @@
                         $(sets[i]).remove();
                 }
                 $('#TrainEvDiv').on('click',"#backToIndex",null, function(){
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
 
                 $("#" + formId).on('click',"#SaveChanges",null, function (e) {
@@ -243,7 +243,7 @@
                     if($("#" + formId).find(".k-invalid").length > 0) return;
                     FormJs.saveForm($("#"+formId), $(this), function () {
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                     });
                 });
 

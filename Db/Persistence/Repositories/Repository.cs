@@ -26,6 +26,12 @@ namespace Db.Persistence.Repositories
             CacheManager = new CacheManager();
         }
 
+       
+        public virtual void Edit(TEntity entity)
+        {
+            Context.Set<TEntity>().Attach(entity);
+            Context.Entry(entity).State = EntityState.Modified;
+        }
         public virtual void Add(TEntity entity)
         {
             Context.Set<TEntity>().Add(entity);
@@ -56,10 +62,15 @@ namespace Db.Persistence.Repositories
             return Context.Set<TEntity>().Find(id);
         }
 
-        public IEnumerable<TEntity> GetAll()
+        public IQueryable<TEntity> GetAll()
         {
-            return Context.Set<TEntity>().ToList();
+            return Context.Set<TEntity>();
         }
+
+        //public IQueryable<TEntity> GetAll_Queryable()
+        //{
+        //    return Context.Set<TEntity>();
+        //}
 
         public void RemoveRange(IEnumerable<TEntity> entities)
         {
@@ -105,19 +116,19 @@ namespace Db.Persistence.Repositories
 
             CacheManager.Set(key, setup, 0);
         }
-        public void RemoveLName(string Culture,string Name)
+        public void RemoveLName(string Culture, string Name)
         {
             var record = Context.Set<NameTbl>().Where(a => a.Culture == Culture && a.Name == Name).FirstOrDefault();
             if (record != null)
                 Context.Set<NameTbl>().Remove(record);
         }
-        public void AddLName(string culture, string oldName,string newName, string lname)
+        public void AddLName(string culture, string oldName, string newName, string lname)
         {
             // no change 1
             if (!string.IsNullOrEmpty(lname))
             {
                 //insertNew 2
-                if(oldName==null  && lname!= null)
+                if (oldName == null && lname != null)
                 {
                     Context.Set<NameTbl>().Add(new NameTbl
                     {
@@ -126,12 +137,12 @@ namespace Db.Persistence.Repositories
                         Title = lname
                     });
                 }
-               
+
                 else
                 {
                     var record = Context.Set<NameTbl>().FirstOrDefault(a => a.Culture == culture && (a.Name == oldName || a.Name == newName));
                     //change culture
-                    if(record==null)
+                    if (record == null)
                     {
                         Context.Set<NameTbl>().Add(new NameTbl
                         {
@@ -140,14 +151,14 @@ namespace Db.Persistence.Repositories
                             Title = lname
                         });
                     }
-                    
+
                     else
                     {
                         //no Changes 3 select only
                         if (record.Name == newName && record.Title == lname)
                             return;
                         // select then update 5
-                        else if (record.Name==newName && record.Title != lname)
+                        else if (record.Name == newName && record.Title != lname)
                         {
                             record.Title = lname;
                             Context.Set<NameTbl>().Attach(record);
@@ -168,7 +179,7 @@ namespace Db.Persistence.Repositories
                             });
                         }
                     }
-                   
+
                 }
             }
         }
@@ -178,12 +189,6 @@ namespace Db.Persistence.Repositories
             return Context.Entry(entity);
         }
 
-   //     public static Expression<Func<TEntity, bool>> IsCurrent<TEntity>()
-   //where TEntity : IValidFromTo
-   //     {
-   //         return e => (e.ValidFrom == null || e.ValidFrom <= DateTime.Now) &&
-   //                     (e.ValidTo == null || e.ValidTo >= DateTime.Now);
-   //     }
 
         public virtual IEnumerable<TEntity> Get(
            Expression<Func<TEntity, bool>> filter = null,
@@ -198,7 +203,7 @@ namespace Db.Persistence.Repositories
             }
 
             query = includeProperties
-                .Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries)
+                .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
                 .Aggregate(query, (current, includeProperty) => current.Include(includeProperty));
 
             return orderBy?.Invoke(query).ToList() ?? query.ToList();
@@ -243,28 +248,28 @@ namespace Db.Persistence.Repositories
         {
             var Db = Context as HrContext;
             var record = (from w in Db.RequestWf
-                        where w.Source == wf.Source && w.SourceId == wf.SourceId
-                        join t in Db.WfTrans on w.Id equals t.WFlowId into g
-                        from t in g.Where(a => a.DocumentId == wf.DocumentId).DefaultIfEmpty()
-                        select new AddWfViewModel
-                        {
-                            WorkFlowId = w.Id,
-                            Id = t.Id,
-                            Order = t.Order,
-                            Sequence = t.Sequence,
-                            RoleId = t.RoleId,
-                            CodeId = t.CodeId,
-                            ApprovalStatus = t.ApprovalStatus,
-                            AuthBranch = t.AuthBranch,
-                            AuthDept = t.AuthDept,
-                            AuthEmp = t.AuthEmp,
-                            AuthPosition = t.AuthPosition,
-                            HeirType = w.HeirType,
-                            Hierarchy = w.Hierarchy,
-                            NofApprovals = w.NofApprovals,
-                            Source = w.Source,
-                            SourceId = w.SourceId
-                        }).OrderByDescending(o => o.Id).FirstOrDefault();
+                          where w.Source == wf.Source && w.SourceId == wf.SourceId
+                          join t in Db.WfTrans on w.Id equals t.WFlowId into g
+                          from t in g.Where(a => a.DocumentId == wf.DocumentId).DefaultIfEmpty()
+                          select new AddWfViewModel
+                          {
+                              WorkFlowId = w.Id,
+                              Id = t.Id,
+                              Order = t.Order,
+                              Sequence = t.Sequence,
+                              RoleId = t.RoleId,
+                              CodeId = t.CodeId,
+                              ApprovalStatus = t.ApprovalStatus,
+                              AuthBranch = t.AuthBranch,
+                              AuthDept = t.AuthDept,
+                              AuthEmp = t.AuthEmp,
+                              AuthPosition = t.AuthPosition,
+                              HeirType = w.HeirType,
+                              Hierarchy = w.Hierarchy,
+                              NofApprovals = w.NofApprovals,
+                              Source = w.Source,
+                              SourceId = w.SourceId
+                          }).OrderByDescending(o => o.Id).FirstOrDefault();
 
             if (record == null)
             {
@@ -275,7 +280,7 @@ namespace Db.Persistence.Repositories
             wf.WFlowId = record.WorkFlowId;
 
             // 1- New 2-Submit 3-Employee Review 4-Managre Review 5-Accept 6-Approved 7-Cancel before approved 8-Cancel after approved 9-Rejected 
-            int Order = (record.Order == null ? 0 : record.Order.Value );
+            int Order = (record.Order == null ? 0 : record.Order.Value);
             if (wf.ApprovalStatus == 2) Order = 0;
 
             if (record.ApprovalStatus > 6)
@@ -290,7 +295,7 @@ namespace Db.Persistence.Repositories
                 return null;
             }
 
-            var employee = Db.Assignments.Where(a => a.EmpId == wf.RequesterEmpId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today).Select(a => new { a.CompanyId, a.DepartmentId, a.PositionId, a.ManagerId, a.BranchId, a.SectorId}).FirstOrDefault();
+            var employee = Db.Assignments.Where(a => a.EmpId == wf.RequesterEmpId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today).Select(a => new { a.CompanyId, a.DepartmentId, a.PositionId, a.ManagerId, a.BranchId }).FirstOrDefault();
             if (employee == null)
             {
                 wf.WorkFlowStatus = MsgUtils.Instance.Trls(culture, "NotActiveEmp");
@@ -308,7 +313,6 @@ namespace Db.Persistence.Repositories
                 DeptId = employee.DepartmentId,
                 EmpId = wf.RequesterEmpId,
                 PositionId = employee.PositionId,
-                SectorId = employee.SectorId,
                 CompanyId = employee.CompanyId,
                 Source = record.Source,
                 SourceId = record.SourceId,
@@ -367,7 +371,7 @@ namespace Db.Persistence.Repositories
                     Order++;
                     var next = Db.WfRoles.Where(a => a.WFlowId == record.WorkFlowId && a.Order == Order).Select(a => new { a.RoleId, a.CodeId }).FirstOrDefault();
                     if (next == null)
-                    { 
+                    {
                         if (record.Order == null && !SkipIamManager) wf.WorkFlowStatus = MsgUtils.Instance.Trls(culture, "EmptyWorkflow");
                         return null;
                     }
@@ -440,7 +444,9 @@ namespace Db.Persistence.Repositories
 
                     SkipIamManager = false;
                 }
-            } else if (record.HeirType == 2 && record.NofApprovals > Order) {  // 2-Org Chart Hierarchy
+            }
+            else if (record.HeirType == 2 && record.NofApprovals > Order)
+            {  // 2-Org Chart Hierarchy
                 int? dept = employee.DepartmentId;
                 if (wf.ApprovalStatus == 2) // first record of approval get direct manager
                 {
@@ -471,7 +477,9 @@ namespace Db.Persistence.Repositories
                     }
                     dept = Db.CompanyStructures.Where(a => a.Id == dept).Select(a => a.ParentId).FirstOrDefault();
                 }
-            } else if (record.HeirType == 3 && record.NofApprovals > Order) { // 3-Position Hierarchy
+            }
+            else if (record.HeirType == 3 && record.NofApprovals > Order)
+            { // 3-Position Hierarchy
                 if (employee.PositionId == null)
                 {
                     wf.WorkFlowStatus = MsgUtils.Instance.Trls(culture, "EmpPosIfPosHierarchy");
@@ -548,7 +556,9 @@ namespace Db.Persistence.Repositories
 
                     SkipIamManager = false;
                 }
-            } else if (record.HeirType == 4 && record.NofApprovals > Order && employee.ManagerId != null) { // 4-Employee-Manager
+            }
+            else if (record.HeirType == 4 && record.NofApprovals > Order && employee.ManagerId != null)
+            { // 4-Employee-Manager
                 //if (employee.ManagerId == null)
                 //{
                 //    wf.WorkFlowStatus = MsgUtils.Instance.Trls(culture, "EmpDoesntHaveManager");
@@ -576,7 +586,7 @@ namespace Db.Persistence.Repositories
                 while (emp != null)
                 {
                     // get last assignment record for manager
-                    var manager = Db.Assignments.Where(a => a.EmpId == emp).Select(a => new { a.Id,a.AssignDate,a.EndDate, a.ManagerId }).OrderByDescending(a => a.Id).FirstOrDefault();
+                    var manager = Db.Assignments.Where(a => a.EmpId == emp).Select(a => new { a.Id, a.AssignDate, a.EndDate, a.ManagerId }).OrderByDescending(a => a.Id).FirstOrDefault();
 
                     // if manager is not active foreword document to his manager
                     if (!(manager.AssignDate <= DateTime.Today && manager.EndDate >= DateTime.Today))
@@ -627,7 +637,7 @@ namespace Db.Persistence.Repositories
                     nextRole = Db.WfRoles.FirstOrDefault(a => a.WFlowId == record.WorkFlowId && a.Order == Order);
                     if (nextRole != null && nextRole.RoleId != null && nextRole.RoleId != record.RoleId)
                     {
-                        if(record.NofApprovals != null) Order += record.NofApprovals.Value;
+                        if (record.NofApprovals != null) Order += record.NofApprovals.Value;
                         trans.Order = (byte)Order;
                         trans.RoleId = nextRole.RoleId;
                         return trans;
@@ -644,11 +654,11 @@ namespace Db.Persistence.Repositories
         {
             var Db = Context as HrContext;
             return (from w in Db.RequestWf
-                          where w.Source == Source && w.SourceId == SourceId
-                          join t in Db.WfTrans on w.Id equals t.WFlowId into g
-                          from t in g.Where(a => a.DocumentId == DocumentId).DefaultIfEmpty()
-                          orderby t.Id
-                          select t).LastOrDefault();
+                    where w.Source == Source && w.SourceId == SourceId
+                    join t in Db.WfTrans on w.Id equals t.WFlowId into g
+                    from t in g.Where(a => a.DocumentId == DocumentId).DefaultIfEmpty()
+                    orderby t.Id
+                    select t).LastOrDefault();
         }
 
         public IList<Model.ViewModel.Personnel.RolesViewModel> GetOrgChartRoles(string culture)
@@ -662,7 +672,7 @@ namespace Db.Persistence.Repositories
             return pos;
         }
 
-        public IQueryable<FlexDataViewModel> GetFlexData(int companyId, string objectName, byte version, string culture,  int SourceId)
+        public IQueryable<FlexDataViewModel> GetFlexData(int companyId, string objectName, byte version, string culture, int SourceId)
         {
             var query = (// where fc.PageId == HrContext.GetPageId(companyId, objectName, version) && fc.isVisible == true
                          from p in Context.Set<PageDiv>()
@@ -772,7 +782,7 @@ namespace Db.Persistence.Repositories
 
             var query = from info in gridcolumns
                         join column in parm.Columns on info.ColumnName equals column.Name
-                        orderby info.ColumnOrder, column.Cell
+                        orderby column.Row, info.ColumnOrder, column.Cell
                         select new ColumnInfoViewModel
                         {
                             Row = column.Row,
@@ -795,7 +805,7 @@ namespace Db.Persistence.Repositories
 
         public List<Error> CheckPage(IEnumerable<ColumnInfoViewModel> query, CheckParm parm)
         {
-            string id = "0", parentId = "0", errors = "";
+            string id = "-1", parentId = "-1", errors = "";
             short previousRow = -1;
             int previousId = 0;
 
@@ -845,8 +855,10 @@ namespace Db.Persistence.Repositories
                     if (string.IsNullOrEmpty(parm.TableName)) parm.TableName = parm.ObjectName;
                     StringBuilder sql = new StringBuilder("Select Count(0) From " + parm.TableName + " Where");
                     // used for update only
-                    if (id == "")
-                        errors += "Id must be first column in the model";
+                    if (id == "-1")
+                        id = query.Where(q => q.Row == record.Row && q.ColumnName == "Id").Select(q => q.Value).FirstOrDefault();
+
+                    //errors += "Id must be first column in the model";
 
                     if (!(id == "0" && string.IsNullOrEmpty(id)))
                         sql.Append(" Id <> '" + id + "' And");
@@ -854,8 +866,12 @@ namespace Db.Persistence.Repositories
                     // for child rows
                     if (parm.ParentColumn != null)
                     {
-                        if (parentId == "")
-                            errors += parm.ParentColumn + " must be directly after Id in the model";
+                        if (parentId == "-1")
+                        {
+                            parentId = query.Where(q => q.Row == record.Row && q.ColumnName == parm.ParentColumn).Select(q => q.Value).FirstOrDefault();
+                            if (parentId == null && parm.ParentColumn == "CompanyId") parentId = parm.CompanyId.ToString();
+                        }
+                        //errors += parm.ParentColumn + " must be directly after Id in the model";
 
                         sql.Append(" " + parm.ParentColumn + " = '" + parentId + "' And");
                     }
@@ -918,7 +934,7 @@ namespace Db.Persistence.Repositories
             if (errorsList != null && errorsList.Count() > 0)
             {
                 var page = parm.Columns.FirstOrDefault(col => col.Row == previousRow && col.Name == "Page");
-                Errors.Add(new Error() { id = previousId, row = previousRow, errors = errorsList, page = ( (page == null || string.IsNullOrEmpty(page.Value)) ? (short)0 : short.Parse(page.Value)) });
+                Errors.Add(new Error() { id = previousId, row = previousRow, errors = errorsList, page = ((page == null || string.IsNullOrEmpty(page.Value)) ? (short)0 : short.Parse(page.Value)) });
             }
 
             return Errors;
@@ -929,13 +945,13 @@ namespace Db.Persistence.Repositories
             return CheckGrid(parm);
         }
 
-        public List<string> GetAutoCompleteColumns(string objectName, int compnayId, byte version)
+        public bool CheckAutoCompleteColumn(string objectName, int companyId, byte version, string columnname)
         {
-            List<string> columns = ((Db.HrContext)Context).FormsColumns
-                .Where(fc => fc.Section.FieldSet.PageId == HrContext.GetPageId(compnayId, objectName, version) && fc.InputType == "autocomplete")
-                .Select(fc => fc.ColumnName).ToList();
+            int id = ((Db.HrContext)Context).FormsColumns
+                .Where(fc => fc.Section.FieldSet.Page.CompanyId == companyId && fc.Section.FieldSet.Page.ObjectName == objectName && fc.Section.FieldSet.Page.Version == version && fc.ColumnName == columnname && fc.InputType == "autocomplete")
+                .Select(fc => fc.Id).FirstOrDefault();
 
-            return columns;
+            return id > 0;
         }
 
         public void AddTrail(AddTrailViewModel trailVM)
@@ -960,7 +976,7 @@ namespace Db.Persistence.Repositories
         {
             DateTime Today = DateTime.Today;
             Start = null;
-            End =  Today;
+            End = Today;
 
             switch (range)
             {
@@ -971,7 +987,7 @@ namespace Db.Persistence.Repositories
                 case 3:     //--3 last 7 days
                     Start = Today.AddDays(-6); break;
                 case 4:     //--4 Last 14 Days"
-                    Start = Today.AddDays(-13);  break;
+                    Start = Today.AddDays(-13); break;
                 case 5:     //--5 Last 30 Days"
                     Start = Today.AddDays(-30); break;
                 case 6:     //--6 This Week
@@ -980,8 +996,8 @@ namespace Db.Persistence.Repositories
                     byte weekend = (personnel?.Weekend2 ?? personnel?.Weekend1) ?? 0;
                     int diff = ((int)Today.DayOfWeek - weekend);// ((weekend == 6 ? 0 : weekend + 1)));
                     if (diff < 0) diff += 7;
-                        Start = Today.AddDays(-1 * diff).Date;
-                        End = Today.AddDays(6 - (diff)).Date;
+                    Start = Today.AddDays(-1 * diff).Date;
+                    End = Today.AddDays(6 - (diff)).Date;
                     if (range == 7)
                     {
                         Start = Start.Value.AddDays(-7);
@@ -1003,5 +1019,7 @@ namespace Db.Persistence.Repositories
                     break;
             }
         }
+
+    
     }
 }

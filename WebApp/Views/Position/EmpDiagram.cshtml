@@ -5,7 +5,7 @@
 @model IEnumerable<ManagerEmployeeDiagram>
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
@@ -21,14 +21,14 @@
     <span style="@(rtl?"float:right":"float:left")">@MsgUtils.Instance.Trls("note:diagram")</span>
 </div>
 <script>
-    
+
     function visualTemplate(options)
     {
 
         var dataviz=kendo.dataviz;
         var g= new dataviz.diagram.Group();
         var dataItem= options.dataItem;
-       
+
         g.append(new dataviz.diagram.Rectangle({
             width:300,
             height:75,
@@ -66,22 +66,19 @@
             fill:"#fff"
         }));
         g.append(new dataviz.diagram.Image({
-            source:"/SpecialData/Photos/"+@User.Identity.GetDefaultCompany()+"/"+(dataItem.HasImage == false?"noimage.jpg": dataItem.Id+".jpeg"),
+            source:Exist(dataItem.Gender,dataItem.Image),
             x:3,
             y:3,
             width:68,
             height:68
         }));
-        
-       
+
         return g;
-
-
     }
 
     $(function () {
         var item = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
-  
+
         $("#diagram").kendoDiagram({
 
             dataSource:new kendo.data.HierarchicalDataSource({
@@ -141,7 +138,7 @@
 
     });
 
-  
+
 
 
 </script>

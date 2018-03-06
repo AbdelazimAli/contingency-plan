@@ -154,7 +154,7 @@ namespace WebApp.Controllers.Api
         [Route("api/Requests/CheckLeave")]
         public IHttpActionResult CheckLeave(int TypeId, float NofDays, DateTime StartDate, DateTime EndDate, int ReqId)
         {
-            return Json(_hrUnitOfWork.LeaveRepository.CheckLeaveRequest(TypeId, User.Identity.GetEmpId(), StartDate, EndDate, NofDays, User.Identity.GetLanguage(), ReqId, User.Identity.IsSelfServiceUser(), User.Identity.GetDefaultCompany()));
+            return Json(_hrUnitOfWork.LeaveRepository.CheckLeaveRequest(TypeId, User.Identity.GetEmpId(), StartDate, EndDate, NofDays, User.Identity.GetLanguage(), ReqId, true, User.Identity.GetDefaultCompany()));
         }
 
         [ResponseType(typeof(LeaveReqViewModel)), HttpPost]

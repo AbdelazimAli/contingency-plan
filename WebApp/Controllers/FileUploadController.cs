@@ -1,4 +1,5 @@
-﻿using HR_uploader.Helpers;
+﻿using Db.Persistence;
+using HR_uploader.Helpers;
 using Interface.Core;
 using Model.Domain;
 using Model.ViewModel;
@@ -22,7 +23,7 @@ namespace WebApp.Controllers
     public class FileUploadController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-        FilesHelper filesHelper;
+        //FilesHelper filesHelper;
         string tempPath = "~/uploadercash/";
         string serverMapPath = "~/Files/uploadercash/";
         string UrlBase = "/Files/uploadercash/";
@@ -61,7 +62,6 @@ namespace WebApp.Controllers
         }
         public FileUploadController(IHrUnitOfWork unitOfWork) : base(unitOfWork)
         {
-            filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
             _hrUnitOfWork = unitOfWork;
         }
 
@@ -71,6 +71,7 @@ namespace WebApp.Controllers
         }
         public ActionResult Show()
         {
+            FilesHelper filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
             JsonFiles ListOfFiles = filesHelper.GetFileList();
             var model = new Models.FilesViewModel()
             {
@@ -99,31 +100,43 @@ namespace WebApp.Controllers
                 return Json("No files found");
 
             int sid = Convert.ToInt32(SourceId);
-            var stream = ReadFully(file.InputStream);
+
             WebImage fullsize = null;
             WebImage thumbs= null;
+            byte[] stream = null;
+            ImageProcesses.GetFull_ThumpImages(Source, file.InputStream, file.ContentType, out fullsize, out thumbs,out stream);
+            //var stream = ReadFully(file.InputStream);
+            //WebImage fullsize = null;
+            //WebImage thumbs= null;
 
-            if (Source == "EmployeePic")
-            {
-                fullsize = new WebImage(stream).Resize(180, 180);
-                thumbs = new WebImage(stream).Resize(32, 32);
-            }
-            else if (Source == "CompanyLogo")
-            {
-                fullsize = new WebImage(stream).Resize(396,130);
-                thumbs = new WebImage(stream).Resize(80, 80);
-            }
-            else if (file.ContentType != "application/pdf")
-            {
-                fullsize = new WebImage(stream).Resize(1240, 1754); //   1240, 1754    2480, 3508
-                thumbs = new WebImage(stream).Resize(124, 175);
-            }
+            //if (Source == "EmployeePic")
+            //{
+            //    fullsize = new WebImage(stream).Resize(180, 180);
+            //    thumbs = new WebImage(stream).Resize(32, 32);
+            //}
+            //else if (Source == "CompanyLogo")
+            //{
+            //    fullsize = new WebImage(stream).Resize(396,130);
+            //    thumbs = new WebImage(stream).Resize(80, 80);
+            //}
+            //else if (file.ContentType != "application/pdf")
+            //{
+            //    fullsize = new WebImage(stream).Resize(1240, 1754); //   1240, 1754    2480, 3508
+            //    thumbs = new WebImage(stream).Resize(124, 175);
+            //}
+            //else if (file.ContentType == "application/pdf")
+            //{
+            //    // do nothing          
+            //}
+            //else
+            //{
+            //    fullsize = new WebImage(stream).Resize(1240, 1754);
+            //    thumbs = new WebImage(stream).Resize(80, 80);
+            //}
 
-           
-       
             CompanyDocsViews doc = new CompanyDocsViews()
             {
-                CompanyId = (Source == "Company" ? sid : CompanyId),
+                CompanyId = (Source == "CompanyLogo" ? sid : CompanyId),
                 name = file.FileName,
                 CreatedUser = UserName,
                 Source = Source,
@@ -157,13 +170,14 @@ namespace WebApp.Controllers
 
         public JsonResult Upload(string Source, string SourceId)
         {
+
             //if (Request.QueryString["Source"] != null && Request.QueryString["SourceId"] != null)
             //{
             //    Source = Request.QueryString["Source"]?.ToString();
             //    SourceId = Request.QueryString["SourceId"]?.ToString();
             //}
             var resultList = new List<ViewDataUploadFilesResult>();
-
+            FilesHelper filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
             filesHelper.UploadAndShowResults(HttpContext, resultList);
             if (!resultList.Any())
                 return Json("Error");
@@ -251,11 +265,13 @@ namespace WebApp.Controllers
         public JsonResult GetFileList(string Source, string SourceId)
         {
             int sid = 0;
+            FilesHelper filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
+
             if (Source.Length == 0 || SourceId.Length == 0 || !int.TryParse(SourceId, out sid))
                 return Json("Missing Source & Source Id");
 
 
-            emptycash();
+            emptycash(filesHelper);
             var comdocs = _hrUnitOfWork.CompanyRepository.GetDocsViews(Source, sid);
             var r = new List<ViewDataUploadFilesResult>();
 
@@ -299,7 +315,8 @@ namespace WebApp.Controllers
             var model = _hrUnitOfWork.CompanyRepository.GetCompanyDocsViews(Source, Convert.ToInt32(SourceId));
 
             // for selfservice user hide files for access level = 0
-            if (User.Identity.IsSelfServiceUser()) model = model.Where(a => a.AccessLevel > 0);
+            // TODO
+            //if (User.Identity.IsSelfServiceUser()) model = model.Where(a => a.AccessLevel > 0);
 
 
             var result = from m in model
@@ -314,7 +331,7 @@ namespace WebApp.Controllers
                              size = file.size,
                              thumbnailUrl = file.thumbnailUrl,
                              type = file.type,
-                             url = m.AccessLevel == 1 && User.Identity.IsSelfServiceUser() ? "" : file.url,
+                             url = m.AccessLevel == 1 ? "" : file.url, // TODO m.AccessLevel == 1 && User.Identity.IsSelfServiceUser()
                              Description = m.Description,
                              DocType = m.DocType,
                              ExpiryDate = (m.ExpiryDate == null ? "" : m.ExpiryDate.Value.ToString("dd/MM/yyyy")),
@@ -358,6 +375,7 @@ namespace WebApp.Controllers
         public JsonResult DeleteFile(Guid file)
         {
             CompanyDocsViews doc = _hrUnitOfWork.Repository<CompanyDocsViews>().Single(d => d.stream_id == file);
+            FilesHelper filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
             _hrUnitOfWork.CompanyRepository.Remove(doc);
             SaveChanges(Language);
             filesHelper.DeleteFile(doc.name);
@@ -368,6 +386,7 @@ namespace WebApp.Controllers
         public JsonResult DeleteMultiFiles(List<Guid> files)
         {
             List<CompanyDocsViews> docs = _hrUnitOfWork.Repository<CompanyDocsViews>().Where(d => files.Contains(d.stream_id)).ToList();
+            FilesHelper filesHelper = new FilesHelper(DeleteURL, DeleteType, StorageRoot, UrlBase, tempPath, serverMapPath);
             foreach (var doc in docs)
             {
                 _hrUnitOfWork.CompanyRepository.Remove(doc);
@@ -378,7 +397,7 @@ namespace WebApp.Controllers
         }
 
         [HttpGet]
-        public JsonResult emptycash()
+        public JsonResult emptycash(FilesHelper filesHelper)
         {
             try
             {
@@ -438,7 +457,7 @@ namespace WebApp.Controllers
                         companyDocAttr.AttributeId = model.Id;
                         companyDocAttr.Value = getValue(model);
                         companyDocAttr.ValueId = model.ValueId;
-                        companyDocAttr.StreamId = model.StreamId;
+                        companyDocAttr.StreamId =(Guid) model.StreamId;
 
                         _hrUnitOfWork.LookUpRepository.Add(companyDocAttr);
                     }

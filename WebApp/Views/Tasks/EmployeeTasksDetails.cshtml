@@ -3,7 +3,7 @@
 @model Model.ViewModel.Personnel.EmpTasksViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -14,8 +14,8 @@
 
 
 <script>
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
     var taskStatus = [{ id: 0, name: '@MsgUtils.Instance.Trls("Darft")' }, { id: 1, name: '@MsgUtils.Instance.Trls("AssignedTo")' }, { id: 2, name: '@MsgUtils.Instance.Trls("Done")' },{ id: 3, name: '@MsgUtils.Instance.Trls("Canceled")' },{ id: 4, name: '@MsgUtils.Instance.Trls("NotDone")' }];
     var units = [{id:0, name:  '@MsgUtils.Instance.Trls("Minute")'},{id:1, name:  '@MsgUtils.Instance.Trls("Hour")'},{id:2, name:  '@MsgUtils.Instance.Trls("Day")'},{id:3, name:  '@MsgUtils.Instance.Trls("Week")'},{id:4, name:'@MsgUtils.Instance.Trls("Month")'}];
@@ -61,8 +61,7 @@
                 $.post("@Url.Action("SaveEmployeeTasks", "Tasks")", {Id : taskId, btn : isStart }, function(res){
                     FormJs.postSuccessFunc($("#"+formId), $(this), res, function() {
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        ulr = oldulr
-                        $("#renderbody").load(ulr);
+                        updateHistory(oldUlr);
                     });
                 });
         });

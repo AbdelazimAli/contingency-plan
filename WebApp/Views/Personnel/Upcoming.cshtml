@@ -2,10 +2,11 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetLanguage();
 }
+
 <style>
     #upcomingDiv .title {
         font-size: 18px;
@@ -39,7 +40,6 @@
         width: 50px;
         height: 50px;
     }
-
 </style>
 
 
@@ -69,27 +69,34 @@
 
         //Leaves
         for(var i=0; i<leaves.length; i++) {
+            var src = "";
+            if (leaves[i].Image)
+                src =('data:image/jpg;base64,' + leaves[i].Image);
+            else if (leaves[i].Gender == 2)
+                src =("/SpecialData/Photos/Fnoimage.jpg");
+            else
+                src =("/SpecialData/Photos/noimage.jpg");
 
             if(leaves[i].Day == 1 ) //Today
             {
                 todayMarkup += "<div class='col-md-2 leaveItem'>"
-                + "<span class='photo'><img src='"+ (leaves[i].HasImage ? + "../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/" + leaves[i].EmpId + ".jpeg?dummy=" + (new Date().getTime()) : "/SpecialData/Photos/noimage.jpg") +  "' class='img-circle'></span>"
+                + "<span class='photo'><img src='"+src+ "' class='img-circle'></span>"
                 + "<div><span>"+ leaves[i].Employee + "</span></div>"
                 + "</div>";
             }
             else if(leaves[i].Day == 2) //Tomorrow
             {
                 tomorrowMarkup += "<div class='col-md-2 leaveItem'>"
-                    + "<span class='photo'><img src='" + (leaves[i].HasImage ? + "../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/" + leaves[i].EmpId + ".jpeg?dummy=" + (new Date().getTime()) : "/SpecialData/Photoss/noimage.jpg") +  "' class='img-circle'></span>"
+                    + "<span class='photo'><img src='"+src+ "' class='img-circle'></span>"
                     + "<div><span>"+ leaves[i].Employee + "</span></div>"
                     + "</div>";
             }
         }
+
         $("#leavesDiv .details #todayDiv").append(todayMarkup);
         $("#leavesDiv .details #todayDiv").addClass("row");
         $("#leavesDiv .details #tomorrowDiv").append(tomorrowMarkup);
         $("#leavesDiv .details #tomorrowDiv").addClass("row");
-
 
         //Holidays
         for(var i=0; i<holidays.length; i++) {

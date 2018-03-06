@@ -1,6 +1,6 @@
 ﻿@using WebApp.Extensions
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var Culture = User.Identity.GetCulture();
     int dataLevel = 0, read = 0;

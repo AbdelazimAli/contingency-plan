@@ -2,7 +2,7 @@
 @using Model.ViewModel
 @model UserViewModel
 @using WebApp.Extensions
-@{ var admin = User.IsInRole("Admin");}
+@{ var admin = User.Identity.CanCustomize();}
  
 
 @{
@@ -17,7 +17,7 @@
 <div id="userprof"></div><br />
 <br />
 
-    <script src="~/Scripts/typeahead.bundle.min.js"></script>
+    @*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
     <script src="~/Scripts/cultures/lang.js"></script>
     <script src="~/Scripts/cultures/timezone.js"></script>
 
@@ -25,7 +25,7 @@
 
         function CompanyChanged(e, name) {
             var dataItem = $("#" + name).data("kendoGrid").dataItem($("#" + $(e).attr("id")).closest("tr"));
-            dataItem.IsChecked = $(e).is(':checked');
+            //dataItem.IsChecked = $(e).is(':checked');
             dataItem.dirty = true;
 
         }
@@ -35,7 +35,8 @@
             FormJs.DrawTabs("pageTabs");
             var timezoneSrc = timeZoneList.getTimeZone("@culture");
             var culture = lang.getList("@culture");
-            var userfunctions =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions))
+            @*var userfunctions =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions))*@
+            var userfunctions = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
             var company = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Company))
             var country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Country))
             var emp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Emp));
@@ -57,7 +58,6 @@
             }
 
             var user = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
-            console.log(user);
             var objectname = "UserProfile", formId = "UserProfile";
             var read = ("@Request.QueryString["Read"]" == "" ? 0: "@Request.QueryString["Read"]");
 
@@ -90,9 +90,6 @@
                         data.companyId = "@User.Identity.GetDefaultCompany()";
                         data.admin = "@admin";
 
-                        if(user.Id==null)
-                            user.SSUser = null;
-
                         $("#userprof").Forms(data, user);
                         var isSuper = "@ViewBag.isSuper";
                         if(isSuper == 'False')
@@ -119,35 +116,29 @@
 
                         //, #Messages
                         $("#" + formId + " .form-control").filter(':has("#Language")').css("width", "100%");
-                        
+
                         $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
                         $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
                         $("div[name=gridsSec]").prepend('<div class="form-group col-lg-12 col-md-12 col-sm-12"><div id="userRole" class="col-lg-5 col-sm-5 col-md-5 pull-left"></div><div id="userCompany" class="col-lg- col-sm-5 col-md-5 pull-right"></div></div>');
                         $("#" + formId).on('click',"#saveChanges",null, function () {
-                            if($("#SSUser").length == 0 && user.Id == null)
-                                $("#"+formId).append('<input type="text" name="SSUser" value="true">');
                             FormJs.saveForm($("#" + formId), $(this), function (res) {
                                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                if(res !== undefined)
-                                    location.reload();
-                                else
-                                    $("#renderbody").load(oldulr);
+                                updateHistory(oldUlr);
                             },(userfunctions!= null && userfunctions.length > 0 && ($.inArray("AddUserRole",userfunctions) > -1))?Grids.sendData("userRole"):"",Grids.sendData("userCompany"));
                         });
 
 
 
                         $("#" + formId).on('click','#backToIndex', function(){
-                            $("#renderbody").load(oldulr);
+                            updateHistory(oldUlr);
                         });
 
                         //-- Grids
                         if(userfunctions!= null && userfunctions.length > 0 && ($.inArray("AddUserRole",userfunctions) > -1)){
                             var gridname = "'userRole'";
                             var UserId ="@Model.Id";
-                            var SSRole=$("#SSUser").val();
                             Grids.batchGrid({
-                                read: "@Url.Action("GetUserRoles", "Users")?id="+UserId+"&SSRole="+SSRole,
+                                read: "@Url.Action("GetUserRoles", "Users")?id="+UserId,
                                 update: "@Url.Action("SaveRole", "Users")",
                                 lang: "@User.Identity.GetCulture()",
                                 objectName: "UserRoles", // name of the page or table name used to create local db key
@@ -158,13 +149,11 @@
                                 fields:
                                 {
                                     Id: { type: "string", editable: false },
-                                    IsChecked: { type: "boolean" },
                                     Name: { type: "string", editable: false},
                                 },
                                 toolbar: "<div></div>",
                                 columns:
-                                [{ template: '<input id="#:Id#" type="checkbox" #:IsChecked == true ? "checked" : ""#  '+(read == 1 ? "disabled": "")+' style="width:50px;" onchange="CompanyChanged(this, ' + gridname + ')" />'},
-                                 { field: "Name"}],
+                                [{ field: "Name"}],
                                 readCompleted: function(e) {
                                     // To remove AddNotification Button
                                     $("#userRole .k-header-column-menu").click(function(){
@@ -186,13 +175,11 @@
                             fields:
                             {
                                 Id: { type: "number", editable: false },
-                                IsChecked: { type: "boolean" },
                                 Name:{ type: "string", editable: false},
                             },
                             toolbar: "<div></div>",
                             columns:
-                            [{template: '<input id="#:Id#" type="checkbox" #:IsChecked == true ? "checked" : ""# '+(read == 1 ? "disabled": "")+'  style="width:50px;" onchange="CompanyChanged(this, ' + gridname + ')" />'},
-                             {field:"Name"}],
+                            [{field:"Name"}],
                             readCompleted: function(e) {
                                 // To remove AddNotification Button
                                 $("#userCompany .k-header-column-menu").click(function(){
@@ -205,13 +192,11 @@
                     }
                 });
 
-                var oldPage = localStorage.getItem("menuhigh").split(",");
-                oldulr = $("#"+oldPage[2] + " a").attr("href");
+                //var oldPage = localStorage.getItem("menuhigh").split(",");
+                //oldulr = $("#"+oldPage[2] + " a").attr("href");
 
             });
             $("#t_GeneralInf").click();
-
-
 
         });
 

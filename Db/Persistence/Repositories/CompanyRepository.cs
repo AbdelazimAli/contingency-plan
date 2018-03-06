@@ -9,6 +9,8 @@ using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.IO;
 using System.Linq;
+using Model.ViewModel.Personnel;
+using Db.Persistence.Services;
 
 namespace Db.Persistence.Repositories
 {
@@ -30,11 +32,157 @@ namespace Db.Persistence.Repositories
                 return Context as HrContext;
             }
         }
+        public CompanyDocAttr GetDocAttr_ByAttributeID(int AttributeID)
+        {
+            try
+            {
+                return context.CompanyDocAttrs.SingleOrDefault<CompanyDocAttr>(m => m.AttributeId == AttributeID);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        public IQueryable<CompanyDocAttr> GetDocAttr_ByStreamID(Guid Stream_Id)
+        {
+            try
+            {
+                return context.CompanyDocAttrs.Where<CompanyDocAttr>(m => m.StreamId == Stream_Id);
+            }
+            catch
+            {
+                return new List<CompanyDocAttr>().AsQueryable();
+            }
+        }
+        public IQueryable<CompanyDocAttrViewModel> GetDocTypeAttr(int typeId, string culture, Guid? streamId = null)
+        {
+            var result = new List<CompanyDocAttrViewModel>().AsQueryable();
+            var BasicQuery = context.DocTypeAttrs.AsQueryable<DocTypeAttr>();//
+
+            if (typeId > 0)
+                BasicQuery = BasicQuery.Where<DocTypeAttr>(d => d.TypeId == typeId);
+
+            if (streamId != null)
+            {
+                result = from dt in BasicQuery
+                         join cd in context.CompanyDocAttrs on dt.Id equals cd.AttributeId into g
+                         from cd in g.Where(a => a.StreamId == streamId).DefaultIfEmpty()
+                         join code in context.LookUpCodes on cd.ValueId equals code.Id into g2
+                         from code in g2.DefaultIfEmpty()
+                         join t in context.LookUpTitles on new { code.CodeName, code.CodeId } equals new { t.CodeName, t.CodeId } into g3
+                         from t in g3.Where(a => a.Culture == culture).DefaultIfEmpty()
+
+                         select new CompanyDocAttrViewModel
+                         {
+                             Id = dt.Id,
+                             Insert = cd == null,
+                             TypeId = dt.TypeId,
+                             Attribute = dt.Attribute,
+                             InputType = dt.InputType,
+                             CodeName = dt.CodeName,
+                             Value = cd.Value,
+                             ValueId = cd.ValueId,
+                             ValueText = (dt.InputType == (int)Constants.Enumerations.InputTypesEnum.Select && code != null ? (t == null ? code.Name : t.Title) : cd.Value),
+                             IsRequired=dt.IsRequired
+                         };
+
+            }
+            else
+            {
+                result = BasicQuery.Select(basic => new CompanyDocAttrViewModel
+                {
+                    Id = basic.Id,
+                    Insert = true,
+                    TypeId = basic.TypeId,
+                    Attribute = basic.Attribute,
+                    InputType = basic.InputType,
+                    CodeName = basic.CodeName,
+                    Value = string.Empty,
+                    ValueId = null,
+                    ValueText = string.Empty,
+                    IsRequired = basic.IsRequired
+                });
+            }
+
+            foreach (var r in result)
+                if (r.InputType == (int)Constants.Enumerations.InputTypesEnum.Date && !String.IsNullOrEmpty(r.ValueText)) r.ValueText = r.ValueText.ToMyDateTime(culture).ToMyDateString(culture, "d");
+                else if (r.InputType == (int)Constants.Enumerations.InputTypesEnum.DateTime && !String.IsNullOrEmpty(r.ValueText)) r.ValueText = r.ValueText.ToMyDateTime(culture).ToShortTimeString();
+
+            return result.AsQueryable();
+        }
+
+
+
         public string TrlsTable(string culture, string table)
         {
             return context.Database.SqlQuery<string>("SELECT dbo.fn_TrlsName(M.[Name] + CAST(M.[Sequence] AS nvarchar(5)), '" + culture + "') FROM Menus M WHERE M.Id = (SELECT TOP 1 MenuId FROM PageDivs WHERE TableName = '" + table + "')").FirstOrDefault();
         }
 
+        public IQueryable<CompanyDocsViews> GetDocsViews_Queryable(string Source, int SourceID)
+        {
+            try
+            {
+                return context.CompanyDocsView.Where<CompanyDocsViews>(c => c.Source.Equals(Source) && c.SourceId == SourceID);
+            }
+            catch
+            {
+                return new List<CompanyDocsViews>().AsQueryable();
+            }
+        }
+
+        public List<StreamID_DocTypeFormViewModel> GetDocsViews_Uploaded(string Source, int SourceId, string CodeName/*,int SysCodeId*/, string Lang)
+        {
+            try
+            {
+                var BasicQuery = GetDocsViews_Queryable(Source, SourceId);
+
+                var DocsViews = (from c in BasicQuery
+                                 join d in context.DocTypes on c.TypeId equals d.Id
+                                 //join l in context.LookUpUserCodes on d.DocumenType equals l.SysCodeId//new { p1 = d.Name, p2 = d.DocumenType } equals new { p1 = l.CodeName, p2 = l.CodeId }
+                                // where c.Source == Source /*&& l.CodeName == CodeName *///&& l.SysCodeId == SysCodeId
+                                 select new StreamID_DocTypeFormViewModel
+                                 {
+                                     Stream_Id = c.stream_id,
+                                     DocTypeFormViewModel = new DocTypeFormViewModel
+                                     {
+                                         Id = d.Id,
+                                         Name = HrContext.TrlsName(d.Name, Lang),
+                                         RequiredOpt = d.RequiredOpt,
+                                         HasExpiryDate = d.HasExpiryDate
+                                     }
+                                 }).ToList();
+                return DocsViews;
+            }
+            catch
+            {
+                return new List<StreamID_DocTypeFormViewModel>();
+            }
+        }
+
+        public bool IsAllRequiredPapersUploaded(string Source, int SourceId, List<int> RequiredDocTypeIDs, int? DocTypeID_AddEditeMode, int? DocTypeID_DeleteMode)
+        {
+            try
+            {
+                var BasicQuery = GetDocsViews_Queryable(Source, SourceId);
+
+                List<int> UploadedDocTypeIDs = BasicQuery.Select(a => a.TypeId.Value).ToList();
+
+                if (DocTypeID_AddEditeMode != null)
+                    return !RequiredDocTypeIDs.Any(a => a != DocTypeID_AddEditeMode && !UploadedDocTypeIDs.Contains(a));
+
+                if (DocTypeID_DeleteMode != null)
+                {
+                    UploadedDocTypeIDs.Remove(DocTypeID_DeleteMode.Value);
+                    return !RequiredDocTypeIDs.Any(a => !UploadedDocTypeIDs.Contains(a));
+                }
+
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
         public IList<CompanyDocsViews> GetDocsViews(string Source, int SourceId)
         {
             return context.CompanyDocsView.Include("DocType").Where(d => d.Source == Source && d.SourceId == SourceId).ToList();
@@ -44,16 +192,7 @@ namespace Db.Persistence.Repositories
         {
             return context.CompanyDocsView.Where(d => d.Source == Source && SourceIds.Contains(d.SourceId.Value)).ToList();
         }
-        public Address GetAddress(int id)
-        {
-            var address = context.Set<Address>().Find(id);
-
-            if (address == null)
-                return new Address();
-
-            return address;
-        }
-
+        
         public string ExecuteSql(string sql)
         {
             return ExecuteSqlTrans(new string[] { sql });
@@ -82,41 +221,37 @@ namespace Db.Persistence.Repositories
             return result.ToString();
         }
 
-        public  CompanyFormViewModel ReadCompany(int id,string culture)
+        public CompanyFormViewModel ReadCompany(int id, string culture)
         {
             var query = (from c in context.Companies
-                        where c.Id == id
-                         join a in context.Addresses on c.AddressId equals a.Id into g2
-                         from a in g2.DefaultIfEmpty()
+                         where c.Id == id
                          select new CompanyFormViewModel
-                        {
-                            Id = c.Id,
-                            CommFileNo = c.CommFileNo,
-                            Consolidation = c.Consolidation,
-                            CountryId = c.CountryId,
-                            Email = c.Email,
-                            InsuranceNo = c.InsuranceNo,
-                            Language = c.Language,
-                            Name = c.Name,
-                            LocalName = HrContext.TrlsName(c.Name, culture),
-                            Memo = c.Memo,
-                            Purpose = c.Purpose,
-                            TaxCardNo = c.TaxCardNo,
-                            WebSite = c.WebSite,
-                            TaxAuthority = c.TaxAuthority,
-                            SearchName = c.SearchName,
-                            CreatedTime = c.CreatedTime,
-                            CreatedUser = c.CreatedUser,
-                            ModifiedTime = c.ModifiedTime,
-                            ModifiedUser = c.ModifiedUser,
-                            Attachments = HrContext.GetAttachments("Company", c.Id),
-                            Address = a == null ? "" : (a.Address1 + (a.Address2 == null ? "" : ", " + a.Address2) + (a.Address3 == null ? "" : ", " + c.Address.Address3)),
-                            AddressId = c.AddressId,
-                            LegalForm = c.LegalForm,
-                            Office = c.Office,
-                            Region = c.Region,
-                            Responsible = c.Responsible
-                        }).FirstOrDefault();
+                         {
+                             Id = c.Id,
+                             CommFileNo = c.CommFileNo,
+                             Consolidation = c.Consolidation,
+                             CountryId = c.CountryId,
+                             Email = c.Email,
+                             InsuranceNo = c.InsuranceNo,
+                             Language = c.Language,
+                             Name = c.Name,
+                             LocalName = HrContext.TrlsName(c.Name, culture),
+                             Memo = c.Memo,
+                             Purpose = c.Purpose,
+                             TaxCardNo = c.TaxCardNo,
+                             WebSite = c.WebSite,
+                             TaxAuthority = c.TaxAuthority,
+                             SearchName = c.SearchName,
+                             CreatedTime = c.CreatedTime,
+                             CreatedUser = c.CreatedUser,
+                             ModifiedTime = c.ModifiedTime,
+                             ModifiedUser = c.ModifiedUser,
+                             Attachments = HrContext.GetAttachments("Company", c.Id),
+                             LegalForm = c.LegalForm,
+                             Office = c.Office,
+                             Region = c.Region,
+                             Responsible = c.Responsible
+                         }).FirstOrDefault();
             return query;
         }
         public void sum()
@@ -143,8 +278,10 @@ namespace Db.Persistence.Repositories
                               CodeName = dt.CodeName,
                               Value = cd.Value,
                               ValueId = cd.ValueId,
-                              ValueText = (dt.InputType == 3  && code != null ? (t == null ? code.Name : t.Title) : cd.Value)
+                              ValueText = (dt.InputType == 3 && code != null ? (t == null ? code.Name : t.Title) : cd.Value)
                           }).ToList();
+
+
             System.Globalization.CultureInfo ci = new System.Globalization.CultureInfo(culture);
             foreach (var r in result)
                 if (r.InputType == 4 && !String.IsNullOrEmpty(r.ValueText)) r.ValueText = Convert.ToDateTime(r.ValueText).ToString("d", ci);
@@ -161,7 +298,7 @@ namespace Db.Persistence.Repositories
                          join code in context.LookUpCodes on doc.CodeName equals code.CodeName
                          join t in context.LookUpTitles on new { code.CodeName, code.CodeId } equals new { t.CodeName, t.CodeId } into g
                          from t in g.Where(a => a.Culture == culture).DefaultIfEmpty()
-                         select new 
+                         select new
                          {
                              Id = code.Id,
                              CodeName = code.CodeName,
@@ -174,7 +311,7 @@ namespace Db.Persistence.Repositories
 
         public IEnumerable<FileUploaderViewModel> GetCompanyDocsViews(string source, int sourceId)
         {
-           
+
             return context.CompanyDocsView
               .Where(d => d.Source == source && d.SourceId == sourceId)
               .Select(d => new FileUploaderViewModel
@@ -191,12 +328,12 @@ namespace Db.Persistence.Repositories
                   CreatedUser = d.CreatedUser,
                   ModifiedUser = d.ModifiedUser,
                   Keyword = d.Keyword,
-                  AccessLevel = d.AccessLevel  
+                  AccessLevel = d.AccessLevel
               })
               .ToList();
         }
 
-     
+
         public IQueryable<CompanyViewModel> GetAllCompanies(string culture)
         {
             var lang = culture.Split('-')[0];
@@ -208,10 +345,10 @@ namespace Db.Persistence.Repositories
                 LocalName = HrContext.TrlsName(company.Name, culture),
                 LogoUrl = HrContext.GetCompanyDoc("Company", company.Id, 1),
                 Purpose = HrContext.GetLookUpCode("Purpose", company.Purpose.Value, culture),
-                Country = lang == "ar"? company.Country.NameAr : company.Country.Name,
+                Country = lang == "ar" ? company.Country.NameAr : company.Country.Name,
                 Email = company.Email,
                 WebSite = company.WebSite,
-                Attachement = HrContext.GetDoc("ComoanyLogo", company.Id)
+                Attachement = HrContext.GetDoc("CompanyLogo", company.Id)
             });
 
             return result;
@@ -227,32 +364,6 @@ namespace Db.Persistence.Repositories
 
             return result;
         }
-
-        public IQueryable<BranchesViewModel> GetCompanyBranches(int CompanyId)
-        {
-            var result = context.CompanyBranches
-                .Where(branch => branch.CompanyId == CompanyId)
-                .OrderBy(branch => branch.BranchNo)
-                .Select(branch => new BranchesViewModel
-                {
-                    Id = branch.Id,
-                    BranchNo = branch.BranchNo,
-                    Name = branch.Name,
-                    Email = branch.Email,
-                    Telephone = branch.Telephone,
-                    Address = branch.Address.Address1 + (branch.Address.Address2 == null ? "" : ", " + branch.Address.Address2) + (branch.Address.Address3 == null ? "" : ", " + branch.Address.Address3),
-                    AddressId = branch.AddressId,
-                    CompanyId = branch.CompanyId,
-                    CreatedUser = branch.CreatedUser,
-                    CreatedTime = branch.CreatedTime,
-                    ModifiedUser = branch.ModifiedUser,
-                    ModifiedTime = branch.ModifiedTime,
-
-                });
-
-            return result;
-        }
-
         public IQueryable<PartnersViewModel> GetCompanyPartners(int CompanyId)
         {
             var result = context.CompanyPartners
@@ -268,87 +379,43 @@ namespace Db.Persistence.Repositories
                     Email = partner.Email,
                     Telephone = partner.Telephone,
                     Mobile = partner.Mobile,
-                    Address = partner.Address.Address1 + (partner.Address.Address2 == null ? "" : ", " + partner.Address.Address2) + (partner.Address.Address3 == null ? "" : ", " + partner.Address.Address3),
                     AddressId = partner.AddressId,
-                    CreatedUser=partner.CreatedUser,
+                    CreatedUser = partner.CreatedUser,
                     CreatedTime = partner.CreatedTime,
                     ModifiedUser = partner.ModifiedUser,
-                    ModifiedTime = partner.ModifiedTime,
-
-
-
+                    ModifiedTime = partner.ModifiedTime
                 });
 
             return result;
         }
 
-        //public void ReadCompanyLogos()
-        //{
-        //    // Get logo folder
-        //    var logosFolder = System.AppDomain.CurrentDomain.BaseDirectory + "Content\\Logos";
-        //    // Get last access time
-        //    //var lastWriteFileTime = Directory.GetLastWriteTime(logosFolder);
-        //    //var CreationTime = Directory.GetCreationTime(logosFolder);
-        //    //if  (lastWriteFileTime < CreationTime || Directory.GetFiles(logosFolder).Count() <= 1) lastWriteFileTime = new System.DateTime(2000, 1, 1);
-        //    // Get required file need to write
-        //    var files = context.CompanyDocsView.Where(f => f.is_directory == false && f.Source == "Company" && f.DocType.DocumenType == 1).Select(f => new { name = f.name, data = f.file_stream }).ToList();
-        //    // loop to write files
-        //    foreach (var file in files)
-        //    {
-        //        File.WriteAllBytes(Path.Combine(logosFolder, file.name), file.data);
-        //    }
-        //}
-
         public int CompanyAttachmentsCount(int SourceId)
         {
             return HrContext.GetAttachments("Company", SourceId);
         }
-
-        public void Add(Address address)
-        {
-            context.Addresses.Add(address);
-        }
-       
         public void Add(CompanyDocsViews doc)
         {
-             context.CompanyDocsView.Add(doc);
+            context.CompanyDocsView.Add(doc);
         }
         public void Add(RoleMenu RMenue)
         {
             context.RoleMenus.Add(RMenue);
         }
-
-        public void Add(CompanyBranch branch)
-        {
-            context.CompanyBranches.Add(branch);
-        }
-
         public void Add(CompanyPartner partner)
         {
             context.CompanyPartners.Add(partner);
         }
-       
+
 
         public void Add(AudiTrail audit)
         {
             context.AuditTrail.Add(audit);
         }
 
-        public void Attach(Address address)
-        {
-            context.Addresses.Attach(address);
-        }
-
         public void Attach(CompanyDocsViews doc)
         {
             context.CompanyDocsView.Attach(doc);
         }
-
-        public void Attach(CompanyBranch branch)
-        {
-            context.CompanyBranches.Attach(branch);
-        }
-
         public void Attach(CompanyPartner partner)
         {
             context.CompanyPartners.Attach(partner);
@@ -367,44 +434,8 @@ namespace Db.Persistence.Repositories
             context.CompanyDocsView.Remove(doc);
         }
 
-        void Remove(Address address, int? addressId)
-        {
-            // record doesn't contain address
-            if (addressId == null)
-                return;
-
-            // Address not loaded for new records
-            if (address == null)
-                address = context.Addresses.Find(addressId);
-
-            // remove address
-            if (address != null)
-            {
-                if (Context.Entry(address).State == EntityState.Detached)
-                {
-                    context.Addresses.Attach(address);
-                }
-                context.Addresses.Remove(address);
-            }
-        }
-
-        public void Remove(CompanyBranch branch)
-        {
-            // delete related address if found
-            Remove(branch.Address, branch.AddressId);    
-
-            if (Context.Entry(branch).State == EntityState.Detached)
-            {
-                context.CompanyBranches.Attach(branch);
-            }
-            context.CompanyBranches.Remove(branch);
-        }
-
         public void Remove(CompanyPartner partner)
         {
-            // delete related address if found
-            Remove(partner.Address, partner.AddressId);
-
             if (Context.Entry(partner).State == EntityState.Detached)
             {
                 context.CompanyPartners.Attach(partner);
@@ -416,17 +447,9 @@ namespace Db.Persistence.Repositories
         {
             return Context.Entry(doc);
         }
-        public DbEntityEntry<CompanyBranch> Entry(CompanyBranch branch)
-        {
-            return Context.Entry(branch);
-        }
         public DbEntityEntry<CompanyPartner> Entry(CompanyPartner partner)
         {
             return Context.Entry(partner);
-        }
-        public DbEntityEntry<Address> Entry(Address address)
-        {
-            return Context.Entry(address);
         }
     }
 }

@@ -34,10 +34,6 @@ namespace Model.Domain
         public short AssignStatus { get; set; } // Assignment Status  look user code Assignment                        
         //public bool Primary { get; set; } // Employee can have only one Active & Primary Assignment
         public short SysAssignStatus { get; set; }
-
-        [Index("IX_AssignmentBranch")]
-        public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
         public int DepartmentId { get; set; } // Department
         public CompanyStructure Department { get; set; } // company structure for login company
 
@@ -48,8 +44,10 @@ namespace Model.Domain
         public Job Job { get; set; } // Job
         public int? PositionId { get; set; } // Position
         public Position Position { get; set; } // Optional filter positions only from selected job
-        public int? LocationId { get; set; } // filter local locations for login company or globals locations ((IsLocal == false) || (IsLocal && CompanyId == 0)) && IsInternal == true;
-        public Location Location { get; set; } // Location
+
+        [Index("IX_AssignmentBranch")]
+        public int BranchId { get; set; } // 
+        public Branch Branch { get; set; }
         public int? GroupId { get; set; } // People Group
 
         [ForeignKey("GroupId")]
@@ -101,7 +99,7 @@ namespace Model.Domain
         public string PayrollGrades { get; set; } // comma seperated Payroll Grades
 
         [MaxLength(50)]
-        public string Locations { get; set; } // comma seperated Payroll Grades
+        public string Branches { get; set; } //
 
         // Salary Items
 

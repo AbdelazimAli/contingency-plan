@@ -1,0 +1,81 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.ProfileViewModel
+
+@{
+    ViewBag.Title = "ViewProfile";
+    var admin = User.Identity.CanCustomize();
+    var rtl = User.Identity.RTL();
+    Layout = null;
+
+}
+
+<div id="myProfile"></div>
+<br />
+<script>
+    var user = {};
+    user = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+    var objectname = "Profile", formId = "profile";
+
+    //-- Form
+    $.getJSON("@Url.Action("ReadFormInfo", "Pages")", { objectname: objectname, version: 0 }, function (data) {
+        data.FormId = formId;
+        data.TableName ="AspNetUsers";
+        data.FormAction = "@Url.Action("SaveProfile", "UserProfile")";
+        data.Culture = "@User.Identity.GetCulture()";
+        data.rtl = @rtl.ToString().ToLower();
+        data.companyId = "@User.Identity.GetDefaultCompany()";
+        data.admin = "@admin";
+        data.HasEditControls = false;
+        //for Unique Validation
+        if(user != null)  user.Id = "@TempData["id"]";
+
+        $("#myProfile").Forms(data, user);
+
+        var isSuper = "@ViewBag.isSuper";
+        var Infolog = [{id:0, name:"@MsgUtils.Instance.Trls("All")"}, {id:2, name:"@MsgUtils.Instance.Trls("Errors and warnings")"}, {id:3, name:"@MsgUtils.Instance.Trls("Errors only")"}, {id:4, name:"@MsgUtils.Instance.Trls("None")"}];
+        FormJs.fillOptionsDynamic($("#" + formId), "Infolog", Infolog, user);
+        
+        do_AjaxCall_WithMethod('@Url.Action("FillViewDropdown", "UserProfile")','','GET',function(data) {
+            var culture = lang.getList("@User.Identity.GetLanguage()");
+            var cultureList = [];
+            for (var i=0; i < data.Culture.length; i++) {
+                var f = culture.find(function(e) {
+                    return e.id == data.Culture[i];
+                });
+                if (f) cultureList.push(f);
+            }
+            FormJs.fillOptionsDynamic($("#" + formId), "DefaultCountry", data.Country, user);
+            FormJs.fillOptionsDynamic($("#" + formId), "Culture", cultureList, user);
+            FormJs.fillOptionsDynamic($("#" + formId), "TimeZone", data.TimeZones, user);
+        });
+
+        if("@ViewBag.adminUser" != "True") {
+            $("#AllowInsertCode").closest(".form-group").remove();
+            $("#UploadDocs").closest(".form-group").remove();
+            $("#LogTooltip").closest(".form-group").remove();
+            $("#Infolog").closest(".form-group").remove();
+        }
+
+
+        $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+        $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
+        $("#LastLogin").data("kendoDatePicker").readonly();
+        if(isSuper === 'False')
+           $("#"+formId).find("#SuperUser").closest("div").css("display","none")
+        $("#" + formId).on('click','#SaveChanges', function () {
+            FormJs.saveForm($("#" + formId), $(this), function (res) {
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                if(res !== undefined)
+                    location.reload();
+                else
+                    updateHistory(oldUlr);
+            });
+        });
+
+        $("#" + formId).on('click','#backToIndex' ,function(){
+            updateHistory(oldUlr);
+        });
+    });
+</script>
+<script src="~/Scripts/cultures/lang.js"></script>

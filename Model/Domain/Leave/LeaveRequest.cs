@@ -52,16 +52,16 @@ namespace Model.Domain
         [MaxLength(250)]
         public string CancelDesc { get; set; }
 
-        [DataType(DataType.Date), Column(TypeName = "Date")]
+        //[DataType(DataType.Date), Column(TypeName = "Date")]
         public DateTime StartDate { get; set; }
 
-        [DataType(DataType.Date), Column(TypeName = "Date")]
+        //[DataType(DataType.Date), Column(TypeName = "Date")]
         public DateTime EndDate { get; set; }
 
-        [DataType(DataType.Date), Column(TypeName = "Date")]
+        //[DataType(DataType.Date), Column(TypeName = "Date")]
         public DateTime? ActualStartDate { get; set; }
 
-        [DataType(DataType.Date), Column(TypeName = "Date")]
+        //[DataType(DataType.Date), Column(TypeName = "Date")]
         public DateTime? ActualEndDate { get; set; }
 
         [DataType(DataType.Date), Column(TypeName = "Date")]

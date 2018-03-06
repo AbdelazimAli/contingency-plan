@@ -5,7 +5,7 @@
 @model Model.Domain.Discipline
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -21,7 +21,7 @@
 <div id="DisciplineDiv"></div>
 
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var PeriodId=[]
@@ -32,8 +32,8 @@
     PeriodId.unshift({id:"", name:'@MsgUtils.Instance.Trls("Open Period")'});
     $(function () {
 
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var formId = "DisciplineForm";
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
         var url = "@Url.Action("ReadFormInfo", "Pages")";
@@ -81,7 +81,7 @@
                             model=res;
                             toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
                         $("#GridRepeatDiv").data("kendoGrid").dataSource.read();
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                         },Grids.sendData("GridRepeatDiv"));
 
                 });
@@ -100,7 +100,7 @@
                     FormJs.saveForm($("#" + formId), $(this), function (res) {
                         model=res;
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                     });
                 });
 
@@ -108,7 +108,7 @@
         });
         // Find Button BackToindex and bind for Click
         $('#DisciplineDiv').on('click',"#backToIndex",null, function(){
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
         
         $("#" + formId).on('blur','#StartDate', function(){

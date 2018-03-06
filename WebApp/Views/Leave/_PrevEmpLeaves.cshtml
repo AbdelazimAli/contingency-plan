@@ -4,7 +4,7 @@
 @{
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -20,8 +20,7 @@
         gridName: "PrevLeaves",
         admin: "@admin",
         aggregate: [{ field: "CreditQty", aggregate: "sum" }, { field: "DebitQty", aggregate: "sum" }],
-        columns: [ {field:"TransType",values:TransType},
-            {
+        columns: [ {field:"TransType",values:TransType},  {
                 field: "CreditQty", aggregates: ["sum"], //groupFooterTemplate: "sum #= sum# "
                 groupFooterTemplate: function (e) {
                     return "@MsgUtils.Instance.Trls("Balance")"+" = " +  kendo.toString((e.CreditQty.sum - e.DebitQty.sum), '0.00');

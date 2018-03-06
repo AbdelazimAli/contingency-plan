@@ -48,7 +48,7 @@ namespace Model.Domain.Payroll
         public bool ISubGrade { get; set; } = false;
         public bool IPoints { get; set; } = false;
         public bool IPayroll { get; set; } = false;
-        public bool ILocation { get; set; } = false;
+        public bool IBranch { get; set; } = false;
         public bool IPersonType { get; set; } = false; // lookup user code
         public bool IPerformance { get; set; } = false; // lookup code
         
@@ -116,8 +116,8 @@ namespace Model.Domain.Payroll
         public int? PayDueId { get; set; }
         public PayrollDue Payroll { get; set; }
 
-        public int? LocationId { get; set; }
-        public Location Location { get; set; }
+        public int? BranchId { get; set; }
+        public Branch Branch { get; set; }
         public short? PersonType { get; set; } // lookup user code
         public short? Performance { get; set; } // lookup code
 

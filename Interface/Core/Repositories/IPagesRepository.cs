@@ -43,6 +43,8 @@ namespace Interface.Core.Repositories
 
         void RemovePageDiv(int companyId, string objectName, byte version);
         IQueryable<FormColumnViewModel> GetFormColumnInfo(int companyId, string objectName, byte version, string culture);
+        FormColumnViewModel GetFormColumn(int companyId, string objectName, byte version, string culture, string columnname);
+        IList<StringDropDown> GetCodeNamesList(string culture);
         IQueryable<FormColumnViewModel> GetExcelColumnInfo(int companyId, string objectName, byte version, string culture);
         void Attach(FormColumn info);
         System.Data.Entity.Infrastructure.DbEntityEntry<FormColumn> Entry(FormColumn info);
@@ -59,7 +61,7 @@ namespace Interface.Core.Repositories
         int AddToTable(SelectOptionsViewModel model, string tableName, int companyId);
         void RemoveRange(IEnumerable<PageDiv> pages);
         IEnumerable<ColumnTitle> GetColumnTitles(int companyId, IEnumerable<int> menuIds);
-        IQueryable<DropDownList> GetRemoteList(string tableName, string query, string formTableName, int companyId, string culture);
+        IEnumerable<DropDownList> GetRemoteList(string tableName, string query, string formTableName, int companyId, string culture, string id);
         FormFlexColumnsVM GetFormFlexData(int companyId, string objectName, byte version, string culture, int SourceId);
         IQueryable<ColumNameVM> GetColumns(string objectName, int companyId, int version);
         IQueryable<MenuViewModel> GetMenu(string culture, int companyId);

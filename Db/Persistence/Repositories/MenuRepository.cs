@@ -163,9 +163,9 @@ namespace Db.Persistence.Repositories
             return menus;
         }
 
-        public IEnumerable<RoleMenuViewModel> ReadRoleMenu(int companyId, string culture, string RoleId,bool SSRole)
+        public IEnumerable<RoleMenuViewModel> ReadRoleMenu(int companyId, string culture, string RoleId)
         {
-            var menus = (from m in context.Menus where m.CompanyId == companyId & m.SSMenu==SSRole & m.IsVisible //&& !m.Config
+            var menus = (from m in context.Menus where m.CompanyId == companyId && m.IsVisible //&& !m.Config
                         join rm in context.RoleMenus on m.Id equals rm.MenuId into g1
                         from rm in g1.Where(s => s.RoleId == RoleId).DefaultIfEmpty()
                         join t in context.NamesTbl on m.Name + m.Sequence equals t.Name into g2
@@ -357,9 +357,7 @@ namespace Db.Persistence.Repositories
                    select new FormList
                    {
                        id = m.Id,
-                       name = m.Name,
-                       text = m.Name,
-                       value = m.Id
+                       name = m.Name         
                    };
         }
         public IQueryable<FunctionViewModel> GetFunctions(int Id)

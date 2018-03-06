@@ -47,8 +47,8 @@
         var arr =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ArrData));
 
         GetHiddenFile(arr[0].name,arr[0].text);
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         $("#DataSent").kendoDropDownList({
             valuePrimitive: true,

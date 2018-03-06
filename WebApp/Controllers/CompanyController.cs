@@ -17,9 +17,6 @@ namespace WebApp.Controllers
     public class CompanyController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
         protected override void Initialize(RequestContext requestContext)
         {
             base.Initialize(requestContext);
@@ -29,12 +26,6 @@ namespace WebApp.Controllers
                 CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
                 UserName = requestContext.HttpContext.User.Identity.Name;
             }
-        }
-
-        public ActionResult Branches(int id = 0)
-        {
-            ViewBag.Id = id;
-            return View();
         }
 
         public ActionResult Partners(int id = 0)
@@ -66,100 +57,10 @@ namespace WebApp.Controllers
             }
         }
 
-        public ActionResult GetAddress(int addressId)
-        {
-            var address = _hrUnitOfWork.CompanyRepository.GetAddress(addressId);
-
-            if (address.CountryId > 0)
-            {
-                var city = address.CityId ?? 0;
-                var dist = address.DistrictId ?? 0;
-                var location = _hrUnitOfWork.Repository<World>().FirstOrDefault(c => c.CountryId == address.CountryId
-                && c.CityId == city && c.DistrictId == dist);
-                if (location != null)
-                    ViewBag.location = (Language.Substring(0, 2) == "ar" ? location.NameAr : location.Name);
-            }
-
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("Addresses", CompanyId, 0);
-            if (columns.FirstOrDefault(c => c == "Location") == null)
-                ViewBag.LocationList = _hrUnitOfWork.Repository<World>().Select(c => new { id = c.CountryId, country = c.CountryId, city = c.CityId, dist = c.DistrictId, name = c.Name }).ToList();
-
-            return PartialView("_Address", address);
-        }
-
-        // POST: Address
-        // To protect from overposting attacks, please enable the specific properties you want to bind to
-        [HttpPost]
-        //[ValidateAntiForgeryToken]
-        public ActionResult PostAddress([Bind(Include = "Id,Name,Address1,Address2,Address3,CountryId,CityId,DistrictId,PostalCode,Telephone,Latitude,Longitude")] Address address, OptionsViewModel moreInfo)
-        {
-            List<Error> errors = new List<Error>();
-
-            if (ModelState.IsValid)
-            {
-                if (ServerValidationEnabled)
-                {
-                    errors = _hrUnitOfWork.CompanyRepository.CheckForm(new CheckParm
-                    {
-                        CompanyId = CompanyId,
-                        ObjectName = "Addresses",
-                        TableName = "Addresses",
-                        Columns = Models.Utils.GetColumnViews(ModelState.Where(a => !a.Key.Contains('.'))),
-                        Culture = Language
-                    });
-
-                    if (errors.Count() > 0)
-                    {
-                        foreach (var e in errors)
-                        {
-                            foreach (var errorMsg in e.errors)
-                            {
-                                ModelState.AddModelError(errorMsg.field, errorMsg.message);
-                            }
-                        }
-                        return Json(Models.Utils.ParseFormErrors(ModelState));
-                    }
-                }
-
-                string message = "OK,";
-                if (address.CityId == 0) address.CityId = null;
-                if (address.DistrictId == 0) address.DistrictId = null;
-
-                if (address.Id == 0) // New 
-                    _hrUnitOfWork.CompanyRepository.Add(address);
-                else // Edit 
-                {
-                    Address oldAddress = _hrUnitOfWork.CompanyRepository.GetAddress(address.Id);
-                    byte version;
-                    byte.TryParse(Request.Form["version"], out version);
-                    AutoMapper(new AutoMapperParm() { Source = address, Destination = oldAddress, ObjectName = "Addresses", Version = version, Options = moreInfo,Transtype = TransType.Update });
-
-                    _hrUnitOfWork.CompanyRepository.Attach(oldAddress);
-                    _hrUnitOfWork.CompanyRepository.Entry(oldAddress).State = EntityState.Modified;
-                }
-                var Errors = SaveChanges(Language);
-                if (Errors.Count > 0)
-                    message = Errors.First().errors.First().message;
-                else
-                    message += (new JavaScriptSerializer()).Serialize(address);
-
-                return Json(message);
-            }
-            return Json(Models.Utils.ParseFormErrors(ModelState));
-        }
         // GET: Company
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
-        }
-        public ActionResult ReadCompanyBranches(int Id)
-        {
-            var query = _hrUnitOfWork.CompanyRepository.GetCompanyBranches(Id);
-            return Json(query, JsonRequestBehavior.AllowGet);
         }
         public ActionResult ReadCompanyPartners(int Id)
         {
@@ -208,7 +109,7 @@ namespace WebApp.Controllers
         {
             DataSource<CompanyViewModel> Source = new DataSource<CompanyViewModel>();
             UserContext db = new UserContext();
-            var UserList = db.Users.Where(a => a.Companies.Where(c => c.Id == id).Count() > 0 || a.DefaultCompany == id).ToList();
+            //var CompanyUsersCount = db.UserCompanyRoles.Where(a => a.CompanyId == id).Count();
             var Company = _hrUnitOfWork.CompanyRepository.Find(a => a.Id == id).FirstOrDefault();
             List<Error> errors = new List<Error>();
             List<ErrorMessage> errorMessages = new List<ErrorMessage>();
@@ -222,16 +123,16 @@ namespace WebApp.Controllers
                 Source.Errors = errors;
                 return Json(Source);
             }
-            else if (UserList.Count() > 0)
-            {
-                ErrorMessage errormessa = new ErrorMessage() { message = MsgUtils.Instance.Trls("Companyhasusers") };
-                errorMessages.Add(errormessa);
+            //else if (CompanyUsersCount > 0)
+            //{
+            //    ErrorMessage errormessa = new ErrorMessage() { message = MsgUtils.Instance.Trls("Companyhasusers") };
+            //    errorMessages.Add(errormessa);
 
-                Error err = new Error() { errors = errorMessages };
-                errors.Add(err);
-                Source.Errors = errors;
-                return Json(Source);
-            }
+            //    Error err = new Error() { errors = errorMessages };
+            //    errors.Add(err);
+            //    Source.Errors = errors;
+            //    return Json(Source);
+            //}
             else
             {
                 var CompanyDivs = _hrUnitOfWork.Repository<PageDiv>().Where(j => j.CompanyId == id).ToList();
@@ -324,7 +225,6 @@ namespace WebApp.Controllers
                     Destination = record,
                     Source = model,
                     ObjectName = "Company",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 });
@@ -343,7 +243,6 @@ namespace WebApp.Controllers
                     Destination = record,
                     Source = model,
                     ObjectName = "Company",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });
@@ -386,84 +285,7 @@ namespace WebApp.Controllers
                 ColumnList = copy.ColumnList
             };
         }
-        [HttpPost]
-        public ActionResult CreateBranch(IEnumerable<BranchesViewModel> models)
-        {
-            var result = new List<CompanyBranch>();
-            var datasource = new DataSource<BranchesViewModel>();
-            datasource.Data = models;
-            datasource.Total = models.Count();
-            if (ModelState.IsValid)
-            {
-                if (ServerValidationEnabled)
-                {
-                    var errors = _hrUnitOfWork.CompanyRepository.Check(new CheckParm
-                    {
-                        CompanyId = CompanyId,
-                        ObjectName = "CompanyBranches",
-                        Columns = Models.Utils.GetModifiedRows(ModelState),
-                        ParentColumn = "CompanyId",
-                        Culture = Language
-                    });
-
-                    if (errors.Count() > 0)
-                    {
-                        datasource.Errors = errors;
-                        return Json(datasource);
-                    }
-                }
-
-                //  Iterate all updated rows which are posted by the PageDiv
-                foreach (BranchesViewModel model in models)
-                {
-                    // Create a new branch entity and set its properties from branchViewModel
-                    var branch = new CompanyBranch
-                    {
-                        BranchNo = model.BranchNo,
-                        Name = model.Name,
-                        Email = model.Email,
-                        Telephone = model.Telephone,
-                        CompanyId = model.CompanyId,
-                        AddressId = model.AddressId,
-                        CreatedTime = DateTime.Now,
-                        CreatedUser = UserName
-                    };
-
-                    result.Add(branch);
-                    _hrUnitOfWork.CompanyRepository.Add(branch);
-                }
-
-                datasource.Errors = SaveChanges(Language);
-            }
-            else
-            {
-                datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-            }
-
-
-            datasource.Data = (from m in models
-                               join r in result on m.Name equals r.Name into g
-                               from r in g.DefaultIfEmpty()
-                               select new BranchesViewModel
-                               {
-                                   Id = (r == null ? 0 : r.Id),
-                                   BranchNo = m.BranchNo,
-                                   Name = m.Name,
-                                   Email = m.Email,
-                                   Telephone = m.Telephone,
-                                   Address = m.Address,
-                                   CompanyId = m.CompanyId,
-                                   AddressId = m.AddressId,
-                                   CreatedTime = DateTime.Now,
-                                   CreatedUser = UserName
-                               }).ToList();
-
-            if (datasource.Errors.Count() > 0)
-                return Json(datasource);
-            else
-                return Json(datasource.Data);
-        }
-
+        
         [HttpPost]
         public ActionResult CreatePartner(IEnumerable<PartnersViewModel> models)
         {
@@ -549,58 +371,6 @@ namespace WebApp.Controllers
         }
 
         [HttpPost]
-        public ActionResult PutBranch(IEnumerable<BranchesViewModel> models, IEnumerable<OptionsViewModel> options) // [DataSourceRequest] DataSourceRequest dataSourceRequest, 
-        {
-            var datasource = new DataSource<BranchesViewModel>();
-            datasource.Data = models;
-            datasource.Total = models.Count();
-
-            if (ModelState.IsValid)
-            {
-                if (ServerValidationEnabled)
-                {
-                    var errors = _hrUnitOfWork.CompanyRepository.Check(new CheckParm
-                    {
-                        CompanyId = CompanyId,
-                        ObjectName = "CompanyBranches",
-                        Columns = Models.Utils.GetModifiedRows(ModelState.Where(a => a.Key.Contains("models"))),
-                        ParentColumn = "CompanyId",
-                        Culture = Language
-                    });
-
-                    if (errors.Count() > 0)
-                    {
-                        datasource.Errors = errors;
-                        return Json(datasource);
-                    }
-                }
-
-                for (var i = 0; i < models.Count(); i++)
-                {
-                    var branch = new CompanyBranch();
-
-                    AutoMapper(new AutoMapperParm() { ObjectName = "CompanyBranches", Destination = branch, Source = models.ElementAtOrDefault(i), Version = 0, Options = options.ElementAtOrDefault(i) });
-                    branch.ModifiedTime = DateTime.Now;
-                    branch.ModifiedUser = UserName;
-
-                    _hrUnitOfWork.CompanyRepository.Attach(branch);
-                    _hrUnitOfWork.CompanyRepository.Entry(branch).State = EntityState.Modified;
-                }
-
-                datasource.Errors = SaveChanges(Language);
-            }
-            else
-            {
-                datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-            }
-
-            if (datasource.Errors.Count() > 0)
-                return Json(datasource);
-            else
-                return Json(datasource.Data);
-        }
-
-        [HttpPost]
         public ActionResult UpdatePartner(IEnumerable<PartnersViewModel> models, IEnumerable<OptionsViewModel> options)
         {
             var datasource = new DataSource<PartnersViewModel>();
@@ -646,36 +416,6 @@ namespace WebApp.Controllers
             {
                 datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
             }
-
-            if (datasource.Errors.Count() > 0)
-                return Json(datasource);
-            else
-                return Json(datasource.Data);
-        }
-
-        [HttpPost]
-        public ActionResult DeleteBranch(IEnumerable<BranchesViewModel> models)
-        {
-            var datasource = new DataSource<BranchesViewModel>();
-
-            if (ModelState.IsValid)
-            {
-                foreach (BranchesViewModel model in models)
-                {
-                    var branch = new CompanyBranch
-                    {
-                        Id = model.Id,
-                        AddressId = model.AddressId
-                    };
-
-                    _hrUnitOfWork.CompanyRepository.Remove(branch);
-                }
-
-                datasource.Errors = SaveChanges(Language);
-                datasource.Total = models.Count();
-            }
-
-            datasource.Data = models;
 
             if (datasource.Errors.Count() > 0)
                 return Json(datasource);

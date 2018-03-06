@@ -10,8 +10,7 @@ namespace Model.ViewModel.Personnel
    public class EmpDisciplineViewModel
     {
         public int Id { get; set; } = 0;
-        public int PhotoId { get; set; }
-
+        public short Gender { get; set; }
         public string EmpId { get; set; }     
         public int DiscplinId { get; set; } // Violiation
         [DataType(DataType.Date)]
@@ -48,9 +47,8 @@ namespace Model.ViewModel.Personnel
         public int? PeriodId { get; set; }
         public int DeptId { get; set; }
         public int? BranchId { get; set; }
-        public int? SectorId { get; set; }
         public int? PositionId { get; set; }
-        public bool HasImage { get; set; }
+        public string Image { get; set; }
         public int EmpStatus { get; set; }
         public int empId { get; set; }
         public string Discplin { get; set; }

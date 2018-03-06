@@ -27,6 +27,5 @@ namespace Model.Domain
         [MaxLength(250)]
         public string Value { get; set; }
         public int? ValueId { get; set; }
-
     }
 }

@@ -41,10 +41,6 @@ namespace WebApp.Controllers
         #region Pay Request
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -84,8 +80,7 @@ namespace WebApp.Controllers
         [HttpGet]
         public ActionResult Details(int id = 0, byte Version = 0)
         {
-            List<string> columns = _hrUnitOfWork.PayrollRepository.GetAutoCompleteColumns("PayRequest", CompanyId, Version);
-            if (columns.Where(fc => fc == "Requester").FirstOrDefault() == null)
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("PayRequest", CompanyId, Version, "EmpId"))
                 ViewBag.Employees = _hrUnitOfWork.PeopleRepository.GetActiveEmployees(CompanyId, Language);
 
             ViewBag.Payroll = _hrUnitOfWork.PayrollRepository.GetPayrollList(CompanyId, Language);
@@ -99,6 +94,7 @@ namespace WebApp.Controllers
                 int requestNo = _hrUnitOfWork.PayrollRepository.NextRequestNo(CompanyId);
                 return View(new PayRequestViewModel() { ApprovalStatus = 1, PayPercent = 100, RequestNo = requestNo});
             }
+
             PayRequestViewModel request = _hrUnitOfWork.PayrollRepository.GetPayRequestVM(id, Language);
             return request == null ? (ActionResult)HttpNotFound() : View(request);
         }
@@ -259,7 +255,6 @@ namespace WebApp.Controllers
                 {
                     Source = request,
                     ObjectName = "PayRequests",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PayrollRepository.Remove(request);
@@ -279,11 +274,6 @@ namespace WebApp.Controllers
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("PayCancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
             ViewBag.Mangers = _hrUnitOfWork.EmployeeRepository.GetManagers(CompanyId, Language).Select(m => new { id = m.Id, name = m.Name });
-
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
 
             return View();
         }
@@ -473,7 +463,6 @@ namespace WebApp.Controllers
                 Destination = request,
                 Source = model,
                 ObjectName = "PayRequest",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo,
                 Transtype = TransType.Update
             });
@@ -513,10 +502,6 @@ namespace WebApp.Controllers
         public ActionResult ApprovedPaysIndex()
         {
             ViewBag.BankId = _hrUnitOfWork.PayrollRepository.GetBankList().Select(a => new { value = a.id, text = a.name });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 

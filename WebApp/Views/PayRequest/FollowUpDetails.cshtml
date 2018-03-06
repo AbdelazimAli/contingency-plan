@@ -3,7 +3,7 @@
 @model Model.ViewModel.Payroll.PayRequestViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -38,8 +38,8 @@
 
     $("#t_GeneralInfo").click();
 
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
     function PayRequestForm() {
         var ApprovalStatus = [{ id: 2, name: '@MsgUtils.Instance.Trls("Submit")' },{ id: 5, name: '@MsgUtils.Instance.Trls("Accepted")' },{ id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }];

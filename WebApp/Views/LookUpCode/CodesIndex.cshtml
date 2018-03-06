@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 <br>
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     var count = ViewBag.count;
@@ -22,12 +22,11 @@
 
     $('#tab_LookupList').load("@Url.Action("Lookupcode", "LookUpCode")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
 
-    //السنة المالية
     $("#t_LookupList").click(function () {
         $("#tab_LookupUserList").empty();
         $('#tab_LookupList').load("@Url.Action("Lookupcode", "LookUpCode")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
     });
-    // فترات الإستحقاق
+
     $("#t_LookupUserList").click(function () {
         $("#tab_LookupList").empty();
         $('#tab_LookupUserList').load("@Url.Action("LookUpUsercode", "LookUpCode")?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");

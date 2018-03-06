@@ -11,7 +11,7 @@ namespace Model.ViewModel.Administration
         public int Id { get; set; }
         public string JobId { get; set; }
         public string ItemCode { get; set; } 
-        public string LocationId { get; set; }
+        public string BranchId { get; set; }
         public string Code { get; set; }
         public string Name { get; set; }
         public string PurchaseAmount { get; set; }

@@ -15,10 +15,12 @@ namespace Interface.Core.Repositories
 {
     public interface INotificationRepository : IRepository<Notification>
     {
+       
        List<WebMobLog> GetWebMobLog(int Id);
         void AddNotifyLetter(NotifyLetter notify);
         void AttachNotifyLetter(NotifyLetter notify);
         void Remove(NotifyLetter notify);
+        void Attach(NotifyLetter notify);
         DbEntityEntry<NotifyLetter> Entry(NotifyLetter notify);
         IList<NotifyCondition> GetNotifyConditions(int companyId);
         void AddDeleteNotification(int id, string tablename, DbEntityEntry entity);
@@ -61,6 +63,7 @@ namespace Interface.Core.Repositories
         #endregion
 
         IQueryable<NotifiyLetterViewModel> GetEmpLetters(int CompanyId, string Language);
+        IQueryable<NotifiyLetterViewModel> GetMyLetters(int CompanyId, string Language, int EmpId);
         //condition
         IEnumerable<NotifyColumnsViewModel> GetColumnList(string tableName, string ObjectName, byte version, string type, int companyId, string culture);
         IQueryable<FilterGridViewModel> ReadCondition(int notifyCondId, string culture);
@@ -76,15 +79,10 @@ namespace Interface.Core.Repositories
         NotifyConditionViewModel ReadNotificationCondition(int id);
         IList<NotifyCondition> GetNotifications(int companyId, string objectname, int version);
         void Attach(NotifyCondition Notify);
-
         DbEntityEntry<NotifyCondition> Entry(NotifyCondition Notify);
-
         void Remove(NotifyCondition Notify);
         IQueryable<SmsLogViewModel> ReadSMSLogs(int CompanyId);
         IQueryable<EmailLogViewModel> ReadEmailLogs();
-        IQueryable<MeetingViewModel> GetMeetings(byte Range, DateTime? Start, DateTime? End, string culture, int CompanyId);
-        MeetingFormViewModel ReadMeeting(int Id);
-        List<FormList> GetMeetingAttendee(int Id, string culture);
-        IQueryable<MeetingAgendaViewModel> GetAgenda(int Id, string culture);
+
     }
 }

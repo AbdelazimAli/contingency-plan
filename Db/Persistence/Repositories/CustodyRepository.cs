@@ -42,19 +42,19 @@ namespace Db.Persistence.Repositories
                        InUse = HrContext.TrlsMsg(c.InUse.ToString(), Language),
                        ItemCode = c.ItemCode,
                        JobId = HrContext.TrlsName(c.Job.Name, Language),
-                       LocationId = HrContext.TrlsName(c.Location.Name, Language),
+                       BranchId = HrContext.TrlsName(c.Branch.Name, Language),
                        PurchaseDate = c.PurchaseDate != null ? c.PurchaseDate.Value.ToString() : " ",
                        Freeze = HrContext.TrlsMsg(c.Freeze.ToString(), Language),
                    };
         }
-        public IQueryable<AssignmentGridViewModel> GetActiveEmployee(string culture, List<int> Id)
+        public IQueryable<PeopleGridViewModel> GetActiveEmployee(string culture, List<int> Id)
         {
 
 
             var employees = from p in context.People
                             join a in context.Assignments on p.Id equals a.EmpId
                             where (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today )|| Id.Contains(a.EmpId)
-                            select new AssignmentGridViewModel
+                            select new PeopleGridViewModel
                             {
                                 Id = p.Id,
                                 Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture)
@@ -149,12 +149,12 @@ namespace Db.Persistence.Repositories
             }
             return dic;
         }
-        public IQueryable<AssignmentGridViewModel> GetActiveJobEmployee(string culture, int jobId)
+        public IQueryable<PeopleGridViewModel> GetActiveJobEmployee(string culture, int jobId)
         {
             var employees = from p in context.People
                             join a in context.Assignments on p.Id equals a.EmpId
                             where (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today) && a.JobId == jobId
-                            select new AssignmentGridViewModel
+                            select new PeopleGridViewModel
                             {
                                 Id = p.Id,
                                 Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture)
@@ -205,7 +205,7 @@ namespace Db.Persistence.Repositories
                           Attachments = HrContext.GetAttachments("Custody", c.Id),
                           PurchaseDate = c.PurchaseDate,
                           JobId = c.JobId,
-                          LocationId = c.LocationId,
+                          BranchId = c.BranchId,
                           Status = c.Status,
                           PurchaseAmount = c.PurchaseAmount,
                           ItemCode = c.ItemCode,
@@ -271,7 +271,7 @@ namespace Db.Persistence.Repositories
                            EmpId = e.EmpId,
                            RecvDate = e.RecvDate,
                            Notes = e.Notes,
-                           LocationId = e.LocationId
+                           BranchId = e.BranchId
                        }).FirstOrDefault();
             return res;
         }
@@ -305,7 +305,7 @@ namespace Db.Persistence.Repositories
                           join Emp in context.EmpCustodies on c.Id equals Emp.CustodyId
                           where Emp.delvryDate == null
                           join p in context.People on Emp.EmpId equals p.Id
-                          join l in context.Locations on Emp.LocationId equals l.Id into j
+                          join l in context.Sites on Emp.BranchId equals l.Id into j
                           from l in j.DefaultIfEmpty()
                           select new CustodyViewModel
                           {
@@ -320,7 +320,7 @@ namespace Db.Persistence.Repositories
                               Status = c.Status,
                               InUse = c.InUse,
                               Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                              Location = HrContext.TrlsName(l.Name, culture),
+                              Branch = HrContext.TrlsName(l.Name, culture),
                               EmpId = Emp.EmpId,
                               Description = c.Description,
                               Qty = Emp.Qty,
@@ -360,7 +360,7 @@ namespace Db.Persistence.Repositories
                          where (c.CompanyId == CompanyId && c.CustodyCat.Disposal)
                          join Emp in context.EmpCustodies on c.Id equals Emp.CustodyId
                          join p in context.People on Emp.EmpId equals p.Id
-                         join l in context.Locations on Emp.LocationId equals l.Id into j
+                         join l in context.Sites on Emp.BranchId equals l.Id into j
                          from l in j.DefaultIfEmpty()
                          select new CustodyViewModel
                          {
@@ -375,7 +375,7 @@ namespace Db.Persistence.Repositories
                              Status = c.Status,
                              InUse = c.InUse,
                              Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                             Location = HrContext.TrlsName(l.Name, culture),
+                             Branch = HrContext.TrlsName(l.Name, culture),
                              EmpId = Emp.EmpId,
                              Description = c.Description,
                              Qty = Emp.Qty
@@ -609,7 +609,7 @@ namespace Db.Persistence.Repositories
                          join Emp in context.EmpCustodies on c.Id equals Emp.CustodyId
                          where Emp.delvryDate == null && Emp.EmpId == EmpId
                          join p in context.People on Emp.EmpId equals p.Id
-                         join l in context.Locations on Emp.LocationId equals l.Id into j
+                         join l in context.Sites on Emp.BranchId equals l.Id into j
                          from l in j.DefaultIfEmpty()
                          select new CustodyViewModel
                          {
@@ -625,7 +625,7 @@ namespace Db.Persistence.Repositories
                              PurchaseDate = c.PurchaseDate,
                              PurchaseAmount = c.PurchaseAmount,
                              Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                             Location = HrContext.TrlsName(l.Name, culture),
+                             Branch = HrContext.TrlsName(l.Name, culture),
                              EmpId = Emp.EmpId,
                              Qty = Emp.Qty
                          };

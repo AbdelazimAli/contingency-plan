@@ -2,129 +2,309 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
 }
 
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+ <style>
+    #docWindow .k-window-content {
+         min-height: 700px;
+     }
+     .tab-content{
+         display: inline-block;
+     }
+     .imgSec {
+             margin-top: 50px;
+             text-align: center;
+             float: right;
+         }
+     .k-rtl .imgSec {
+             direction: rtl;
+             float: left;
+         }
+     /*------Pic------*/
+     .imgSec .picDiv {
+             border: 1px solid #CCC;
+             background-color: transparent;
+             display: inline-block;
+             height: 69px;
+             width: 211px;
+             align-items: center;
+         }
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
-<script src="~/Scripts/cultures/lang.js"></script>
+     /*.imgSec .picDiv:hover {
+             background-color: rgba(238, 238, 238, 0.32);
+         }*/
 
-<div id="LeaveActionDiv"></div>
+     .imgSec .picBtns button {
+         text-align: center;
+         height: 30px;
+         float: none;
+     }
+     .space {
+         max-height: 20px;
+         min-height: 20px;
+         overflow: hidden;
+         margin: 4px 0 3px;
+     }
+    /*#compLoadImg {
+        width: 50px;
+        height: 50px;
+    }*/
+</style>
+ 
+<div id="pageTabs"></div>
 <div id="docWindow"></div>
+<div id="waitWindow">@MsgUtils.Instance.Trls("takeWhile") <img id="compLoadImg" src="~/Content/Default/loading-image.gif" /></div>
+<div id="ProfPic"></div>
+<div class="modal fade" id="AddressPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Address</h4>
+            </div>
+            <div id="bodyContainer" class="modal-body" tabindex="0">
 
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
+<script src="~/Scripts/cultures/lang.js"></script>
 <script>
-    var model;
+        $(function () {
 
-    $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+            FormJs.DrawTabs("pageTabs"); // "CompanyProfile"
 
-        var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
-        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
-        var url = "@Url.Action("ReadFormInfo", "Pages")";
-        var formId = "LeaveActionForm";
+            $("#t_Branches").click(function (){
+                $('#tab_Partners').empty();
+                $("#tab_GeneralInformation").empty();
+                $('#tab_Branches').load("@Url.Action("Branches", "Company", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+            });
 
-        var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonId));
-        var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));
-        var TypeId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TypeId));
-        var read = "@Request.QueryString["Read"]";
+            $("#t_Partners").click(function (){
+                $('#tab_Branches').empty();
+                $("#tab_GeneralInformation").empty();
+                $('#tab_Partners').load("@Url.Action("Partners", "Company", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+            });
 
-        $.getJSON(url, { objectname: 'LeaveAction', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
-            data.FormAction = "@Url.Action("Details", "LeaveAction")";
-            data.FormId = formId;
-            data.Culture = '@culture';
-            data.TableName = "LeaveActions";
-            data.companyId = "@User.Identity.GetDefaultCompany()";
-            data.admin = '@admin';
-            data.rtl = @rtl.ToString().ToLower();
-            if(read == 1) data.mode = 'show';
-            data.btns = ["back", "doc"];
+            var oldPage = localStorage.getItem("menuhigh").split(",");
+            oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
-            $("#LeaveActionDiv").Forms(data, model);
-            if(model.Id==0){
-                $("#cancelTrans").attr("disabled","disabled");
-                $("#trans").attr("disabled","disabled");
-                $("#Documents").attr("disabled", true);
-            }
-            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", EmpId, model, { remoteTableName: "People" });
-            FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", PeriodId, model);
+            var formId = "CompanyForm";
 
-            $("#" + formId).find('#trans').val('@MsgUtils.Instance.Trls("Post")');
-            $("#" + formId).find('#cancelTrans').val('@MsgUtils.Instance.Trls("Un Post")');
-            $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
-            $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
-            // Change EmpId => fill LeaveType
-            function getEmpId() {
-                var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
-                return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
-            }
+            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
 
-            if($("#" + formId + " #EmpId").prop("type") == "text") $("#" + formId + " #EmpId").on('typeahead:select', fillLeaves);
-            else $("#" + formId).on('change',  "#EmpId", fillLeaves);
+            $("#t_GeneralInformation").click(function () {
+                $('#tab_Branches').empty();
+                $('#tab_Partners').empty();
+                //  $('#tab_Documents').empty();
+                $("#tab_GeneralInformation").html("<div id='companyTab'></div>");
+                ///---#Region Company Form
+                var Language = lang.getList("@culture");
+                var Country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.country))
 
-            if(getEmpId()) fillLeaves();
-            else FormJs.fillOptionsDynamic($("#" + formId), "TypeId", TypeId, model);
+                var url = "@Url.Action("ReadFormInfo", "Pages")";
+                var read = "@Request.QueryString["Read"]";
+                $.ajax({
+                    async: false,
+                    url: "@Url.Action("ReadFormInfo","Pages")",
+                    type: "GET",
+                    dataType: "json",
+                    contentType: 'application/json',
+                    data: { objectname: 'Company', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+                    success: function (data) {
+                        data.FormAction = "@Url.Action("Details", "Company")";
+                        data.FormId = formId;
+                        data.Culture = '@culture';
+                        data.TableName = "Companies";
+                        data.companyId = "@User.Identity.GetDefaultCompany()";
+                        data.admin = '@admin';
+                        data.btns = ["back", "doc"];
+                        if(read == 1) data.mode = 'show';
+                        data.rtl = @rtl.ToString().ToLower();
+
+                        $("#companyTab").Forms(data, model);
+                        FormJs.fillOptionsDynamic($("#" + formId), "Language", Language, model);
+                        FormJs.fillOptionsDynamic($("#" + formId), "CountryId", Country, model);
+
+                        //Make Hiddenfield for Address
+                        var hiddenFields = "<input type='hidden' name='AddressId' id='AddressId' value='" + (model.AddressId != null ? model.AddressId : "") + "'>";
+                        $("#" + formId).append(hiddenFields);
+
+                        $("#waitWindow").kendoWindow({
+                            title: "@MsgUtils.Instance.Trls("Please Wait")",
+                            actions: [], //to remove close btn
+                            width: "40%",
+                            height: "100",
+                            visible: false
+                        });
+                        var waitWindow = $("#waitWindow").data("kendoWindow");
+
+                        var myForm = $("#" + formId);
+                        myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                        myForm.find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
+                        myForm.on("focus","#Address",null,function(e){
+                            e.preventDefault();
+                            var url = $('#AddressPopup').data('url');
+                            var id = $("#AddressId").val() || 0;
+
+                            //Getting Data and fill it on fields
+                            $.get(url+"?Version=@Request.QueryString["Version"]", {addressId: id}, function(data) {
+                                $('#bodyContainer').html(data);
+                                $('#AddressPopup').modal('show');
+
+                            });
+
+                        });
+                        //  Save Address Form
+                        $("#AddressPopup").on("click","#saveAddress",null,function(e){
+                            e.preventDefault();
+                            FormJs.saveForm($("#AddressForm"), $(this), function(data) {
+                                var addres=  data.Address1  + (data.Address2 ? ", " + data.Address2 : "") + (data.Address3 ? ", " + data.Address3 : "");
+
+                                myForm.find('#Address').val(addres);
+                                $("#AddressId").val(data.Id);
+
+                                $('#AddressPopup').modal('hide');
+                            });
+                        });
+
+                        myForm.on('click','#saveChanges', function (e) {
+                            if(myForm.find(".k-invalid").length > 0) return ;
+                            var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
+                            if (isValid) isValid = validator.validate();
+
+                           if (isValid) {
+                                if(model.Id == 0 )
+                                    waitWindow.center().open();
+
+                                FormJs.saveForm(myForm, $(this), function (res) {
+                                   //res is saved company Id
+                                    waitWindow.close();
+                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                    $("#Documents").attr("disabled", false);
+                                    model = res;
+                                });
+                            }
+                        });
+
+                        myForm.on('click', '#saveAndClose', function (e) {
+                            var x = new FormData($("form").get(0));
+                            console.log(x);
+                            if(myForm.find(".k-invalid").length > 0) return ;
+                            var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
+                            if (isValid) isValid = validator.validate();
+
+                            if (isValid) {
+                                if(model.Id == 0 )
+                                    waitWindow.center().open();
+
+                                FormJs.saveForm(myForm, $(this), function (res) {
+                                    waitWindow.close();
+                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                    // $("#renderbody").load(oldulr);
+                                    $("#browselogo").attr("disabled", false);
+                                    updateHistory(oldulr);
+                                });
+                            }
+                        });
+                    }
+                });
+                ///---#EndRegion Company Form
+            });
+
+            //Load Form
+             $("#t_GeneralInformation").click();
+
+
+
+             $(".tab-content").wrapAll("<div class='col-lg-10 col-sm-12 col-md-12'></div>");
+
+
+             var markup = "<div class='form-group col-lg-2 col-sm-5 col-md-5 imgSec'>"+
+                             "<div class='picDiv'>"+
+                                 "<img src='' id='myimage' style='height:inherit; width:inherit' />"+
+                             "</div>"+
+                             "<div class='picBtns'>"+
+                                 "<button class='col-sm-9 btn-md btn-primary' value='Browse' onclick='drawPic(this,event)' id='browselogo'>@MsgUtils.Instance.Trls("Browse")</button>"+
+                             "</div>"+
+                             "</div>";
+
+
+             $(".tab-content").parent().prepend(markup);
+             if($("#" + formId + " #Id").val() == -1){
+                 
+                 $("#browselogo").attr("disabled", true);
+                 $("#Documents").attr("disabled", true);
+             }
            
-            function fillLeaves() {
-                $.get("@Url.Action("GetEmpLeaveType", "LeaveAction")", {EmpId : getEmpId()}, function (list) {
-                    FormJs.fillOptionsDynamic($("#" + formId), "TypeId", list, model);
-                });
-            }
-            //change  TypeId => fill period
-            $("#LeaveActionForm").on("change","#TypeId",null,function(e){
-                var record= $(this).val();
-                $.get("@Url.Action("GetLeaveType", "LeaveAction")", {LeaveId :record}, function (list) {
-                    FormJs.fillOptionsDynamic($("#" + formId), "PeriodId", list, model);
-                });
-            });
+             $("#docWindow").kendoWindow ({
+                 title: "@MsgUtils.Instance.Trls("CompanyWindow")",
+                 position: {top: "10px", left: "10%"},
+                 minWidth: "1000px",
+                 width: "80%",
+                 height: "80%",
+                 actions: ["Minimize", "Maximize", "Close"],
+                 visible: false,
+                 close: function() {
+                     $("#Documents").fadeIn();
+                     $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
+                     $("#docWindow").empty();
+                 }
+             });
 
-            $("#" + formId).on('click','#saveChanges', function (e) {
-                FormJs.saveForm($("#" + formId), $(this), function () {
-                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
-                });
-            });
-            $("#" + formId).find('#trans').on('click', function(){
-                $.getJSON("/LeaveAction/PostLeaveAction",{objId:model.Id},function(res){
-                    toastr.success('@MsgUtils.Instance.Trls("PostTransSucess")');
-                    $("#renderbody").load(oldulr);
-                });
-            });
-            $("#" + formId).find('#cancelTrans').on('click', function(){
-                $.getJSON("/LeaveAction/UnPostLeaveAction",{objId:model.Id},function(res){
-                    toastr.success(res);
-                    $("#renderbody").load(oldulr);
-                });
-            });
+             $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Company&SourceId=" + @Model.Id);
 
+             var isFirest = true;
+             //Open window when click
+             $("#Documents").on('click', function() {
+                 if(!isFirest)
+                     $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Company&SourceId=" + @Model.Id).center().open();
+                 else
+                     $("#docWindow").data("kendoWindow").center().open();
+                 $("#Documents").fadeOut();
 
-            $("#Documents").on('click', function() {
-                $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveAction&SourceId="+ @Model.Id).center().open();
-                $("#Documents").fadeOut();
-            });
-
+                 isFirest = false;
+             });
         });
-        //----Documents----
-        $("#docWindow").kendoWindow ({
-            title: "@MsgUtils.Instance.Trls("Documents")",
-            minWidth: "1000px",
-            width: "80%",
-            height: "80%",
-            actions: ["Minimize", "Maximize", "Close"],
-            visible: false,
-            close: function() {
-                $("#Documents").fadeIn();
-                $("#docWindow").empty();
-                $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
-            }
-        });
-    });
 
+
+        var sourceId = $("#Id").val();
+
+            $.get("@Url.Action("GetImage", "Pages")", { id: sourceId, source: "CompanyLogo" }, function (res) {
+                if (res) document.getElementById("myimage").src = (res == false ? "/Content/Photos/systemnoimage.jpg" : 'data:image/jpg;base64,' + res);
+            });
+
+            function drawPic(elem,e){
+                var myelem = elem;
+                $("#ProfPic").kendoWindow({
+                    title: "@MsgUtils.Instance.Trls("Profile Picture")",
+                    minWidth: "1000px",
+                    width: "60%",
+                    height: "75%",
+                    actions: ["Minimize", "Maximize", "Close"],
+                    visible: false,
+                    close: function() {
+                        $(myelem).removeClass("hidden");
+                        $("#ProfPic").empty();
+                    }
+
+                });
+
+                $("#ProfPic").data("kendoWindow").refresh("/People/CropPic?Source=CompanyLogo&SourceId="+sourceId).center().open();
+
+                $(myelem).addClass("hidden");
+
+            }
 </script>
-
 
 
 

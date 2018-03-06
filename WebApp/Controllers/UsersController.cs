@@ -19,6 +19,7 @@ using Model.ViewModel.Administration;
 using WebApp.Models;
 using System.IO;
 using System.Web.Script.Serialization;
+using System.Data.Entity;
 
 namespace WebApp.Controllers
 {
@@ -96,14 +97,13 @@ namespace WebApp.Controllers
             
             return Json(Users,JsonRequestBehavior.AllowGet);
         }
+
         [HttpPost]
         public async Task<ActionResult> SaveImportUsers(IEnumerable<DomainUsersViewModel> models)
         {
             DataSource<DomainUsersViewModel> Source = new DataSource<DomainUsersViewModel>();
             int MenuId = int.Parse(Request.QueryString["MenuId"].ToString());
             var Arr = GetWhereClause(MenuId).Split('=');
-            int index = Arr.FindIndex(c => c.Contains("SSUser"));
-            string value = Arr[index + 1].Trim().Substring(0, 4);
             List<DomainUsersViewModel>  Data = new List<DomainUsersViewModel>();
             Source.Errors = new List<Error>();
             int CompanyId = User.Identity.GetDefaultCompany();
@@ -119,13 +119,12 @@ namespace WebApp.Controllers
                             Email = item.Email,
                             UserName = item.AccountName,
                             DefaultCompany = CompanyId == 0 ? db.Companies.FirstOrDefault(a => a.Id != 0)?.Id : CompanyId,
-                            SSUser = value.Trim() == "true" ? true : false,
                             ResetPassword = true
                         };
                         var result = await _userManager.CreateAsync(user);
                         if (result.Succeeded)
                         {
-                            _userManager.AddToRole(user.Id, value.Trim() == "true" ?"Employee": "Users");
+                            _userManager.AddToRole(user.Id, "Employee");
                             Data.Add(item);
                         }
                         else
@@ -222,68 +221,67 @@ namespace WebApp.Controllers
             datasource.Data = models;
             return Json(datasource.Data);
         }
-        public ActionResult GetUserRoles(string id,string SSRole)
+        public ActionResult GetUserRoles(string id)
         {
-            bool InSSn;
-            IQueryable<UserRoleViewModel> UserRoles;
+            //bool InSSn;
+            //IQueryable<UserRoleViewModel> UserRoles;
 
 
-            if (id != "")
-            {
-                InSSn = db.Users.FirstOrDefault(a => a.Id == id).SSUser;
-                if (InSSn)
-                {
+            //if (id != "")
+            //{
+            //    InSSn = db.Users.FirstOrDefault(a => a.Id == id);
+            //    if (InSSn)
+            //    {
+            //        UserRoles = db.ApplicationRoles
+            //        .Select(r => new UserRoleViewModel
+            //        {
+            //            Id = r.Id,
+            //            Name = r.Name,
+            //            IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
+            //        });
+            //    }
+            //    else
+            //    {
 
-                    UserRoles = db.ApplicationRoles.Where(a => a.SSRole == true)
-                    .Select(r => new UserRoleViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name,
-                        IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
-                    });
-                }
-                else
-                {
-
-                    UserRoles = db.Roles.Where(a=>a.Name != "Developer").Select(r => new UserRoleViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name,
-                        IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
-                    });
-                }
+            //        UserRoles = db.Roles.Where(a=>a.Name != "Developer").Select(r => new UserRoleViewModel
+            //        {
+            //            Id = r.Id,
+            //            Name = r.Name,
+            //            IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
+            //        });
+            //    }
 
 
-            }
-            else
-            {
-                if (SSRole != null && SSRole != "undefined")
-                    InSSn = Convert.ToBoolean(SSRole);
-                else
-                    InSSn = true;
+            //}
+            //else
+            //{
+            //    if (SSRole != null && SSRole != "undefined")
+            //        InSSn = Convert.ToBoolean(SSRole);
+            //    else
+            //        InSSn = true;
 
-                if (InSSn)
-                {
-                    UserRoles = db.ApplicationRoles.Where(a => a.SSRole == true)
-                    .Select(r => new UserRoleViewModel
-                    {
-                        Id = r.Id,
-                        Name = r.Name,
-                        IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
-                    });
-                }
-                else
-                {
-                    UserRoles = db.Roles.Where(a => a.Name != "Developer").Select(r => new UserRoleViewModel
-                   {
-                       Id = r.Id,
-                       Name = r.Name,
-                       IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
-                   });
-                }
-            }
+            //    if (InSSn)
+            //    {
+            //        UserRoles = db.ApplicationRoles.Where(a => a.SSRole == true)
+            //        .Select(r => new UserRoleViewModel
+            //        {
+            //            Id = r.Id,
+            //            Name = r.Name,
+            //            IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
+            //        });
+            //    }
+            //    else
+            //    {
+            //        UserRoles = db.Roles.Where(a => a.Name != "Developer").Select(r => new UserRoleViewModel
+            //       {
+            //           Id = r.Id,
+            //           Name = r.Name,
+            //           IsChecked = r.Users.FirstOrDefault(u => u.UserId == id) != null
+            //       });
+            //    }
+            //}
            
-            return Json(UserRoles, JsonRequestBehavior.AllowGet);
+            return Json(db.UserCompanyRoles.Where(a => a.UserId == id).Select(a => new UserRoleViewModel { Id = a.Role.Id, Name = a.Role.Name}).FirstOrDefault(), JsonRequestBehavior.AllowGet);
         }
         public ActionResult ReadUserRoles()
         {
@@ -291,28 +289,13 @@ namespace WebApp.Controllers
         }
         public ActionResult GetCompanies(string id)
         {
-            IQueryable<UserCompanyViewModel> Usercompany;
-            if (id != "")
-            {
-                Usercompany = db.Companies
+            var Usercompany = db.UserCompanyRoles.Where(r => r.UserId == id)
                     .Select(r => new UserCompanyViewModel
                     {
                         Id = r.Id,
-                        Name = r.Name,
-                        IsChecked = r.Users.FirstOrDefault(u => u.Id == id) != null
+                        CompanyId = r.CompanyId,
+                        RoleId = r.RoleId
                     });
-            }
-            else
-            {
-                int defaultUserCompany = User.Identity.GetDefaultCompany();
-                Usercompany = db.Companies
-                     .Select(r => new UserCompanyViewModel
-                     {
-                         Id = r.Id,
-                         Name = r.Name,
-                         IsChecked = (r.Id == defaultUserCompany)
-                     });
-            }
 
             return Json(Usercompany, JsonRequestBehavior.AllowGet);
         }
@@ -324,19 +307,14 @@ namespace WebApp.Controllers
         #region User by Seham
         public ActionResult Index()
         {
-            string Role = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(Role, MenuId).ToArray();
-
             return View();
         }
 
         public JsonResult ReadUsers(int MenuId)
         {
-            string whereclause = GetWhereClause(MenuId);
+            //string whereclause = GetWhereClause(MenuId);
             int CompanyId = User.Identity.GetDefaultCompany();
-            var users = from u in db.Users
+            var query = from u in db.Users
                         where u.UserName != "admin" && u.UserName != "hradmin"
                         join c in db.Companies on u.DefaultCompany.Value equals c.Id into g1
                         from c in g1.DefaultIfEmpty()
@@ -352,40 +330,24 @@ namespace WebApp.Controllers
                             DefaultCompany = u.DefaultCompany.Value,
                             LastLogin = u.LastLogin,
                             DefaultLangauge = u.Culture,
-                            SSUser = u.SSUser,
-                            Locked = u.Locked,
                             Duration = ul.Duration == null ? "" : ul.Duration.Value.Hours.ToString() + ":" + ul.Duration.Value.Minutes.ToString() + ":" + ul.Duration.Value.Seconds.ToString()
                         };
 
-            //var Users = db.Users.Where(a => a.UserName != "admin" && a.UserName != "hradmin").Select(u => new UsersViewModel
+            //var query = users;
+            //if (whereclause.Length > 0)
             //{
-            //    Id = u.Id,
-            //    UserName = u.UserName,
-            //    Email = u.Email,
-            //    Domain = u.NetworkDomain,
-            //    //DefaultCompanyName = db.Companies.FirstOrDefault(a => a.Id == u.DefaultCompany).Name,
-            //    DefaultCompany=u.DefaultCompany.Value,
-            //    LastLogin = u.LastLogin,
-            //    DefaultLangauge = u.Culture,
-            //    SSUser = u.SSUser,
-            //    Locked=u.Locked
-            //    //Duration = db.UserLogs.Where(a => a.UserId == u.Id && a.Duration != null).OrderByDescending(a => a.StartTime).Select(a => a.Duration).FirstOrDefault().ToString()
-            //});
+            //    try
+            //    {
+            //        query = users.Where(whereclause);
+            //    }
+            //    catch (Exception ex)
+            //    {
+            //        TempData["Error"] = ex.Message;
+            //        Models.Utils.LogError(ex.Message);
+            //        return Json("", JsonRequestBehavior.AllowGet);
+            //    }
+            //}
 
-            var query = users;
-            if (whereclause.Length > 0)
-            {
-                try
-                {
-                    query = users.Where(whereclause);
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                    Models.Utils.LogError(ex.Message);
-                    return Json("", JsonRequestBehavior.AllowGet);
-                }
-            }
             return Json(query, JsonRequestBehavior.AllowGet);
 
         }
@@ -418,13 +380,13 @@ namespace WebApp.Controllers
         {
             string culture = User.Identity.GetLanguage();
             if (culture.Substring(0, 2) == "ar")
-                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.NameAr }).ToList();
+                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.NameAr });
             else
-                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.Name }).ToList();
+                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.Name });
 
             ViewBag.Culture = _hrUnitOfWork.AudiTrialRepository.ReadLanguage();
-            ViewBag.Company = _hrUnitOfWork.CompanyRepository.CompanyList(culture).Select(c => new { id = c.Id, name = c.Name }).ToList();
-            ViewBag.Emp = _hrUnitOfWork.PeopleRepository.GetAllPeoples(User.Identity.GetLanguage(),User.Identity.GetDefaultCompany()).Select(a => new { id = a.Id, name = a.Name, a.PicUrl, a.Icon }).ToList();
+            ViewBag.Company = _hrUnitOfWork.CompanyRepository.CompanyList(culture).Select(c => new { id = c.Id, name = c.Name });
+            ViewBag.Emp = _hrUnitOfWork.PeopleRepository.GetAllPeoples(User.Identity.GetLanguage()).Select(a => new { id = a.Id, name = a.Name, a.PicUrl, a.Icon });
         }
         #region Userform by Shaddad
 
@@ -432,71 +394,92 @@ namespace WebApp.Controllers
         public ActionResult Details(string id)
         {
             FillViewBag();
-            string RoleId = Session["RoleId"] != null ? Session["RoleId"]?.ToString() : "";
-            int MenuId = Session["MenuId"] != null ? int.Parse(Session["MenuId"]?.ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
-            ApplicationUser loginUser = _userManager.FindById(User.Identity.GetUserId());
-            if (!loginUser.SuperUser)
-                ViewBag.isSuper = false;
-            ViewBag.loguser = loginUser.Id;
+           
+            //ViewBag.isSuper = true;
+            ViewBag.loguser = User.Identity.GetUserId();
 
             if (id != "0")
             {
                 ApplicationUser user = _userManager.FindById(id);
-                UserViewModel model = new UserViewModel();
-                MapViewModelWithModel(user, model);
+                UserViewModel model = MapViewModelWithModel(user);
                 return View(model);
             }
             else
-                // return View(new UserViewModel() { SSUser = null; });
                 return View(new UserViewModel());
 
         }
-        private void MapViewModelWithModel(ApplicationUser user , UserViewModel model)
+
+        [HttpGet]
+        public ActionResult EmpUserProfile(int id)
         {
-            model.Id = user.Id;
-            model.Infolog = user.Infolog;
-            model.Language = user.Language;
-            model.LastLogin = user.LastLogin;
-            model.Locked = user.Locked;
-            model.LogTooltip = user.LogTooltip;
-            model.Messages = user.Messages;
-            model.NetworkDomain = user.NetworkDomain;
-            model.PhoneNumber = user.PhoneNumber;
-            model.ResetPassword = user.ResetPassword;
-            model.ShutdownInMin = user.ShutdownInMin;
-            model.SSUser = user.SSUser;
-            model.SuperUser = user.SuperUser;
-            model.TimeZone = user.TimeZone;
-            model.UploadDocs = user.UploadDocs;
-            model.UserName = user.UserName;
-            model.AllowInsertCode = user.AllowInsertCode;
-            model.Culture = user.Culture;
-            model.DefaultCompany = user.DefaultCompany;
-            model.DefaultCountry = user.DefaultCountry;
-            model.Email = user.Email;
-            model.EmpId = user.EmpId;
-            model.ExportExcel = user.ExportExcel;
-            model.ExportTo = user.ExportTo;
-            model.SmsNotify = user.SmsNotify;
-            model.WebNotify = user.WebNotify;
-            model.EmailNotify = user.EmailNotify;
+            string culture = User.Identity.GetLanguage();
+            if (culture.Substring(0, 2) == "ar")
+                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.NameAr });
+            else
+                ViewBag.Country = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.Name });
+
+            ViewBag.Culture = _hrUnitOfWork.AudiTrialRepository.ReadLanguage();
+            ViewBag.Company = _hrUnitOfWork.CompanyRepository.CompanyList(culture).Select(c => new { value = c.Id, text = c.Name });
+            ViewBag.Roles = db.Roles.Select(r => new { value = r.Id, text = r.Name });
+            //ViewBag.isSuper = true;
+            ViewBag.loguser = User.Identity.GetUserId();
+            ViewBag.EmpId = id;
+
+            ApplicationUser user = db.Users.Where(a => a.EmpId == id).FirstOrDefault();
+            if (user != null)
+            {
+                UserViewModel model = MapViewModelWithModel(user);
+                return View(model);
+            }
+   
+            return View(new UserViewModel());
+        }
+
+        private UserViewModel MapViewModelWithModel(ApplicationUser user)
+        {
+            return new UserViewModel
+            {
+                Id = user.Id,
+                Infolog = user.Infolog,
+                Language = user.Language,
+                LastLogin = user.LastLogin,
+                LogTooltip = user.LogTooltip,
+                Messages = user.Messages,
+                NetworkDomain = user.NetworkDomain,
+                PhoneNumber = user.PhoneNumber,
+                LockoutEnabled = user.LockoutEnabled,
+                ResetPassword = user.ResetPassword,
+                ShutdownInMin = user.ShutdownInMin,
+                TimeZone = user.TimeZone,
+                UploadDocs = user.UploadDocs,
+                UserName = user.UserName,
+                AllowInsertCode = user.AllowInsertCode,
+                Culture = user.Culture,
+                DefaultCompany = user.DefaultCompany,
+                DefaultCountry = user.DefaultCountry,
+                Email = user.Email,
+                EmpId = user.EmpId,
+                ExportExcel = user.ExportExcel,
+                ExportTo = user.ExportTo,
+                SmsNotify = user.SmsNotify,
+                WebNotify = user.WebNotify,
+                EmailNotify = user.EmailNotify,
+                CanCustomize = user.CanCustomize,
+                Developer = user.Developer
+            };
         }
 
         [HttpPost]
-        public async Task<ActionResult> UserProfile(UserViewModel model, string Id, OptionsViewModel moreInfo,UserRoleVm grid1, UserCompaniesVM grid2)
+        public async Task<ActionResult> UserProfile(UserViewModel model, string Id, OptionsViewModel moreInfo, UserCompaniesVM grid1)
         {
             List<Error> Errors = new List<Error>();
-            string message = "OK";
-            bool Changed = false;
+         
             if (ModelState.IsValid)
             {
-                var columns = Models.Utils.GetColumnViews(ModelState.Where(a => !a.Key.Contains('.')));
                 if (ServerValidationEnabled)
                 {
-                    Errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    var columns = Models.Utils.GetColumnViews(ModelState.Where(a => !a.Key.Contains('.')));
+                    Errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = User.Identity.GetDefaultCompany(),
                         ObjectName = "UserProfile",
@@ -521,33 +504,31 @@ namespace WebApp.Controllers
 
 
                 ApplicationUser user = _userManager.FindById(Id);
-                
                 IdentityResult res;
-
-                ApplicationUser loginUser = _userManager.FindById(User.Identity.GetUserId());
-
+                var loginId = User.Identity.GetUserId();
+                //ApplicationUser loginUser = _userManager.FindById(User.Identity.GetUserId());
                 model.Messages = getMessage(model.Culture);
 
                 //Update User
                 if (user != null)
                 {
-                    if (!loginUser.SuperUser)
-                        model.SuperUser = user.SuperUser; //Keep Original Value
-                    else
-                    {
-                        int supersCount = _userManager.Users.Where(u => u.SuperUser).Count();
-                        if (user.Id == loginUser.Id && !model.SuperUser && supersCount <= 1)
-                        {
-                            ErrorMessage mess = new ErrorMessage()
-                            {
-                                field = "SuperUser",
-                                message = MsgUtils.Instance.Trls("CantRemoveSuperUser")
-                            };
-                            Error er = new Error();
-                            er.errors.Add(mess);
-                            return Json(Errors);
-                        }
-                    }
+                    //if (!loginUser.SuperUser)
+                    //    model.SuperUser = user.SuperUser; //Keep Original Value
+                    //else
+                    //{
+                    //    int supersCount = _userManager.Users.Where(u => u.SuperUser).Count();
+                    //    if (user.Id == loginUser && !model.SuperUser && supersCount <= 1) 
+                    //    {
+                    //        ErrorMessage mess = new ErrorMessage()
+                    //        {
+                    //            field = "SuperUser",
+                    //            message = MsgUtils.Instance.Trls("CantRemoveSuperUser")
+                    //        };
+                    //        Error er = new Error();
+                    //        er.errors.Add(mess);
+                    //        return Json(Errors);
+                    //    }
+                    //}
 
                     string OldCulture = user.Language;
                     string OldTimeZone = user.TimeZone;
@@ -557,36 +538,24 @@ namespace WebApp.Controllers
                         Destination = user,
                         Source = model,
                         ObjectName = "UserProfile",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo
                     });
+
                     user.Language = model.Language == null ? "en-GB" : model.Language;
                     user.Messages = getMessage(model.Culture);
                     model.NewUser = false;
+                    user.LockoutEnabled = model.LockoutEnabled;
 
                     res = await _userManager.UpdateAsync(user);
 
-                    if ((user.Id == loginUser.Id) && (user.TimeZone != OldTimeZone) && (OldCulture != model.Language) && (user.Language != null) && (user.TimeZone != null))
-                    {
-                        ChangeAll(model.TimeZone, model.Language,  model.DefaultCompany.Value);
-                        Changed = true;
-                    }
-                    else if ((user.Id == loginUser.Id) && (user.Language != null) && (OldCulture != model.Language))
-                    {
-                        ChangeCulture(model.Language,  model.DefaultCompany.Value);
-                        Changed = true;
-                    }
-                    else if ((user.Id == loginUser.Id) && (user.TimeZone != null) && (OldTimeZone != model.TimeZone))
-                    {
+                    if ((user.Id == loginId) && (user.TimeZone != OldTimeZone) && (OldCulture != model.Language) && (user.Language != null) && (user.TimeZone != null))
+                        ChangeAll(model.TimeZone, model.Language, model.DefaultCompany.Value);
+                    else if ((user.Id == loginId) && (user.Language != null) && (OldCulture != model.Language))
+                        ChangeCulture(model.Language, model.DefaultCompany.Value);
+                    else if ((user.Id == loginId) && (user.TimeZone != null) && (OldTimeZone != model.TimeZone))
                         ChangeTimeZone(model.TimeZone, model.DefaultCompany.Value);
-                        Changed = true;
-                    }
-                    else if ((user.Id == loginUser.Id) && (OldCompany != model.DefaultCompany))
-                    {
+                    else if ((user.Id == loginId) && (OldCompany != model.DefaultCompany))
                         ChangeDefaultCompany(model.DefaultCompany.Value);
-                        Changed = true;
-                    }
-
                 }
                 else //New User
                 {
@@ -597,12 +566,14 @@ namespace WebApp.Controllers
                         Destination = user,
                         Source = model,
                         ObjectName = "UserProfile",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo
                     });
                     user.Messages = getMessage(model.Culture);
                     user.Language = model.Language == null ? "en-GB" : model.Language;
                     model.NewUser = true;
+                    user.LockoutEnabled = model.LockoutEnabled;
+                    user.DefaultCompany = User.Identity.GetDefaultCompany();
+
                     if (model.Password == null)
                     {
                         user.ResetPassword = true;
@@ -610,16 +581,10 @@ namespace WebApp.Controllers
                     }
                     else
                         res = await _userManager.CreateAsync(user, model.Password);
-                    if (res.Errors.Count() == 0)
+
+                    if (res.Errors.Count() > 0)
                     {
 
-                        ApplicationUser Newuser = await _userManager.FindByNameAsync(model.UserName);
-                        List<Models.Company> company = db.Companies.Where(a => a.Id == model.DefaultCompany).ToList();
-                        Newuser.Companies = company;
-                       
-                    }
-                    else
-                    {
                         var err = res.Errors.FirstOrDefault().Split(' ')[0];
                         if (err == "Passwords")
                             ModelState.AddModelError("Password", MsgUtils.Instance.Trls("Passwordmustnotlest6"));
@@ -629,152 +594,16 @@ namespace WebApp.Controllers
                             ModelState.AddModelError("", MsgUtils.Instance.Trls(res.Errors.FirstOrDefault()));
 
                         return Json(Models.Utils.ParseFormErrors(ModelState));
-                    }
 
+                    }
                 }
 
-                Models.Company Defaultcompany = db.Companies.Find(user.DefaultCompany.Value);
-                if (!user.Companies.Contains(Defaultcompany))
-                    user.Companies.Add(Defaultcompany);
+                //Errors = await SaveGrid1(grid1, ModelState.Where(a => a.Key.Contains("grid1")), model);
+                //if (Errors.Count > 0) return Json(Errors.First().errors.First().message);
 
-                db.SaveChanges();
-
-                Errors = await SaveGrid1(grid1, ModelState.Where(a => a.Key.Contains("grid1")), model);
+                Errors = SaveGrid(grid1, ModelState.Where(a => a.Key.Contains("grid1")), user);
                 if (Errors.Count > 0) return Json(Errors.First().errors.First().message);
 
-                Errors = SaveGrid2(grid2, ModelState.Where(a => a.Key.Contains("grid2")), user);
-                if (Errors.Count > 0) return Json(Errors.First().errors.First().message);
-                //Validation
-                if (res.Errors.Count() > 0)
-                {
-                    foreach (var error in res.Errors)
-                    {
-                        ErrorMessage mess = new ErrorMessage()
-                        {
-                            field = "SuperUser",
-                            message = MsgUtils.Instance.Trls(error)
-                        };
-                        Error er = new Error();
-                        er.errors.Add(mess);
-                        return Json(Errors);
-                    }
-                }
-                else
-                {
-                    if (user.EmpId != null)
-                    {
-                        var person = _hrUnitOfWork.Repository<Person>().FirstOrDefault(a => a.Id == user.EmpId);
-                        person.WorkEmail = user.Email;
-                        person.WorkTel = user.PhoneNumber;
-                        _hrUnitOfWork.PeopleRepository.Attach(person);
-                        _hrUnitOfWork.PeopleRepository.Entry(person).State = System.Data.Entity.EntityState.Modified;
-                    }
-                    SaveChanges(user.Language);
-
-                    if (Changed)
-                        message = "OK," + ((new JavaScriptSerializer()).Serialize(model));
-
-                    return Json(message);
-                }
-            }
-
-            return Json(Models.Utils.ParseFormErrors(ModelState));
-        }
-        private async Task<List<Error>> SaveGrid1(UserRoleVm grid1, IEnumerable<KeyValuePair<string, ModelState>> state, UserViewModel record)
-        {
-            List<Error> errors = new List<Error>();
-
-
-            IdentityResult re= new IdentityResult();
-            // updated records
-            if (grid1.updated != null)
-            {
-                foreach (var model in grid1.updated)
-                {
-                    if (model.IsChecked)
-                    {
-                        if (!_userManager.IsInRole(record.Id, model.Name))
-                            re = await _userManager.AddToRoleAsync(record.Id, model.Name);
-                    }
-                    else
-                    {
-                        if (_userManager.IsInRole(record.Id, model.Name))
-                            re = await _userManager.RemoveFromRoleAsync(record.Id, model.Name);
-                    }
-                }
-            }
-            else 
-            {
-                if (record.NewUser)
-                {
-                    if (record.SSUser)
-                        await _userManager.AddToRoleAsync(record.Id, "Employee");
-                    else
-                        await _userManager.AddToRoleAsync(record.Id, "Users");
-                }
-            }
-            if (re.Errors.Count() > 0)
-            {
-                foreach (var error in re.Errors)
-                {
-                    ErrorMessage mess = new ErrorMessage()
-                    {
-                        message = MsgUtils.Instance.Trls(error)
-                    };
-                    Error er = new Error();
-                    er.errors.Add(mess);
-                    return errors;
-                }
-            }
-            return errors;
-            
-        }
-        private List<Error> SaveGrid2(UserCompaniesVM grid2, IEnumerable<KeyValuePair<string, ModelState>> state, ApplicationUser record)
-        {
-            List<Error> errors = new List<Error>();
-
-            Models.Company company;
-
-            // updated records
-            if (grid2.updated != null)
-            {
-                foreach (var c in grid2.updated)
-                {
-                    company = db.Companies.Find(c.Id);
-                    if (c.IsChecked == true)
-                    {
-                        //Shaddad 28/11
-                        if (!(record.Companies.Contains(company)))
-                            record.Companies.Add(company);
-                    }
-                    else
-                    {
-                        if (company.Id != record.DefaultCompany)
-                            record.Companies.Remove(company);
-                    }
-
-                }
-            }
-
-                if (grid2.inserted != null)
-                {
-                    foreach (var c in grid2.inserted)
-                    {
-                        company = db.Companies.Find(0);
-                        if (c.IsChecked == true)
-                        {
-                           
-                            if (!(record.Companies.Contains(company)))
-                                record.Companies.Add(company);
-                        }
-                        else
-                        {
-                            if (company.Id != record.DefaultCompany)
-                                record.Companies.Remove(company);
-                        }
-
-                    }
-                }
 
                 try
                 {
@@ -788,14 +617,139 @@ namespace WebApp.Controllers
                     {
                         message = MsgUtils.Instance.Trls(ex.Message)
                     };
-                    Error er = new Error();
-                    er.errors.Add(mess);
-                    return errors;
-                }            
+                    //Error er = new Error();
+                    //er.errors.Add(mess);
+                    //return Json(errors.First().errors.First().message);
+                }
+
+ 
+
+                //Validation
+                //if (res.Errors.Count() > 0)
+                //{
+                //    foreach (var error in res.Errors)
+                //    {
+                //        ErrorMessage mess = new ErrorMessage()
+                //        {
+                //            field = "SuperUser",
+                //            message = MsgUtils.Instance.Trls(error)
+                //        };
+                //        Error er = new Error();
+                //        er.errors.Add(mess);
+                //        return Json(Errors);
+                //    }
+                //}
+                //else
+                //{
+                //    if (user.EmpId != null)
+                //    {
+                //        var person = _hrUnitOfWork.Repository<Person>().FirstOrDefault(a => a.Id == user.EmpId);
+                //        person.WorkEmail = user.Email;
+                //        person.WorkTel = user.PhoneNumber;
+                //        _hrUnitOfWork.PeopleRepository.Attach(person);
+                //        _hrUnitOfWork.PeopleRepository.Entry(person).State = System.Data.Entity.EntityState.Modified;
+                //    }
+                //    SaveChanges(user.Language);
+                //}
+
+                return Json("OK," + ((new JavaScriptSerializer()).Serialize(model)));
+            }
+
+            return Json(Models.Utils.ParseFormErrors(ModelState));
+        }
+
+        //private async Task<List<Error>> SaveGrid1(UserRoleVm grid1, IEnumerable<KeyValuePair<string, ModelState>> state, UserViewModel record)
+        //{
+        //    List<Error> errors = new List<Error>();
+
+
+        //    IdentityResult re = new IdentityResult();
+        //    // updated records
+        //    if (grid1.updated != null)
+        //    {
+        //        foreach (var model in grid1.updated)
+        //        {
+        //            if (model.IsChecked)
+        //            {
+        //                if (!_userManager.IsInRole(record.Id, model.Name))
+        //                    re = await _userManager.AddToRoleAsync(record.Id, model.Name);
+        //            }
+        //            else
+        //            {
+        //                if (_userManager.IsInRole(record.Id, model.Name))
+        //                    re = await _userManager.RemoveFromRoleAsync(record.Id, model.Name);
+        //            }
+        //        }
+        //    }
+        //    else
+        //    {
+        //        if (record.NewUser)
+        //        {
+        //            await _userManager.AddToRoleAsync(record.Id, "Employee");
+        //        }
+        //    }
+        //    if (re.Errors.Count() > 0)
+        //    {
+        //        foreach (var error in re.Errors)
+        //        {
+        //            ErrorMessage mess = new ErrorMessage()
+        //            {
+        //                message = MsgUtils.Instance.Trls(error)
+        //            };
+        //            Error er = new Error();
+        //            er.errors.Add(mess);
+        //            return errors;
+        //        }
+        //    }
+
+        //    return errors;
+        //}
+        private List<Error> SaveGrid(UserCompaniesVM grid, IEnumerable<KeyValuePair<string, ModelState>> state, ApplicationUser user)
+        {
+            List<Error> errors = new List<Error>();
+
+            // Deleted
+            if (grid.deleted != null)
+            {
+                foreach (var model in grid.deleted)
+                {
+                    var companyrole = new UserCompanyRole
+                    {
+                        Id = model.Id
+                    };
+
+                    db.UserCompanyRoles.Remove(companyrole);
+                }
+            }
+
+            // updated records
+            if (grid.updated != null)
+            {
+                foreach (var model in grid.updated)
+                {
+                    var companyrole = new UserCompanyRole();
+                    AutoMapper(new Models.AutoMapperParm { Destination = companyrole, Source = model, Transtype = TransType.Update });
+
+                    db.UserCompanyRoles.Attach(companyrole);
+                    db.Entry(companyrole).State = EntityState.Modified;
+                }
+            }
+
+            // inserted records
+            if (grid.inserted != null)
+            {
+                foreach (var model in grid.inserted)
+                {
+                    var companyrole = new UserCompanyRole();
+                    AutoMapper(new Models.AutoMapperParm { Destination = companyrole, Source = model, Transtype = TransType.Insert });
+                    companyrole.User = user;
+                    db.UserCompanyRoles.Add(companyrole);
+                }
+            }
 
             return errors;
-
         }
+
         protected override void Dispose(bool disposing)
         {
             if (disposing)
@@ -811,7 +765,6 @@ namespace WebApp.Controllers
         }
 
         #endregion
-
         private string getMessage(string culture)
         {
             string message = culture;
@@ -840,9 +793,6 @@ namespace WebApp.Controllers
                 DefaultCountry = user.DefaultCountry,
                 LastLogin = user.LastLogin,
                 PhoneNumber = user.PhoneNumber,
-                SuperUser = user.SuperUser,
-
-                //interface
                 AllowInsertCode = user.AllowInsertCode,
                 Infolog = user.Infolog,
                 ExportExcel = user.ExportExcel,
@@ -852,14 +802,14 @@ namespace WebApp.Controllers
                 UploadDocs = user.UploadDocs
                 
             };
-            if (!user.SuperUser)
-                ViewBag.isSuper = false;
+            //if (!user.SuperUser)
+            //    ViewBag.isSuper = false;
 
             ViewBag.adminUser = User.Identity.Name == "Admin";
 
             TempData["id"] = user.Id;
             FillViewBag();
-            ViewBag.UserCompanies = user.Companies.Select(c => new { id = c.Id, name = c.Name }).ToList();
+            ViewBag.UserCompanies = db.UserCompanyRoles.Where(c => c.UserId == user.Id).Select(c => new { id = c.CompanyId, name = c.Company.Name }).ToList();
 
             return model == null ? (ActionResult)HttpNotFound() : View(model);
         }
@@ -877,21 +827,21 @@ namespace WebApp.Controllers
                 string OldCulture = user.Language;
                 string OldTimeZone = user.TimeZone;
                 int OldCompany = user.DefaultCompany.Value;
-                AutoMapper(new AutoMapperParm() { ObjectName = "Profile", Source = profile, Destination = user, Version = Convert.ToByte(Request.Form["Version"]), Options = moreInfo });
+                AutoMapper(new AutoMapperParm() { ObjectName = "Profile", Source = profile, Destination = user, Options = moreInfo });
                 user.Language = profile.Culture == null ? "en-GB" : profile.Culture;
                 user.Messages = getMessage(profile.Culture);
                 user.DefaultCompany = OldCompany;
-                if (user.SuperUser)
-                {
-                    user.SuperUser = profile.SuperUser;
+                //if (user.SuperUser)
+                //{
+                //    user.SuperUser = profile.SuperUser;
 
-                    int supersCount = _userManager.Users.Where(u => u.SuperUser).Count();
-                    if (!profile.SuperUser && supersCount <= 1)
-                    {
-                        ModelState.AddModelError("SuperUser", MsgUtils.Instance.Trls("CantRemoveSuperUser"));
-                        return Json(Models.Utils.ParseFormErrors(ModelState));
-                    }
-                }
+                //    int supersCount = _userManager.Users.Where(u => u.SuperUser).Count();
+                //    if (!profile.SuperUser && supersCount <= 1)
+                //    {
+                //        ModelState.AddModelError("SuperUser", MsgUtils.Instance.Trls("CantRemoveSuperUser"));
+                //        return Json(Models.Utils.ParseFormErrors(ModelState));
+                //    }
+                //}
 
                 result = await _userManager.UpdateAsync(user);
 
@@ -953,6 +903,7 @@ namespace WebApp.Controllers
                    
                     if (Changed)
                         message = "OK,"+((new JavaScriptSerializer()).Serialize(profile));
+
                     return Json(message);
                 }
             }
@@ -1021,10 +972,6 @@ namespace WebApp.Controllers
         #region User Log Index
         public ActionResult LogIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadUserLog()
@@ -1049,11 +996,6 @@ namespace WebApp.Controllers
         public ActionResult UserLog(string id)
         {
             ViewBag.id = id;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            string Menu = Request.QueryString["MenuId"]?.ToString();
-            int MenuId =  string.IsNullOrEmpty(Menu) ?  0: int.Parse(Request.QueryString["MenuId"].ToString());
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetUserLog(string id, int pageSize, int skip)

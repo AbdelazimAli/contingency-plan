@@ -4,7 +4,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
 }
@@ -14,7 +14,7 @@
 
 <script>
     var colms = [{id:0, name:"IJob"},{id:2, name:"IPayrollGrade"},{id:3,name:"IGrade"},{id:4,name:"ISubGrade"},{id:5,name:"IPoints"},{id:6,name:"EditPoints"},
-                    {id:7,name:"ILocation"},{id:8,name:"IDepartment"},{id:9,name:"IPerformance"},{id:10,name:"IPersonType"}];
+                    {id:7,name:"IBranch"},{id:8,name:"IDepartment"},{id:9,name:"IPerformance"},{id:10,name:"IPersonType"}];
     var Gridcols = [];
     $(function () {
        
@@ -97,8 +97,8 @@
                         case "IDepartment":
                             Gridcols.push("DeptId");
                             break;
-                        case "ILocation":
-                            Gridcols.push("LocationId");
+                        case "IBranch":
+                            Gridcols.push("BranchId");
                             break;
                         case "IPerformance":
                             Gridcols.push("Performance");
@@ -154,8 +154,8 @@
                             if(x != -1)
                                 Gridcols.splice(x,1);
                             break;
-                        case "ILocation":
-                            x= $.inArray("LocationId",Gridcols);
+                        case "IBranch":
+                            x= $.inArray("BranchId",Gridcols);
                             if(x != -1)
                                 Gridcols.splice(x,1);
                             break;
@@ -210,8 +210,8 @@
                             case "IDepartment":
                                 grid.hideColumn("DeptId");
                                 break;
-                            case "ILocation":
-                                grid.hideColumn("LocationId");
+                            case "IBranch":
+                                grid.hideColumn("BranchId");
                                 break;
                             case "IPerformance":
                                 grid.hideColumn("Performance");
@@ -248,8 +248,8 @@
                             case "IDepartment":
                                 grid.showColumn("DeptId");
                                 break;
-                            case "ILocation":
-                                grid.showColumn("LocationId");
+                            case "IBranch":
+                                grid.showColumn("BranchId");
                                 break;
                             case "IPerformance":
                                 grid.showColumn("Performance");

@@ -6,7 +6,7 @@
     ViewBag.Title = "DisplayLookUpCode";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -20,8 +20,8 @@
 <script>
     $("#NicePen").hide();
     var addUrl = "@Url.Action("DocumentDetails", "LookUpCode")";
-    RequestFilters.ApplayAllFilters([], {}, "DocumentDiv", "@Url.Action("GetDocTypes", "LookUpCode")?MenuId=@Request.QueryString["MenuId"]", addUrl);
-    var RequiredOpt = [{ value: 0, text: "@MsgUtils.Instance.Trls("Not Required")" }, { value: 1, text: "@MsgUtils.Instance.Trls("Required for all jobs")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Required for some jobs")" }];
+    RequestFilters.applyAllFilters([], {}, "DocumentDiv", "@Url.Action("GetDocTypes", "LookUpCode")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var RequiredOpt = [{ value: 0, text: " " }, { value: 1, text: "@MsgUtils.Instance.Trls("Required for all jobs")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Required for some jobs")" }];
     var grid = "'DocTypes'";
     var objectName = "DocTypes";
     Grids.indexGrid({

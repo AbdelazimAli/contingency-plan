@@ -7,12 +7,12 @@ using System.Web;
 using System.Web.Helpers;
 using System.Web.Hosting;
 using System.Web.Http;
-using WebApp.Controllers.Api;
+using System.Web.Http.Cors;
 
 
 namespace WebApp.Controllers.NewApi
 {
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class UtilitiesController : BaseApiController
     {
         protected IHrUnitOfWork hrUnitOfWork { get; private set; }

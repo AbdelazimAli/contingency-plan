@@ -41,7 +41,6 @@ namespace Model.ViewModel
         [MaxLength(50)]
         public string Responsible { get; set; } // Responsible Manager
         public short? LegalForm { get; set; } // Legal form  // LegalForm   
-        public int? AddressId { get; set; }
         public string Address { get; set; }
         ///////////////////////////////
     }

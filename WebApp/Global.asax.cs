@@ -15,6 +15,7 @@ using System.Diagnostics;
 using System.Configuration;
 using System.Web.Configuration;
 using System.Threading;
+using WebApp.Controllers;
 
 namespace WebApp
 {
@@ -22,14 +23,13 @@ namespace WebApp
     {
         protected void Application_Start()
         {
-            
             AreaRegistration.RegisterAllAreas();
             GlobalConfiguration.Configure(WebApiConfig.Register);
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
             AntiForgeryConfig.UniqueClaimTypeIdentifier = ClaimTypes.NameIdentifier;
-            
+
             // DevExpress Section
             DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension.RegisterExtensionGlobal(new ReportStorageWebExtension());
             DevExpress.XtraReports.Web.WebDocumentViewer.Native.WebDocumentViewerBootstrapper.SessionState = System.Web.SessionState.SessionStateBehavior.Required;
@@ -39,7 +39,7 @@ namespace WebApp
 
         protected void Application_Error(object sender, EventArgs e)
         {
-           Exception exc = Server.GetLastError();
+            Exception exc = Server.GetLastError();
             Response.Redirect("/Account/ErrorMessage");
         }
 
@@ -74,14 +74,11 @@ namespace WebApp
         //}
 
         protected void Application_PreRequestHandlerExecute(object sender, EventArgs e)
-
-
-
         {
             var culture = new System.Globalization.CultureInfo(User.Identity.GetCulture());
             System.Threading.Thread.CurrentThread.CurrentCulture = culture;
             System.Threading.Thread.CurrentThread.CurrentUICulture = culture;
-            if (culture.ToString() =="ar-EG")
+            if (culture.ToString() == "ar-EG")
             {
                 Thread.CurrentThread.CurrentUICulture = new System.Globalization.CultureInfo("ar");
             }
@@ -90,12 +87,14 @@ namespace WebApp
         public void Application_BeingRequest()
         {
             if (Request.Headers.AllKeys.Contains("Origin") && Request.HttpMethod == "OPTIONS")
-            { Response.Flush(); }
+            {
+                Response.Flush();
+            }
         }
         protected void Application_PostAuthorizeRequest()
         {
             HttpContext.Current.SetSessionStateBehavior(System.Web.SessionState.SessionStateBehavior.Required);
         }
-       
+
     }
 }

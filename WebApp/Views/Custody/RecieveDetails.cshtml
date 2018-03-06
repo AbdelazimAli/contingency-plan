@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -23,17 +23,18 @@
 <div id="CustReportWindow"></div>
 
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var EmpCustody=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpCustody));
-    var locations=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+    var branches=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Branches));
     var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
     var CustCategory =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CustodyCategory));
-    var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+    @*var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+    var funs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         //tabs
         var formId = "PeopleForms";
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
@@ -77,11 +78,11 @@
 
                     //Append the form to the div
                     $("#RecieveCustody").Forms(data, model);
-                    FormJs.fillOptionsDynamic($("#" + formId), "LocationId", locations, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "BranchId", branches, model);
                     FormJs.fillOptionsDynamic($("#" + formId), "CustodyCatId",CustCategory, model);
                     FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People"});
                     $("#Qty").closest(".form-group").remove();
-                
+
                     if(model.Id == 0)
                         $("#RecvDate").data("kendoDatePicker").value("");
 
@@ -109,13 +110,13 @@
                         var EmpId  = getEmpId();
                         $.ajax({
                             async: false,
-                            url: "@Url.Action("GetCurrentLocation", "Custody")",
+                            url: "@Url.Action("GetCurrentBranch", "Custody")",
                             data: {EmpId:EmpId },
                             dataType: "json",
                             success: function (res)
                             {
                                 if(res != null)
-                                    $("#" + formId).find('#LocationId').getKendoDropDownList().value(res);
+                                    $("#" + formId).find('#BranchId').getKendoDropDownList().value(res);
                             }
                         });
                     });
@@ -137,9 +138,10 @@
         {
             $('#backToIndex').click(function (e) {
                 e.stopPropagation();
-                var oldPage = localStorage.getItem("menuhigh").split(",");
-                var oldulr = $("#" + oldPage[2] + " a").attr("href");
-                $("#renderbody").load(oldulr + "&isEmp=true");
+                //var oldPage = localStorage.getItem("menuhigh").split(",");
+                //var oldulr = $("#" + oldPage[2] + " a").attr("href");
+                //$("#renderbody").load(oldulr + "&isEmp=true");
+                updateHistory(oldUlr + "&isEmp=true");
             });
         }
         $("#"+formId).on("click","#saveChanges",function (e) {
@@ -149,8 +151,7 @@
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
                 $("#Documents").attr('disabled',false);
                 $("#" +formId).find('#EmpId').data("kendoDropDownList").enable(false);
-                $("#" +formId).find('#LocationId').data("kendoDropDownList").enable(false);
-
+                $("#" +formId).find('#BranchId').data("kendoDropDownList").enable(false);
             });
 
         });
@@ -158,9 +159,9 @@
 
         //CustReportBtn
         $("#CustReportBtn").click(function(e){
-            e.preventDefault();   
+            e.preventDefault();
             $("#CustReportWindow").data("kendoWindow").refresh("/Custody/CustodyReport?Id=" + model.CustodyId).center().open();
-            $("#CustReportBtn").fadeOut();            
+            $("#CustReportBtn").fadeOut();
         });
 
         $("#CustReportWindow").kendoWindow ({
@@ -175,7 +176,7 @@
                 $("#CustReportWindow").empty();
             }
         });
-      
+
     });
 
 </script>

@@ -26,6 +26,26 @@ namespace Db.Persistence.Repositories
                 return Context as HrContext;
             }
         }
+
+       
+        public void GetJob_Department_Branch_Translated(string Culture, int EmpID,int JobID,int DepartmentID,int BranchID,out string JobName,out string DeptName,out string BranchName)
+        {
+            JobName = "";
+            DeptName = "";
+            BranchName = "";
+
+            try
+            {
+                JobName = context.Jobs.Where(a => a.Id == JobID).Select(a => HrContext.TrlsName(a.Name, Culture)).FirstOrDefault();
+                DeptName = context.CompanyStructures.Where(a => a.Id == DepartmentID).Select(a => HrContext.TrlsName(a.Name, Culture)).FirstOrDefault();
+                BranchName = context.Branches.Where(a => a.Id == BranchID).Select(a => HrContext.TrlsName(a.Name, Culture)).FirstOrDefault();
+            }
+            catch
+            {
+
+            }
+        }
+
         public IQueryable<PeopleGroupViewModel> GetPeoples()
         {
             var Peoples = from p in context.PeopleGroups
@@ -38,7 +58,6 @@ namespace Db.Persistence.Repositories
                               CreatedUser = p.CreatedUser,
                               ModifiedTime = p.ModifiedTime,
                               ModifiedUser = p.ModifiedUser
-
                           };
 
             return Peoples;
@@ -89,7 +108,6 @@ namespace Db.Persistence.Repositories
                              AuthEmp = wft.AuthEmp,
                              AuthPosition = wft.AuthPosition,
                              BranchId = wft.BranchId,
-                             SectorId = wft.SectorId,
                              EmpStatus = HrContext.GetEmpStatus(p.Id),
                              PositionName = HrContext.TrlsName(postion.Name, culture),
                              LocalRoleName = HrContext.TrlsName(role.Name, culture),
@@ -101,8 +119,6 @@ namespace Db.Persistence.Repositories
         {
             var person = (from p in context.People
                           where p.Id == id
-                          join a in context.Addresses on p.AddressId equals a.Id into g
-                          from a in g.DefaultIfEmpty()
                           select new PeoplesViewModel
                           {
                               Id = p.Id,
@@ -127,7 +143,6 @@ namespace Db.Persistence.Repositories
                               JoinDate = p.JoinDate,
                               IssuePlace = p.IssuePlace,
                               KafeelId = p.KafeelId,
-                              LocationId = p.LocationId,
                               InspectDate = p.InspectDate,
                               MaritalStat = p.MaritalStat,
                               MedStatDate = p.MedStatDate,
@@ -146,8 +161,6 @@ namespace Db.Persistence.Repositories
                               RecommenReson = p.RecommenReson,
                               Recommend = p.Recommend,
                               Religion = p.Religion,
-                              RoomNo = p.RoomNo,
-                              AddressId = p.AddressId,
                               OtherEmail = p.OtherEmail,
                               Ssn = p.Ssn,
                               QualificationId = p.QualificationId,
@@ -156,40 +169,47 @@ namespace Db.Persistence.Repositories
                               TaxFamlyCnt = p.TaxFamlyCnt,
                               BnftFamlyCnt = p.BnftFamlyCnt,
                               StartExpDate = p.StartExpDate,
-                              HoAddressId = p.HoAddressId,
-                              Address = a == null ? "" : (a.Address1 + (a.Address2 == null ? "" : ", " + a.Address2) + (a.Address3 == null ? "" : ", " + p.Address.Address3)),
-                              HostAddress = context.Addresses.Where(d => d.Id == p.HoAddressId).Select(e => e.Address1 + ", " + e.Address2 + ", " + e.Address3).FirstOrDefault(),
                               EmpStatus = HrContext.GetEmpStatus(p.Id),
                               CreatedTime = p.CreatedTime,
                               ModifiedTime = p.ModifiedTime,
                               ModifiedUser = p.ModifiedUser,
                               CreatedUser = p.CreatedUser,
-                              PicUrl = HrContext.GetCompanyDoc("People", p.Id, 1),
+                              PicUrl = HrContext.GetDocument("EmployeePic", p.Id),
                               HasImage = p.HasImage,
                               IdIssueDate = p.IdIssueDate,
                               VisaNo = p.VisaNo,
                               VarSubAmt = p.VarSubAmt,
                               BasicSubAmt = p.BasicSubAmt,
-                              SubscripDate = p.SubscripDate
+                              SubscripDate = p.SubscripDate,
+                              Address1 = p.Address1,
+                              CityId = p.CityId,
+                              CountryId = p.CountryId,
+                              DistrictId = p.DistrictId,
+                              HoAddress = p.HoAddress,
+                              Latitude = p.Latitude,
+                              Longitude = p.Longitude,
+                              TreatCardNo = p.TreatCardNo,
+                              Status = p.Status,
+                              PaperStatus=p.PaperStatus
                           }).FirstOrDefault();
             return person;
         }
 
-        public double GetAttachmentsCount(int Id, out int attachments)
+        public string GetDocument(string source, int sourceid)
+        {
+            var data = context.CompanyDocsView.Where(a => a.Source == source && a.SourceId == sourceid).Select(a => a.file_stream).FirstOrDefault();
+            return data == null ? "" : Convert.ToBase64String(data);
+        }
+
+        public string GetAttachmentsCount(int Id/*, out int attachments*/)
         {
             var today = DateTime.Today.Date;
+            var result = context.Employements
+                .Where(a => a.EmpId == Id && a.Status == 1)
+                .Select(a => HrContext.GetDocsCount(a.CompanyId, a.EmpId, a.SuggestJobId))
+                .FirstOrDefault();
 
-            var result = context.Assignments
-                .Where(a => a.EmpId == Id && a.AssignDate <= today && a.EndDate >= today)
-                .Select(a => new
-                       {
-                          Docs = HrContext.GetDocsCount(a.CompanyId, a.EmpId, a.JobId),
-                          Attachments = HrContext.GetAttachments("People", a.EmpId)
-                       })
-                       .FirstOrDefault();
-
-            attachments = result == null ? 0 : result.Attachments;
-            return result == null ? 0 : result.Docs;
+            return result == null ? "0/0" : result;
         }
 
         public string GetMissingAttachments(int companyId, int empId, string culture, int Gender, int? Nationality)
@@ -230,7 +250,7 @@ namespace Db.Persistence.Repositories
             list.Add(getCounts(columns, empRecord));
 
             //Assignments
-            IgnoreCols = new List<string>() { "ManagerId", "EmpTasks", "IsDepManager", "PositionId", "ILocations", "IPayrollGrades", "IPositions", "ICompanyStuctures", "IEmployments", "IJobs", "IPayrolls", "IPeopleGroups" };
+            IgnoreCols = new List<string>() { "ManagerId", "EmpTasks", "IsDepManager", "PositionId", "IBranches", "IPayrollGrades", "IPositions", "ICompanyStuctures", "IEmployments", "IJobs", "IPayrolls", "IPeopleGroups" };
 
             columns = context.FormsColumns.Where(f => f.Section.FieldSet.PageId == HrContext.GetPageId(companyId, "AssignmentsForm", version) && f.isVisible && !IgnoreCols.Contains(f.ColumnName) && f.InputType != "button").Select(f => f.ColumnName).ToList();
             var today = DateTime.Today.Date;
@@ -285,72 +305,9 @@ namespace Db.Persistence.Repositories
 
             return query;
         }
+
         #region Employment by Mamdouh
-        public void ReadEmployeesPhotos()
-        {
-            // Get logo folder
-            var logosFolder = System.AppDomain.CurrentDomain.BaseDirectory + "Content\\Photos";
-            // Get last access time
-            var lastWriteFileTime = Directory.GetLastWriteTime(logosFolder);
-            var CreationTime = Directory.GetCreationTime(logosFolder);
-            if (lastWriteFileTime < CreationTime || Directory.GetFiles(logosFolder).Count() <= 1) lastWriteFileTime = new System.DateTime(2000, 1, 1);
-            // Get required file need to write
-            var files = context.CompanyDocsView.Where(f => f.last_access_time.Value > lastWriteFileTime && f.is_directory == false && f.Source == "People" && f.DocType.DocumenType == 1).Select(f => new { name = f.name, data = f.file_stream }).ToList();
-            // loop to write files
-            foreach (var file in files)
-            {
-                File.WriteAllBytes(Path.Combine(logosFolder, file.name), file.data);
-            }
-        }
-        //GetPeoples
-        public IQueryable<PersonViewModel> ReadPeoples(string culture)
-        {
-            var today = DateTime.Today.Date;
-
-            var people = from p in context.People
-                         join emp in context.Employements on p.Id equals emp.EmpId into g
-                         from org in g.Where(a => a.StartDate <= today && (a.EndDate == null || a.EndDate >= today)).DefaultIfEmpty()
-                         select new PersonViewModel
-                         {
-                             Id = p.Id,
-                             Title = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                             Gender = p.Gender,
-                             JoinDate = p.JoinDate,
-                             QualificationId = p.QualificationId,
-                             PicUrl = HrContext.GetCompanyDoc("People", p.Id, 1),
-                             EmpStatus = HrContext.GetEmpStatus(p.Id),
-                             Age = DateTime.Now.Year - p.BirthDate.Year,
-                             Code = org.Code,
-                             PersonType = org.PersonType,
-                             CompanyId = org.CompanyId,
-                             CreatedTime = p.CreatedTime,
-                             CreatedUser = p.CreatedUser,
-                             ModifiedUser = p.ModifiedUser,
-                             ModifiedTime = p.ModifiedTime
-
-                         };
-            return people;
-        }
         //ReadEmployments
-        public IQueryable<EmployementViewModel> ReadEmployments(int id)
-        {
-            var employee = from e in context.Employements
-                           where e.EmpId == id && e.Status != 4
-                           join c in context.Companies on e.CompanyId equals c.Id
-                           select new EmployementViewModel
-                           {
-                               Id = e.Id,
-                               EmpId = e.EmpId,
-                               PersonType = e.PersonType,
-                               EndDate = e.EndDate,
-                               StartDate = e.StartDate,
-                               Status = e.Status,
-                               Code = e.Code,
-                               CompanyName = c.Name
-                           };
-            return employee;
-        }
-
         public string CheckCode(Employement Emp, string culture)
         {
             string error = "OK";
@@ -394,24 +351,6 @@ namespace Db.Persistence.Repositories
 
             return error;
         }
-        //AddEmployee
-        public string AddEmployee(Person person, string Code, short? personType, int sequence, DateTime? start, string culture, int companyId)
-        {
-            string error = "OK";
-            Employement emp = new Employement();
-            emp.Code = Code;
-            emp.EmpId = person.Id;
-            emp.PersonType = (short)personType;
-            emp.StartDate = (DateTime)start;
-            emp.Status = 1;
-            emp.Sequence = sequence;
-            emp.CreatedTime = person.CreatedTime;
-            emp.CreatedUser = person.CreatedUser;
-            emp.CompanyId = companyId;
-            CheckCode(emp, culture);
-            context.Employements.Add(emp);
-            return error;
-        }
 
         public EmployementViewModel GetEmployment(int EmpId)
         {
@@ -451,7 +390,9 @@ namespace Db.Persistence.Repositories
                                    DurInMonths = e.DurInMonths,
                                    Profession = e.Profession,
                                    SysCodeId = lc.SysCodeId,
+                                   SuggestJobId = e.SuggestJobId
                                }).FirstOrDefault();
+
             if (employement != null)
                 return employement;
             else
@@ -515,18 +456,17 @@ namespace Db.Persistence.Repositories
             return qual;
         }
         //getQualification
-        public IEnumerable<GridListViewModel> getQualification(string CodeName)
+        public IQueryable<GridListViewModel> getQualification(string CodeName)
         {
+            var query = from q in context.Qualifications
+                        join c in context.LookUpUserCodes on new { p1 = CodeName, p2 = q.Category } equals new { p1 = c.CodeName, p2 = c.CodeId }
+                        where c.SysCodeId < 4
+                        select new GridListViewModel { value = q.Id, text = q.Name };
 
-            var list = context.Qualifications
-                .Where(a => context.LookUpUserCodes.Where(w => w.CodeName == CodeName && w.SysCodeId < 4)
-                .Select(s => s.CodeId).Contains(a.Category)).Select(a => new GridListViewModel { value = a.Id, text = a.Name }).ToList();
-
-            return list;
-
+            return query;
         }
 
-        public IQueryable<DropDownList> GetAllPeoples(string culture, int CompanyId)
+        public IQueryable<DropDownList> GetAllPeoples(string culture)
         {
             return (from p in context.People
                     select new DropDownList
@@ -534,18 +474,20 @@ namespace Db.Persistence.Repositories
                         Id = p.Id,
                         Name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
                         PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
-                        Icon = HrContext.GetEmpStatus(p.Id)
+                        Icon = HrContext.GetEmpStatus(p.Id),
+                        Gender = p.Gender
                     });
         }
 
         //  getCertification
-        public IEnumerable<GridListViewModel> getCertification(string CodeName)
+        public IQueryable<GridListViewModel> getCertification(string CodeName)
         {
-            var list = context.Qualifications
-                .Where(a => context.LookUpUserCodes.Where(w => w.CodeName == CodeName && w.SysCodeId >= 4)
-                .Select(s => s.CodeId).Contains(a.Category)).Select(a => new GridListViewModel { value = a.Id, text = a.Name }).ToList();
+            var query = from q in context.Qualifications
+                        join c in context.LookUpUserCodes on new { p1 = CodeName, p2 = q.Category } equals new { p1 = c.CodeName, p2 = c.CodeId }
+                        where c.SysCodeId >= 4
+                        select new GridListViewModel { value = q.Id, text = q.Name };
 
-            return list;
+            return query;
 
         }
         #endregion
@@ -639,7 +581,7 @@ namespace Db.Persistence.Repositories
             if (person != null) Remove(person);
         }
 
-        public IEnumerable<FormList> GetActiveEmployees(int companyId, string culture)
+        public IQueryable<FormList> GetActiveEmployees(int companyId, string culture)
         {
             var today = DateTime.Today.Date;
 
@@ -650,9 +592,10 @@ namespace Db.Persistence.Repositories
                     {
                         id = p.Id,
                         name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                        PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
+                        PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                        Gender = p.Gender,
                         Icon = HrContext.GetEmpStatus(p.Id)
-                    }).ToList();
+                    });
         }
 
         public IEnumerable<FormList> GetEmployeeById(int companyId, string culture, int EmpId)
@@ -666,29 +609,14 @@ namespace Db.Persistence.Repositories
                     {
                         id = p.Id,
                         name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                        PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
+                        PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                        Gender = p.Gender,
                         Icon = HrContext.GetEmpStatus(p.Id)
                     }).ToList();
         }
 
         // Get the employee with Dept manger role only  // Done By fatma
-        public IEnumerable<FormList> GetActiveDeptMangers(int companyId, string culture)
-        {
-            var today = DateTime.Today.Date;
-
-            return (from a in context.Assignments
-                    where a.CompanyId == companyId && a.AssignDate <= today && a.EndDate >= today && a.IsDepManager
-                    join p in context.People on a.EmpId equals p.Id
-                    select new FormList
-                    {
-                        id = p.Id,
-                        name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                        PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
-                        Icon = HrContext.GetEmpStatus(p.Id)
-                    }).ToList();
-        }
-
-        public IEnumerable<FormList> GetActiveMangers(int companyId, string culture)
+        public IQueryable<FormList> GetActiveMangers(int companyId, string culture)
         {
             var today = DateTime.Today.Date;
             //Get Departments managers
@@ -698,7 +626,8 @@ namespace Db.Persistence.Repositories
                           {
                               id = a.EmpId,
                               name = HrContext.TrlsName(a.Employee.Title + " " + a.Employee.FirstName + " " + a.Employee.Familyname, culture),
-                              PicUrl = (a.Employee.HasImage ? a.Employee.Id + ".jpeg" : "noimage.jpg"),
+                              PicUrl = HrContext.GetDoc("EmployeePic", a.EmpId),
+                              Gender = a.Employee.Gender,
                               Icon = HrContext.GetEmpStatus(a.Employee.Id)
                           });
 
@@ -709,15 +638,16 @@ namespace Db.Persistence.Repositories
                           {
                               id = p.Id,
                               name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                              PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
+                              PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                              Gender = p.Gender,
                               Icon = HrContext.GetEmpStatus(p.Id)
                           }).Distinct();
 
-            var query3 = query1.Union(query2).ToList();
+            var query3 = query1.Union(query2);
             return query3;
         }
 
-        public IEnumerable<FormList> GetActiveMangersByMangerId(int companyId, string culture, int MangerId)
+        public IQueryable<FormList> GetActiveMangersByMangerId(int companyId, string culture, int MangerId)
         {
             var today = DateTime.Today.Date;
             var query1 = (from a in context.Assignments
@@ -726,14 +656,15 @@ namespace Db.Persistence.Repositories
                           {
                               id = a.EmpId,
                               name = HrContext.TrlsName(a.Employee.Title + " " + a.Employee.FirstName + " " + a.Employee.Familyname, culture),
-                              PicUrl = (a.Employee.HasImage ? a.Employee.Id + ".jpeg" : "noimage.jpg"),
+                              PicUrl = HrContext.GetDoc("EmployeePic", a.EmpId),
+                              Gender = a.Employee.Gender,
                               Icon = HrContext.GetEmpStatus(a.Employee.Id)
                           });
             return query1;
         }
 
         //
-        public IEnumerable<FormList> GetEmployeeManagedByManagerId(int companyId, string culture, int MangId)
+        public IQueryable<FormList> GetEmployeeManagedByManagerId(int companyId, string culture, int MangId)
         {
             var today = DateTime.Today.Date;
 
@@ -747,47 +678,12 @@ namespace Db.Persistence.Repositories
                          {
                              id = a.EmpId,
                              name = HrContext.TrlsName(a.Employee.Title + " " + a.Employee.FirstName + " " + a.Employee.Familyname, culture),
-                             PicUrl = (a.Employee.HasImage ? a.Employee.Id + ".jpeg" : "noimage.jpg"),
+                             PicUrl = HrContext.GetDoc("EmployeePic", a.EmpId),
+                             Gender = a.Employee.Gender,
                              Icon = HrContext.GetEmpStatus(a.Employee.Id)
                          };
 
-            return query1.ToList();
-
-            // Get direct managers
-            //var query1 = from a in context.Assignments
-            //             where a.CompanyId == companyId && a.AssignDate <= today && a.EndDate >= today && a.ManagerId == MangId
-            //             select a;
-
-            //var deptId = (from a in context.Assignments
-            //              where a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.CompanyId == companyId && a.IsDepManager == true && a.EmpId == MangId
-            //              select a.DepartmentId).FirstOrDefault();
-            //var emps = from a in context.Assignments
-            //           where a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.CompanyId == companyId && a.DepartmentId == deptId && a.ManagerId == null && a.EmpId != MangId
-            //           select a;
-            //var query2 = query1.Union(emps);
-            //var query = (from a in query2
-            //             join p in context.People on a.EmpId equals p.Id
-            //             join c in context.LookUpUserCodes on new { c1 = a.AssignStatus, c2 = "Assignment", c3 = (byte)1 } equals new { c1 = c.CodeId, c2 = c.CodeName, c3 = c.SysCodeId }
-            //             select new FormList
-            //             {
-            //                 id = p.Id,
-            //                 name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-            //                 PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
-            //                 Icon = HrContext.GetEmpStatus(p.Id)
-            //             }).ToList();
-            //return query;
-
-            //return (from a in context.Assignments
-            //        where a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.CompanyId == companyId && a.IsDepManager == false
-            //        join p in context.People on a.EmpId equals p.Id
-            //        join c in context.LookUpUserCodes on new { c1 = a.AssignStatus, c2 = "Assignment", c3 = (byte)1 } equals new { c1 = c.CodeId, c2 = c.CodeName, c3 = c.SysCodeId }
-            //        select new FormList
-            //        {
-            //            id = p.Id,
-            //            name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-            //            PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
-            //            Icon = HrContext.GetEmpStatus(p.Id)
-            //        }).ToList();
+            return query1;
         }
         public void Add(PeopleTraining person)
         {
@@ -870,18 +766,20 @@ namespace Db.Persistence.Repositories
         }
         public IEnumerable<ColumnDropdownViewModel> GetEditColumn(int CompanyId, string ObjectName, byte Version, string Culture, string RoleId)
         {
-            var res = from FC in context.FormsColumns
-                      where FC.Section.FieldSet.Page.CompanyId == CompanyId && FC.Section.FieldSet.Page.ObjectName == ObjectName && FC.Section.FieldSet.Page.Version == Version &&
-                      FC.InputType == null || (FC.InputType == "string" || FC.InputType == "text" || FC.InputType == "email") || (FC.ColumnName == "MaritalStat" || FC.ColumnName == "QualificationId" || FC.ColumnName == "KafeelId")
-                      join RC in context.RoleColumns on new { CompanyId = FC.Section.FieldSet.Page.CompanyId, ObjectName = FC.Section.FieldSet.Page.ObjectName, Version = FC.Section.FieldSet.Page.Version, ColumnName = FC.ColumnName }
-                      equals new { CompanyId = RC.CompanyId, ObjectName = RC.ObjectName, Version = RC.Version, ColumnName = RC.ColumnName }
-                      where RC.RoleId == RoleId && RC.isEnabled == true
-                      select new ColumnDropdownViewModel
-                      {
-                          ColumnName = FC.ColumnName,
-                          Title = HrContext.GetColumnTitle(FC.Section.FieldSet.Page.CompanyId, Culture, FC.Section.FieldSet.Page.ObjectName, FC.Section.FieldSet.Page.Version, FC.ColumnName)
-                      };
-
+            //var res = from FC in context.FormsColumns
+            //          where FC.Section.FieldSet.Page.CompanyId == CompanyId && FC.Section.FieldSet.Page.ObjectName == ObjectName && FC.Section.FieldSet.Page.Version == Version && FC.ColumnName != "LocalName" &&
+            //          (FC.InputType == null || FC.InputType == "string" || FC.InputType == "text" || FC.InputType == "email" || FC.ColumnName == "MaritalStat" || FC.ColumnName == "QualificationId")
+            //          join RC in context.RoleColumns on new { CompanyId = FC.Section.FieldSet.Page.CompanyId, ObjectName = FC.Section.FieldSet.Page.ObjectName, Version = FC.Section.FieldSet.Page.Version, ColumnName = FC.ColumnName }
+            //          equals new { CompanyId = RC.CompanyId, ObjectName = RC.ObjectName, Version = RC.Version, ColumnName = RC.ColumnName } into g
+            //          from RC in g.Where(a => a.RoleId == RoleId).DefaultIfEmpty()
+            //          where (RC == null || RC.isEnabled)
+            //          select new ColumnDropdownViewModel
+            //          {
+            //              ColumnName = FC.ColumnName,
+            //              Title = HrContext.GetColumnTitle(FC.Section.FieldSet.Page.CompanyId, Culture, FC.Section.FieldSet.Page.ObjectName, FC.Section.FieldSet.Page.Version, FC.ColumnName)
+            //          };
+            //FormColumns.ColumnName <> 'Address' AND
+            var res = context.Database.SqlQuery<ColumnDropdownViewModel>($"SELECT FormColumns.ColumnName, dbo.fn_GetColumnTitle({CompanyId}, '{Culture}', '{ObjectName}', '{Version}', FormColumns.ColumnName) Title FROM FormColumns INNER JOIN Sections ON FormColumns.SectionId = Sections.Id INNER JOIN FieldSets ON Sections.FieldSetId = FieldSets.Id INNER JOIN PageDivs ON FieldSets.PageId = PageDivs.Id LEFT OUTER JOIN RoleColumns ON (RoleColumns.CompanyId = {CompanyId} AND RoleColumns.ObjectName = '{ObjectName}' AND RoleColumns.[Version] = {Version} AND RoleColumns.ColumnName = FormColumns.ColumnName AND RoleColumns.RoleId = '{RoleId}') WHERE PageDivs.CompanyId = {CompanyId} AND PageDivs.ObjectName = '{ObjectName}' AND PageDivs.[Version] = {Version} AND (RoleColumns.isEnabled = 1 Or RoleColumns.isEnabled is null) AND FormColumns.ColumnName <> 'LocalName' AND  FormColumns.ColumnName <> 'HostAddress' AND FormColumns.ColumnName <> 'Code' AND (FormColumns.InputType is null Or FormColumns.InputType In ('string','text','email') Or FormColumns.ColumnName in ('MaritalStat','QualificationId'))");
             return res.ToList();
 
         }

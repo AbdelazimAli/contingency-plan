@@ -20,6 +20,10 @@ using Hangfire;
 using System.Threading.Tasks;
 using System.Net.Mail;
 using Model.ViewModel.Personnel;
+using System.Globalization;
+using System.Reflection;
+using Db.Persistence.Services;
+using Db.Persistence;
 
 namespace WebApp.Controllers
 {
@@ -27,19 +31,7 @@ namespace WebApp.Controllers
     {
         private IHrUnitOfWork _hrUnitOfWork;
         UserContext db = new UserContext();
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
-        protected override void Initialize(RequestContext requestContext)
-        {
-            base.Initialize(requestContext);
-            if (requestContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                Language = requestContext.HttpContext.User.Identity.GetLanguage();
-                CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
-                UserName = requestContext.HttpContext.User.Identity.Name;
-            }
-        }
+
         public NotificationController(IHrUnitOfWork unitOfWork) : base(unitOfWork)
         {
             _hrUnitOfWork = unitOfWork;
@@ -113,7 +105,6 @@ namespace WebApp.Controllers
         //                Destination = record,
         //                Source = model,
         //                ObjectName = "MsgTemplateForm",
-        //                Version = Convert.ToByte(Request.Form["Version"]),
         //                Options = moreInfo
         //            });
         //            record.CompanyId = CompanyId;
@@ -138,7 +129,6 @@ namespace WebApp.Controllers
         //                Destination = record,
         //                Source = model,
         //                ObjectName = "MsgTemplateForm",
-        //                Version = Convert.ToByte(Request.Form["Version"]),
         //                Options = moreInfo
         //            });
 
@@ -204,10 +194,6 @@ namespace WebApp.Controllers
         #region Email Account
         public ActionResult EmailAccountIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetEmailAccount()
@@ -263,7 +249,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmailAccountForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = Model.Domain.TransType.Insert
                     });
@@ -279,7 +264,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmailAccountForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = Model.Domain.TransType.Update
                     });
@@ -335,10 +319,6 @@ namespace WebApp.Controllers
         #region NotificationList
         public ActionResult SchedualeTask()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadNotification(int MenuId)
@@ -433,7 +413,7 @@ namespace WebApp.Controllers
         public ActionResult RunNow(int id, int period, string EvenUrl, bool Enabled, bool OnError)
         {
             string Url = string.Format("{0}?Id={1}&Period={2}&Enable={3}&OnStopError={4}&Invoke={5}", EvenUrl, id, period, Enabled, OnError, false);
-            RecurringJob.Trigger(id.ToString());
+            //RecurringJob.Trigger(id.ToString());
             return Redirect(Url);
         }
         public ActionResult ExtendContract(int Id, int Period, bool Enable, bool OnStopError, bool Invoke)
@@ -444,7 +424,9 @@ namespace WebApp.Controllers
 
                 try
                 {
-                    RecurringJob.AddOrUpdate(Id.ToString(), () => HangFireJobs.ExtendContract(Language), Cron.Daily(09));
+                    int UNHour, UNMinute;
+                    DateTimeServices.GetTimeUniversal(9, 0, User.Identity.GetTimeZone(), out UNHour, out UNMinute);
+                    RecurringJob.AddOrUpdate(Id.ToString(), () => HangFireJobs.ExtendContract(Language), Cron.Daily(UNHour, UNMinute));
                 }
                 catch
                 {
@@ -455,6 +437,7 @@ namespace WebApp.Controllers
 
                 if (!Invoke)
                 {
+                    RecurringJob.Trigger(Id.ToString());
                     var model = _hrUnitOfWork.Repository<SchedualTask>().Where(a => a.EventId == Id).FirstOrDefault();
                     UpdateTimeofTask(model);
                 }
@@ -540,10 +523,6 @@ namespace WebApp.Controllers
         }
         public ActionResult GetAllNotifications()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetNotification(int MenuId, int pageSize, int skip)
@@ -626,10 +605,6 @@ namespace WebApp.Controllers
         #region Index Grid Notification
         public ActionResult IndexOfNotifications()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetNotifyConditions(int MenuId)
@@ -674,7 +649,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "Notify",
@@ -715,7 +690,6 @@ namespace WebApp.Controllers
                     Destination = NotifyCondition,
                     Source = model,
                     ObjectName = "Notify",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 };
@@ -776,7 +750,6 @@ namespace WebApp.Controllers
                     Destination = NotifyCondition,
                     Source = model,
                     ObjectName = "Notify",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 };
@@ -1032,10 +1005,6 @@ namespace WebApp.Controllers
 
         public ActionResult SMSLogIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadSMSLog()
@@ -1050,10 +1019,6 @@ namespace WebApp.Controllers
         #region Email Log
         public ActionResult EmailLogIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadEmailLog()
@@ -1067,10 +1032,6 @@ namespace WebApp.Controllers
         #region NotifyLetter
         public ActionResult NotifyLetterIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -1105,12 +1066,51 @@ namespace WebApp.Controllers
             if (Sorting.Length > 0)
                 query = query.OrderBy(Sorting).Skip(skip).Take(pageSize);
             else if (skip > 0)
-                query = query.Skip(skip).Take(pageSize);
+                query = query.OrderByDescending(a => a.NotifyDate).Skip(skip).Take(pageSize);
             else
                 query = query.Take(pageSize);
 
             return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
         }
+        public ActionResult GetMyNotificationsLetters(int MenuId)
+        {
+            var EmpId = User.Identity.GetEmpId();
+            var query = _hrUnitOfWork.NotificationRepository.GetMyLetters(CompanyId, Language, EmpId);
+            string whecls = GetWhereClause(MenuId);
+
+            if (whecls.Length > 0)
+            {
+                try
+                {
+                    query = query.Where(whecls);
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                    Utils.LogError(ex.Message);
+                    return Json("", JsonRequestBehavior.AllowGet);
+                }
+            }
+            return Json(query, JsonRequestBehavior.AllowGet);
+        }
+
+
+        public ActionResult InformLetter(int id)
+        {
+            List<Error> errors = new List<Error>();
+            string message = "Ok";
+            var NotifyObject = _hrUnitOfWork.Repository<NotifyLetter>().Where(s => s.Id == id).FirstOrDefault();
+            NotifyObject.read = true;
+            NotifyObject.ReadTime = DateTime.Now;
+            _hrUnitOfWork.NotificationRepository.Attach(NotifyObject);
+            _hrUnitOfWork.NotificationRepository.Entry(NotifyObject).State = EntityState.Modified;
+            //Create Notify Letters To Attendee to Cancel 
+            var Errors = SaveChanges(Language);
+            if (errors.Count > 0) return Json(errors.First().errors.First().message);
+            return Json(message, JsonRequestBehavior.AllowGet);
+
+        }
+
         #endregion
 
         #region SendSms
@@ -1122,77 +1122,10 @@ namespace WebApp.Controllers
         }
         #endregion
 
-        #region Meetings
 
-        public ActionResult MeetingIndex()
-        {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            return View();
-        }
-        //ReadMeeting
-        public ActionResult ReadMeeting(int MenuId, int pageSize, int skip, byte? Range, DateTime? Start, DateTime? End)
-        {
-            var query = _hrUnitOfWork.NotificationRepository.GetMeetings(Range ?? 10, Start, End, Language, CompanyId);
-            string filter = "";
-            string Sorting = "";
-            string whecls = GetWhereClause(MenuId);
-            query = (IQueryable<MeetingViewModel>)Utils.GetFilter(query, ref filter, ref Sorting);
-            if (whecls.Length > 0 || filter.Length > 0)
-            {
-                try
-                {
-                    if (whecls.Length > 0 && filter.Length == 0)
-                        query = query.Where(whecls);
-                    else if (filter.Length > 0 && whecls.Length == 0)
-                        query = query.Where(filter);
-                    else
-                        query = query.Where(filter).Where(whecls);
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                    Utils.LogError(ex.Message);
-                    return Json("", JsonRequestBehavior.AllowGet);
-                }
-            }
 
-            var total = query.Count();
-
-            if (Sorting.Length > 0)
-                query = query.OrderBy(Sorting).Skip(skip).Take(pageSize);
-            else if (skip > 0)
-                query = query.Skip(skip).Take(pageSize);
-            else
-                query = query.Take(pageSize);
-
-            return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
-        }
-
-        public ActionResult MeetingDetails(int id = 0, byte Version = 0)
-        {
-            ViewBag.LocationId = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Where(a => a.IsInternal).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.Emps = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { value = a.Id, text = a.Employee }).ToList();
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("MeetingForm", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
-            if (id == 0)
-                return View(new MeetingViewModel());
-            var Meeting = _hrUnitOfWork.NotificationRepository.ReadMeeting(id);
-            ViewBag.Attendee = _hrUnitOfWork.NotificationRepository.GetMeetingAttendee(Meeting.Id,Language);
-            return Meeting == null ? (ActionResult)HttpNotFound() : View(Meeting);
-        }
-        public ActionResult ReadAgenda(int MeetingId)
-        {
-            var query = _hrUnitOfWork.NotificationRepository.GetAgenda(MeetingId, Language);
-            return Json(query, JsonRequestBehavior.AllowGet);
-        }
-
-        #endregion
+    }
 
 
 
     }
-}

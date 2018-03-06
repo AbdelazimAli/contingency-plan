@@ -12,14 +12,6 @@ namespace WebApp.Extensions
             return (claim != null) ? claim.Value : "en-GB";
         }
 
-        public static bool IsSelfServiceUser(this IIdentity identity)
-        {
-            var claim = ((ClaimsIdentity)identity).FindFirst("SSUser");
-
-            // Test for null to avoid issues during local testing
-            return (claim == null || claim.Value == "False") ? false : true;
-        }
-
         public static string GetShutdownInMin(this IIdentity identity)
         {
             var claim = ((ClaimsIdentity)identity).FindFirst("ShutdownInMin");
@@ -32,7 +24,7 @@ namespace WebApp.Extensions
             var claim = ((ClaimsIdentity)identity).FindFirst("TimeZone");
 
             // Test for null to avoid issues during local testing
-            return (claim != null) ? claim.Value : "Cairo";
+            return (claim != null) ? claim.Value : "Egypt Standard Time";
         }
 
         public static string GetMessages(this IIdentity identity)
@@ -56,7 +48,7 @@ namespace WebApp.Extensions
             var claim = ((ClaimsIdentity)identity).FindFirst("EmpId");
 
             // Test for null to avoid issues during local testing
-            return (claim != null) ? int.Parse(claim.Value) : 0;
+            return (claim != null) ? int.Parse(claim.Value) : -1;
         }
 
 
@@ -79,19 +71,29 @@ namespace WebApp.Extensions
         public static bool GetAllowInsertCode(this IIdentity identity)
         {
             var claim = ((ClaimsIdentity)identity).FindFirst("AllowInsertCode");
-            if (claim.Value == "False")
-                return false;
-            else
-                return true;
+            return (claim != null) ? bool.Parse(claim.Value) : false;
+           
         }
-        
+
         public static bool LogTooltip(this IIdentity identity)
         {
             var claim = ((ClaimsIdentity)identity).FindFirst("LogTooltip");
-            if (claim.Value == "False")
-                return false;
-            else
-                return true;
+            return (claim != null) ? bool.Parse(claim.Value) : false;
+        }
+        public static bool IsAvailable(this IIdentity identity)
+        {
+            var claim = ((ClaimsIdentity)identity).FindFirst("IsAvailable");
+            return (claim != null) ? bool.Parse(claim.Value) : false;
+        }
+        public static bool CanCustomize(this IIdentity identity)
+        {
+            var claim = ((ClaimsIdentity)identity).FindFirst("CanCustomize");
+            return (claim != null) ? bool.Parse(claim.Value) : false;
+        }
+        public static bool Developer(this IIdentity identity)
+        {
+            var claim = ((ClaimsIdentity)identity).FindFirst("Developer");
+            return (claim != null) ? bool.Parse(claim.Value) : false;
         }
     }
 }

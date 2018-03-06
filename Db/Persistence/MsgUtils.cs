@@ -2,6 +2,8 @@
 using System.Linq;
 using System.Text;
 using Model.Domain;
+using Model.ViewModel;
+using System.Web.Mvc;
 
 namespace Db
 {
@@ -27,6 +29,19 @@ namespace Db
             return Instance;
         }
 
+        public static ColumnsView[] GetColumnViews(IEnumerable<KeyValuePair<string, ModelState>> models) //   ModelStateDictionary ModelState
+        {
+            ColumnsView[] ColumnsViews = new ColumnsView[models.Count()];
+            int i = 0;
+            foreach (var model in models)
+            {
+                ColumnsViews[i++] = new ColumnsView() { Name = model.Key, Value = model.Value.Value.AttemptedValue, Cell = 0, Row = 1 };
+            }
+
+            return ColumnsViews;
+        }
+
+   
 
         /// <summary>
         /// used to reload Messages table again from database to memory

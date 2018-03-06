@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 <br>
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     var count = ViewBag.count;
@@ -17,17 +17,17 @@
 <script>
     FormJs.DrawTabs("pageTabs");
 
-    $('#tab_Roles').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]" + "&isSSRole=true");
+    $('#tab_Roles').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
 
     //صلاحيات المنظومة
     $("#t_Roles").click(function () {
         $("#tab_SSRole").empty();
-        $('#tab_Roles').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]" + "&isSSRole=true");
+        $('#tab_Roles').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
     });
     // صلاحيات الخدمة الذاتيه
     $("#t_SSRole").click(function () {
         $("#tab_Roles").empty();
-        $('#tab_SSRole').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]" + "&isSSRole=false");
+        $('#tab_SSRole').load("@Url.Action("Index", "Roles")?MenuId=@Request.QueryString["MenuId"]&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
     });
 </script>
 

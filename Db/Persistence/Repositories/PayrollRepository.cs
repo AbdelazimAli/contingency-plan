@@ -145,8 +145,7 @@ namespace Db.Persistence.Repositories
                        AuthEmpName = HrContext.TrlsName(ae.Title + " " + ae.FirstName + " " + ae.Familyname, culture),
                        AuthPosition = wft.AuthPosition,
                        AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
-                       BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
+                       BranchId = wft.BranchId
                    };
         }
 
@@ -270,7 +269,6 @@ namespace Db.Persistence.Repositories
                        AuthPosition = wft.AuthPosition,
                        AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                        BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
                    };
         }
         public IQueryable<PayReqGridViewModel> ReadApprovedPaysGrid(int companyId, string culture)
@@ -293,8 +291,7 @@ namespace Db.Persistence.Repositories
                        PayPercent = p.PayPercent * 100,
                        DeptId = wft.DeptId,
                        PositionId = wft.PositionId,
-                       BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
+                       BranchId = wft.BranchId
                    };
         }
         //end followup

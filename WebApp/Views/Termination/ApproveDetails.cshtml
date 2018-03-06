@@ -5,7 +5,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -37,10 +37,8 @@
         ];
 
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        var oldulr = $("#"+ oldPage[2] + " a").attr("href");
-
-        ///---#Region Location Form
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //var oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         //serialize The model to JavaScript to send to form.js
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
@@ -190,15 +188,15 @@
 
 
         $('#EmployeeTermDiv').on("click",'#backToIndex',null,function(){
-
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
+
         $('#EmployeeTermDiv').on("click","#saveChanges",null,function (e) {
             if($("#" + formId).find(".k-invalid").length > 0) return ;
 
             FormJs.saveForm($("#"+formId), $(this),function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
 
         });
@@ -214,7 +212,7 @@
 
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
 
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                     $("#Term").modal('hide');
                     $(".modal-backdrop").remove();
                 });
@@ -233,7 +231,7 @@
             FormJs.saveForm($("#"+formId), $(this),function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
 
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
 
         });

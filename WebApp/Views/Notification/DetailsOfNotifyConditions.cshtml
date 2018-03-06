@@ -5,7 +5,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -15,7 +15,7 @@
     var version = Request.QueryString["Version"];
 }
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script src="~/Scripts/app/formula.js"></script>
 <div id="NotifyDiv">
 
@@ -38,8 +38,8 @@
     $(function () {
 
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         var Users = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Users));
@@ -309,13 +309,13 @@
         });
 
         $('#NotifyDiv').on('click',"#backToIndex",null, function(){
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
 
         $("#NotifyDiv").on('click',"#saveChanges",null, function (e) {
             FormJs.saveForm($("#"+formId), $(this), function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
                 $(".btn.glyphicon.glyphicon-plus.ajaxify.btn-default").fadeIn();
             });
         });

@@ -1,0 +1,36 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.Identity.CanCustomize();
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "Sites" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "TableName", "Branches" }, { "AddUrl", Url.Action("Details", "Site") } })
+<div id="Sites"></div>
+
+<script>
+    var grid = "'Sites'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetSites", "Site")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "Site")",
+        edit: "@Url.Action("Details", "Site")",
+        del: "@Url.Action("DeleteSite", "Site")",
+        objectName: "Sites",  // name of the page or table name used to create local db key
+        gridName: "Sites",
+        recordName: "Name",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{
+            field: "IsLocal",
+            template: '<input  type="checkbox" #:IsLocal == true ? "checked" : ""# disabled />'
+        }]
+
+    });
+</script>
+

@@ -1,5 +1,7 @@
-﻿using Model.Domain.Notifications;
+﻿using Model.Domain;
+using Model.Domain.Notifications;
 using Model.ViewModel;
+using Model.ViewModel.Personnel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,8 +18,7 @@ namespace WebApp
         public static void Register(HttpConfiguration config)
         {
             config.MapHttpAttributeRoutes();
-            //var cors = new EnableCorsAttribute("*", "*", "*");
-            //config.EnableCors(cors);
+
 
             config.Routes.MapHttpRoute(
                 name: "DefaultApi",
@@ -30,6 +31,12 @@ namespace WebApp
             builder.EntitySet<Notification>("Notification");
             builder.EntitySet<NotificationVM>("NotificationVM");
             builder.EntitySet<NavBarItemVM>("NavBarItemVM");
+
+            builder.EntitySet<NotifyLetter>("NotifyLetters");
+            builder.EntitySet<Person>("People");
+            builder.EntitySet<Assignment>("Assignment");
+            builder.EntitySet<NotifiyLetterViewModel>("NotifiyLetterViewModel");
+            //builder.EntitySet<LetterVM>("LetterVM");
             
             config.Routes.MapODataServiceRoute("odata", "odata", builder.GetEdmModel());
         }

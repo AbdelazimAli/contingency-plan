@@ -101,7 +101,7 @@ namespace Db.Persistence.Repositories
                                  JobId = c.JobId,
                                  GroupId = c.GroupId,
                                  MaxValue = c.MaxValue,
-                                 LocationId = c.LocationId,
+                                 BranchId = c.BranchId,
                                  MinValue = c.MinValue,
                                  PayDueId = c.PayDueId,
                                  PersonType = c.PersonType,

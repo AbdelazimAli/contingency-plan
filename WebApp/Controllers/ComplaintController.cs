@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         #region Create Compliant
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //GetComplaintRequest
@@ -68,12 +64,10 @@ namespace WebApp.Controllers
         public ActionResult Details(int id = 0, byte Version = 0,int MenuId=0)
         {
             var Complaint = _hrUnitOfWork.ComplaintRepository.ReadComplaint(id);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("ComplainRequestsForm", CompanyId, Version);
-            if (columns.FirstOrDefault(fc => fc == "EmpId") == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, Complaint!=null ?Complaint.EmpId:0, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("ComplainRequestsForm", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, Complaint!=null ?Complaint.EmpId:0, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus });
+         
             if (id == 0)
                 return View(new ComplaintRequestViewModel());
 
@@ -218,7 +212,6 @@ namespace WebApp.Controllers
                 {
                     Source = request,
                     ObjectName = "ComplainRequests",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.ComplaintRepository.Remove(request);
@@ -241,10 +234,6 @@ namespace WebApp.Controllers
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("CompCancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
             ViewBag.Mangers = _hrUnitOfWork.EmployeeRepository.GetManagers(CompanyId,Language).Select(m => new { id = m.Id, name = m.Name });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadComplaintFollowUp(int MenuId)
@@ -316,7 +305,6 @@ namespace WebApp.Controllers
                 Destination = request,
                 Source = model,
                 ObjectName = "ComplaintReqFollowUpForm",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo,
                 Transtype = TransType.Update
             });

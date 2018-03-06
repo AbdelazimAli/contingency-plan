@@ -24,6 +24,7 @@ namespace Model.Domain
         public Currency LocalCurr { get; set; }
 
         public byte MaxPassTrials { get; set; } = 5;
+        public int WaitingInMinutes { get; set; } = 5;
 
         public bool CodeReuse { get; set; } = false;
         public byte GenEmpCode { get; set; } = 2; // CodeGeneration 1- Auto, 2- Manually Entered, 3- National Id/ Resident Id

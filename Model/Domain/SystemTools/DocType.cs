@@ -21,7 +21,7 @@ namespace Model.Domain
         public byte AccessLevel { get; set; } // 0-Not Shared  1-Shared only   2-Shared and can be downloaded
         public bool IsLocal { get; set; }
         public int? CompanyId { get; set; }
-        public byte RequiredOpt { get; set; } // 0-Not Required 1-Required for all jobs  2-Required for some jobs
+        public byte? RequiredOpt { get; set; } // 0-Not Required 1-Required for all jobs  2-Required for some jobs
         public ICollection<Job> Jobs { get; set; }
 
         [DataType(DataType.Date), Column(TypeName = "Date")]
@@ -30,6 +30,7 @@ namespace Model.Domain
         [DataType(DataType.Date), Column(TypeName = "Date")]
         public DateTime? EndDate { get; set; }
         public bool HasExpiryDate { get; set; }
+        public int? NotifyDays { get; set; }
 
         public ICollection<Country> Nationalities { get; set; }
         public short? Gender { get; set; }
@@ -60,5 +61,6 @@ namespace Model.Domain
        
         [MaxLength(20)]
         public string CodeName { get; set; }
+        public bool IsRequired { get; set; } = false;
     }
 }

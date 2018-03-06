@@ -48,14 +48,16 @@ License URL: http://creativecommons.org/licenses/by/3.0/
 
     <script type="text/javascript" src="~/Content/js/Login/bgParticles.min.js"></script>
     <script type="text/javascript" src="~/Content/js/Login/bgScript.js"></script>
-    @RenderSection("Lscripts", false)
     <script src="~/assets/global/scripts/js.cookie.js"></script>
+    @RenderSection("Lscripts", false)
+    
     <script>
+        //debugger;
         var userCompanyId = parseInt(Cookies.get("userCompanyId"));
 
 
-        if (userCompanyId) {
-            $.get("@Url.Action("GetImage", "Pages")", { id: userCompanyId, source: "ComoanyLogo" }, function (res) {
+        if (userCompanyId || userCompanyId === 0) {
+            $.get("@Url.Action("GetImage", "Pages")", { id: userCompanyId, source: "CompanyLogo" }, function (res) {
 
 
                 document.getElementById("company-img-id").src = (res ?  'data:image/jpg;base64,' + res : "../.././Content/img/HomeCompany2.png");

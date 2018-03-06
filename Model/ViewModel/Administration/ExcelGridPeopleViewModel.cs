@@ -65,7 +65,6 @@ namespace Model.ViewModel.Administration
         public short? BloodClass { get; set; } // O-, O+, AB-, AB+, B-, B+, A-, A+
         public string Recommend { get; set; }
         public short? RecommenReson { get; set; }
-        public int? LocationId { get; set; }
         public string RoomNo { get; set; }
         public DateTime? SubscripDate { get; set; }
         public decimal? BasicSubAmt { get; set; }
@@ -103,7 +102,7 @@ namespace Model.ViewModel.Administration
         public bool IsDepManager { get; set; } = false; // Is Department Manager
         public int JobId { get; set; } // filter local jobs for login company or globals jobs 
         public int? PositionId { get; set; } // Position
-        public int? AssignLocation { get; set; }
+        public int AssignBranch { get; set; }
         public short SysAssignStatus { get; set; }
         public int? GroupId { get; set; } // People Group
         public int? PayrollId { get; set; }

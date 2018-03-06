@@ -1,234 +1,124 @@
-﻿@using System.Web.Script.Serialization
+@using System.Web.Script.Serialization
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
 }
 
 <link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
-<style>
-    #docWindow .k-window-content {
-         min-height: 700px;
-     }
-     .tab-content{
-         display: inline-block;
-     }
-     .imgSec {
-             margin-top: 50px;
-             text-align: center;
-             float: right;
-         }
-     .k-rtl .imgSec {
-             direction: rtl;
-             float: left;
-         }
-     /*------Pic------*/
-     .imgSec .picDiv {
-             border: 1px solid #CCC;
-             background-color: transparent;
-             display: inline-block;
-             height: 69px;
-             width: 211px;
-             align-items: center;
-         }
+@Html.Partial("_FormButtons")
 
-     /*.imgSec .picDiv:hover {
-             background-color: rgba(238, 238, 238, 0.32);
-         }*/
-
-     .imgSec .picBtns button {
-         text-align: center;
-         height: 30px;
-         float: none;
-     }
-     .space {
-         max-height: 20px;
-         min-height: 20px;
-         overflow: hidden;
-         margin: 4px 0 3px;
-     }
-    /*#compLoadImg {
-        width: 50px;
-        height: 50px;
-    }*/
-</style>
-
-<br />
 <div id="pageTabs"></div>
-<br />
-<div id="docWindow"></div>
+
 <div id="waitWindow">@MsgUtils.Instance.Trls("takeWhile") <img id="compLoadImg" src="~/Content/Default/loading-image.gif" /></div>
 <div id="ProfPic"></div>
-<div class="modal fade" id="AddressPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">Address</h4>
-            </div>
-            <div id="bodyContainer" class="modal-body" tabindex="0">
-
-            </div>
-        </div>
-    </div>
-</div>
+<br />
+<div id='companyTab'></div>
 
 
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
 <script src="~/Scripts/cultures/lang.js"></script>
 <script>
-        $(function () {
+    $(function () {
+        showToolbar([1,3,8]);
+        FormJs.DrawTabs("pageTabs"); // "CompanyProfile"
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var Language = lang.getList("@culture");
+        var Country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.country))
 
-            FormJs.DrawTabs("pageTabs"); // "CompanyProfile"
+       $("#t_Partners").click(function ()
+       {
+           //showToolbar([]);
+           $("#tab_GeneralInformation").empty();
+           $('#tab_Partners').load("@Url.Action("Partners", "Company", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
+       });
 
-            $("#t_Branches").click(function (){
-                $('#tab_Partners').empty();
-                $("#tab_GeneralInformation").empty();
-                $('#tab_Branches').load("@Url.Action("Branches", "Company", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-            });
+        var formId = "CompanyForm";
 
-            $("#t_Partners").click(function (){
-                $('#tab_Branches').empty();
-                $("#tab_GeneralInformation").empty();
-                $('#tab_Partners').load("@Url.Action("Partners", "Company", new { id = Model.Id })?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
-            });
+        $("#t_GeneralInformation").click(function(e)
+        {
+            $('#tab_Partners').empty();
+            $("#tab_GeneralInformation").html("<div id='companyTab'></div>");
+            var url = "@Url.Action("ReadFormInfo", "Pages")";
+            var read = "@Request.QueryString["Read"]";
+            $.ajax({
+                async: false,
+                url: "@Url.Action("ReadFormInfo","Pages")",
+                type: "GET",
+                dataType: "json",
+                contentType: 'application/json',
+                data: { objectname: 'Company', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+                success: function (data) {
+                    data.FormAction = "@Url.Action("Details", "Company")";
+                    data.FormId = formId;
+                    data.Culture = '@culture';
+                    data.TableName = "Companies";
+                    data.companyId = "@User.Identity.GetDefaultCompany()";
+                    data.admin = '@admin';
+                    data.btns = ["back", "doc"];
+                    if(read == 1) data.mode = 'show';
+                    data.rtl = @rtl.ToString().ToLower();
 
-            var oldPage = localStorage.getItem("menuhigh").split(",");
-            oldulr = $("#"+ oldPage[2] + " a").attr("href");
+                    $("#companyTab").Forms(data, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "Language", Language, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "CountryId", Country, model);
+                    $("#waitWindow").kendoWindow({
+                        title: "@MsgUtils.Instance.Trls("Please Wait")",
+                        actions: [], //to remove close btn
+                        width: "40%",
+                        height: "100",
+                        visible: false
+                    });
+                    var waitWindow = $("#waitWindow").data("kendoWindow");
 
-            var formId = "CompanyForm";
+                    var myForm = $("#" + formId);
+                    myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                    myForm.find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
 
-            var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+                    myForm.on('click','#saveChanges', function (e) {
+                        if(myForm.find(".k-invalid").length > 0) return ;
+                        var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
+                        if (isValid) isValid = validator.validate();
 
-            $("#t_GeneralInformation").click(function () {
-                $('#tab_Branches').empty();
-                $('#tab_Partners').empty();
-                //  $('#tab_Documents').empty();
-                $("#tab_GeneralInformation").html("<div id='companyTab'></div>");
-                ///---#Region Company Form
-                var Language = lang.getList("@culture");
-                var Country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.country))
+                        if (isValid) {
+                            if(model.Id == 0 )
+                                waitWindow.center().open();
 
-                var url = "@Url.Action("ReadFormInfo", "Pages")";
-                var read = "@Request.QueryString["Read"]";
-                $.ajax({
-                    async: false,
-                    url: "@Url.Action("ReadFormInfo","Pages")",
-                    type: "GET",
-                    dataType: "json",
-                    contentType: 'application/json',
-                    data: { objectname: 'Company', version: "@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
-                    success: function (data) {
-                        data.FormAction = "@Url.Action("Details", "Company")";
-                        data.FormId = formId;
-                        data.Culture = '@culture';
-                        data.TableName = "Companies";
-                        data.companyId = "@User.Identity.GetDefaultCompany()";
-                        data.admin = '@admin';
-                        data.btns = ["back", "doc"];
-                        if(read == 1) data.mode = 'show';
-                        data.rtl = @rtl.ToString().ToLower();
-
-                        $("#companyTab").Forms(data, model);
-                        FormJs.fillOptionsDynamic($("#" + formId), "Language", Language, model);
-                        FormJs.fillOptionsDynamic($("#" + formId), "CountryId", Country, model);
-
-                        //Make Hiddenfield for Address
-                        var hiddenFields = "<input type='hidden' name='AddressId' id='AddressId' value='" + (model.AddressId != null ? model.AddressId : "") + "'>";
-                        $("#" + formId).append(hiddenFields);
-
-                        $("#waitWindow").kendoWindow({
-                            title: "@MsgUtils.Instance.Trls("Please Wait")",
-                            actions: [], //to remove close btn
-                            width: "40%",
-                            height: "100",
-                            visible: false
-                        });
-                        var waitWindow = $("#waitWindow").data("kendoWindow");
-
-                        var myForm = $("#" + formId);
-                        myForm.find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
-                        myForm.find('#saveAndClose').val('@MsgUtils.Instance.Trls("saveAndClose")');
-                        myForm.on("focus","#Address",null,function(e){
-                            e.preventDefault();
-                            var url = $('#AddressPopup').data('url');
-                            var id = $("#AddressId").val() || 0;
-
-                            //Getting Data and fill it on fields
-                            $.get(url+"?Version=@Request.QueryString["Version"]", {addressId: id}, function(data) {
-                                $('#bodyContainer').html(data);
-                                $('#AddressPopup').modal('show');
-
+                            FormJs.saveForm(myForm, $(this), function (res) {
+                                //res is saved company Id
+                                waitWindow.close();
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                $("#Documents").attr("disabled", false);
+                                updateHistory(oldUlr);
+                                model = res;
                             });
+                        }
+                    });
 
-                        });
-                        //  Save Address Form
-                        $("#AddressPopup").on("click","#saveAddress",null,function(e){
-                            e.preventDefault();
-                            FormJs.saveForm($("#AddressForm"), $(this), function(data) {
-                                var addres=  data.Address1  + (data.Address2 ? ", " + data.Address2 : "") + (data.Address3 ? ", " + data.Address3 : "");
+                    myForm.on('click', '#saveAndClose', function (e) {
+                        if(myForm.find(".k-invalid").length > 0) return ;
+                        var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
+                        if (isValid) isValid = validator.validate();
 
-                                myForm.find('#Address').val(addres);
-                                $("#AddressId").val(data.Id);
+                        if (isValid) {
+                            if(model.Id == 0 )
+                                waitWindow.center().open();
 
-                                $('#AddressPopup').modal('hide');
+                            FormJs.saveForm(myForm, $(this), function (res) {
+                                waitWindow.close();
+                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                                $("#browselogo").attr("disabled", false);
+                                updateHistory(oldUlr);
                             });
-                        });
-
-                        myForm.on('click','#saveChanges', function (e) {
-                            if(myForm.find(".k-invalid").length > 0) return ;
-                            var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
-                            if (isValid) isValid = validator.validate();
-
-                           if (isValid) {
-                                if(model.Id == 0 )
-                                    waitWindow.center().open();
-
-                                FormJs.saveForm(myForm, $(this), function (res) {
-                                   //res is saved company Id
-                                    waitWindow.close();
-                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                    $("#Documents").attr("disabled", false);
-                                    model = res;
-                                });
-                            }
-                        });
-
-                        myForm.on('click', '#saveAndClose', function (e) {
-                            var x = new FormData($("form").get(0));
-                            console.log(x);
-                            if(myForm.find(".k-invalid").length > 0) return ;
-                            var validator = myForm.kendoValidator().data("kendoValidator"), isValid = myForm.find(".k-invalid").length == 0;
-                            if (isValid) isValid = validator.validate();
-
-                            if (isValid) {
-                                if(model.Id == 0 )
-                                    waitWindow.center().open();
-
-                                FormJs.saveForm(myForm, $(this), function (res) {
-                                    waitWindow.close();
-                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                    // $("#renderbody").load(oldulr);
-                                    $("#browselogo").attr("disabled", false);
-                                    updateHistory(oldulr);
-                                });
-                            }
-                        });
-                    }
-                });
-                ///---#EndRegion Company Form
+                        }
+                    });
+                }
             });
 
-            //Load Form
-            $("#t_GeneralInformation").click();
-
-
-
-            $(".tab-content").addClass("col-lg-10 col-sm-12 col-md-12");
+            // $(".tab-content").wrapAll("<div class='col-lg-10 col-sm-12 col-md-12'></div>");
 
 
             var markup = "<div class='form-group col-lg-2 col-sm-5 col-md-5 imgSec'>"+
@@ -240,75 +130,45 @@
                             "</div>"+
                             "</div>";
 
+            if(!$("#myimage").is(":visible"))
+                $(".tab-content").parent().prepend(markup);
 
-            $(".tab-content").parent().prepend(markup);
-            if($("#" + formId + " #Id").val() == 0){
-                console.log($("#Id").val());
+            if($("#" + formId + " #Id").val() == -1){
                 $("#browselogo").attr("disabled", true);
-                $("#Documents").attr("disabled", true);
             }
-            //----Documents----
-            $("#docWindow").kendoWindow ({
-                title: "@MsgUtils.Instance.Trls("CompanyWindow")",
-                //position: {top: "10px", left: "10%"},
-                minWidth: "1000px",
-                width: "80%",
-                height: "80%",
-                actions: ["Minimize", "Maximize", "Close"],
-                visible: false,
-                close: function() {
-                    $("#Documents").fadeIn();
-                    $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
-                    $("#docWindow").empty();
-                }
+
+            var sourceId = $("#Id").val();
+
+            $.get("@Url.Action("GetImage", "Pages")", { id: sourceId, source: "CompanyLogo" }, function (res) {
+                var image = document.getElementById("myimage");
+                if (image) image.src = (res ? 'data:image/jpg;base64,' + res : "/Content/Photos/systemnoimage.jpg");
             });
 
-            $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Company&SourceId=" + @Model.Id);
-
-            var isFirest = true;
-            //Open window when click
-            $("#Documents").on('click', function() {
-                if(!isFirest)
-                    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=Company&SourceId=" + @Model.Id).center().open();
-                else
-                    $("#docWindow").data("kendoWindow").center().open();
-                $("#Documents").fadeOut();
-
-                isFirest = false;
-            });
         });
+        $("#t_GeneralInformation").click();
+    });
+    function drawPic(elem,e){
+        var myelem = elem;
+        $("#ProfPic").kendoWindow({
+            title: "@MsgUtils.Instance.Trls("Profile Picture")",
+            minWidth: "1000px",
+            width: "60%",
+            height: "75%",
+            actions: ["Minimize", "Maximize", "Close"],
+            visible: false,
+            close: function() {
+                $(myelem).removeClass("hidden");
+                $("#ProfPic").empty();
+            }
 
-
-
-
+        });
         var sourceId = $("#Id").val();
-        $.get("@Url.Action("GetImage", "Pages")", { id: sourceId, source: "ComoanyLogo" }, function (res) {
 
-            document.getElementById("myimage").src = (res == false ? "/Content/Photos/systemnoimage.jpg" : 'data:image/jpg;base64,' + res);
-        });
-        function drawPic(elem,e){
-            var myelem = elem;
-            $("#ProfPic").kendoWindow({
-                title: "@MsgUtils.Instance.Trls("Profile Picture")",
-                minWidth: "1000px",
-                width: "60%",
-                height: "75%",
-                actions: ["Minimize", "Maximize", "Close"],
-                visible: false,
-                close: function() {
-                    $(myelem).removeClass("hidden");
-                    $("#ProfPic").empty();
-                }
+        $("#ProfPic").data("kendoWindow").refresh("/People/CropPic?Source=CompanyLogo&SourceId="+sourceId).center().open();
 
-            });
+        $(myelem).addClass("hidden");
+    }
 
-
-
-            $("#ProfPic").data("kendoWindow").refresh("/People/CropPic?Source=ComoanyLogo&SourceId="+sourceId).center().open();
-
-            $(myelem).addClass("hidden");
-
-        }
 </script>
 
 

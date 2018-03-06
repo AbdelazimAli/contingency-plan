@@ -1,0 +1,25 @@
+﻿@using System.Web.Script.Serialization;
+
+@{
+    Layout = null;
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "PersonFormDiv" }, { "hasDepts", false }, { "hasRange", false } })
+<div id="PersonFormDiv"></div>
+
+<script>
+    $(".btn.add").hide();
+    Grids.indexGrid({
+        read: "@Url.Action("GetPersonForms", "PersonForm")?FormType=1&MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("PersonFlexFormDetails", "PersonForm")",
+        edit: "@Url.Action("PersonFlexFormDetails", "PersonForm")",
+        objectName: "PersonForm",
+        gridName: "PersonFormDiv",
+        admin: "@User.Identity.CanCustomize()",
+        lang: "@User.Identity.GetCulture()",
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100, 125, 150, 175] }
+    });
+</script>

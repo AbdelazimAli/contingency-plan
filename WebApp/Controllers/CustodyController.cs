@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         public ActionResult Index(bool isEmp = false)
         {
             ViewBag.isEmp = isEmp;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //ReadCustody
@@ -74,8 +70,8 @@ namespace WebApp.Controllers
             var Custody = _hrUnitOfWork.CustodyRepository.ReadCustObject(id, Language);
             ViewBag.Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
             ViewBag.Names = _hrUnitOfWork.CustodyRepository.CustodyNames(false);
-            ViewBag.jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.fillCatCustody(Disposal, Language);
             if (id == 0)
                 return View(new CustodyFormViewModel());
@@ -121,11 +117,10 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Custody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
-                    //_hrUnitOfWork.CustodyRepository.AddTrail(new AddTrailViewModel { ValueBefore = record.CustodyCatId.ToString(), ValueAfter = model.CustodyCat.ToString(), CompanyId = CompanyId, ObjectName = "Custody", Version = Convert.ToByte(Request.Form["Version"]), Transtype = (byte)TransType.Insert, SourceId = record.Id.ToString(), ColumnName = "CustodyCatId", UserName = UserName });
+                    //_hrUnitOfWork.CustodyRepository.AddTrail(new AddTrailViewModel { ValueBefore = record.CustodyCatId.ToString(), ValueAfter = model.CustodyCat.ToString(), CompanyId = CompanyId, ObjectName = "Custody",  Transtype = (byte)TransType.Insert, SourceId = record.Id.ToString(), ColumnName = "CustodyCatId", UserName = UserName });
 
                     record.CreatedTime = DateTime.Now;
                     record.CreatedUser = UserName;
@@ -158,12 +153,11 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Custody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
                     //if(record.CustodyCatId != model.CustodyCat)
-                    //_hrUnitOfWork.CustodyRepository.AddTrail(new AddTrailViewModel { ValueBefore = record.CustodyCatId.ToString(), ValueAfter = model.CustodyCat.ToString(),CompanyId=CompanyId,ObjectName= "Custody", Version = Convert.ToByte(Request.Form["Version"]),Transtype =(byte)TransType.Update,SourceId=record.Id.ToString(),ColumnName = "CustodyCatId",UserName = UserName });
+                    //_hrUnitOfWork.CustodyRepository.AddTrail(new AddTrailViewModel { ValueBefore = record.CustodyCatId.ToString(), ValueAfter = model.CustodyCat.ToString(),CompanyId=CompanyId,ObjectName= "Custody", Transtype =(byte)TransType.Update,SourceId=record.Id.ToString(),ColumnName = "CustodyCatId",UserName = UserName });
                     record.ModifiedTime = DateTime.Now;
                     record.ModifiedUser = UserName;
                     record.Code = ExitCode;
@@ -199,7 +193,6 @@ namespace WebApp.Controllers
                 {
                     Source = custody,
                     ObjectName = "Custody",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.CustodyRepository.Remove(custody);
@@ -222,10 +215,10 @@ namespace WebApp.Controllers
         #endregion
 
         #region Button Recieve
-        public ActionResult GetCurrentLocation(int EmpId)
+        public ActionResult GetCurrentBranch(int EmpId)
         {
-            var LocId = _hrUnitOfWork.Repository<Assignment>().Where(a => a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.EmpId == EmpId).Select(a => a.LocationId).FirstOrDefault();
-            return Json(LocId, JsonRequestBehavior.AllowGet);
+            var branchId = _hrUnitOfWork.Repository<Assignment>().Where(a => a.EmpId == EmpId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today).Select(a => a.BranchId).FirstOrDefault();
+            return Json(branchId, JsonRequestBehavior.AllowGet);
         }
         public ActionResult RecieveDetails(int id = 0, byte Version = 0,bool edit = false,int EmpCustodyId = 0)
         {
@@ -233,16 +226,14 @@ namespace WebApp.Controllers
             if (edit == true)
             {
                 RecieveCustody = _hrUnitOfWork.CustodyRepository.ReadEditRecievedCustody(EmpCustodyId, Language);
-            }         
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            }
+                     
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.GetCatCustody(Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("RecieveCustody", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+         
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("RecieveCustody", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(RecieveCustody);
         }      
         public ActionResult SaveRecieveCustody(RecievedCustodyForm model, OptionsViewModel moreInfo)
@@ -286,7 +277,6 @@ namespace WebApp.Controllers
                         Destination = EmpCustody,
                         Source = model,
                         ObjectName = "RecieveCustody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -322,7 +312,6 @@ namespace WebApp.Controllers
                         Destination = EmpCustody,
                         Source = model,
                         ObjectName = "RecieveCustody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -366,11 +355,12 @@ namespace WebApp.Controllers
         public ActionResult DeleverDetails(int id = 0, byte Version = 0, int EmpId = 0, int EmpCustodyId = 0)
         {
             var DeleverCustody = _hrUnitOfWork.CustodyRepository.ReadDeleverCustody(id, EmpId, EmpCustodyId, CompanyId, Language);
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.GetCatCustody(Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("DeleverCustody", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("DeleverCustody", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(DeleverCustody);
         }
         public ActionResult SaveDeleverCustody(DeleverCustodyFormViewModel model, OptionsViewModel moreInfo)
@@ -416,7 +406,6 @@ namespace WebApp.Controllers
                     Destination = EmpCustodyRecord,
                     Source = model,
                     ObjectName = "DeleverCustody",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });
@@ -453,17 +442,13 @@ namespace WebApp.Controllers
         #region End of the Covenant
         public ActionResult EndCovenantIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult EndDetails(int id = 0)
         {
             var Custody = _hrUnitOfWork.CustodyRepository.ReadCustObject(id, Language);
-            ViewBag.jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.GetCatCustody(Language);
             ViewBag.Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
             if (id == 0)
@@ -476,10 +461,6 @@ namespace WebApp.Controllers
         #region Consuming Covenant
         public ActionResult ConsumeIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadConsumeCustody(byte? Range, DateTime? Start, DateTime? End)
@@ -494,8 +475,8 @@ namespace WebApp.Controllers
             ViewBag.Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
             ViewBag.Names = _hrUnitOfWork.CustodyRepository.CustodyNames(true);
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.fillCatCustody(Disposal, Language);
-            ViewBag.jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
             if (id == 0)
                 return View(new CustodyFormViewModel());
             return Custody == null ? (ActionResult)HttpNotFound() : View(Custody);
@@ -540,7 +521,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "ConsumeFormCustody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -572,7 +552,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "ConsumeFormCustody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -600,15 +579,12 @@ namespace WebApp.Controllers
         {
             var RecieveCustody = _hrUnitOfWork.CustodyRepository.ReadRecievedCustody(id, Language);
             ViewBag.RestQty = RestQty;
-            ViewBag.Locations = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.IsInternal).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.Branches = _hrUnitOfWork.Repository<Branch>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.CustodyCategory = _hrUnitOfWork.CustodyRepository.GetCatCustody(Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("RecieveCustody", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("RecieveCustody", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(RecieveCustody);
         }
         public ActionResult SaveRecievedConsumeCustody(RecievedCustodyForm model, OptionsViewModel moreInfo)
@@ -648,7 +624,6 @@ namespace WebApp.Controllers
                     Destination = record,
                     Source = model,
                     ObjectName = "RecieveCustody",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 });
@@ -686,7 +661,6 @@ namespace WebApp.Controllers
                 {
                     Source = custody,
                     ObjectName = "ConsumeCustody",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.CustodyRepository.Remove(custody);
@@ -714,7 +688,6 @@ namespace WebApp.Controllers
                 {
                     Source = EmpCustody,
                     ObjectName = "Custodies",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.CustodyRepository.Remove(EmpCustody);
@@ -779,7 +752,6 @@ namespace WebApp.Controllers
                             Destination = custCategory,
                             Source = models.ElementAtOrDefault(i),
                             ObjectName = "CustodyCategory",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Transtype = TransType.Insert
                         });
                         result.Add(custCategory);
@@ -850,7 +822,6 @@ namespace WebApp.Controllers
                             Destination = custodyCat,
                             Source = models.ElementAtOrDefault(i),
                             ObjectName = "CustodyCategory",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Transtype = TransType.Update
                         });
                         custodyCat.ModifiedTime = DateTime.Now;
@@ -886,7 +857,6 @@ namespace WebApp.Controllers
                 {
                     Source = CustodyCat,
                     ObjectName = "CustodyCategory",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
              
@@ -917,10 +887,6 @@ namespace WebApp.Controllers
         #region Employee Document Borrow
         public ActionResult BorrowIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //ReadDocBorrow
@@ -949,18 +915,15 @@ namespace WebApp.Controllers
         //Details Of Employee Recieve Form Document Borrow
         public ActionResult DetailsDocBorrow(int id = 0, byte Version = 0)
         {                  
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("BorrowPapers", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("BorrowPapers", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+            
             if (id == 0)
                 return View(new EmpDocBorrowViewModel());
-            var EmpDocBorrow = _hrUnitOfWork.CustodyRepository.ReadEmpDocBorrow(id, Language);
 
+            var EmpDocBorrow = _hrUnitOfWork.CustodyRepository.ReadEmpDocBorrow(id, Language);
             ViewBag.EmpDocs = GetEmpDocType(EmpDocBorrow.EmpId);
+
             return EmpDocBorrow == null ? (ActionResult)HttpNotFound() : View(EmpDocBorrow);
         }
         //Get Employee Documents 
@@ -1051,7 +1014,6 @@ namespace WebApp.Controllers
                         Destination = EmpBorrow,
                         Source = model,
                         ObjectName = "BorrowPapers",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -1059,6 +1021,7 @@ namespace WebApp.Controllers
                     EmpBorrow.CreatedUser = UserName;
                     EmpBorrow.CompanyId = CompanyId;                  
                     _hrUnitOfWork.CustodyRepository.Add(EmpBorrow);
+
                     if (model.Document != null)
                     {
                         foreach (var item in model.Document)
@@ -1084,7 +1047,7 @@ namespace WebApp.Controllers
                         {
                             if (!dbListOfInt.Contains(int.Parse(item)))
                             {
-                                var doc = new DocBorrowList
+                                  var doc = new DocBorrowList
                                 {
                                     DocBorrow = EmpBorrow,
                                     DocId = int.Parse(item)
@@ -1098,7 +1061,6 @@ namespace WebApp.Controllers
                         Destination = EmpBorrow,
                         Source = model,
                         ObjectName = "BorrowPapers",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -1122,9 +1084,10 @@ namespace WebApp.Controllers
         {
             var DeleverDoc = _hrUnitOfWork.CustodyRepository.ReadDeleverDocBorrow(Id);
             ViewBag.EmpDocs = GetEmpDocType(DeleverDoc.EmpId);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("DeleverCustody", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("DeleverCustody", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(DeleverDoc);
         }
 
@@ -1170,7 +1133,6 @@ namespace WebApp.Controllers
                     Destination = EmpBorrowRecord,
                     Source = model,
                     ObjectName = "DeleverDocs",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });

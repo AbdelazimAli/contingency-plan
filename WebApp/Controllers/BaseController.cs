@@ -8,18 +8,25 @@ using System.Data.Entity.Infrastructure;
 using Model.ViewModel;
 using Model.Domain;
 using System.Data.Entity;
+using System.Web.Routing;
+using System.Linq.Dynamic;
+using System.Linq.Expressions;
 
 namespace WebApp.Controllers
 {
     public abstract class BaseController : Controller
     {
+        protected string UserName { get; set; }
+        protected string Language { get; set; }
+        protected int CompanyId { get; set; }
+        protected string Culture { set; get; }
         /// <summary>
         /// Gets my project unit of work.
         /// </summary>
         /// <value>
         /// My project unit of work.
         /// </value>
-        
+
         protected bool ServerValidationEnabled = false;
         protected IHrUnitOfWork HrUnitOfWork { get; private set; }
         /// <summary>
@@ -27,14 +34,66 @@ namespace WebApp.Controllers
         /// </summary>
         /// <param name="unitOfWork">The unit of work.</param>
         protected BaseController(IHrUnitOfWork unitOfWork)
-        { 
+        {
             HrUnitOfWork = unitOfWork;
             ServerValidationEnabled = System.Configuration.ConfigurationManager.AppSettings["ServerValidationEnabled"] == "true";
         }
-       
+
+        protected JsonResult ApplyFilter<T>(IQueryable<T> query, Expression<Func<T, string>> orderby,  int MenuId, int pageSize, int skip)
+        {
+            string filter = "";
+            string Sorting = "";
+            string whecls = GetWhereClause(MenuId);
+            query = (IQueryable<T>)WebApp.Models.Utils.GetFilter(query, ref filter, ref Sorting);
+            if (whecls.Length > 0 || filter.Length > 0)
+            {
+                try
+                {
+                    if (whecls.Length > 0 && filter.Length == 0)
+                        query = query.Where(whecls);
+                    else if (filter.Length > 0 && whecls.Length == 0)
+                        query = query.Where(filter);
+                    else
+                        query = query.Where(filter).Where(whecls);
+                }
+                catch (Exception ex)
+                {
+                    TempData["Error"] = ex.Message;
+                    WebApp.Models.Utils.LogError(ex.Message);
+                    return Json("", JsonRequestBehavior.AllowGet);
+                }
+            }
+
+            var total = query.Count();
+
+            if (Sorting.Length > 0)
+                query = query.OrderBy(Sorting);
+            else if (orderby != null)
+                query = query.OrderBy(orderby);
+
+            if (skip > 0)
+                query = query.Skip(skip).Take(pageSize);
+            else
+                query = query.Take(pageSize);
+
+            return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
+        }
+
         public BaseController()
         {
 
+        }
+
+        protected override void Initialize(RequestContext requestContext)
+        {
+            base.Initialize(requestContext);
+            if (requestContext.HttpContext.User.Identity.IsAuthenticated)
+            {
+                Language = requestContext.HttpContext.User.Identity.GetLanguage();
+                CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
+                UserName = requestContext.HttpContext.User.Identity.Name;
+                Culture= requestContext.HttpContext.User.Identity.GetCulture();
+            }
         }
         protected override void OnException(ExceptionContext filterContext)
         {
@@ -43,6 +102,7 @@ namespace WebApp.Controllers
             var model = new HandleErrorInfo(filterContext.Exception, "Controller", "Action");
 
             filterContext.Result = PartialView("Error", model);
+
             //    new PartialViewResult()
             //{
             //    ViewName = "Error",
@@ -54,28 +114,88 @@ namespace WebApp.Controllers
             // @Model.Exception;
         }
 
+        protected override void HandleUnknownAction(string actionName)
+        {
+            RedirectToAction("Index").ExecuteResult(this.ControllerContext);
+        }
+
+        /// <summary>
+        /// Fill : Admin , compantId , culture , rtl
+        /// </summary>
+        protected void FillBasicData(bool FillAdmin, bool FillCompantId, bool FillCulture, bool FillRTL)
+        {
+            if (FillAdmin)
+                ViewBag.admin = User.Identity.CanCustomize();
+
+            if (FillCompantId)
+                ViewBag.compantId = CompanyId;
+
+            if (FillCulture)
+                ViewBag.culture = User.Identity.GetCulture();
+
+            if (FillRTL)
+                ViewBag.rtl = User.Identity.RTL();
+        }
+        protected List<FormErrorViewModel> ValidateForm(string ObjectName, string TableName, ModelStateDictionary ModelState)
+        {
+            try
+            {
+                var errors = new List<Error>();
+                if (ServerValidationEnabled)
+                {
+                    errors = HrUnitOfWork.SiteRepository.CheckForm(new CheckParm
+                    {
+                        CompanyId = User.Identity.GetDefaultCompany(),
+                        ObjectName = ObjectName,
+                        TableName = TableName,
+                        Columns = Models.Utils.GetColumnViews(ModelState.Where(a => !a.Key.Contains('.'))),
+                        Culture = User.Identity.GetCulture()
+                    });
+
+                    if (errors.Count() > 0)
+                    {
+                        foreach (var e in errors)
+                        {
+                            foreach (var errorMsg in e.errors)
+                            {
+                                ModelState.AddModelError(errorMsg.field, errorMsg.message);
+                            }
+                        }
+
+                        return Models.Utils.ParseFormErrors(ModelState);
+                    }
+                }
+            }
+            catch
+            {
+
+            }
+
+            return null;
+        }
         protected override void OnActionExecuted(ActionExecutedContext filterContext)
         {
             base.OnActionExecuted(filterContext);
             if (Request.QueryString["MenuId"] == null) return;
             Session["MenuId"] = Request.QueryString["MenuId"];
 
-            if (Session["RoleId"] == null)
-                Session["RoleId"] = HrUnitOfWork.MenuRepository.GetMenuRoleId(int.Parse(Session["MenuId"].ToString()), User.Identity.Name);
-            else if (Request.QueryString["RoleId"] != null)
+
+            if (Request.QueryString["RoleId"] != null)
                 Session["RoleId"] = Request.QueryString["RoleId"];
+            else if (Session["RoleId"] == null)
+                Session["RoleId"] = HrUnitOfWork.MenuRepository.GetMenuRoleId(int.Parse(Session["MenuId"].ToString()), User.Identity.Name);
+
 
             if (Session["DepartmentId"] == null)
             {
-                var employee = HrUnitOfWork.Repository<Model.Domain.Assignment>().Where(a => a.EmpId == User.Identity.GetEmpId() && (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today)).Select(b => new { b.DepartmentId, b.LocationId, b.IsDepManager, b.JobId, b.PositionId, b.BranchId, b.SectorId }).FirstOrDefault();
+                var empid = User.Identity.GetEmpId();
+                var employee = HrUnitOfWork.Repository<Model.Domain.Assignment>().Where(a => a.EmpId == empid && (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today)).Select(b => new { b.DepartmentId, b.BranchId, b.IsDepManager, b.JobId, b.PositionId }).FirstOrDefault();
                 if (employee != null)
                 {
                     Session["DepartmentId"] = employee.DepartmentId;
-                    Session["LocationId"] = employee.LocationId;
                     Session["PositionId"] = employee.PositionId;
                     Session["IsDepManager"] = employee.IsDepManager.ToString();
                     Session["BranchId"] = employee.BranchId;
-                    Session["SectorId"] = employee.SectorId;
                     Session["JobId"] = employee.JobId;
                 }
             }
@@ -86,8 +206,8 @@ namespace WebApp.Controllers
             int menuId = 0;
             string RoleId = "";
 
-            if(Session["MenuId"] != null ) menuId = int.Parse(Session["MenuId"].ToString());
-            if(Session["RoleId"] != null) RoleId = Session["RoleId"].ToString();
+            if (Session["MenuId"] != null) menuId = int.Parse(Session["MenuId"].ToString());
+            if (Session["RoleId"] != null) RoleId = Session["RoleId"].ToString();
 
             if (MenuId > 0)
             {
@@ -103,11 +223,9 @@ namespace WebApp.Controllers
                         if (whereclause.IndexOf("@EmpId") != -1) whereclause = whereclause.Replace("@EmpId", User.Identity.GetEmpId().ToString());
                         if (whereclause.IndexOf("@IsDepManager") != -1) whereclause = whereclause.Replace("@IsDepManager", Session["IsDepManager"] == null ? "false" : Session["IsDepManager"].ToString());
                         if (whereclause.IndexOf("@JobId") != -1) whereclause = whereclause.Replace("@JobId", Session["JobId"] == null ? "0" : Session["JobId"].ToString());
-                        if (whereclause.IndexOf("@LocationId") != -1) whereclause = whereclause.Replace("@LocationId", Session["LocationId"] == null ? "0" : Session["LocationId"].ToString());
                         if (whereclause.IndexOf("@PositionId") != -1) whereclause = whereclause.Replace("@PositionId", Session["PositionId"] == null ? "0" : Session["PositionId"].ToString());
                         if (whereclause.IndexOf("@DepartmentId") != -1) whereclause = whereclause.Replace("@DepartmentId", Session["DepartmentId"] == null ? "0" : Session["DepartmentId"].ToString());
                         if (whereclause.IndexOf("@BranchId") != -1) whereclause = whereclause.Replace("@BranchId", Session["BranchId"] == null ? "0" : Session["BranchId"].ToString());
-                        if (whereclause.IndexOf("@SectorId") != -1) whereclause = whereclause.Replace("@SectorId", Session["SectorId"] == null ? "0" : Session["SectorId"].ToString());
                     }
 
                     return whereclause;
@@ -119,6 +237,7 @@ namespace WebApp.Controllers
 
         protected void AutoMapper(Models.AutoMapperParm parm)
         {
+            parm.Version = Convert.ToByte(Request.Form["Version"]);
             Models.AutoMapper mapper = new Models.AutoMapper(parm, HrUnitOfWork, User.Identity);
             mapper.Map();
         }
@@ -137,22 +256,7 @@ namespace WebApp.Controllers
 
         public List<Model.ViewModel.Error> SaveChanges(string Language)
         {
-            return FirstSaveChanges(Language);
-        }
-
-        public List<Model.ViewModel.Error> SavePoint1(string Language)
-        {
-            return FirstSaveChanges(Language);
-        }
-
-        public List<Model.ViewModel.Error> SavePointn(string Language)
-        {
-            var errors = HrUnitOfWork.SaveChanges(Language);
-            return errors;
-        }
-
-        private  List<Model.ViewModel.Error> FirstSaveChanges(string Language)
-        {
+            // use this function only to save main record
             List<DbEntityEntry> entries = null;
             var errors = HrUnitOfWork.SaveChanges(Language, out entries);
             if (errors.Count > 0) return errors;
@@ -171,9 +275,16 @@ namespace WebApp.Controllers
             return errors;
         }
 
+        public List<Model.ViewModel.Error> Save(string Language)
+        {
+            // use this function within transaction for any change
+            var errors = HrUnitOfWork.SaveChanges(Language);
+            return errors;
+        }
+
         public void SaveFlexData(IEnumerable<SaveFlexDataVM> models, int recordId)
         {
-            if(models != null && models.Count() > 0)
+            if (models != null && models.Count() > 0)
             {
                 SaveFlexDataVM firstModel = models.FirstOrDefault();
                 List<FlexData> oldFlexData = HrUnitOfWork.PageEditorRepository.GetSourceFlexData(firstModel.PageId, firstModel.SourceId).ToList();
@@ -188,7 +299,8 @@ namespace WebApp.Controllers
                     {
                         if (flexData == null) //Add  
                         {
-                            flexData = new FlexData() {
+                            flexData = new FlexData()
+                            {
                                 PageId = model.PageId,
                                 SourceId = (model.SourceId == 0 ? recordId : model.SourceId),
                                 TableName = model.TableName,

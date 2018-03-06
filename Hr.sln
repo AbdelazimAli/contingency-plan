@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Model", "Model\Model.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WebApp", "WebApp\WebApp.csproj", "{BD6787A8-7E8A-4779-8B6F-E945C0722089}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Documentation", "Documentation\Documentation.csproj", "{D9DD53F0-7FA8-4FA0-B02B-247E155C77FE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,12 +35,16 @@ Global
 		{BD6787A8-7E8A-4779-8B6F-E945C0722089}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BD6787A8-7E8A-4779-8B6F-E945C0722089}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BD6787A8-7E8A-4779-8B6F-E945C0722089}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D9DD53F0-7FA8-4FA0-B02B-247E155C77FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D9DD53F0-7FA8-4FA0-B02B-247E155C77FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D9DD53F0-7FA8-4FA0-B02B-247E155C77FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D9DD53F0-7FA8-4FA0-B02B-247E155C77FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(TeamFoundationVersionControl) = preSolution
-		SccNumberOfProjects = 5
+		SccNumberOfProjects = 6
 		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
 		SccTeamFoundationServer = http://tfs-server:8080/tfs/defaultcollection
 		SccLocalPath0 = .
@@ -54,5 +60,8 @@ Global
 		SccProjectUniqueName4 = WebApp\\WebApp.csproj
 		SccProjectName4 = WebApp
 		SccLocalPath4 = WebApp
+		SccProjectUniqueName5 = Documentation\\Documentation.csproj
+		SccProjectName5 = Documentation
+		SccLocalPath5 = Documentation
 	EndGlobalSection
 EndGlobal

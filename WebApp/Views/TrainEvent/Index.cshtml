@@ -4,7 +4,7 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -25,11 +25,11 @@
        max-width:330px;
     }
 </style>
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "TrainEvents" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "TEventDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "TrainEvents" } })
 <div id="TEventDiv"></div>
 <script>
     var addUrl = "@Url.Action("Details", "TrainEvent")";
-    RequestFilters.ApplayAllFilters([], {}, "TEventDiv", "@Url.Action("ReadTrainEvent", "TrainEvent")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "TEventDiv", "@Url.Action("ReadTrainEvent", "TrainEvent")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var objectName = "TrainEvent";
     Grids.indexGrid({
         read: "@Url.Action("ReadTrainEvent", "TrainEvent")?MenuId=@Request.QueryString["MenuId"]",
@@ -111,7 +111,7 @@
 
 @Html.Partial("_IndexGrid", new ViewDataDictionary {
     { "AddRecord", @Url.Action("Details", "TrainEvent") },
-      { "Admin", admin}, { "GridName", "TEventDiv" },{"objectName" , "TrainEvent"}, {"Functions",ViewBag.Functions} })
+      { "Admin", admin}, { "GridName", "TEventDiv" },{"objectName" , "TrainEvent"} })
 
 
 

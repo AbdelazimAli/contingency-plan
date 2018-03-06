@@ -135,11 +135,10 @@ namespace Db.Persistence.Repositories
             var EmpDisplin = from c in context.EmpDisciplines
                              join e in context.People on c.EmpId equals e.Id
                              join a in context.Assignments on e.Id equals a.EmpId
-                             where (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.CompanyId == CompanuId)
+                             where (a.CompanyId == CompanuId && a.AssignDate <= DateTime.Today.Date && a.EndDate >= DateTime.Today.Date)
                              select new EmpDisciplineViewModel
                              {
                                  Id = c.Id,
-                                 PhotoId = e.Id,
                                  ActDispline = c.ActDispline.Value,
                                  ActualNofDays = c.ActualNofDays,
                                  ActualPeriod = c.ActualPeriod,
@@ -158,14 +157,14 @@ namespace Db.Persistence.Repositories
                                  Manager = c.Manager,
                                  SuggNofDays = c.SuggNofDays,
                                  DeptId = a.DepartmentId,
-                                 SectorId = a.SectorId,
                                  BranchId = a.BranchId,
                                  PositionId = a.PositionId,
-                                 HasImage = e.HasImage,
+                                 Image = HrContext.GetDoc("EmployeePic", c.EmpId),
+                                 Gender = e.Gender,
                                  EmpStatus = HrContext.GetEmpStatus(e.Id),
                                  empId = c.EmpId
-
                              };
+
             return EmpDisplin;
         }
         public EmpDisciplineFormViewModel ReadEmployeeDiscipline(int Id)
@@ -231,7 +230,7 @@ namespace Db.Persistence.Repositories
                                    from em in g.Where(s => s.Status == 1).DefaultIfEmpty()
                                    join a in context.Assignments on p.Id equals a.EmpId into g1
                                    from d in g1.Where(x => x.AssignDate <= DateTime.Today && x.EndDate >= DateTime.Today).DefaultIfEmpty()
-                                   select new AssignmentGridViewModel
+                                   select new PeopleGridViewModel
                                    {
                                        Id = p.Id,
                                        EmpId = p.Id,

@@ -1,7 +1,7 @@
 ﻿
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
@@ -49,8 +49,8 @@
     var CurrentIndex = 0;
     var purposeValue = 1;
 
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#" + oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#" + oldPage[2] + " a").attr("href");
 
     $("#Subbtn").addClass("hidden");
     var progress = $("#PrograssBar").kendoProgressBar({
@@ -139,7 +139,7 @@
             var salaryItemobj = "@Request.QueryString["SalaryItem"]";
 
             if (salaryItemobj)
-                oldulr = "@Url.Action("Details", "SalaryItem")?id=" + salaryItemobj + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]";
+                oldUlr = "@Url.Action("Details", "SalaryItem")?id=" + salaryItemobj + "&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]";
 
             FormJs.saveForm("#SalaryBasisFormPage1", this, function (res) {
                 if (purposeValue != 2) {
@@ -151,10 +151,10 @@
                     FormJs.saveForm("#SalaryBasisFormPage2", this, function (data) {
                     }, res, Grids.sendData("LinkTableGridDiv"));
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 }
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             }, (purposeValue == 2 ? Grids.sendData("RangeTableGridDiv") : null));
 
         });

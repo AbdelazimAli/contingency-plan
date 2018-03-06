@@ -36,29 +36,29 @@ namespace WebApp.Controllers
 
         public ActionResult Index()
         {
-            ViewBag.Job = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { value = a.Id, text = a.LocalName });
+            //ViewBag.Job = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { value = a.Id, text = a.LocalName });
             ViewBag.StructType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("CompanyStructure", Language).Select(a => new { id = a.CodeId, name = a.Title });
             return View();
         }
         public ActionResult Diagram()
         {
-            var nodes = _hrUnitOfWork.CompanyStructureRepository.GetDiagram(CompanyId,Language);
-            var all = nodes.ToList();
+            var nodes = _hrUnitOfWork.CompanyStructureRepository.GetDiagram(CompanyId, Language).ToList();
             var result = new List<CompanyDiagramViewModel>();
 
-            foreach (var node in all.Where(a => a.ParentId == null))
+            foreach (var node in nodes.Where(a => a.ParentId == null))
             {
                 result.Add(new CompanyDiagramViewModel
                 {
                     Id = node.Id,
-                    Employee=node.Employee,
-                    Image=node.Image,
+                    Employee = node.Employee,
+                    Image = node.Image,
                     Name = node.Name,
                     ParentId = node.ParentId,
                     Code = node.Code,
-                    colorSchema= node.colorSchema,
-                    Children = AddNodes(all, node.Id),
-                    HasImage = node.HasImage
+                    colorSchema = node.colorSchema,
+                    Children = AddNodes(nodes, node.Id),
+                    HasImage = node.HasImage,
+                    Gender = node.Gender
                 });
             }
 
@@ -119,7 +119,6 @@ namespace WebApp.Controllers
                     Destination = compStruc,
                     Source = model,
                     ObjectName = "CompanyStructure",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 });

@@ -20,19 +20,7 @@ namespace WebApp.Controllers
     public class AssignOrderController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
-        protected override void Initialize(RequestContext requestContext)
-        {
-            base.Initialize(requestContext);
-            if (requestContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                Language = requestContext.HttpContext.User.Identity.GetLanguage();
-                CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
-                UserName = requestContext.HttpContext.User.Identity.Name;
-            }
-        }
+       
         public AssignOrderController(IHrUnitOfWork unitOfWork) : base(unitOfWork)
         {
             _hrUnitOfWork = unitOfWork;
@@ -42,13 +30,8 @@ namespace WebApp.Controllers
         {
             string RoleId = Request.QueryString["RoleId"]?.ToString();
             int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            bool isSSMenu = false;
-            if (MenuId != 0)
-            {
-                isSSMenu = _hrUnitOfWork.MenuRepository.Get(MenuId)?.SSMenu ?? false;
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            }
-            ViewBag.isSSMenu = isSSMenu;
+            ViewBag.isSSMenu = _hrUnitOfWork.Repository<Model.Domain.Menu>().Where(a => a.Id == MenuId).Select(a => a.SSMenu).FirstOrDefault();
+
             if (id==2) {
                 ViewBag.MangRole = true;
             }
@@ -130,8 +113,7 @@ namespace WebApp.Controllers
         }
         public ActionResult Details(int id = 0, bool Manager = false , byte Version = 0)
         {
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("AssignOrders", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("AssignOrders", CompanyId, Version, "EmpId"))
             {
                 var mang = Request.QueryString["Manager"]?.ToString();
                 if (mang != null)
@@ -145,13 +127,6 @@ namespace WebApp.Controllers
                 }              
             }
             
-            #region Return Menu functions
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            #endregion
-            //ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetSpacificLeaveTypes(CompanyId, Language,EmpId);
             ViewBag.Calender = _hrUnitOfWork.LeaveRepository.GetHolidays(CompanyId); //for Calender
             ViewBag.Today = DateTime.Today;
             if (id == 0)
@@ -230,7 +205,6 @@ namespace WebApp.Controllers
                     ObjectName = "AssignOrders",
                     SourceId = request.Id.ToString(),
                     UserName = UserName,
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     ValueAfter = MsgUtils.Instance.Trls("Submit"),
                     ValueBefore = MsgUtils.Instance.Trls("Darft"),
                     Transtype = (byte)TransType.Update
@@ -251,19 +225,18 @@ namespace WebApp.Controllers
                     return Json(error);
             }
 
-            errors = SaveChanges(Language);
+             errors = SaveChanges(Language);
              string message = "OK," + ((new JavaScriptSerializer()).Serialize(model));
             if (errors.Count > 0)
             {
                 message = errors.First().errors.First().message;
                 return Json(message);
             }
-
             //workflow
             if (isRequired)
             {
                 if (request.CalcMethod == 1) //monetary
-                {
+                { 
                     WfViewModel wf = new WfViewModel()
                     {
                         Source = "AssignOrder1",
@@ -311,7 +284,7 @@ namespace WebApp.Controllers
                         _hrUnitOfWork.LeaveRepository.Add(wfTrans);
                 }
 
-                errors = SavePointn(Language);
+                errors = Save(Language);
                 if (errors.Count > 0)
                     message = errors.First().errors.First().message;
             }

@@ -9,7 +9,7 @@ namespace Model.ViewModel
     public class UserCompanyViewModel
     {
         public int Id { get; set; }
-        public string Name { get; set; }
-        public bool IsChecked { get; set; }
+        public int CompanyId { get; set; }
+        public string RoleId { get; set; }
     }
 }

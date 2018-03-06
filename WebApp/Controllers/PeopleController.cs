@@ -1,4 +1,5 @@
-﻿using Interface.Core;
+﻿using Db.Persistence;
+using Interface.Core;
 using Microsoft.AspNet.Identity;
 using Microsoft.AspNet.Identity.EntityFramework;
 using Model.Domain;
@@ -14,6 +15,7 @@ using System.Linq;
 using System.Linq.Dynamic;
 using System.Web;
 using System.Web.Helpers;
+using System.Web.Http.Cors;
 using System.Web.Mvc;
 using System.Web.Routing;
 using System.Web.Script.Serialization;
@@ -22,30 +24,13 @@ using WebApp.Models;
 
 namespace WebApp.Controllers
 {
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class PeopleController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-        UserContext db = new UserContext();
-        private ApplicationUserManager _userManager;
-
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
-
-        protected override void Initialize(RequestContext requestContext)
-        {
-            base.Initialize(requestContext);
-            if (requestContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                Language = requestContext.HttpContext.User.Identity.GetLanguage();
-                CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
-                UserName = requestContext.HttpContext.User.Identity.Name;
-            }
-        }
         public PeopleController(IHrUnitOfWork unitOfWork) : base(unitOfWork)
         {
             _hrUnitOfWork = unitOfWork;
-            _userManager = new ApplicationUserManager(new UserStore<ApplicationUser>(db));
         }
 
         public ActionResult GetMissAttach(int Id, int Gender, int? Nationality)
@@ -55,18 +40,13 @@ namespace WebApp.Controllers
         }
         public ActionResult UpdateProgress(int Id, bool IsDoc)
         {
-            int attachments = 0;
-            double value = IsDoc ? _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(Id, out attachments) : _hrUnitOfWork.PeopleRepository.GetProfileCount(Id, CompanyId, Convert.ToByte(Request.QueryString["Version"]));
-            return Json(new { value, attachments }, JsonRequestBehavior.AllowGet);
+            string value = IsDoc ? _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(Id) : _hrUnitOfWork.PeopleRepository.GetProfileCount(Id, CompanyId, Convert.ToByte(Request.QueryString["Version"])).ToString();
+            return Json(new { value }, JsonRequestBehavior.AllowGet);
         }
 
         #region PeopleGroup by Shaddad      
         public ActionResult PeopleIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadPeopleGroups()
@@ -110,7 +90,6 @@ namespace WebApp.Controllers
                         ObjectName = "PeopleGroups",
                         Destination = page,
                         Source = models.ElementAtOrDefault(i),
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = options.ElementAtOrDefault(i),
                         Transtype = TransType.Insert
                     });
@@ -174,7 +153,7 @@ namespace WebApp.Controllers
                 {
 
                     var rec = db_PeopleGroup.FirstOrDefault(a => a.Id == models.ElementAtOrDefault(i).Id);
-                    AutoMapper(new AutoMapperParm() { ObjectName = "PeopleGroups", Destination = rec, Source = models.ElementAtOrDefault(i), Version = Convert.ToByte(Request.Form["Version"]), Options = options.ElementAtOrDefault(i), Transtype = TransType.Update });
+                    AutoMapper(new AutoMapperParm() { ObjectName = "PeopleGroups", Destination = rec, Source = models.ElementAtOrDefault(i), Options = options.ElementAtOrDefault(i), Transtype = TransType.Update });
                     rec.ModifiedTime = DateTime.Now;
                     rec.ModifiedUser = UserName;
                     _hrUnitOfWork.PeopleRepository.Attach(rec);
@@ -201,7 +180,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "PeopleGroups",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.PeopleRepository.Remove(Obj);
@@ -217,82 +195,110 @@ namespace WebApp.Controllers
         #endregion
 
         #region Person by Mamdouh
+        [OutputCache(VaryByParam = "*", Duration = 60)]
         public ActionResult Index()
         {
             ViewBag.QualificationId = _hrUnitOfWork.Repository<Qualification>().Select(a => new { value = a.Id, text = a.Name }).ToList();
-            ViewBag.PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Select(a => new { value = a.CodeId, text = a.Title });
-            ViewBag.Gender = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Gender", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
-            _hrUnitOfWork.PeopleRepository.ReadEmployeesPhotos();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            return View();
+            ViewBag.PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
+            return PartialView();
         }
+
+        public ActionResult GetPeople(int MenuId, int tab, int pageSize, int skip)
+        {
+            if (tab == 2)
+                return ApplyFilter<PeopleGridViewModel>(_hrUnitOfWork.EmployeeRepository.GetWaitingEmployee(CompanyId, Language), a => a.Code, MenuId, pageSize, skip);
+            else if (tab == 3)
+                return ApplyFilter<PeopleGridViewModel>(_hrUnitOfWork.EmployeeRepository.GetTerminatedEmployee(CompanyId, Language), a => a.Code, MenuId, pageSize, skip);
+            else
+                return ApplyFilter<PeopleGridViewModel>(_hrUnitOfWork.EmployeeRepository.GetCurrentEmployee(CompanyId, Language), a => a.Code, MenuId, pageSize, skip);
+
+        }
+
         public ActionResult Details(int id = 0)
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            ViewBag.QualificationId = _hrUnitOfWork.QualificationRepository.GetAll().Select(a => new { id = a.Id, name = a.Name }).ToList();
-            ViewBag.KafeelId = _hrUnitOfWork.LookUpRepository.GetAllKafeels().Select(a => new { id = a.Id, name = a.Name }).ToList();
-            // ViewBag.ProviderId = _hrUnitOfWork.LookUpRepository.GetAllHospitals(1).Select(a => new { id = a.Id, name = a.Name }).ToList();
-            int[] PrId = { 1, 2 };
-            ViewBag.ProviderId = _hrUnitOfWork.Repository<Provider>().Where(a => PrId.Contains(a.ProviderType)).Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.LocationId = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Where(a => a.IsInternal).Select(a => new { id = a.Id, name = a.LocalName });
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("People", CompanyId, 0);
-            if (columns.FirstOrDefault(c => c == "BirthLocation") == null)
-                ViewBag.LocationList = _hrUnitOfWork.Repository<World>().Select(c => new { id = c.CountryId, country = c.CountryId, city = c.CityId, dist = c.DistrictId, name = c.Name }).ToList();
-            if (Language.Substring(0, 2) == "ar")
-            {
-                ViewBag.Nationality = _hrUnitOfWork.Repository<Country>().Where(a => a.Nationality != null).Select(a => new { id = a.Id, name = a.NationalityAr }).ToList();
-            }
-            else
-            {
-                ViewBag.Nationality = _hrUnitOfWork.Repository<Country>().Where(a => a.Nationality != null).Select(a => new { id = a.Id, name = a.Nationality }).ToList();
-            }
-            ViewBag.Letters = _hrUnitOfWork.HrLettersRepository.GetAll().Select(a => new { text = MsgUtils.Instance.Trls(a.Name), value = a.Name + "_" + a.LetterTempl }).ToList();
-           
-            var GenEmpCode = _PersonSetup.GenEmpCode;
-            ViewBag.GenEmpCode = GenEmpCode > 0 ? GenEmpCode : 2;
-            var result = _hrUnitOfWork.Repository<Employement>().Where(a => a.CompanyId == CompanyId).DefaultIfEmpty().Max(a => a == null ? 0 : a.Sequence);
-            ViewBag.sequence = result != null ? result + 1 : 1;
-            ViewBag.Emp = _hrUnitOfWork.EmployeeRepository.GetPersonTypeAndEmployee(id);
-            //   ViewBag.PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", culture).Select(a => new { value = a.CodeId, text = a.Title });
             if (id == 0)
                 return View(new PeoplesViewModel());
 
             var person = _hrUnitOfWork.PeopleRepository.ReadPerson(id, Language);
-            int attachments;
-            person.Docs = _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(id, out attachments);
+            person.Age = DateTime.Now.Year - person.BirthDate.Year;
+            person.ExpYear = DateTime.Now.Year - (person.StartExpDate != null ? person.StartExpDate.Value.Year : person.JoinDate != null ? person.JoinDate.Value.Year : DateTime.Today.Year);
+            // int attachments;
+            person.Docs = _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(id);
             person.profileProgress = _hrUnitOfWork.PeopleRepository.GetProfileCount(id, CompanyId, Convert.ToByte(Request.QueryString["Version"]));
-            ViewBag.nationalId = person.NationalId;
-            ViewBag.Age = DateTime.Now.Year - person.BirthDate.Year;
-            if (person.StartExpDate != null)
-                ViewBag.ExpYear = DateTime.Now.Year - person.StartExpDate.Value.Year;
 
-            if (person.BirthCountry > 0)
-            {
-                var city = person.BirthCity ?? 0;
-                var dist = person.BirthDstrct ?? 0;
-                var location = _hrUnitOfWork.Repository<World>().FirstOrDefault(c => c.CountryId == person.BirthCountry
-                && c.CityId == city && c.DistrictId == dist);
-                if (location != null)
-                    ViewBag.birthLocation = (Language.Substring(0, 2) == "ar" ? location.NameAr : location.Name);
-            }
-            return person == null ? (ActionResult)HttpNotFound() : View(person);
-
+            return person == null ? (ActionResult)HttpNotFound() : PartialView(person);
         }
-        public ActionResult SavePeople(PeoplesViewModel model, OptionsViewModel moreInfo, string LocalName)
+
+        [HttpGet]
+        public JsonResult GetAttachmentsCount(int EmpID)
+        {
+            try
+            {
+                string Docs = _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(EmpID);
+                return Json(new {Result=true, Docs= Docs },JsonRequestBehavior.AllowGet);
+            }
+            catch
+            {
+                return Json(new {Result=false }, JsonRequestBehavior.AllowGet);
+            }
+        }
+        [HttpGet]
+        public JsonResult FillDropdownlists(int id, int? BirthCountry, int? CountryId, int? BirthCity, int? BirthDstrct, int? CityId, int? DistrictId)
+        {
+            try
+            {
+                var QualificationId = _hrUnitOfWork.QualificationRepository.GetAll().Select(a => new { id = a.Id, name = a.Name }).ToList();
+
+                int[] PrId = { 1, 2 };
+                var ProviderId = _hrUnitOfWork.Repository<Provider>().Where(a => PrId.Contains(a.ProviderType)).Select(a => new { id = a.Id, name = a.Name }).ToList();
+
+                var Nationality = Language.Substring(0, 2) == "ar" ? _hrUnitOfWork.Repository<Country>().Where(a => a.Nationality != null).Select(a => new { id = a.Id, name = a.NationalityAr }).ToList() :
+                _hrUnitOfWork.Repository<Country>().Where(a => a.Nationality != null).Select(a => new { id = a.Id, name = a.Nationality }).ToList();
+
+                // set birth location
+                string BirthLocation = "", Location = "";
+                if (BirthCountry > 0)
+                {
+                    var city = BirthCity ?? 0;
+                    var dist = BirthDstrct ?? 0;
+                    var location = _hrUnitOfWork.Repository<World>().FirstOrDefault(c => c.CountryId == BirthCountry
+                    && c.CityId == city && c.DistrictId == dist);
+                    BirthLocation = location != null ? Language.Substring(0, 2) == "ar" ? location.NameAr : location.Name : "";
+                }
+
+                // set title location
+                if (CountryId > 0)
+                {
+                    var city = CityId ?? 0;
+                    var dist = DistrictId ?? 0;
+                    var location = _hrUnitOfWork.Repository<World>().FirstOrDefault(c => c.CountryId == CountryId
+                    && c.CityId == city && c.DistrictId == dist);
+                    Location = location != null ? Language.Substring(0, 2) == "ar" ? location.NameAr : location.Name : "";
+                }
+
+                return Json(new
+                {
+                    Result = true,
+                    QualificationId = QualificationId,
+                    ProviderId = ProviderId,
+                    Nationality = Nationality,
+                    BirthLocation = BirthLocation,
+                    Location = Location
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch
+            {
+                return Json(new { Result = false }, JsonRequestBehavior.AllowGet);
+            }
+        }
+        public ActionResult SavePeople(PeoplesViewModel model, OptionsViewModel moreInfo, string LocalName, bool clear)
         {
             List<Error> errors = new List<Error>();
             string message = "OK";
-            IdentityResult result;
 
             if (ModelState.IsValid)
             {
-                if (ServerValidationEnabled) 
+                if (ServerValidationEnabled)
                 {
                     errors = _hrUnitOfWork.CompanyRepository.CheckForm(new CheckParm
                     {
@@ -315,18 +321,14 @@ namespace WebApp.Controllers
                         return Json(Models.Utils.ParseFormErrors(ModelState));
                     }
                 }
-               
+
                 var record = _hrUnitOfWork.Repository<Person>().FirstOrDefault(j => j.Id == model.Id);
-                var employee = _hrUnitOfWork.Repository<Employement>().Where(p => p.EmpId == model.Id && p.Status == 1).FirstOrDefault();
-                var GenEmpCode = _PersonSetup.GenEmpCode;
                 if (model.SubscripDate == null)
                 {
                     model.VarSubAmt = null;
                     model.BasicSubAmt = null;
                 }
 
-              
-              
                 if (record == null) //Add
                 {
                     record = new Person();
@@ -339,48 +341,41 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "People",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
+
                     record.CreatedTime = DateTime.Now;
                     record.CreatedUser = UserName;
-
                     if (record.BirthCity == 0) record.BirthCity = null;
                     if (record.BirthDstrct == 0) record.BirthDstrct = null;
                     if (record.BirthCountry == 0) record.BirthCountry = null;
+                    if (record.CityId == 0) record.CityId = null;
+                    if (record.DistrictId == 0) record.DistrictId = null;
+                    if (record.CountryId == 0) record.CountryId = null;
+
                     _hrUnitOfWork.PeopleRepository.Add(record);
-
-                    if (model.Code != null && model.PersonType != 0 && model.StartDate != null)
-                        _hrUnitOfWork.PeopleRepository.AddEmployee(record, model.Code, model.PersonType, model.sequence, model.StartDate, Language, CompanyId);
-
                 }
                 else //update
                 {
                     string name = model.Title + " " + model.FirstName + " " + model.Familyname;
                     string oldName = record.Title + " " + record.FirstName + " " + record.Familyname;
                     _hrUnitOfWork.PositionRepository.AddLName(Language, oldName, name, LocalName);
-                    var EndDate = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == model.Id && a.Status != 1).Select(b => b.EndDate).LastOrDefault();
-                    if (model.PersonType != null)
-                    {
-                        if (model.StartDate < EndDate)
-                        {
-                            ModelState.AddModelError("StartDate", MsgUtils.Instance.Trls("StartMustGrtThanPreviousStart"));
-                            return Json(Models.Utils.ParseFormErrors(ModelState));
-                        }
-                    }
                     AutoMapper(new Models.AutoMapperParm
                     {
                         Destination = record,
                         Source = model,
                         ObjectName = "People",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
+
                     record.BirthCountry = model.BirthCountry;
                     record.BirthCity = model.BirthCity;
                     record.BirthDstrct = model.BirthDstrct;
+                    record.CountryId = model.CountryId;
+                    record.CityId = model.CityId;
+                    record.DistrictId = model.DistrictId;
                     record.ModifiedTime = DateTime.Now;
                     record.ModifiedUser = UserName;
                     if (record.MilitaryStat != 1)
@@ -389,76 +384,52 @@ namespace WebApp.Controllers
                         record.MilCertGrade = null;
                         record.Rank = null;
                     }
-                    _hrUnitOfWork.PeopleRepository.Attach(record);
-                    _hrUnitOfWork.PeopleRepository.Entry(record).State = EntityState.Modified;
-                    if (model.Code == null && GenEmpCode == 3 && model.PersonType != null && model.StartDate != null)
-                    {
-                        ModelState.AddModelError("Code", MsgUtils.Instance.Trls("NationalIdRequired"));
-                        return Json(Models.Utils.ParseFormErrors(ModelState));
-                    }
-                    if (employee == null && model.Code != null && model.PersonType != null && model.StartDate != null)
-                        _hrUnitOfWork.PeopleRepository.AddEmployee(record, model.Code, (short)model.PersonType, model.sequence, (DateTime)model.StartDate, Language, CompanyId);
-                    if (employee != null && employee.Code != model.Code)
-                    {
-                        employee.Code = model.Code;
-                        _hrUnitOfWork.PeopleRepository.Attach(employee);
-                        _hrUnitOfWork.PeopleRepository.Entry(employee).State = EntityState.Modified;
-                        message = _hrUnitOfWork.PeopleRepository.CheckCode(employee, Language);
-                        if (message != "OK")
-                            return Json(message);
-                    }
-
                 }
 
                 //##Save FlexData
-                bool isAdd = record.Id == 0;
+                //bool isAdd = record.Id == 0;
                 List<Error> Errors = new List<Error>();
-                if (isAdd) {
-                    Errors = SaveChanges(Language);
-                    if (Errors.Count > 0)
-                    {
-                        message = Errors.First().errors.First().message;
-                        return Json(message);
-                    }
-                }
+                //if (isAdd) {
+                //    Errors = SaveChanges(Language);
+                //    if (Errors.Count > 0)
+                //    {
+                //        message = Errors.First().errors.First().message;
+                //        return Json(message);
+                //    }
+                //}
                 //SaveFlexData(moreInfo?.flexData, record.Id);
-                //Errors = SaveChanges(Language);
+                if (record.Status < PersonStatus.Contract)
+                {
+                    record.Status = PersonStatus.Contract;
+                    model.Status = record.Status;
+                }
+                Errors = SaveChanges(Language);
                 //##End Save FlexData
 
 
-                if (record.HasImage && model.Id == 0)
-                {
-                    var chkImage = _hrUnitOfWork.Repository<CompanyDocsViews>().Where(a => a.CompanyId == CompanyId && a.SourceId == 0 && a.Source == "Employee").FirstOrDefault();
-                    if (chkImage != null)
-                    {
-                        chkImage.SourceId = record.Id;
-                        _hrUnitOfWork.CompanyRepository.Attach(chkImage);
-                        _hrUnitOfWork.CompanyRepository.Entry(chkImage).State = EntityState.Modified;
-                        _hrUnitOfWork.Save();
-
-                    }
-                }
-
-                model.Id = record.Id;
-                //var users = db.Users.Where(a => a.EmpId == model.Id).ToList();
-                //foreach (var item in users)
+                //if (record.HasImage && model.Id == 0)
                 //{
-                //    item.Email = model.WorkEmail;
-                //    item.PhoneNumber = model.WorkTel;
-                //    result = await _userManager.UpdateAsync(item);
-                //    if (result.Errors.Count() > 0)
-                //        Errors.Add(new Error() { errors = new List<ErrorMessage>(new List<ErrorMessage>() { new ErrorMessage() { message = result.Errors.FirstOrDefault() } }) });
+                //    var chkImage = _hrUnitOfWork.Repository<CompanyDocsViews>().Where(a => a.CompanyId == CompanyId && a.SourceId == 0 && a.Source == "Employee").FirstOrDefault();
+                //    if (chkImage != null)
+                //    {
+                //        chkImage.SourceId = record.Id;
+                //        _hrUnitOfWork.CompanyRepository.Attach(chkImage);
+                //        _hrUnitOfWork.CompanyRepository.Entry(chkImage).State = EntityState.Modified;
+                //        _hrUnitOfWork.Save();
+                //    }
                 //}
 
-                int attachments;
-                model.Docs = _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(model.Id, out attachments);
-                model.Attachments = attachments;
+                // int attachments;
+                if (!clear)
+                {
+                    model.Id = record.Id;
+                    model.Docs = _hrUnitOfWork.PeopleRepository.GetAttachmentsCount(model.Id/*, out attachments*/);
+                    //model.Attachments = attachments;
+                }
+                else model = new PeoplesViewModel();
 
                 message = "OK," + ((new JavaScriptSerializer()).Serialize(model));
-                //db.Users.Attach(user);
-                //db.Entry(user).State = EntityState.Modified;
-                //var x = db.SaveChanges();
-                
+
                 if (Errors.Count > 0)
                     message = Errors.First().errors.First().message;
 
@@ -470,25 +441,12 @@ namespace WebApp.Controllers
             }
         }
 
-        public ActionResult GetPeoples(int MenuId)
+        public ActionResult _Profile()
         {
-            var query = _hrUnitOfWork.PeopleRepository.ReadPeoples(Language);
-            string whecls = GetWhereClause(MenuId);
-            if (whecls.Length > 0)
-            {
-                try
-                {
-                    query = query.Where(whecls);
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                    Models.Utils.LogError(ex.Message);
-                    return Json("", JsonRequestBehavior.AllowGet);
-                }
-            }
-            return Json(query, JsonRequestBehavior.AllowGet);
+            FillBasicData(false, false, true, false);
+            return PartialView(new PeoplesViewModel());
         }
+
         //DeletePeople                                                     
         public ActionResult DeletePeople(int id)
         {
@@ -500,12 +458,11 @@ namespace WebApp.Controllers
                 {
                     Source = person,
                     ObjectName = "People",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PeopleRepository.Remove(person);
                 string name = person.Title + " " + person.FirstName + " " + person.Familyname;
-                _hrUnitOfWork.PeopleRepository.RemoveLName(Language,name);
+                _hrUnitOfWork.PeopleRepository.RemoveLName(Language, name);
             }
             string message = "OK";
             Source.Errors = SaveChanges(Language);
@@ -519,14 +476,14 @@ namespace WebApp.Controllers
         public ActionResult DelateAllEmployees()
         {
             var message = "OK";
-            var ListOfAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a=>a.CompanyId == CompanyId).ToList();
-            if(ListOfAssignment.Count >0)
-            _hrUnitOfWork.PeopleRepository.RemoveRange(ListOfAssignment);
+            var ListOfAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.CompanyId == CompanyId).ToList();
+            if (ListOfAssignment.Count > 0)
+                _hrUnitOfWork.PeopleRepository.RemoveRange(ListOfAssignment);
             var ListofPerson = _hrUnitOfWork.Repository<Person>().ToList();
             _hrUnitOfWork.PeopleRepository.RemoveRange(ListofPerson);
             var ListOfEmployment = _hrUnitOfWork.Repository<Employement>().Where(a => a.CompanyId == CompanyId).ToList();
             if (ListOfEmployment.Count > 0)
-                _hrUnitOfWork.PeopleRepository.RemoveRange(ListOfEmployment);        
+                _hrUnitOfWork.PeopleRepository.RemoveRange(ListOfEmployment);
             var errors = SaveChanges(User.Identity.GetLanguage());
             if (errors.Count() > 0)
                 message = errors.First().errors.First().message;
@@ -535,52 +492,70 @@ namespace WebApp.Controllers
         #endregion
 
         #region Employement by Mamdouh
-        //load index Emp Grid
-        public ActionResult Employement(int id)
-        {
-            ViewBag.PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Select(a => new { value = a.CodeId, text = a.Title, SysCodeId = a.SysCodeId });
-            ViewBag.Status = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Status", Language).Select(a => new { value = a.CodeId, text = a.Title });
-            ViewBag.AddMode = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == id && (a.Status == 1)).FirstOrDefault() == null;
-            ViewBag.NationalId = _hrUnitOfWork.Repository<Person>().Where(a => a.Id == id).Select(a => a.NationalId).FirstOrDefault();
-            ViewBag.GenEmpCode = _PersonSetup.GenEmpCode;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            ViewBag.id = id;
-            return View();
-        }
         public ActionResult ChkBeforeEmployment(int EmpId)
         {
             var chk = _hrUnitOfWork.CheckListRepository.ChkBeforeEmployment(CompanyId, UserName, EmpId, Language);
             return Json(chk, JsonRequestBehavior.AllowGet);
         }
-        //Get Employee
-        public ActionResult ReadEmployee(int Id)
-        {
-            return Json(_hrUnitOfWork.PeopleRepository.ReadEmployments(Id), JsonRequestBehavior.AllowGet);
-        }
+
         //Employment Details
         public ActionResult EmpDetails(int Id)
         {
-            ViewBag.Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
             var employement = _hrUnitOfWork.PeopleRepository.GetEmployment(Id);
+            if (employement == null) new EmployementViewModel();
+
             var GenEmpCode = _PersonSetup.GenEmpCode;
             ViewBag.GenEmpCode = GenEmpCode > 0 ? GenEmpCode : 2;
-            byte[] ids = { 1, 2, 4, 5 };
-            ViewBag.PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).ToList().Where(a => ids.Contains(a.SysCodeId)).Select(a => new { id = a.CodeId, name = a.Title, SysCodeId = a.SysCodeId }).ToList();
+            ViewBag.Id = Id;
+
             var result = _hrUnitOfWork.Repository<Employement>().Where(a => a.CompanyId == CompanyId).Max(a => a.Sequence);
-            ViewBag.sequence = result != null ? result + 1 : 1;
-            var nationalId = _hrUnitOfWork.Repository<Person>().Where(a => a.Id == Id).Select(s => s.NationalId).FirstOrDefault();
-            ViewBag.nationalId = nationalId;
-            ViewBag.id = Id;
-            if (Language.Substring(0, 2) == "ar")
-                ViewBag.Locations = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.NameAr }).ToList();
-            else
-                ViewBag.Locations = _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.Name }).ToList();
+            employement.Sequence = result != null ? result + 1 : 1;
+            ViewBag.nationalId = GenEmpCode == 3 ? _hrUnitOfWork.Repository<Person>().Where(a => a.Id == Id).Select(s => s.NationalId).FirstOrDefault() : "";
+
+            employement.NotifyButtonLabel = MsgUtils.Instance.Trls("SendNotifyLetter", Culture);
             //EmployementViewModel
-            return View(employement);
+            return PartialView(employement);
         }
+
+        [HttpGet]
+        public JsonResult FillEmpDropdownlists()
+        {
+            try
+            {
+                var Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
+                var Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Culture, 0).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+                var Locations = Language.Substring(0, 2) == "ar" ? _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.NameAr }).ToList() : _hrUnitOfWork.Repository<Country>().Select(c => new { id = c.Id, name = c.Name }).ToList();
+                byte[] ids = { 1, 2, 4, 5 };
+                var PersonType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Select(a => new { id = a.CodeId, name = a.Title, SysCodeId = a.SysCodeId }).ToList().Where(a => ids.Contains(a.SysCodeId)).ToList();
+
+                return Json(new
+                {
+                    Result = true,
+                    Currency = Currency,
+                    Jobs = Jobs,
+                    Locations = Locations,
+                    PersonType = PersonType
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch
+            {
+                return Json(new { Result = false }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        public JsonResult SendNotifyLetter(int ID = 0)
+        {
+            if (ID == 0)
+            {
+                return Json(new { Result = false });
+            }
+
+            string ErrorMessage;
+            bool Result = HangFireJobs.ExtendContractMethod(_hrUnitOfWork, Language, out ErrorMessage);
+
+            return Json(new { Result = Result, Message = ErrorMessage });
+        }
+
         public ActionResult CorrectEmpDetails(EmployementViewModel Emp, OptionsViewModel moreInfo)
         {
             List<Error> errors = new List<Error>();
@@ -592,8 +567,8 @@ namespace WebApp.Controllers
                 return Json(Models.Utils.ParseFormErrors(ModelState));
             // old employment record
             var record = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status == 1 && a.CompanyId == CompanyId).OrderByDescending(a => a.StartDate).FirstOrDefault();
-            var oldCode = record.Code;
-            var PreviousRecord = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status != 1 && a.CompanyId == CompanyId).LastOrDefault();
+            var oldCode = record != null ? record.Code : "";
+            var PreviousRecord = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status != 1 && a.CompanyId == CompanyId).OrderByDescending(a => a.StartDate).FirstOrDefault();
             var date = (PreviousRecord != null ? PreviousRecord.EndDate : new DateTime(1900, 1, 2));
             var ContractIssueDate = Emp.ContIssueDate;
             var GenEmpCode = _PersonSetup.GenEmpCode;
@@ -615,7 +590,7 @@ namespace WebApp.Controllers
                         EndDate = EndDate.AddYears(year.Value).AddMonths(month.Value);
                     }
                     var assignment = _hrUnitOfWork.Repository<Assignment>().Where(a => (a.AssignDate >= record.StartDate && a.AssignDate <= record.EndDate) && a.EmpId == record.EmpId).FirstOrDefault();
-                    if(assignment != null && Emp.EndDate <= assignment.AssignDate)
+                    if (assignment != null && Emp.EndDate <= assignment.AssignDate)
                     {
                         ModelState.AddModelError("", MsgUtils.Instance.Trls("cantcorrectemployment"));
                         return Json(Models.Utils.ParseFormErrors(ModelState));
@@ -636,15 +611,14 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = Emp,
                         ObjectName = "Emp",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Id = "EmpId",
                         Transtype = TransType.Update
                     });
 
                     if (Emp.Code != oldCode)
-                             message = _hrUnitOfWork.PeopleRepository.CheckCode(record, Language);
-                    
+                        message = _hrUnitOfWork.PeopleRepository.CheckCode(record, Language);
+
                     //if (Emp.EndDate == null && (Emp.DurInYears != 0 || Emp.DurInMonths != 0))
                     //{
                     //    int year = Emp.DurInYears;
@@ -699,7 +673,7 @@ namespace WebApp.Controllers
                     Emp.SysCodeId = _hrUnitOfWork.Repository<LookUpUserCode>().Where(a => (a.CodeName == "PersonType") && (a.CodeId == Emp.PersonType)).Select(s => s.SysCodeId).FirstOrDefault();
                     message += "," + ((new JavaScriptSerializer()).Serialize(Emp));
                 }
-            } 
+            }
 
             return Json(message);
 
@@ -713,6 +687,7 @@ namespace WebApp.Controllers
             int companyId = User.Identity.GetDefaultCompany();
             if (!ModelState.IsValid)
                 return Json(Models.Utils.ParseFormErrors(ModelState));
+
             var record = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status == 1 && a.CompanyId == companyId).OrderByDescending(a => a.StartDate).FirstOrDefault();
             var oldSequence = record != null ? record.Sequence : Emp.Sequence;
             var oldStartDate = record != null ? record.StartDate : new DateTime(1900, 1, 2);
@@ -728,9 +703,11 @@ namespace WebApp.Controllers
             var oldJobDesc = record != null ? record.JobDesc : null;
             var oldBenefitDesc = record != null ? record.BenefitDesc : null;
             var oldSpecialCond = record != null ? record.SpecialCond : null;
-            var PreviousRecord = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status != 1 && a.CompanyId == companyId).LastOrDefault();
-            var date = (PreviousRecord != null ? PreviousRecord.EndDate : oldStartDate.AddDays(-1));
+            var EDate = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Emp.EmpId && a.Status != 1 && a.CompanyId == companyId).Select(a => a.EndDate).OrderByDescending(a => a).FirstOrDefault();
+            var date = (EDate != null ? EDate : oldStartDate.AddDays(-1));
             var assign = _hrUnitOfWork.Repository<Assignment>().Where(a => a.EmpId == Emp.EmpId).FirstOrDefault();
+
+            var status = record == null ? PersonStatus.Contract : 0;
 
             //var ActiveEmployment = 
             if (assign != null && Emp.PersonType == 5)
@@ -738,14 +715,15 @@ namespace WebApp.Controllers
                 ModelState.AddModelError("", MsgUtils.Instance.Trls("TerminateFirst"));
                 return Json(Models.Utils.ParseFormErrors(ModelState));
             }
+
             if (record != null)
                 if (Emp.StartDate < record.EndDate)
                 {
                     ModelState.AddModelError("StartDate", MsgUtils.Instance.Trls("startLessEnd"));
                     return Json(Models.Utils.ParseFormErrors(ModelState));
                 }
-            Employement newEmployment = new Employement();
 
+            Employement newEmployment = new Employement();
             if (Emp.SysCodeId != 1)
             {
                 Emp.AutoRenew = false;
@@ -763,7 +741,6 @@ namespace WebApp.Controllers
                             Destination = record,
                             Source = Emp,
                             ObjectName = "Emp",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Id = "EmpId",
                             Transtype = TransType.Update
@@ -812,7 +789,6 @@ namespace WebApp.Controllers
                         {
                             Destination = newEmployment,
                             Source = Emp,
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Id = "EmpId",
                             Transtype = TransType.Insert
@@ -869,8 +845,15 @@ namespace WebApp.Controllers
                 ModelState.AddModelError("StartDate", MsgUtils.Instance.Trls("UpdateStartDateFirst"));
                 return Json(Models.Utils.ParseFormErrors(ModelState));
             }
+
             if (message == "OK")
             {
+                if (status == PersonStatus.Contract)
+                {
+                    var person = _hrUnitOfWork.PeopleRepository.GetPerson(Emp.EmpId);
+                    person.Status = PersonStatus.Papers;
+                }
+
                 var Errors = SaveChanges(Language);
                 if (Errors.Count > 0)
                     message = Errors.First().errors.First().message;
@@ -941,7 +924,6 @@ namespace WebApp.Controllers
                     {
                         Destination = qual,
                         Source = q,
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Id = "EmpId",
                         Transtype = TransType.Insert
@@ -1033,7 +1015,6 @@ namespace WebApp.Controllers
                         ObjectName = "Qualification",
                         Destination = qual,
                         Source = models.ElementAtOrDefault(i),
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = options.ElementAtOrDefault(i),
                         Id = "EmpId",
                         Transtype = TransType.Update
@@ -1078,7 +1059,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Qualification",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.PeopleRepository.Remove(Obj);
@@ -1141,7 +1121,6 @@ namespace WebApp.Controllers
                     {
                         Destination = training,
                         Source = p,
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -1199,7 +1178,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "PeopleTraining",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.PeopleRepository.Remove(Obj);
@@ -1245,7 +1223,6 @@ namespace WebApp.Controllers
                         ObjectName = "PeopleTraining",
                         Destination = training,
                         Source = models.ElementAtOrDefault(i),
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = options.ElementAtOrDefault(i),
                         Id = "PersonId",
                         Transtype = TransType.Update
@@ -1303,7 +1280,6 @@ namespace WebApp.Controllers
                 {
                     Source = employment,
                     ObjectName = "EmployementHistory",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 
@@ -1312,12 +1288,12 @@ namespace WebApp.Controllers
                     _hrUnitOfWork.PeopleRepository.Remove(employment);
                 else
                 { // can't delete deployment if any assignment found
-                    //byte sysCodeId = _hrUnitOfWork.Repository<LookUpUserCode>().Where(a => a.CodeName == "Assignment" && a.CodeId == assignstatus).Select(a => a.SysCodeId).FirstOrDefault();
-                    //if (sysCodeId == 1)
-                    //{
-                        errors.Add(new Error() { errors = new List<ErrorMessage>() { new ErrorMessage() { message = MsgUtils.Instance.Trls("cantdeleteAssignmet") } } });
-                        Source.Errors = errors;
-                        return Json(Source);
+                  //byte sysCodeId = _hrUnitOfWork.Repository<LookUpUserCode>().Where(a => a.CodeName == "Assignment" && a.CodeId == assignstatus).Select(a => a.SysCodeId).FirstOrDefault();
+                  //if (sysCodeId == 1)
+                  //{
+                    errors.Add(new Error() { errors = new List<ErrorMessage>() { new ErrorMessage() { message = MsgUtils.Instance.Trls("cantdeleteAssignmet") } } });
+                    Source.Errors = errors;
+                    return Json(Source);
                     //}
                     //else
                     //{
@@ -1329,7 +1305,7 @@ namespace WebApp.Controllers
                   .Where(a => a.CompanyId == CompanyId && a.EmpId == employment.EmpId && a.Status == 2)
                   .OrderByDescending(a => a.StartDate)
                   .FirstOrDefault();
-                if (PreviousEmployment != null && PreviousEmployment.EndDate != EndDate && PreviousEmployment.Status !=3)
+                if (PreviousEmployment != null && PreviousEmployment.EndDate != EndDate && PreviousEmployment.Status != 3)
                 {
                     PreviousEmployment.Status = 1;
                     _hrUnitOfWork.PeopleRepository.Attach(PreviousEmployment);
@@ -1369,183 +1345,22 @@ namespace WebApp.Controllers
 
         #endregion
 
-        #region Employee Custody
-        public ActionResult EmployeeCustody(int id)
+        #region Take Photo From Webcam
+        public PartialViewResult TakePhotoPartial(int EmpID = 0)
         {
-            ViewBag.Id = id;
-            var jobId = _hrUnitOfWork.Repository<Assignment>().Where(a => a.EmpId == id).Select(a => a.JobId).FirstOrDefault();
-            ViewBag.Custody = _hrUnitOfWork.Repository<Custody>().Where(s => s.JobId == jobId || s.JobId == null).Select(a => new { value = a.Id, text = a.Name, isActive = true }).ToList();
-            return View();
-        }
-        //ReadEmployeeCustody
-        public ActionResult ReadEmployeeCustody(int id)
-        {
-            var query = _hrUnitOfWork.CustodyRepository.ReadEmployeeCustody(id);
-            return Json(query, JsonRequestBehavior.AllowGet);
+            TakePhotoVModel Model = new TakePhotoVModel();
+
+            var stream = _hrUnitOfWork.Repository<CompanyDocsViews>().Where(a => a.Source == Db.Persistence.Constants.Sources.EmployeePic && a.SourceId == EmpID).Select(a => a.file_stream).FirstOrDefault();
+            if (stream != null)
+                Model.ImageData = Convert.ToBase64String(stream);
+
+            Model.EmpID = EmpID;
+            return PartialView("_TakePhotoPartial", Model);
         }
 
-        public ActionResult CreateEmpCustody(IEnumerable<EmpCustodyViewModel> models, int Id, OptionsViewModel moreInfo)
-        {
-            var result = new List<EmpCustody>();
-            var datasource = new DataSource<EmpCustodyViewModel>();
-            datasource.Data = models;
-            datasource.Total = models.Count();
 
-            if (ModelState.IsValid)
-            {
-                if (ServerValidationEnabled)
-                {
-                    var errors = _hrUnitOfWork.MenuRepository.Check(new CheckParm
-                    {
-                        CompanyId = CompanyId,
-                        ObjectName = "EmployeeCustody",
-                        TableName = "EmpCustodies",
-                        Columns = Models.Utils.GetModifiedRows(ModelState),
-                        Culture = Language
-                    });
-
-                    if (errors.Count() > 0)
-                    {
-                        datasource.Errors = errors;
-                        return Json(datasource);
-                    }
-                }
-
-
-                foreach (EmpCustodyViewModel p in models)
-                {
-                    var custody = new EmpCustody();
-                    p.EmpId = Id;
-                    AutoMapper(new Models.AutoMapperParm
-                    {
-                        Destination = custody,
-                        Source = p,
-                        ObjectName = "EmployeeCustody",
-                        Version = Convert.ToByte(Request.Form["Version"]),
-                        Options = moreInfo,
-                        Transtype = TransType.Insert
-                    });
-                    if (p.RecvDate > p.delvryDate)
-                    {
-                        ModelState.AddModelError("RecvDate", MsgUtils.Instance.Trls("dlvrMustGrRecv"));
-                        datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-                        return Json(datasource);
-                    }
-                    result.Add(custody);
-                    _hrUnitOfWork.CustodyRepository.Add(custody);
-                }
-
-                datasource.Errors = SaveChanges(Language);
-
-            }
-            else
-            {
-                datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-            }
-
-            datasource.Data = (from p in models
-                               join r in result on Id equals r.EmpId
-                               select new EmpCustodyViewModel
-                               {
-                                   Id = r.Id,
-                                   CustodyId = p.CustodyId,
-                                   EmpId = Id,
-                                   delvryDate = p.delvryDate,
-                                   RecvDate = p.RecvDate,
-                                   CustodyStat = p.CustodyStat,
-
-                               }).ToList();
-
-            if (datasource.Errors.Count() > 0)
-                return Json(datasource);
-            else
-                return Json(datasource.Data);
-        }
-        public ActionResult UpdateEmpCustody(IEnumerable<EmpCustodyViewModel> models, IEnumerable<OptionsViewModel> options)
-        {
-            var datasource = new DataSource<EmpCustodyViewModel>();
-            datasource.Data = models;
-            datasource.Total = models.Count();
-
-            if (ModelState.IsValid)
-            {
-                if (ServerValidationEnabled)
-                {
-                    var errors = _hrUnitOfWork.PageEditorRepository.Check(new CheckParm
-                    {
-                        CompanyId = CompanyId,
-                        ObjectName = "EmployeeCustody",
-                        TableName = "EmpCustodies",
-                        Columns = Models.Utils.GetModifiedRows(ModelState),
-                        Culture = Language
-                    });
-
-                    if (errors.Count() > 0)
-                    {
-                        datasource.Errors = errors;
-                        return Json(datasource);
-                    }
-                }
-                for (int i = 0; i < models.Count(); i++)
-                {
-                    var custody = new EmpCustody();
-
-                    AutoMapper(new AutoMapperParm()
-                    {
-                        ObjectName = "EmployeeCustody",
-                        Destination = custody,
-                        Source = models.ElementAtOrDefault(i),
-                        Version = Convert.ToByte(Request.Form["Version"]),
-                        Options = options.ElementAtOrDefault(i),
-                        Id = "EmpId",
-                        Transtype = TransType.Update
-                    });
-                    if (custody.RecvDate > custody.delvryDate)
-                    {
-                        ModelState.AddModelError("RecvDate", MsgUtils.Instance.Trls("dlvrMustGrRecv"));
-                        datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-                        return Json(datasource);
-                    }
-                    _hrUnitOfWork.CustodyRepository.Attach(custody);
-                    _hrUnitOfWork.CustodyRepository.Entry(custody).State = EntityState.Modified;
-                }
-
-                datasource.Errors = SaveChanges(Language);
-            }
-            else
-            {
-                datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
-            }
-
-            if (datasource.Errors.Count() > 0)
-                return Json(datasource);
-            else
-                return Json(datasource.Data);
-        }
-        public ActionResult DeleteEmpCustody(int Id)
-        {
-            var datasource = new DataSource<EmpCustodyViewModel>();
-
-            var Obj = _hrUnitOfWork.Repository<EmpCustody>().FirstOrDefault(k => k.Id == Id);
-            AutoMapper(new Models.AutoMapperParm
-            {
-                Source = Obj,
-                ObjectName = "EmployeeCustody",
-                Version = Convert.ToByte(Request.Form["Version"]),
-                Transtype = TransType.Delete
-            });
-            _hrUnitOfWork.CustodyRepository.Remove(Obj);
-            datasource.Errors = SaveChanges(Language);
-            datasource.Total = 1;
-
-            if (datasource.Errors.Count > 0)
-                return Json(datasource);
-            else
-                return Json("OK");
-        }
 
         #endregion
-
         #region Image
         public ActionResult Pic(int EmpId)
         {
@@ -1582,7 +1397,7 @@ namespace WebApp.Controllers
         [HttpPost]
         public ActionResult _Upload(IEnumerable<HttpPostedFileBase> files)
         {
-        
+
             string[] _imageFileExtensions = { ".jpg", ".png", ".gif", ".jpeg" };
 
             if (files == null || !files.Any()) return Json(new { success = false, errorMessage = MsgUtils.Instance.Trls("No file uploaded") });
@@ -1592,99 +1407,6 @@ namespace WebApp.Controllers
             var webPath = GetTempSavedFilePath(file);
 
             return Json(new { success = true, fileName = webPath.Replace("\\", "/") }); // success
-        }
-
-        [HttpPost]
-        public ActionResult SaveImageCrop(string t, string l, string h, string w, string fileName, int EmpId, int source)
-        {
-            try
-            {
-                var message = "OK";
-                var top = Convert.ToInt32(t.Replace("-", "").Replace("px", ""));
-                var left = Convert.ToInt32(l.Replace("-", "").Replace("px", ""));
-                var height = Convert.ToInt32(h.Replace("-", "").Replace("px", ""));
-                var width = Convert.ToInt32(w.Replace("-", "").Replace("px", ""));
-
-               // var file = HttpContext.Request.Files[0];
-
-                var tempFolder = Server.MapPath("~/Content/Photos/TempFolder");
-                var fn = Path.Combine(tempFolder, Path.GetFileName(fileName));
-                var img = new WebImage(fn);
-                
-                // var ratio = img.Height / (double)img.Width;
-                //img.Resize(width,height,true,true);
-                
-                var newbottom = img.Height - top - height; 
-                var newright = img.Width - left - width;
-                //if (newbottom < 0 || newright < 0)
-                //{
-                //    img.Resize(width, height);
-                //    newbottom = img.Height - top;
-                //    newright = img.Width - top;
-                //}
-
-                var cropedimg = (newbottom < 0 || newright < 0 || source == 1 ? img : img.Crop(top, left, newbottom, newright));
-              
-               // img = img.Resize(700,1000);
-                System.IO.File.Delete(fn);
-
-                var PastFileName = Path.Combine("/Content/Photos", Path.GetFileName(fn));
-                var NewFileName = PastFileName.Replace(PastFileName.Substring(PastFileName.LastIndexOf("\\")), "/" + EmpId.ToString() + ".jpeg");
-                var newFileLocation = HttpContext.Server.MapPath(NewFileName);
-                if (Directory.Exists(Path.GetDirectoryName(newFileLocation)) == false)
-                    Directory.CreateDirectory(Path.GetDirectoryName(newFileLocation));
-                else
-                    Directory.Delete(tempFolder, true);
-
-                var oldFile = HttpContext.Server.MapPath(NewFileName);
-                if (System.IO.File.Exists(oldFile))
-                    System.IO.File.Delete(oldFile);
-
-                string PathName = @"../SpecialData/Photos/" + CompanyId.ToString();
-
-                if (Directory.Exists(Server.MapPath(PathName)) == false)
-                    Directory.CreateDirectory(Server.MapPath(PathName));
-                cropedimg.Save(string.Format(PathName+ "/{0}", EmpId),"jpeg");
-             //   var n = fileName.Split('\\');
-                var chkImage = _hrUnitOfWork.Repository<CompanyDocsViews>().Where(a => a.CompanyId == CompanyId && a.SourceId == EmpId && a.Source == "Employee").FirstOrDefault();
-                if (chkImage == null)
-                {
-                    CompanyDocsViews doc = new CompanyDocsViews()
-                    {
-                        CompanyId = CompanyId,
-                        name = fileName.Substring(fileName.LastIndexOf('/')+1),
-                        CreatedUser = UserName,
-                        Source = "Employee",
-                        SourceId = EmpId,
-                        file_stream = cropedimg.GetBytes()
-                    };
-                    _hrUnitOfWork.CompanyRepository.Add(doc);
-                }
-                else
-                {
-                    chkImage.file_stream = cropedimg.GetBytes();
-                    chkImage.ModifiedUser = UserName;
-                    _hrUnitOfWork.CompanyRepository.Attach(chkImage);
-                    _hrUnitOfWork.CompanyRepository.Entry(chkImage).State = EntityState.Modified;
-                }
-                var errors = SaveChanges(Language);
-                if (errors.Count() > 0)
-                {
-                    message = errors.First().errors.First().message;
-                    return Json(new { success = false, errorMessage = message });
-                }
-                var base64 = Convert.ToBase64String(cropedimg.GetBytes());
-                string src = string.Format("data:image/jpeg;base64,{0}", base64);
-
-                return Json(new { success = true, avatarFileLocation = src });
-
-               // return Json(new { success = true, avatarFileLocation = string.Format(PathName + "/{0}.jpeg", EmpId) });
-            }
-            catch (Exception ex)
-            {
-                return Json(new { success = false, errorMessage = MsgUtils.Instance.Trls(ex.Message) });
-            }
-
         }
 
         [HttpPost]
@@ -1718,7 +1440,7 @@ namespace WebApp.Controllers
         }
         private static ImageCodecInfo GetEncoderInfo(string mimeType)
         {
-         
+
             ImageCodecInfo[] encoders;
             encoders = ImageCodecInfo.GetImageEncoders();
             for (int i = 0; i < encoders.Length; i++)
@@ -1790,17 +1512,17 @@ namespace WebApp.Controllers
                 // Deliberately empty.
             }
         }
-        public ActionResult ChangePicId(int Id)
-        {
-            string path = Server.MapPath(@"../SpecialData/Photos/" + CompanyId.ToString());
-            if (Directory.Exists(path))
-            {
-                if (System.IO.File.Exists(path + "/0.jpeg"))
-                    System.IO.File.Move(path + "/0.jpeg", string.Format("{0}/{1}.jpeg", path, Id));
-            }
-            return Json("Ok", JsonRequestBehavior.AllowGet);
-        }
+        //public ActionResult ChangePicId(int Id)
+        //{
+        //    string path = Server.MapPath(@"../SpecialData/Photos/" + CompanyId.ToString());
+        //    if (Directory.Exists(path))
+        //    {
+        //        if (System.IO.File.Exists(path + "/0.jpeg"))
+        //            System.IO.File.Move(path + "/0.jpeg", string.Format("{0}/{1}.jpeg", path, Id));
+        //    }
+        //    return Json("Ok", JsonRequestBehavior.AllowGet);
+        //}
         #endregion
-     
+
     }
 }

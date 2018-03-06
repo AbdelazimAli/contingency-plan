@@ -29,7 +29,7 @@ namespace Model.ViewModel.Personnel
         public string _18_SeasonHolidayPeriod { get; set; }
         public string _19_EmploymentDay { get; set; }
         public string _20_SuggestedJob { get; set; }
-        public string _21_Location { get; set; }
+        public string _21_Branch { get; set; }
         public string _22_Mobile { get; set; }
         public string _23_HomeTelephone { get; set; }
         public string _24_Kafel { get; set; }

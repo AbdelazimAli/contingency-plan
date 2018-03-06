@@ -3,111 +3,70 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
-    string[] function = ViewData["Functions"] as string[];
     var culture = User.Identity.GetCulture();
 }
 
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "AssignmentDiv" }, { "HasDepts", "false" }, { "HasRange", "false" },{ "Functions", function }, { "TableName", "People" }, { "ObjectName", MsgUtils.Instance.Trls("People") }, { "OldObjectName", "People" } })
-<div id="AssignmentDiv"></div>
 
-<style>
-    .progress {
-        width: 95%;
-        top: 10px;
-    }
-</style>
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "PeopleDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "TableName", "People" }, {"AddUrl", Url.Action("Details", "People") }, { "OldObjectName", "People" } }) 
+<div id="PeopleDiv"></div>
 
 <script>
-    var addUrl = "@Url.Action("Details", "People")";
-    RequestFilters.ApplayAllFilters([], {}, "AssignmentDiv", "@Url.Action("GetAssignment", "Assignment")?MenuId=@Request.QueryString["MenuId"]", addUrl);
-    function Exist(data){
-        if(data.Gender==1) {
-            if (data.Attachement != null)
-                return 'data:image/jpg;base64,' + data.Attachement;
-            else
-                return "/SpecialData/Photos/noimage.jpg";
-        }else{
-            if (data.Attachement != null)
-                return 'data:image/jpg;base64,' + data.Attachement;
-            else
-            return "/SpecialData/Photos/Fnoimage.jpg";
-        }
-    }
+    var hiddenCols = { 2: ["Department", "Location", "Job"] };
+    var tabs = [{ Id: 1, Name: "Employees", Class: "ace-icon fa fa-circle stat1", Title: "@MsgUtils.Instance.Trls("Current Employees")"},
+                { Id: 2, Name: "Waiting", Class: "ace-icon fa fa-circle stat2", Title: "@MsgUtils.Instance.Trls("Waiting Employees")" },
+                { Id: 3, Name: "Terminated", Class: "ace-icon fa fa-circle stat3", Title: "@MsgUtils.Instance.Trls("Terminated Employees")"}];
+
+    var readUrl = "@Url.Action("GetPeople", "People")?MenuId=@Request.QueryString["MenuId"]";
+    RequestFilters.applyAllFilters(tabs, hiddenCols, "PeopleDiv", readUrl);
+
     var QualRank = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.QualificationId));
     var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PersonType));
+
     var columns = [{
         field: "Employee",
-        template: "<div class='k-people-photo'><img class='k-people-photo' src=#:Exist(data)# /></div>" +
-                        "&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<div class='k-people-name'>#: Employee #</div>",
-                        locked:true
-    },
+        template: "<div class='k-people-photo'><img class='k-people-photo' src=#:Exist(data.Gender, data.Attachement)# /></div>" +
+                        "&nbsp;#if(PersonStatus==0){#<i class='ace-icon fa fa-circle stat#: EmpStatus #'></i>#}else{#<span class='badge badge-info'>#: PersonStatus #</span>#}#&nbsp;<div class='k-people-name'>#: Employee #</div>",
+        locked:true},
     {field:"Qualification",values:QualRank},
-                    {field:"PersonType",values:PersonType}, {field: "Docs", template: "<div class='progress'></div>"}];
-    var grid = "'Assignments'";
-    Grids.indexGrid({
-        read: "@Url.Action("GetAssignment", "Assignment")?MenuId=@Request.QueryString["MenuId"]",
+     {field:"PersonType",values:PersonType}];
+    //{field: "butt", template: "<div style='cursor:pointer'><img class='editbutt' src='/Content/Free-file-icons/16px/java.png'/>&nbsp;<img src='/Content/Free-file-icons/16px/pdf.png'/>&nbsp;<img src='/Content/Free-file-icons/16px/mp3.png'/></div>"}];
+
+    Grids.indexGrid ({
+        read: "@Url.Action("GetPeople", "People")?MenuId=@Request.QueryString["MenuId"]&tab=1",
         show: "@Url.Action("Details", "People")",
         edit: "@Url.Action("Details", "People")",
         del: "@Url.Action("DeletePeople", "People")",
-        objectName: "Assignments",
+        objectName: "PeopleGrid",
         recordName: "Employee",
-        gridName: "AssignmentDiv",
+        gridName: "PeopleDiv",
         dataBound: onLoad,
         admin: "@admin",
         columns: columns,
-            toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
-                    '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
-                    '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
         lang: "@User.Identity.GetCulture()",
-        select: { "Qualification": QualRank ,"PersonType":PersonType},
         serverPaging: true,
         serverFiltering: true,
         serverSorting: true,
         pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100,125, 150, 175] },
-
     });
 
     var empstatus = ["@MsgUtils.Instance.Trls("Not employee yet")", "@MsgUtils.Instance.Trls("Active")", "@MsgUtils.Instance.Trls("Suspended")", "@MsgUtils.Instance.Trls("Terminated")", "","","","","","","","@MsgUtils.Instance.Trls("In Leave")", "@MsgUtils.Instance.Trls("New Employee")"];
 
-    function onLoad(e){
-        $('#AssignmentDiv > div.k-grid-content-locked > table > tbody > tr > td > i').each(function () {
+    function onLoad(e)
+    {
+        $('#PeopleDiv > div.k-grid-content-locked > table > tbody > tr > td > i').each(function () {
             $(this).attr("data-toggle", "tooltip");
             $(this).attr("data-placement", "bottom");
             $(this).attr("title", empstatus[e.sender.dataItem($(this).closest("tr")).EmpStatus]);
             $(this).tooltip();
         });
-
-        $(".progress").each(function(){
-            var td = $(this).parent("td");
-            if(td.css("display") != "none") {
-                td.attr("style", "padding: 0");
-                var model = e.sender.dataItem($(this).closest("tr"));
-                if (model != null) {
-                    $(this).kendoProgressBar({
-                        value: model.Docs,
-                        type: "percent",
-                        max: 100,
-                        animation: {
-                            duration: 2000
-                        }
-                    });
-                }
-            }
-        });
-        $('.progress').hover(function() {
-            var me = $(this);
-            var model = e.sender.dataItem(me.closest("tr"));
-
-            if (model != null) {
-                $.get("@Url.Action("GetMissAttach", "People")", {Id: model.Id,Gender:model.Gender, Nationality:model.Nationality}, function(d) {
-                    me.popover({content: d}).popover('show');
-                });
-            }
-        }, function() {
-            $(this).popover('hide');
-        });
     }
+    $(document).ready(function(){
+        if ($('.page-content').children('.main-view').length==0) {
+            $('.page-content').children().addClass('main-view')
+        }
+    });
 </script>
+
 

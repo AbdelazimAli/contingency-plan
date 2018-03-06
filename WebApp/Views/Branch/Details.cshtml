@@ -1,0 +1,177 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel
+@model AddBranchViewModel
+@using WebApp.Extensions
+
+@{
+    Layout = null;
+    var admin = User.Identity.CanCustomize();
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetLanguage();
+    var rtl = User.Identity.RTL();
+}
+
+<br />
+@Html.Partial("_FormButtons")
+@*<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA-qaMK41mhavSk0ng-vJ7x7vjq_toASNs"></script>
+<script src="~/Scripts/app/MyGoogleMaps.js"></script>*@
+<script>
+        LoadGoogleMapsScripts();
+</script>
+<div id="BranchDiv"></div>
+
+<script>
+    var model;
+    $(function () {
+        showToolbar([1,2,3,11]);
+   
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var timeZones = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TimeZones));
+        //Give Id for the form that will Show
+        var formId = "BranchForms";
+
+        //If you press on Button Show it will be read only
+        var read = "@Request.QueryString["Read"]";
+
+        //Send the serialized model and props to form.js
+        $.getJSON(url, { objectname: 'FormBranch', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("Details", "Branch")";
+            data.FormId = formId;
+            data.Culture = '@culture';
+            data.TableName = "Branches";
+            data.companyId = "@User.Identity.GetDefaultCompany()";
+            data.admin = '@admin';
+            if(read == 1) data.mode = 'show';
+            data.rtl = @rtl.ToString().ToLower();
+            //Append the form to the div
+            $("#BranchDiv").Forms(data, model);
+
+            //Fill The autocomplete for TimeZone with Id and value
+            FormJs.fillOptionsDynamic($("#" + formId), "TimeZone", timeZones, model);
+            if(read != 1)
+            FormJs.fillOptionsDynamic($("#"+ formId), "Site", null, model, {remoteTableName : 'World'});
+
+            //Clear The startDate Because it comes with the initalized date 1/1
+            if(model.Id == 0)
+                $("#"+formId).find('#StartDate').val("");
+
+            if(read ==1)
+            {
+               
+                $("#Site").text(model.Site);
+                $("#ShowMap").hide();
+                LoadMap(model.Longitude,model.Latitude);
+            }
+
+            if(model.Id > 0)
+            {
+                if($('#Longitude').val() != "" && $('#Latitude').val() != "")               
+                    LoadMap();
+                                  
+            }
+
+            $("#" + formId).on('blur', "#EndDate",function(){
+                var elem = $(this);
+                if($('#StartDate').val() != ""){
+                    $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
+                    $('#StartDate').next("span.k-tooltip-validation").remove();
+                }
+                elem.removeClass("k-invalid").prop("aria-invalid", false);
+                elem.next("span.k-tooltip-validation").remove();
+
+                if(elem.val()!=""){
+                    var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
+                        }
+                    }
+                }
+            });
+            $("#" + formId).on('blur','#StartDate', function(){
+
+                var elem = $(this);
+
+                if(elem.val() != ""){
+                    var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
+                    if(valueinDays > 0 && $('#EndDate').val() != ""){
+                        if (elem && !elem.hasClass("k-invalid")) {
+                            elem.addClass("k-invalid").prop("aria-invalid", true);
+                            elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
+                        }
+                    }
+                    else{
+
+                        $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
+                        $('#EndDate').next("span.k-tooltip-validation").remove();
+                        elem.removeClass("k-invalid").prop("aria-invalid", false);
+                        elem.next("span.k-tooltip-validation").remove();
+                    }
+                }
+            });
+
+            $("#" + formId).find('#ShowMap').val('@MsgUtils.Instance.Trls("ShowMap")');
+
+            if($('#Longitude').val() == "" || $('#Latitude').val() == "")
+                $("#ShowMap").attr("disabled","disabled");
+
+            $("#Latitude,#Longitude").on("blur change",function()
+            {
+                     
+                if($('#Longitude').val() != "" && $('#Latitude').val() != "")
+                    $("#ShowMap").removeAttr("disabled");
+                else
+                    $("#ShowMap").attr("disabled","disabled");
+               
+            });
+            $("#ShowMap").on("click",function(){
+                LoadMap();
+            });
+            function LoadMap(_Lng,_Lat) {
+                setTimeout(function(){                
+                    var Lng = $('#Longitude').val();
+                    var Lat = $('#Latitude').val();
+                    if(_Lng)
+                        Lng =_Lng;
+                    if(_Lat)
+                        Lat = _Lat
+                    $("div[name=GoogleMapSec]").load('/GoogleMaps/ShowMapPartial?Lng='+ Lng +'&Lat='+ Lat +'&Height=700', function(responseTxt, statusTxt, xhr)
+                    {
+                        if (statusTxt == "success") {
+
+                        }
+                        if (statusTxt == "error")
+                            alert("Error: " + xhr.status + ": " + xhr.statusText);
+                    });
+                },500);           
+            }
+            
+            $("#" + formId).find("#Site").typeahead('val', model.Site);
+
+            $("#" + formId + " #Site").on("typeahead:select",
+                  function (e, location) {
+                      $("#" + formId +' #CountryId').val(location.country);
+                      $("#" + formId +' #CityId').val(location.city);
+                      $("#" + formId +' #DistrictId').val(location.dist);
+                  });
+            
+            $("#b1,#b2,#b3").off('click').on('click', function (e) {
+                var buttId = $(this).attr('id');
+                FormJs.saveForm($("#"+formId), $(this), function (res) {
+                    model = res;
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    if (buttId === 'b3') updateHistory(oldUlr);
+                }, buttId === 'b2');
+            });
+        });      
+
+        });
+
+
+          
+</script>
+
+

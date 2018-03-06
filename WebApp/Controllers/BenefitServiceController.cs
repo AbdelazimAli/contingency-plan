@@ -35,11 +35,7 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
             ViewBag.curr = _hrUnitOfWork.LookUpRepository.GetCurrency().Select(a => new { value = a.Code, text = a.Code});
-            ViewBag.BenefitId = _hrUnitOfWork.BenefitsRepository.GetBenefits(User.Identity.GetLanguage(),User.Identity.GetDefaultCompany()).Select(a => new { value =a.Id, text = a.LocalName }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.BenefitId = _hrUnitOfWork.BenefitsRepository.GetBenefits(User.Identity.GetLanguage(),User.Identity.GetDefaultCompany()).Select(a => new { value =a.Id, text = a.LocalName });
             return View();
         }
         public ActionResult GetBenefitServ(bool IsGroup, int ? Id)
@@ -80,7 +76,6 @@ namespace WebApp.Controllers
                         Destination = benfitSer,
                         Source = model,
                         ObjectName = "BenefitServ",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -179,7 +174,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "BenefitServ",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.BenefitsRepository.Remove(Obj);

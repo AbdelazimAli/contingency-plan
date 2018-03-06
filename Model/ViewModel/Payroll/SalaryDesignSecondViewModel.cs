@@ -24,7 +24,7 @@ namespace Model.ViewModel.Payroll
         public bool ISubGrade { get; set; } = false;
         public bool IPoints { get; set; } = false;
         public bool IPayroll { get; set; } = false;
-        public bool ILocation { get; set; } = false;
+        public bool IBranch { get; set; } = false;
         public bool IPersonType { get; set; } = false; // lookup user code
         public bool IPerformance { get; set; } = false; // lookup code
 

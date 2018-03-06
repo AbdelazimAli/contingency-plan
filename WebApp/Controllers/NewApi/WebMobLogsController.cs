@@ -4,6 +4,7 @@ using System.Web.Http.OData;
 using System.Web.Http.OData.Routing;
 using Interface.Core;
 using System.Web.Http.Cors;
+using System.ComponentModel.DataAnnotations;
 
 namespace WebApp.Controllers.NewApi
 {
@@ -20,12 +21,16 @@ namespace WebApp.Controllers.NewApi
     */
     public class NotificationVM
     {
+        [Required]
         public string UserName { get; set; }
         public string Language { get; set; }
+        [Required]
         public int CompanyId { get; set; }
+        public int EmpId { get; set; }
 
     }
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class WebMobLogsController : BaseODataController
     {
         protected IHrUnitOfWork _hrUnitOfWork { get; private set; }
@@ -52,6 +57,8 @@ namespace WebApp.Controllers.NewApi
 
             return Ok(Notify);
         }
+
+
 
 
 

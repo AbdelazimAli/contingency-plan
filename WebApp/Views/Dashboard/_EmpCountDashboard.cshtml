@@ -2,7 +2,7 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
 }
@@ -114,7 +114,7 @@
                 <div class="item active">
                     <div class="col-md-6">
                      <button class="btn-xs btn-primary" onclick="Grids.ExportChart('locs')">@MsgUtils.Instance.Trls("ExportImage")</button>
-                    <div class="my-border" id="locs" url="@Url.Action("EmpsByLocationsChart", "Dashboard")" >
+                    <div class="my-border" id="locs" url="@Url.Action("EmpsByBranchesChart", "Dashboard")" >
 
                     </div>
                     </div>
@@ -154,15 +154,15 @@
 
 
 <script>
-    //var EmpsByDepts, byLocations, LocsByDepts, EmpStatus, Gender, GenderByDepts, EmpAges, AgesByDepts, Nationality
+    //var EmpsByDepts, bybranches, LocsByDepts, EmpStatus, Gender, GenderByDepts, EmpAges, AgesByDepts, Nationality
     var colors = ['#42a7ff', '#797979', '#d54c7e', '#ededed', '#B0D877', '#FFD700'];
 
 
     function empsInitial(data) {
 
-        //-------------------------Employees By Location-------------------------
+        //-------------------------Employees By Branch-------------------------
         $("#locs").kendoChart({
-            dataSource: { data: data.byLocations },
+            dataSource: { data: data.byBranches },
             title: { text: '@MsgUtils.Instance.Trls("CountEmpsByLocs")', align: "center" },
             legend: { position: 'bottom' },
             series: [{ type: 'pie', field: 'value', categoryField: 'category' }],
@@ -172,10 +172,10 @@
             dataBound: noDataFunc
         });
         //Grids
-        if ($("#locsGrid").data("kendoGrid")) $("#locsGrid").data("kendoGrid").dataSource.data(data.byLocations);
+        if ($("#locsGrid").data("kendoGrid")) $("#locsGrid").data("kendoGrid").dataSource.data(data.byBranches);
         else {
             Grids.indexGrid({
-                dataSource: { data: data.byLocations },
+                dataSource: { data: data.byBranches },
                 objectName: "nationalityDshB",
                 gridName: "locsGrid",
                 admin: "@admin",
@@ -192,7 +192,7 @@
             $("<div id='Loc" + e.data.Id + "'/>").appendTo(e.detailCell);
             var gridname = "'Loc" + e.data.Id + "'";
             Grids.indexGrid({
-                read: "@Url.Action("GetPeopleLocation", "Dashboard")?LocId=" + e.data.Id,
+                read: "@Url.Action("GetPeopleBranch", "Dashboard")?LocId=" + e.data.Id,
                 objectName: "PeopleDetails",
                 tabeName: "People",
                 gridName: "Loc" + e.data.Id,
@@ -309,13 +309,13 @@
                 toolbar: '<div></div>'
             });
         }
-        //-------------------------Location & Departments-------------------------
+        //-------------------------Branch & Departments-------------------------
         $("#locDepts").kendoChart({
             dataSource: { data: [], group: { field: "myGroup" }, sort: [{ field: "myGroup", dir: "asc" }, { field: "category", dir: "asc" }] },
             seriesDefaults: { type: "column", labels: { visible: true, background: "transparent" } },
             series: [{ field: "value", categoryField: "category" }],
             seriesColors: colors,
-            title: { align: "center", text: '@MsgUtils.Instance.Trls("Location By Depts")' },
+            title: { align: "center", text: '@MsgUtils.Instance.Trls("Branch By Depts")' },
             legend: { visible: true },
             tooltip: { visible: true, template: "#:value# @MsgUtils.Instance.Trls("Employees in") #:category#" },
             dataBound: noDataFunc

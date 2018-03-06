@@ -35,23 +35,25 @@ namespace Db.Persistence.Repositories
                       
                     });
         }
-        public IQueryable<CompanyDiagramViewModel> GetDiagram(int companyId,string Culture)
+        public IQueryable<CompanyDiagramViewModel> GetDiagram(int companyId, string Culture)
         {
             var compDiag = from s in context.CompanyStructures
                            where ((s.CompanyId == companyId) && (s.StartDate <= DateTime.Today && (s.EndDate == null || s.EndDate >= DateTime.Today)))
-                           orderby s.Sort
                            join a in context.Assignments on s.Id equals a.DepartmentId into g
-                           from f in g.Where(c => c.IsDepManager && c.AssignDate <= DateTime.Today && c.EndDate >= DateTime.Today).DefaultIfEmpty()
+                           from f in g.Where(c => c.CompanyId == companyId && c.AssignDate <= DateTime.Today.Date && c.EndDate >= DateTime.Today.Date && c.IsDepManager).DefaultIfEmpty()
+                           orderby s.Sort
                            select new CompanyDiagramViewModel
                            {
                                Id = s.Id,
-                               Image = f != null ? f.EmpId.ToString() : null,
-                               Employee = f.Employee.Title + " " + f.Employee.FirstName + " " + f.Employee.Familyname,
-                               Name = f == null ? HrContext.TrlsName(s.Name, Culture) : HrContext.TrlsName(f.Department.Name, Culture),
+                               Image = f != null ? HrContext.GetDoc("EmployeePic", f.EmpId) : null,
+                               Employee = f != null ? HrContext.TrlsName(f.Employee.Title + " " + f.Employee.FirstName + " " + f.Employee.Familyname, Culture) : null,
+                               Name = HrContext.TrlsName(f == null ? s.Name : f.Department.Name, Culture),
                                ParentId = s.ParentId,
                                colorSchema = s.ColorName == null ? "#55dd28" : s.ColorName,
-                               HasImage = f != null ? context.People.FirstOrDefault(a=>a.Id == f.EmpId).HasImage:false
+                               HasImage = f != null ? f.Employee.HasImage : false,
+                               Gender = f != null ? f.Employee.Gender : (short)1
                            };
+
             return compDiag;
         }
        
@@ -81,13 +83,13 @@ namespace Db.Persistence.Repositories
                               }).FirstOrDefault();
             return Compastruc;
         }
+
         public IQueryable<FormList> GetAllDepartments(int CompanyId, int? DeptId, string Culture)
         {
             if (DeptId != null)
-                return context.CompanyStructures.Where(a => (a.CompanyId == CompanyId) && (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today)) || (a.Id == DeptId)).Select(a => new FormList { id = a.Id, name = HrContext.TrlsName(a.Name, Culture), value = a.Id, text = HrContext.TrlsName(a.Name, Culture) });
+                return context.CompanyStructures.Where(a => (a.CompanyId == CompanyId) && (a.StartDate <= DateTime.Today.Date && (a.EndDate == null || a.EndDate >= DateTime.Today.Date)) || (a.Id == DeptId)).Select(a => new FormList { id = a.Id, name = HrContext.TrlsName(a.Name, Culture) });
             else
-                return context.CompanyStructures.Where(a => (a.CompanyId == CompanyId) && (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today))).Select(a => new FormList { id = a.Id, name = HrContext.TrlsName(a.Name, Culture), value = a.Id, text = HrContext.TrlsName(a.Name, Culture) });
-
+                return context.CompanyStructures.Where(a => (a.CompanyId == CompanyId) && (a.StartDate <= DateTime.Today.Date && (a.EndDate == null || a.EndDate >= DateTime.Today.Date))).Select(a => new FormList { id = a.Id, name = HrContext.TrlsName(a.Name, Culture) });
         }
         #region LeavePlan
         public IQueryable<DeptLeavePlanViewModel> GetDeptLeavePlan(int companyId, int DeptId, string Culture)

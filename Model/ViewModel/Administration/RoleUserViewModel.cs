@@ -10,6 +10,6 @@ namespace Model.ViewModel
     {
         public string  Id { get; set; }
         public string Name { get; set; }
-        public bool SSRole { get; set; }
+        public bool SSRole { get; set; } = false;
     }
 }

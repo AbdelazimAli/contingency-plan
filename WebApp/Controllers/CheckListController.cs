@@ -41,10 +41,6 @@ namespace WebApp.Controllers
         #region CheckList
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult CheckDefault(int? Id,int ListTypeId)
@@ -117,7 +113,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "CheckList",
@@ -152,7 +148,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "CheckList",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -177,7 +172,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "CheckList",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -288,7 +282,6 @@ namespace WebApp.Controllers
                 {
                     Source = checkListObj,
                     ObjectName = "ChecklistTasks",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.CheckListRepository.Remove(checkListObj);
@@ -310,21 +303,14 @@ namespace WebApp.Controllers
         private void FillViewBag(int EmpId)
         {
             var Emp = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, EmpId, CompanyId).Distinct();
-            ViewBag.EmpId = Emp != null ? Emp.Select(a => new { id = a.Id, name = a.Employee }).ToList() : null;
-            ViewBag.EmpIdGrid = Emp != null ? Emp.Where(a => a.Id != EmpId).Select(a => new { value = a.Id, text = a.Employee }).ToList() : null;
-            ViewBag.TaskCat = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("EmpTaskCat", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
-            ViewBag.CheckList = _hrUnitOfWork.CheckListRepository.GetCheckLists(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
-            if (Session["MenuId"] != null && Session["RoleId"] != null)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(Session["RoleId"].ToString(), int.Parse(Session["MenuId"].ToString()));
-          
+            ViewBag.EmpId = Emp != null ? Emp.Select(a => new { id = a.Id, name = a.Employee }) : null;
+            ViewBag.EmpIdGrid = Emp != null ? Emp.Where(a => a.Id != EmpId).Select(a => new { value = a.Id, text = a.Employee }) : null;
+            ViewBag.TaskCat = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("EmpTaskCat", Language).Select(a => new { value = a.CodeId, text = a.Title });
+            ViewBag.CheckList = _hrUnitOfWork.CheckListRepository.GetCheckLists(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name });
         }
         public ActionResult EmpListIndex()
         {
-            ViewBag.checkList = _hrUnitOfWork.CheckListRepository.GetCheckLists(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.checkList = _hrUnitOfWork.CheckListRepository.GetCheckLists(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name });
             return View();
         }
         public ActionResult CopyEmplistDetails(int checkList)
@@ -432,7 +418,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "EmpListForm",
@@ -466,7 +452,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpListForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -489,7 +474,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpListForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });

@@ -43,7 +43,7 @@
             FormulaId:{defaultValue:null},
             JobId:{defaultValue:null},
             GradeId:{defaultValue:null},
-            LocationId:{defaultValue:null},
+            BranchId:{defaultValue:null},
             PersonType:{defaultValue:null},
             YesNoForm:{defaultValue:null},
             CreditGlAccT:{defaultValue:null},
@@ -57,7 +57,7 @@
                     { field: "GradeId", values: prollgrd, hidden: !model.IPayrollGrade },
                     { field: "GroupId", values: pplgrp, hidden: !model.IPeopleGroup },
                     { field: "JobId", values: job, hidden: !model.IJob },
-                    { field: "LocationId", values: loc, hidden: !model.ILocation },
+                    { field: "BranchId", values: loc, hidden: !model.IBranch },
                     { field: "Grade", hidden: !model.IGrade },
                     { field: "Point", hidden: !model.IPoints },
                     { field: "PersonType", values: persnType, hidden: !model.IPersonType },
@@ -70,7 +70,7 @@
 
         ],
         select: [{ "DeptId": dept }, { "FormulaId": Formula }, { "GradeId": prollgrd }, { "GroupId": pplgrp },
-                 { "JobId": job }, { "LocationId": loc }, { "PayDueId": payrollDeu }, { "Performance": Performance },
+                 { "JobId": job }, { "BranchId": loc }, { "PayDueId": payrollDeu }, { "Performance": Performance },
                  { "PersonType": persnType }, { "YesNoForm": yesNoFrm }, { "CreditGlAccT": Credit }, { "DebitGlAccT": Credit }
         ],
         save:function(e){
@@ -78,4 +78,4 @@
         }
     });
 </script>
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "LinkTableGridDiv" }, { "ObjectName", "LinkTables" }, { "Functions", ViewBag.Functions } })
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "LinkTableGridDiv" }, { "ObjectName", "LinkTables" } })

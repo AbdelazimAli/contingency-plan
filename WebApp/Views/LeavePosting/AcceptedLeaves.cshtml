@@ -2,7 +2,7 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();

@@ -10,8 +10,8 @@ namespace Model.ViewModel
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public string PicUrl { get; set; }
+        public string PicUrl { get; set; } = "";
         public int Icon { get; set; }
-
+        public short Gender { get; set; }
     }
 }

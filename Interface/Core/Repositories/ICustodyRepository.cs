@@ -11,7 +11,7 @@ namespace Interface.Core.Repositories
 {
     public interface ICustodyRepository : IRepository<Custody>
     {
-        IQueryable<AssignmentGridViewModel> GetActiveEmployee(string culture,List<int> Id);
+        IQueryable<PeopleGridViewModel> GetActiveEmployee(string culture,List<int> Id);
         IQueryable<ExcelCustodyViewModel> ReadExcelCustody(int CompanyId, string Language);
         IQueryable<CustodyViewModel> ReadCustody(byte Range, DateTime? Start, DateTime? End, string culture, int CompanyId);
         Custody GetCustody(int? id);
@@ -42,7 +42,7 @@ namespace Interface.Core.Repositories
         IQueryable<CustodyCategoryViewModel> ReadCustCategory(string Culture);
         DbEntityEntry<EmpCustody> Entry(EmpCustody emp);
         IEnumerable<EmpCustodyViewModel> ReadEmployeeCustody(int empId);
-        IQueryable<AssignmentGridViewModel> GetActiveJobEmployee(string culture, int jobId);
+        IQueryable<PeopleGridViewModel> GetActiveJobEmployee(string culture, int jobId);
         DeleverCustodyFormViewModel ReadDeleverCustody(int id, int EmpId,int EmpCustodyId, int companyId, string culture);
         IQueryable<CustodyViewModel> ReadConsumeCustody(byte Range, DateTime? Start, DateTime? End, string culture, int CompanyId);
         IQueryable<CustodyViewModel> GetEmpCustody(int EmpId, int CompanyId, string culture);

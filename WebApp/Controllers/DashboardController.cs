@@ -37,9 +37,9 @@ namespace WebApp.Controllers
         {
             var LeaveStatus = _hrunitofwork.LeaveRepository.LeaveStatistics(range, CompanyId, Language);
             var EmpStatus = _hrunitofwork.EmployeeRepository.EmployeesStatus(depts, CompanyId, Language);
-            var byLocations = _hrunitofwork.EmployeeRepository.CountEmpsByLocations(CompanyId, Language);
+            var byBranches = _hrunitofwork.EmployeeRepository.CountEmpsByBranches(CompanyId, Language);
 
-            return Json(new { LeaveStatus, EmpStatus, byLocations }, JsonRequestBehavior.AllowGet);
+            return Json(new { LeaveStatus, EmpStatus, byBranches }, JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult LeaveDashboardData(byte range)
@@ -60,9 +60,9 @@ namespace WebApp.Controllers
             return Json(_hrunitofwork.EmployeeRepository.CountGenderByEmployment(CompanyId, Language), JsonRequestBehavior.AllowGet);
         }
 
-        public ActionResult EmpsByLocationsChart()
+        public ActionResult EmpsByBranchesChart()
         {
-            return Json(_hrunitofwork.EmployeeRepository.CountEmpsByLocations(CompanyId, Language), JsonRequestBehavior.AllowGet);
+            return Json(_hrunitofwork.EmployeeRepository.CountEmpsByBranches(CompanyId, Language), JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult NationalityChart()
@@ -93,7 +93,7 @@ namespace WebApp.Controllers
 
         public ActionResult LocsByDeptsChart(int[] depts)
         {
-            return Json(_hrunitofwork.EmployeeRepository.LocationsByDepts(depts, CompanyId, Language), JsonRequestBehavior.AllowGet);
+            return Json(_hrunitofwork.EmployeeRepository.BranchesByDepts(depts, CompanyId, Language), JsonRequestBehavior.AllowGet);
         }
         #endregion
 
@@ -107,9 +107,9 @@ namespace WebApp.Controllers
         {
             return Json(_hrunitofwork.EmployeeRepository.GetPeopleWithNational(NationalityId, Language, CompanyId), JsonRequestBehavior.AllowGet);
         }
-        public ActionResult GetPeopleLocation(int LocId)
+        public ActionResult GetPeopleBranch(int LocId)
         {
-            return Json(_hrunitofwork.EmployeeRepository.GetPeopleWithLoc(LocId, CompanyId, Language), JsonRequestBehavior.AllowGet);
+            return Json(_hrunitofwork.EmployeeRepository.GetPeopleInBranch(LocId, CompanyId, Language), JsonRequestBehavior.AllowGet);
         }
         public ActionResult GetPeopleGenderAndPersonType(int gender, int PersonType)
         {

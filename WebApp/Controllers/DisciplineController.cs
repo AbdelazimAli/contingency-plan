@@ -53,17 +53,12 @@ namespace WebApp.Controllers
         }
         public ActionResult Index()
         {
-            ViewBag.SysType = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("SysType", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
-            ViewBag.Frequency = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Frequency", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.SysType = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("SysType", Language).Select(a => new { value = a.CodeId, text = a.Title });
+            ViewBag.Frequency = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Frequency", Language).Select(a => new { value = a.CodeId, text = a.Title });
             return View();
         }
         public ActionResult ReadDisplinePeriod(int MenuId)
         {
-
             var query = _hrUnitOfWork.DisciplineRepository.ReadDisplinePeriod();
             string whereclause = GetWhereClause(MenuId);
             if (whereclause.Length > 0)
@@ -126,7 +121,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "DisplinPeriods",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -155,7 +149,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "People",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -278,7 +271,6 @@ namespace WebApp.Controllers
                 {
                     Source = Displine,
                     ObjectName = "DisplinPeriods",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.DisciplineRepository.RemoveDisplinPeriod(Displine.Id);
@@ -326,7 +318,7 @@ namespace WebApp.Controllers
                 for (var i = 0; i < models.Count(); i++)
                 {
                     var displine = db_displines.FirstOrDefault(a => a.Id == models.ElementAtOrDefault(i).Id);
-                    AutoMapper(new AutoMapperParm() { ObjectName = "DisplinPeriod", Destination = displine, Source = models.ElementAtOrDefault(i), Version = Convert.ToByte(Request.Form["Version"]), Options = options.ElementAtOrDefault(i) , Transtype = TransType.Update});
+                    AutoMapper(new AutoMapperParm() { ObjectName = "DisplinPeriod", Destination = displine, Source = models.ElementAtOrDefault(i), Options = options.ElementAtOrDefault(i) , Transtype = TransType.Update});
 
                     _hrUnitOfWork.DisciplineRepository.Attach(displine);
                     _hrUnitOfWork.DisciplineRepository.Entry(displine).State = EntityState.Modified;
@@ -346,12 +338,8 @@ namespace WebApp.Controllers
         }
         public ActionResult DisciplineIndex()
         {
-            ViewBag.DisciplineClass = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("DisciplineClass", Language).Select(a => new { value = a.CodeId, text = a.Title }).ToList();
-            ViewBag.PeriodId = _hrUnitOfWork.Repository<DisplinPeriod>().Select(a => new { value = a.Id, text = a.Name }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.DisciplineClass = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("DisciplineClass", Language).Select(a => new { value = a.CodeId, text = a.Title });
+            ViewBag.PeriodId = _hrUnitOfWork.Repository<DisplinPeriod>().Select(a => new { value = a.Id, text = a.Name });
             return View();
         }
         public ActionResult ReadDiscipline(int MenuId)
@@ -434,7 +422,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Discipline",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -458,7 +445,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Discipline",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
 
@@ -621,12 +607,7 @@ namespace WebApp.Controllers
         }
         public ActionResult EmpDisciplineIndex()
         {
-            ViewBag.DiscplinId = _hrUnitOfWork.Repository<Discipline>().Select(a => new { text = a.Name, value = a.Id }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
+            ViewBag.DiscplinId = _hrUnitOfWork.Repository<Discipline>().Select(a => new { text = a.Name, value = a.Id });
             return View();
         }
         //ReadEmpDiscipline
@@ -675,14 +656,12 @@ namespace WebApp.Controllers
         {
             string culture = Language;
             var empId= _hrUnitOfWork.Repository<EmpDiscipline>().Where(a => a.Id == id).Select(a => a.EmpId).FirstOrDefault();
-            ViewBag.InvestigatId = _hrUnitOfWork.Repository<Investigation>().Select(a => new { id = a.Id, name = a.Name }).ToList();
-            // ViewBag.DisplinType = _hrUnitOfWork.DisciplineRepository.FillDLLDesplin(Language);
-            List<string> columns = _hrUnitOfWork.PeopleRepository.GetAutoCompleteColumns("EmpDisciplines", CompanyId, Version);
-           // if (columns.Where(fc => fc == "EmpId" || fc == "Manager").Count() < 2)
-                ViewBag.EmpId = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, empId, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).Distinct().ToList();
-            ViewBag.DiscplinId = _hrUnitOfWork.DisciplineRepository.SysDiscipline().Select(a => new { name = a.Name, id = a.Id, Systype = a.SysType }).ToList();
+            ViewBag.InvestigatId = _hrUnitOfWork.Repository<Investigation>().Select(a => new { id = a.Id, name = a.Name });       
+            ViewBag.EmpId = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, empId, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).Distinct();
+            ViewBag.DiscplinId = _hrUnitOfWork.DisciplineRepository.SysDiscipline().Select(a => new { name = a.Name, id = a.Id, Systype = a.SysType });
             if (id == 0)
                 return View(new EmpDisciplineFormViewModel());
+
             var EmpDiscipline = _hrUnitOfWork.DisciplineRepository.ReadEmployeeDiscipline(id);
             ViewBag.EmpDisplineObj = EmpDiscipline;
             return EmpDiscipline == null ? (ActionResult)HttpNotFound() : View(EmpDiscipline);
@@ -745,7 +724,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpDisciplines",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo
                     });
                     record.CreatedTime = DateTime.Now;
@@ -777,7 +755,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpDisciplines",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo
                     });
                     if (record.Manager == record.EmpId)
@@ -926,11 +903,7 @@ namespace WebApp.Controllers
         #region Investigation 
         public ActionResult InvestigationIndex()
         {
-            ViewBag.investigations = _hrUnitOfWork.Repository<Discipline>().Select(a => new { value = a.Id, text = a.Name }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.investigations = _hrUnitOfWork.Repository<Discipline>().Select(a => new { value = a.Id, text = a.Name });
             return View();
         }
         public ActionResult ReadInvestigationDiscipline(int MenuId)
@@ -1014,7 +987,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmployeeInvestigatationForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -1044,7 +1016,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmployeeInvestigatationForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });

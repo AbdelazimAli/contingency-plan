@@ -64,12 +64,6 @@ namespace Model.Domain
         public short? Religion { get; set; } // 1-Muslim 2-Christian
 
         // Contact Information
-        public int? AddressId { get; set; }
-        public Address Address { get; set; }
-        public int? HoAddressId { get; set; }
-
-        [ForeignKey("HoAddressId")]
-        public Address HoAddress { get; set; }
 
         [MaxLength(20)]
         public string Mobile { get; set; }
@@ -139,16 +133,6 @@ namespace Model.Domain
         [MaxLength(200)]
         public string Recommend { get; set; }
         public short? RecommenReson { get; set; }
-        
-        // Location Information
-        public int? LocationId { get; set; }
-        public Location Location { get; set; }
-
-        [MaxLength(10)]
-        public string RoomNo { get; set; }
-
-        [MaxLength(50)]
-        public string ImageUrl { get; set; }
 
         public bool HasImage { get; set; } = false;
 
@@ -162,6 +146,34 @@ namespace Model.Domain
 
         [MaxLength(20)]
         public string TreatCardNo { get; set; } // Treatment card number
+        public PersonStatus Status { get; set; }
+
+        [MaxLength(500)]
+        public string Address1 { get; set; }
+
+        [ForeignKey("Country")]
+        public int? CountryId { get; set; }
+        public Country Country { get; set; }
+
+        [ForeignKey("City")]
+        public int? CityId { get; set; }
+        public City City { get; set; }
+
+        [ForeignKey("District")]
+        public int? DistrictId { get; set; }
+        public District District { get; set; }
+
+        [Range(-90, 90, ErrorMessage = "The valid Latitude range is -90 to 90")]
+        public double? Latitude { get; set; }
+
+        [Range(-180, 180, ErrorMessage = "The valid Longitude range is -180 to 180")]
+        public double? Longitude { get; set; }
+
+        [MaxLength(500)]
+        public string HoAddress { get; set; }
+
+        [MaxLength(20)]
+        public string PaperStatus { get; set; }
 
         // Record unformation
         [MaxLength(20)]
@@ -171,5 +183,7 @@ namespace Model.Domain
         public DateTime? CreatedTime { get; set; }
         public DateTime? ModifiedTime { get; set; }
     }
+
+    public enum PersonStatus { New, BasicData, Contract, Papers, Assignment, UserProfile, Done}
 
 }

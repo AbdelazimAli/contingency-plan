@@ -1,7 +1,7 @@
 ﻿@using System.Web.Script.Serialization
 @using WebApp.Extensions
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     Layout = null;
     string[] function = ViewData["Functions"] as string[];
@@ -12,7 +12,7 @@
 <script>
     $(function () {
         var addUrl = "@Url.Action("FlexFormDetails", "Flex")";
-        RequestFilters.ApplayAllFilters([], {}, "Flex", "@Url.Action("ReadFlexForms", "Flex")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+        RequestFilters.applyAllFilters([], {}, "Flex", "@Url.Action("ReadFlexForms", "Flex")?MenuId=@Request.QueryString["MenuId"]", addUrl);
         var grid = "'FlexForms'";
         Grids.indexGrid({
             // 1-Questionnaire

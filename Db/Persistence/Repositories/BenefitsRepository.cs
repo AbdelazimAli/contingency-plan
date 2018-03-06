@@ -31,9 +31,8 @@ namespace Db.Persistence.Repositories
         #region Benefit
         public IQueryable<BenefitViewModel> GetBenefits(string culture,int CompanyId)
         {
-
             var result = from B in context.Benefits
-                         where (((B.IsLocal && B.CompanyId == CompanyId) || B.IsLocal == false) && (B.StartDate <= DateTime.Today && (B.EndDate == null || B.EndDate >= DateTime.Today)))
+                         where (B.CompanyId == CompanyId || B.IsLocal == false) && (B.StartDate <= DateTime.Today && (B.EndDate == null || B.EndDate >= DateTime.Today))
                          select new BenefitViewModel
                          {
                              Id = B.Id,
@@ -75,7 +74,7 @@ namespace Db.Persistence.Repositories
                 IEmployments = obj.a.Employments == null ? null : obj.a.Employments.Split(',').Select(int.Parse).ToList(),
                 IPayrollGrades = obj.a.PayrollGrades == null ? null : obj.a.PayrollGrades.Split(',').Select(int.Parse).ToList(),
                 IPositions = obj.a.Positions == null ? null : obj.a.Positions.Split(',').Select(int.Parse).ToList(),
-                ILocations = obj.a.Locations == null ? null : obj.a.Locations.Split(',').Select(int.Parse).ToList(),
+                IBranches = obj.a.Branches == null ? null : obj.a.Branches.Split(',').Select(int.Parse).ToList(),
                 IJobs = obj.a.Jobs == null ? null : obj.a.Jobs.Split(',').Select(int.Parse).ToList(),
                 IPeopleGroups = obj.a.PeopleGroups == null ? null : obj.a.PeopleGroups.Split(',').Select(int.Parse).ToList(),
                 PlanLimit = obj.a.PlanLimit

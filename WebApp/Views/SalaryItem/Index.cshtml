@@ -8,7 +8,7 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -34,7 +34,7 @@
 
 @Html.Partial("_IndexGrid", new ViewDataDictionary {
     { "AddRecord", @Url.Action("Details", "SalaryItem") },
-      { "Admin", admin}, { "GridName", "SalaryItemDiv" },{"objectName" , "SalaryItem"} , {"Functions",ViewBag.Functions}})
+      { "Admin", admin}, { "GridName", "SalaryItemDiv" },{"objectName" , "SalaryItem"}})
 
 
 

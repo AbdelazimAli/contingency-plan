@@ -38,11 +38,7 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
              ViewBag.Performance = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Performance", Language).Select(a=> new { value = a.CodeId, text= a.Title});
-             ViewBag.jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId,Language,0).Select(a => new { value = a.Id, text = a.LocalName  , isLocal=a.Islocal});
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+             ViewBag.jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId,Language,0).Select(a => new { value = a.Id, text = a.LocalName  , isLocal=a.Islocal});
             return View();
         }
         public ActionResult ReadCareerPaths(int MenuId)   
@@ -103,7 +99,6 @@ namespace WebApp.Controllers
                         Destination = Path,
                         Source = c,
                         ObjectName = "CareerPaths",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -219,7 +214,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "CareerPaths",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -242,7 +236,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "CareerPathJobs",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -272,7 +265,6 @@ namespace WebApp.Controllers
                         Destination = PathJobs,
                         Source = c,
                         ObjectName = "CareerPathJobs",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -330,7 +322,6 @@ namespace WebApp.Controllers
                             Destination = record,
                             Source = model,
                             ObjectName = "CareerPathJobs",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Transtype = TransType.Update
                         });

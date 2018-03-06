@@ -3,7 +3,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -12,7 +12,7 @@
 
 
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script src="~/Scripts/cultures/lang.js"></script>
 
 
@@ -26,8 +26,8 @@
     $(function () {
 
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         var Role=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Role));
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
@@ -39,7 +39,7 @@
         var CompanyStuctures = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyStuctures));
         var Positions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Positions));
         var PayrollGrades = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrades));
-        var Locations = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+        var Branches = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Branches));
         var Qualification = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Qualification));
         var PrevCourses = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PrevCourses));
 
@@ -71,7 +71,7 @@
             FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", CompanyStuctures, model);
             FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Positions, model);
             FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrades, model);
-            FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Locations, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "IBranches", Branches, model);
             FormJs.fillOptionsDynamic($("#" + formId), "Qualification", Qualification, model,{objectName: "Qualifications" });
             //FormJs.fillOptionsDynamic($("#" + formId), "CourseCat", CourseCat, model);
             FormJs.fillOptionsDynamic($("#" + formId), "IPrevCourses", PrevCourses, model);
@@ -86,11 +86,11 @@
                 if($("#" + formId).find(".k-invalid").length > 0) return ;
                 FormJs.saveForm($("#" + formId), $(this), function () {
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
             });
             $("#" + formId).find('#backToIndex').on('click', function(){
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
           
             $("#" + formId).on('blur', "#EndDate",function(){

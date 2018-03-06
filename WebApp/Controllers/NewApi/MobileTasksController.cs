@@ -1,29 +1,11 @@
-﻿using HR_uploader.Helpers;
-using Interface.Core;
+﻿using Interface.Core;
 using System.Web.Http;
-using System.Web.Mvc;
-using WebApp.Controllers.Api;
 using System.Web.Http.Cors;
-using Microsoft.AspNet.Identity.EntityFramework;
-using Microsoft.AspNet.Identity.Owin;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Web;
-using WebApp.Models;
 using Model.Domain;
-using Model.ViewModel;
-using System.Data.Entity;
-using System.IO;
-using System.Web.Helpers;
-using System.Web.Hosting;
-using System.Web.Routing;
-using System.Web.Script.Serialization;
-using WebApp.Extensions;
-using Model.ViewModel.Personnel;
 
 namespace WebApp.Controllers.NewApi
 {
@@ -47,7 +29,7 @@ namespace WebApp.Controllers.NewApi
         //IEnumerable<HttpPostedFileBase> files, string Source, int TaskId
     }
 
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class MobileTasksController : BaseApiController
     {
         

@@ -1,0 +1,316 @@
+﻿@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@model Model.ViewModel.FlexFormViewModel
+@using System.Linq
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>PersonFlexFormDetails</title>
+    <style>
+        .FieldSet {
+            border: 1px solid rgba(0, 0, 0, 0.07) !important;
+            padding: 20px !important;
+            border-radius: 10px;
+        }
+
+        .Fs-title {
+            background-color: #36A3F7;
+            color: white;
+            padding: 10px;
+        }
+
+        input[type=checkbox], input[type=radio] {
+            margin: 4px;
+        }
+
+        .readOnly {
+            border: none !important;
+            background-color: transparent !important;
+            resize: none !important;
+        }
+
+        .lblQuestion {
+            color: black;
+            font-weight: bold;
+        }
+
+        .omegaform.rtl .addSet, .omegaform.rtl .addQuest {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+
+    <form id="PersonForm" method="post">
+        @foreach (var fs in Model.FieldSets)
+        {
+            //FieldSets
+            <div class="FieldSet">
+                <div class="row  Fs-title">
+                    <div class="col-sm-12">
+                        <label class="lblFildSet">@Html.DisplayFor(modelItem => fs.Description)</label>
+                    </div>
+                </div>
+                <br />
+                @foreach (var q in fs.Columns)
+                {
+                    <div class="FieldSet" id="divQuestion_@q.Id">
+                        @*//Questions*@
+                        <div class="row Question">
+                            <div class="col-sm-offset-1 col-sm-6">
+                                <input type="hidden" class="hdnQuestiondId" value="@q.Id" />
+                                <label id="question_@q.Id" class="lblQuestion"><span class="glyphicon glyphicon-hand-right"></span> @Html.DisplayFor(modelItem => q.Name)</label>
+                            </div>
+                            @if (q.ShowHint)
+                            {
+                                <div class="col-sm-offset-1 col-sm-4">
+                                    ( @Html.DisplayFor(modelItem => q.Hint))
+                                </div>
+                            }
+                        </div>
+                        <br />
+                        @*//Selections*@
+                        <div class="Answer">
+                            <div class="row">
+                                <div class="col-sm-offset-2 col-sm-9">
+                                    @{
+                                        int inputType = (int)q.InputType;
+                                        List<string> selections = new List<string>();
+                                        if (q.Selections != null)
+                                        {
+                                            selections = q.Selections.Split(',').ToList();
+                                            if (inputType == 3) //Radiobutton
+                                            {
+                                                foreach (var item in selections)
+                                                {
+                                                    <div class="col-sm-2">
+                                                        <label> <input type="radio" name="radSelection_@q.Id" value="@item" class="MyAnswer_@q.Id" />@Html.DisplayFor(modelItem => item)</label>
+                                                    </div>
+                                                }
+                                            }
+                                            else if (inputType == 4)//Checkbox
+                                            {
+                                                foreach (var item in selections)
+                                                {
+                                                    <div class="col-sm-2">
+                                                        <label><input type="checkbox" name="checkSelection_@q.Id" value="@item" class="MyAnswer_@q.Id" />@Html.DisplayFor(modelItem => item)</label>
+                                                    </div>
+
+                                                }
+                                            }
+                                            else  //Text
+                                            {
+                                                <textarea class="form-control MyAnswer_@q.Id" name="MyAnswer_@q.Id" rows="3"></textarea>
+                                            }
+
+                                        }
+                                        else
+                                        {
+                                            <textarea class="form-control MyAnswer_@q.Id" rows="3"></textarea>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                            <br />
+                            <div class="row">
+                                @*Other text*@
+                                @if (q.ShowTextBox)
+                                {
+                                    <div class="col-sm-offset-1 col-sm-1">
+                                        <label class="control-label pull-left">تعليق</label>
+                                    </div>
+                                    <div class="col-sm-9">
+                                        <textarea class="form-control OtherText_@q.Id" name="OtherText_@q.Id" rows="3"></textarea>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <br />
+                                        }
+            </div>
+            <br />
+                                        }
+        <div class="form-group">
+            <div class="col-md-offset-2 col-md-10">
+                <input id="btnSubmit" type="submit" value="Submit" class="btn btn-success" />
+            </div>
+        </div>
+        <br>
+    </form>
+
+    <script>
+
+        var FormId=@Model.Id;
+        var SendFormId=@Model.SendFormId;
+        var ExpDate=@Model.ExpiryDate.Day+'/'+@Model.ExpiryDate.Month+'/'+@Model.ExpiryDate.Year ;
+
+        //Disable all inputs after questionnair expiry date
+        if(Date.parse(ExpDate) < Date.parse(new Date()))
+        {
+            $("#PersonForm :input").attr("disabled", true);
+            $("#PersonForm :input").addClass("readOnly");
+            $("#btnSubmit").hide();
+        }
+        myForm = $("#PersonForm");
+
+        //Retrieve Saved Data
+        var savedModel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        if(savedModel.personForm.length>0)
+        {
+            //Set Data
+            var index=0;
+            $(".FieldSet .Question .hdnQuestiondId").each(function () {
+                var personForm=savedModel.personForm;
+                var otherText;
+                var formColumnId =$(this).val();
+                var questionid = '#question_' + formColumnId;
+                var myAnswerId = '.MyAnswer_' + formColumnId;
+                var otherTextId = '.OtherText_' + formColumnId;
+
+                $(myAnswerId).each(function () {
+                    var input = $(this).attr('type');
+                    if (input == "radio") {
+                        $(this).val([personForm[index].Answer]);
+                    }
+                    else if (input == "checkbox") {
+                        var multiSelect=personForm[index].Answer;
+                        if(multiSelect != null)
+                        {
+                            $(this).val(personForm[index].Answer.split(',') );
+                        }
+                    }
+                    else {
+                        $(this).val(personForm[index].Answer);
+                    }
+
+                });
+                //OtherText
+                if ($(otherTextId).length > 0) {
+                    $(otherTextId).val(personForm[index].OtherText);
+                }
+                index++;
+            });
+
+        }
+
+        //Save Data
+        myForm.on("click", "#btnSubmit", function (e) {
+            var data = CollectData();
+            if(data.length > 0){
+                $.post("/PersonForm/CreatPersonForm", { modelList: data ,ExpDate:ExpDate}, function (data) {
+                    FormJs.postSuccessFunc(myForm, $(this), data, function (result) {
+                        model = result;
+                        updateHistory(oldUlr);
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    });
+                });
+            }
+            else
+            {
+                toastr.error("@MsgUtils.Instance.Trls("MustAnswerAll")");
+            }
+        });
+        function CollectData() {
+            var  myAnswersList = [], modelList = [];
+            //var isError=0;
+            $(".FieldSet .Question .hdnQuestiondId").each(function () {
+                myAnswersList = [];
+                var otherText;
+                var formColumnId = $(this).val();
+                var questionid = '#question_' + formColumnId;
+                var myAnswerId = '.MyAnswer_' + formColumnId;
+                var otherTextId = '.OtherText_' + formColumnId;
+                
+                //Questions
+                var question = $(questionid).text();
+                //Answers
+                var name=$(myAnswerId).attr('name');
+
+                ////Region Data Validation
+                //if(name === undefined){
+                //}else
+                //{
+                //    if(name.includes("radSelection_")){
+                //        if($("input:radio[name="+name+"]:checked").length==0){
+                //            if ($(otherTextId).length > 0) {
+                //                if($(otherTextId).val().length==0){
+                //                    isError=1;
+                //                }
+                //            }
+                //            else{
+                //                isError=1;
+                //            }
+                //        }
+                //    }
+                //     if(name.includes("checkSelection_")){
+                //         if($("input:checkbox[name="+name+"]:checked").length==0){
+                //             if ($(otherTextId).length > 0) {
+                //                 if($(otherTextId).val().length==0){
+                //                     isError=1;
+                //                 }
+                //             }
+                //             else{
+                //                 isError=1;
+                //             }
+                //        }
+                //    }
+
+                //}
+                ////---End Validation
+                $(myAnswerId).each(function () {
+                    var input = $(this).attr('type');
+                    if (input == "radio") {
+                        if (this.checked) {
+                            myAnswersList.push($(this).val());
+                        }
+
+                    }
+                    else if (input == "checkbox") {
+                        if (this.checked) {
+                            myAnswersList.push($(this).val());
+                        }
+                    }
+                    else{
+                        var text = $(this).val();
+                        //if(text.length==0)
+                        //{
+                        //    isError=1;
+                        //}
+                        myAnswersList.push(text);
+                    }
+                });
+
+                //OtherText
+                if ($(otherTextId).length > 0) {
+                    otherText = $(otherTextId).val();
+                }
+                var model = {
+                    FormId: FormId,
+                    FormColumnId: formColumnId,
+                    Question: question,
+                    OtherText: otherText,
+                    AnswersList: myAnswersList,
+                    SendFormId:SendFormId
+                }
+                modelList.push(model);
+            });
+            return modelList;
+            //if(isError==0){
+            //    return modelList;
+            //}
+            //else
+            //{
+            //    modelList=[];
+            //    return modelList;
+            //}
+        }
+    </script>
+</body>
+</html>

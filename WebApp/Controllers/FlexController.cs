@@ -41,11 +41,8 @@ namespace WebApp.Controllers
         {
             ViewBag.InputTypes = _hrUnitOfWork.PageEditorRepository.GetInputType(Language, "DocInputType");
             ViewBag.Result = _hrUnitOfWork.PageEditorRepository.GetobjectName(CompanyId, Language);
-            ViewBag.CodeName = _hrUnitOfWork.LookUpRepository.GetLookUp(Language).Select(s => new { value = s.CodeName, text = s.Title }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.CodeName = _hrUnitOfWork.LookUpRepository.GetLookUp(Language).Select(s => new { value = s.CodeName, text = s.Title });
+
             return View();
         }
 
@@ -62,7 +59,7 @@ namespace WebApp.Controllers
             var datasource = new DataSource<FlexColumnsViewModel>();
             datasource.Data = models;
             datasource.Total = models.Count();
-           
+
             var page = _hrUnitOfWork.Repository<PageDiv>().Where(a => a.Id == pageId).Select(a => new { a.ObjectName, a.Version, a.TableName }).FirstOrDefault();
             var titles = _hrUnitOfWork.Repository<ColumnTitle>().Where(a => a.CompanyId == CompanyId && a.Culture == Language && a.ObjectName == page.ObjectName && a.Version == page.Version).ToList();
 
@@ -100,7 +97,6 @@ namespace WebApp.Controllers
                             Destination = flexCol,
                             Source = model,
                             ObjectName = "FlexColumns",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Transtype = TransType.Insert,
                             Options = options.ElementAtOrDefault(i)
                         });
@@ -133,40 +129,40 @@ namespace WebApp.Controllers
                 datasource.Errors = Models.Utils.ParseErrors(ModelState.Values);
             }
 
-                datasource.Data = (from m in models
-                                   join r in result on m.ColumnName equals r.ColumnName
-                                   select new FlexColumnsViewModel
-                                   {
-                                       Id = r.Id,
-                                       CodeName = m.CodeName,
-                                       ColumnOrder = m.ColumnOrder,
-                                       isVisible = m.isVisible,
-                                       Max = m.Max,
-                                       Min = m.Min,
-                                       InputType = m.InputType,
-                                       Pattern = m.Pattern,
-                                       PlaceHolder = m.PlaceHolder,
-                                       Title = m.Title,
-                                       Required = m.Required,
-                                       UniqueColumns = m.UniqueColumns,
-                                       IsUnique = m.IsUnique,
-                                       ColumnName = m.ColumnName,
-                                       PageId = pageId,
-                                       TableName = page.TableName
-                                   }).ToList();
+            datasource.Data = (from m in models
+                               join r in result on m.ColumnName equals r.ColumnName
+                               select new FlexColumnsViewModel
+                               {
+                                   Id = r.Id,
+                                   CodeName = m.CodeName,
+                                   ColumnOrder = m.ColumnOrder,
+                                   isVisible = m.isVisible,
+                                   Max = m.Max,
+                                   Min = m.Min,
+                                   InputType = m.InputType,
+                                   Pattern = m.Pattern,
+                                   PlaceHolder = m.PlaceHolder,
+                                   Title = m.Title,
+                                   Required = m.Required,
+                                   UniqueColumns = m.UniqueColumns,
+                                   IsUnique = m.IsUnique,
+                                   ColumnName = m.ColumnName,
+                                   PageId = pageId,
+                                   TableName = page.TableName
+                               }).ToList();
 
-                if (datasource.Errors.Count() > 0)
-                    return Json(datasource);
-                else
-                    return Json(datasource.Data);
-            }
+            if (datasource.Errors.Count() > 0)
+                return Json(datasource);
+            else
+                return Json(datasource.Data);
+        }
 
         public ActionResult UpdateFlexColumns(IEnumerable<FlexColumnsViewModel> models, int pageId, IEnumerable<OptionsViewModel> options)
         {
             var datasource = new DataSource<FlexColumnsViewModel>();
             datasource.Data = models;
             datasource.Total = models.Count();
-           
+
             var page = _hrUnitOfWork.Repository<PageDiv>().Where(a => a.Id == pageId).Select(a => new { a.ObjectName, a.Version, a.TableName }).FirstOrDefault();
             var titles = _hrUnitOfWork.Repository<ColumnTitle>().Where(a => a.CompanyId == CompanyId && a.Culture == Language && a.ObjectName == page.ObjectName && a.Version == page.Version).ToList();
 
@@ -250,7 +246,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "FlexColumns",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             string msg = _hrUnitOfWork.PageEditorRepository.DeleteFlexColumns(obj, Language);
@@ -278,7 +273,8 @@ namespace WebApp.Controllers
         public ActionResult GetFormFlexData(string objectName, int sourceId = 0, byte version = 0)
         {
             FormFlexColumnsVM fs = _hrUnitOfWork.PagesRepository.GetFormFlexData(CompanyId, objectName, version, Language, sourceId);
-            fs.Codes = _hrUnitOfWork.LookUpRepository.GetFlexLookUpCodesLists(CompanyId, objectName, version, Language).Select(c => new FormLookUpCodeVM {
+            fs.Codes = _hrUnitOfWork.LookUpRepository.GetFlexLookUpCodesLists(CompanyId, objectName, version, Language).Select(c => new FormLookUpCodeVM
+            {
                 CodeName = c.CodeName,
                 id = c.CodeId,
                 name = c.Name,
@@ -435,10 +431,6 @@ namespace WebApp.Controllers
 
         public ActionResult FlexFormIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -466,8 +458,7 @@ namespace WebApp.Controllers
 
         public ActionResult FlexFormDetails(int id = 0, byte version = 0)
         {
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("LeaveRequest", CompanyId, version);
-            if (columns.Where(fc => fc == "DesignedBy").FirstOrDefault() == null)
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("LeaveRequest", CompanyId, version, "DesignedBy"))
                 ViewBag.Employees = _hrUnitOfWork.PeopleRepository.GetActiveEmployees(CompanyId, Language);
 
             if (id == 0)
@@ -511,12 +502,10 @@ namespace WebApp.Controllers
                 return Json(Models.Utils.ParseFormErrors(ModelState));
 
 
-            FlexForm flexForm = _hrUnitOfWork.Repository<FlexForm>().Where(f => f.Id == model.Id).FirstOrDefault();
-
-            if(model.Id == 0) //Add
+            FlexForm flexForm = new FlexForm();
+            if (model.Id == 0) //Add
             {
-                flexForm = new FlexForm();
-                AutoMapper(new AutoMapperParm { ObjectName = "FlexForm", Source = model, Destination = flexForm, Version = Convert.ToByte(Request.Form["version"]) , Transtype = TransType.Insert });
+                AutoMapper(new AutoMapperParm { ObjectName = "FlexForm", Source = model, Destination = flexForm, Version = Convert.ToByte(Request.Form["version"]), Transtype = TransType.Insert });
                 flexForm.Name = model.FormName;
                 flexForm.CreatedUser = User.Identity.Name;
                 flexForm.CreatedTime = DateTime.Now;
@@ -525,7 +514,8 @@ namespace WebApp.Controllers
             }
             else //Update
             {
-                AutoMapper(new AutoMapperParm { ObjectName = "FlexForm", Source = model, Destination = flexForm, Version = Convert.ToByte(Request.Form["version"]), Transtype = TransType.Update });
+                flexForm = _hrUnitOfWork.Repository<FlexForm>().Where(f => f.Id == model.Id).FirstOrDefault();
+                AutoMapper(new AutoMapperParm { ObjectName = "FlexForm", Source = model, Destination = flexForm, Transtype = TransType.Update });
                 flexForm.Name = model.FormName;
                 flexForm.ModifiedUser = User.Identity.Name;
                 flexForm.ModifiedTime = DateTime.Now;
@@ -609,6 +599,7 @@ namespace WebApp.Controllers
         {
 
             List<Error> errors = new List<Error>();
+            DataSource<FlexFormViewModel> source = new DataSource<FlexFormViewModel>();
 
             string message = "OK";
 
@@ -617,17 +608,17 @@ namespace WebApp.Controllers
             {
                 Source = flexForm,
                 ObjectName = "FlexForm",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
             _hrUnitOfWork.PagesRepository.Remove(flexForm);
 
-            errors = SaveChanges(Language);
-            if (errors.Count() > 0)
-                message = errors.First().errors.First().message;
+            source.Errors = SaveChanges(Language);
 
-            return Json(message);
+            if (source.Errors.Count() > 0)
+                return Json(source);
+            else
+                return Json(message);
 
         }
         #endregion

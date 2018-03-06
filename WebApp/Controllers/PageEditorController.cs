@@ -33,20 +33,12 @@ namespace WebApp.Controllers
         // GET: PageEdit
         public ActionResult Index()
         {
-            ViewBag.MenuName = _hrUnitOfWork.Repository<Menu>().Where(a => a.CompanyId == CompanyId && a.NodeType>0).Select(s => new { value = s.Id, text = s.Name }).ToList();
-            
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.MenuName = _hrUnitOfWork.Repository<Menu>().Where(a => a.CompanyId == CompanyId && a.NodeType>0).Select(s => new { value = s.Id, text = s.Name });
             return View();
         }
         public ActionResult GridIndex()
         {
-            ViewBag.MenuName = _hrUnitOfWork.Repository<Menu>().Where(a => a.CompanyId == CompanyId && a.NodeType> 0).Select(s => new { text = s.Name, value = s.Id }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = int.Parse(Request.QueryString["MenuId"]?.ToString());
-            ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.MenuName = _hrUnitOfWork.Repository<Menu>().Where(a => a.CompanyId == CompanyId && a.NodeType> 0).Select(s => new { text = s.Name, value = s.Id });
             return View();
         }
         public ActionResult ReadPage()
@@ -362,7 +354,6 @@ namespace WebApp.Controllers
                     {
                         Source = page,
                         ObjectName = "PageDivs",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Delete
                     });
 
@@ -492,7 +483,6 @@ namespace WebApp.Controllers
                 {
                     Source = model,
                     ObjectName = "GridColumns",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PageEditorRepository.Remove(model.Column);
@@ -1005,7 +995,8 @@ namespace WebApp.Controllers
                 return Json(datasource);
             else
             {
-                var page = _hrUnitOfWork.Repository<FieldSet>().Where(a => a.Id == models.FirstOrDefault().FieldSetId).Select(a => new { companyid = a.Page.CompanyId, objectname = a.Page.ObjectName, version = a.Page.Version }).FirstOrDefault();
+                var fsId = models.FirstOrDefault().FieldSetId;
+                var page = _hrUnitOfWork.Repository<FieldSet>().Where(a => a.Id == fsId).Select(a => new { companyid = a.Page.CompanyId, objectname = a.Page.ObjectName, version = a.Page.Version }).FirstOrDefault();
                 string key = page.companyid + page.objectname + page.version + Language;
                 if (_hrUnitOfWork.PagesRepository.CacheManager.IsSet(key))
                     _hrUnitOfWork.PagesRepository.CacheManager.Remove(key);
@@ -1087,7 +1078,8 @@ namespace WebApp.Controllers
                 return Json(datasource);
             else
             {
-                var page = _hrUnitOfWork.Repository<Section>().Where(a => a.Id == models.FirstOrDefault().SectionId).Select(a => new { companyid = a.FieldSet.Page.CompanyId, objectname = a.FieldSet.Page.ObjectName, version = a.FieldSet.Page.Version }).FirstOrDefault();
+                var sectionId = models.FirstOrDefault().SectionId;
+                var page = _hrUnitOfWork.Repository<Section>().Where(a => a.Id == sectionId).Select(a => new { companyid = a.FieldSet.Page.CompanyId, objectname = a.FieldSet.Page.ObjectName, version = a.FieldSet.Page.Version }).FirstOrDefault();
                 string key = page.companyid + page.objectname + page.version + Language;
                 if (_hrUnitOfWork.PagesRepository.CacheManager.IsSet(key))
                     _hrUnitOfWork.PagesRepository.CacheManager.Remove(key);

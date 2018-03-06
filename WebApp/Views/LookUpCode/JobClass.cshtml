@@ -2,7 +2,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var grid = ViewData["GridName"];
 }
 <br>
@@ -31,7 +31,7 @@
 
 </script>
 
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Jobs" }, { "ObjectName", "JobClasses" }, { "Functions", ViewBag.Functions } })
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Jobs" }, { "ObjectName", "JobClasses" } })
 
 
 

@@ -48,7 +48,7 @@ namespace WebApp.Providers
             }
             else
             {
-                context.SetError("Invalid Grant", "Incorrect Username and Password");
+                context.SetError("Invalid Grant", "InvalidGrant");
                 return;
             }
         }

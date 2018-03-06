@@ -38,10 +38,6 @@ namespace WebApp.Controllers
         {
             ViewBag.TransType = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("ActionType", Language).Select(a => new { value = a.CodeId, text = a.Title });
             ViewBag.Posted = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Posted", Language).Select(a => new { value = a.CodeId, text = a.Title });
-            string Role = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(Role, MenuId).ToArray();
             return View();
         }
         public ActionResult GetLeaveAction(int MenuId)
@@ -72,12 +68,11 @@ namespace WebApp.Controllers
             var result = _hrUnitOfWork.LeaveRepository.GetEmpLeaveTypes(EmpId, CompanyId, Language).Select(a=> new { id=a.Id , name=a.Name});
             return Json(result, JsonRequestBehavior.AllowGet);
         }
+
         [HttpGet]
         public ActionResult Details(int id = 0, byte Version = 0)
         {
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("LeaveAction", CompanyId, Version);
-
-            if (columns.FirstOrDefault(fc => fc == "EmpId") == null)
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("LeaveAction", CompanyId, Version, "EmpId"))
                 ViewBag.PersonId = _hrUnitOfWork.PeopleRepository.GetActiveEmployees(CompanyId, Language);
 
             ViewBag.TypeId = _hrUnitOfWork.LeaveRepository.GetLeaveTypesList(CompanyId, Language);
@@ -99,7 +94,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "LeaveAction",
@@ -133,7 +128,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "LeaveAction",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -153,7 +147,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "LeaveAction",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype=TransType.Update
                     });
@@ -197,7 +190,6 @@ namespace WebApp.Controllers
                 {
                     Source = obj,
                     ObjectName = "LeaveAction",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.LeaveRepository.Remove(obj);
@@ -250,7 +242,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "LeaveAction",
@@ -277,7 +269,7 @@ namespace WebApp.Controllers
                     foreach (var item in Employee)
                     {
                         var record = new LeaveAdjust();
-                        AutoMapper(new Models.AutoMapperParm { Destination = record, Source = model, ObjectName = "LeaveAction", Version = Convert.ToByte(Request.Form["Version"]), Options = moreInfo });
+                        AutoMapper(new Models.AutoMapperParm { Destination = record, Source = model, ObjectName = "LeaveAction",  Options = moreInfo });
                         record.EmpId = item;
                         record.CreatedUser = UserName;
                         record.CreatedTime = DateTime.Now;
@@ -310,7 +302,7 @@ namespace WebApp.Controllers
         public ActionResult FirstOpenBalance()
         {
             //Get List of Leaves has acural Period
-            ViewBag.LeaveTypes  = _hrUnitOfWork.LeaveRepository.GetAcuralLeaveTypes(CompanyId, Language);
+            ViewBag.LeaveTypes  = _hrUnitOfWork.LeaveRepository.GetAccrualLeaveTypes(CompanyId, Language);
             ViewBag.GridLeaveTypes = _hrUnitOfWork.LeaveRepository.GetAcuralGridLeaveTypes(CompanyId, Language);
             ViewBag.FiscalYears = _hrUnitOfWork.Repository<FiscalYear>().Select(a => new { id = a.Id, name = a.Name }).ToList();
             ViewBag.Dept = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, Language);
@@ -326,7 +318,7 @@ namespace WebApp.Controllers
 
         //Add Trans Leave record
         [HttpPost] 
-        public ActionResult PostLeaveTrans(IEnumerable<LeaveTransOpenBalanceViewModel> models, DateTime? transDate)
+        public ActionResult PostLeaveTrans(IEnumerable<LeaveTransOpenBalanceViewModel> models,string transDate)
         {
             string message = "Ok";
             var AbsenceType = _hrUnitOfWork.Repository<LeaveType>().Where(a => a.Id == models.Select(s => s.TypeId).FirstOrDefault()).Select(a => a.AbsenceType).FirstOrDefault();
@@ -338,7 +330,7 @@ namespace WebApp.Controllers
                     {
                         AbsenceType = AbsenceType,
                         EmpId = item.EmpId,
-                        TransDate = transDate.Value,
+                        TransDate = Convert.ToDateTime(transDate),
                         TransQty = item.transQty,
                         TransType = 0 ,
                         CompanyId = CompanyId,
@@ -357,9 +349,9 @@ namespace WebApp.Controllers
 
             return Json(message, JsonRequestBehavior.AllowGet);
         }
-        public ActionResult CheckPeriod(DateTime Period , int LeaveId)
+        public ActionResult CheckPeriod(string Period , int LeaveId)
         {
-            var checkPeriod = _hrUnitOfWork.LeaveRepository.CheckPeriods(Period, LeaveId,Language);       
+            var checkPeriod = _hrUnitOfWork.LeaveRepository.CheckPeriods(Convert.ToDateTime(Period), LeaveId,Language);       
             return Json(checkPeriod, JsonRequestBehavior.AllowGet);
         }
         // Index to second tab Money repaid
@@ -380,10 +372,11 @@ namespace WebApp.Controllers
         //AddNewAdjustment
         public ActionResult AddNewAdjustment(byte Version = 0)
         {
-            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAcuralLeaveTypes(CompanyId, Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("AdjustLeave", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                  ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
+            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAccrualLeaveTypes(CompanyId, Language);
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("AdjustLeave", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(new LeaveMoneyAdjustViewModel());
         }
         //FillPeriod
@@ -506,7 +499,6 @@ namespace WebApp.Controllers
                 {
                     Source = obj,
                     ObjectName = "LeaveAction",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.LeaveRepository.Remove(obj);
@@ -526,6 +518,7 @@ namespace WebApp.Controllers
         }
         public ActionResult LeaveCreditBalance()
         {
+            string MenuId = Request.QueryString["MenuId"];
             ViewBag.TransType = _hrUnitOfWork.LookUpRepository.GetGridLookUpCode(Language, "TransType");
             ViewBag.GridLeaveTypes = _hrUnitOfWork.LeaveRepository.GetAcuralGridLeaveTypes(CompanyId, Language);
             ViewBag.Periods = _hrUnitOfWork.Repository<Period>().Select(a => new { value = a.Id, text = a.Name }).ToList();
@@ -538,10 +531,11 @@ namespace WebApp.Controllers
         }
         public ActionResult AddCreditDebitAdjustment(byte Version = 0)
         {
-            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAcuralLeaveTypes(CompanyId, Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("AdjustCreditLeave", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee }).ToList();
+            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAccrualLeaveTypes(CompanyId, Language);
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("AdjustCreditLeave", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee });
+
             return View(new LeaveMoneyAdjustViewModel());
         }
         //SaveCreditAdjustment
@@ -663,7 +657,6 @@ namespace WebApp.Controllers
                 {
                     Source = obj,
                     ObjectName = "LeaveAction",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.LeaveRepository.Remove(obj);
@@ -809,7 +802,6 @@ namespace WebApp.Controllers
                 {
                     Source = obj,
                     ObjectName = "LeaveAction",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.LeaveRepository.Remove(obj);

@@ -56,9 +56,8 @@ namespace Db.Persistence.Repositories
                             AuthEmp = wft.AuthEmp,
                             AuthEmpName = HrContext.TrlsName(ap.Title + " " + ap.FirstName + " " + ap.Familyname, culture),
                             AuthPosition = wft.AuthPosition,
-                             AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
-                             BranchId = wft.BranchId,
-                            SectorId = wft.SectorId,
+                            AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
+                            BranchId = wft.BranchId,
                             AginstName="",
                             ApproveName="",
                             ComplaintTypeName="",
@@ -126,8 +125,7 @@ namespace Db.Persistence.Repositories
                             AuthEmpName = HrContext.TrlsName(ap.Title + " " + ap.FirstName + " " + ap.Familyname, culture),
                             AuthPosition = wft.AuthPosition,
                             AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
-                            BranchId = wft.BranchId,
-                            SectorId = wft.SectorId
+                            BranchId = wft.BranchId
                         };
 
             return query;

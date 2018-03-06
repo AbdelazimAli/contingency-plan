@@ -37,10 +37,6 @@ namespace WebApp.Controllers
         }
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetPayroll(int MenuId)
@@ -114,7 +110,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "Payroll",
@@ -150,7 +146,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Payroll",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -169,7 +164,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Payroll",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -358,7 +352,6 @@ namespace WebApp.Controllers
                 {
                     Source = payrollObj,
                     ObjectName = "Payrolls",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PayrollRepository.Remove(payrollObj);

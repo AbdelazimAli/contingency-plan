@@ -29,19 +29,10 @@ namespace WebApp.Controllers
         }
         public ActionResult RolesIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
-        public ActionResult Index(bool isSSRole = false)
+        public ActionResult Index()
         {
-            ViewBag.IsSSRole = isSSRole == false ? "SSRole" : "Roles";
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadRoles(string MenuName)
@@ -49,8 +40,7 @@ namespace WebApp.Controllers
             var companyId = User.Identity.GetDefaultCompany();
             var MenuId = db.Menus.Where(s => s.CompanyId == companyId && s.Name == MenuName).Select(c => c.Id).FirstOrDefault();
             string whereclause = GetWhereClause(MenuId);
-            var excluded = new string[] { "Configuration", "Admin", "Developer" };
-            var roles = db.ApplicationRoles.Where(a=>!excluded.Contains(a.Name)).Select(r => new RoleUserViewModel { Id = r.Id, Name = r.Name, SSRole = r.SSRole });
+            var roles = db.Roles.Select(r => new RoleUserViewModel { Id = r.Id, Name = r.Name });
             var query = roles;
             if (whereclause.Length > 0)
             {
@@ -67,9 +57,9 @@ namespace WebApp.Controllers
             }
             return Json(query, JsonRequestBehavior.AllowGet);
         }
-        public ActionResult CreateRole(IEnumerable<RoleUserViewModel> models,string SSRole)
+        public ActionResult CreateRole(IEnumerable<RoleUserViewModel> models)
         {
-            var result = new List<ApplicationRole>();
+            var result = new List<IdentityRole>();
             var datasource = new DataSource<RoleUserViewModel>();
             datasource.Data = models;
 
@@ -77,10 +67,9 @@ namespace WebApp.Controllers
             foreach (RoleUserViewModel m in models)
             {
 
-                var role = new ApplicationRole(m.Name);
+                var role = new IdentityRole(m.Name);
 
                 // RoleManager.Create(role);
-                role.SSRole = SSRole == "Roles" ? false : true;
                 db.Roles.Add(role);
                 result.Add(role);
 
@@ -92,8 +81,7 @@ namespace WebApp.Controllers
                                select new RoleUserViewModel
                                {
                                    Id = r.Id,
-                                   Name = m.Name,
-                                   SSRole = SSRole == "Roles" ? false : true,
+                                   Name = m.Name
                                })
                                .ToList();
 
@@ -102,7 +90,7 @@ namespace WebApp.Controllers
         public ActionResult CheckUsers(string Id)
         {
             string message = "OK";
-            var Users = db.ApplicationRoles.Where(a => a.Id == Id).Select(a => new { UserList = a.Users.ToList() }).FirstOrDefault();
+            var Users = db.Roles.Where(a => a.Id == Id).Select(a => new { UserList = a.Users.ToList() }).FirstOrDefault();
             if (Users.UserList.Count > 0)
             {
                 message = "Error";
@@ -163,9 +151,9 @@ namespace WebApp.Controllers
                 return Json("OK");
         }
 
-        public ActionResult ReadRoleMenu(string RoleId, bool SSRole)
+        public ActionResult ReadRoleMenu(string RoleId)
         {
-            return Json(_hrUnitOfWork.MenuRepository.ReadRoleMenu(User.Identity.GetDefaultCompany(), User.Identity.GetLanguage(), RoleId, SSRole), JsonRequestBehavior.AllowGet);
+            return Json(_hrUnitOfWork.MenuRepository.ReadRoleMenu(User.Identity.GetDefaultCompany(), User.Identity.GetLanguage(), RoleId), JsonRequestBehavior.AllowGet);
         }
         public ActionResult UpdateRoleMenu(IEnumerable<RoleMenuViewModel> models)
         {
@@ -198,7 +186,7 @@ namespace WebApp.Controllers
         {
             string message = "Ok";
             var Roles = db.Roles.ToList();
-            ApplicationRole role = (ApplicationRole)Roles.Where(a => a.Name == name).FirstOrDefault();
+            IdentityRole role = (IdentityRole)Roles.Where(a => a.Name == name).FirstOrDefault();
             string checkName = name;
             for (int i = 1; i <= Roles.Count; i++)
             {                
@@ -210,8 +198,7 @@ namespace WebApp.Controllers
                 }
             }
             //Add new record role with copy name         
-            var RoleCopy = new ApplicationRole(checkName);
-            RoleCopy.SSRole = role.SSRole;
+            var RoleCopy = new IdentityRole(checkName);
             db.Roles.Add(RoleCopy);
 
             //Add copy Role Menu

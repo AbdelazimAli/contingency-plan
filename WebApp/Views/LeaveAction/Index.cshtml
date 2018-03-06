@@ -8,7 +8,7 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -20,13 +20,7 @@
 <script>
     var TransType=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TransType));
     var Posted=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Posted));
-    function Exist(data) {
-        if (data.HasImage)
-            return "url(../SpecialData/Photos/" +@User.Identity.GetDefaultCompany().ToString() +"/" + data.empId + ".jpeg?dummy=" + (new Date().getTime()) + ")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
-    
+   
     var objectName = "LeaveActions";
     Grids.indexGrid({
         read: "@Url.Action("GetLeaveAction", "LeaveAction")?MenuId=@Request.QueryString["MenuId"]",
@@ -40,9 +34,8 @@
         admin: "@admin",
         columns:("@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "Posting") : true))" == "True" ?
             [{ field: "post", input: "none"},{
-                field: "EmpId", template: "<div class='k-people-photo' " +
-                    "style='background-image: #:Exist(data)# '></div>" +
-                    "&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<div class='k-people-name'>#: EmpId #</div>", locked: true
+                field: "EmpId", template: "<div><img class='k-people-photo' src=#:Exist(data.Gender,data.Image)# />&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<span class='k-people-name'>#: EmpId #</span></div>",
+                locked: true
             }]: 
             [{
                 field: "EmpId", template: "<div class='k-people-photo' " +
@@ -68,7 +61,7 @@
 
 @Html.Partial("_IndexGrid", new ViewDataDictionary {
     { "AddRecord", @Url.Action("Details", "LeaveAction") },
-      { "Admin", admin}, { "GridName", "LeaveActionDiv" },{"objectName" , "LeaveActions"}, {"Functions",ViewBag.Functions} })
+      { "Admin", admin}, { "GridName", "LeaveActionDiv" },{"objectName" , "LeaveActions"} })
 
 
 

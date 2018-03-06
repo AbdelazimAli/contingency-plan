@@ -1,7 +1,7 @@
 ﻿@using WebApp.Extensions
 @using System.Web.Script.Serialization
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     Layout = null;

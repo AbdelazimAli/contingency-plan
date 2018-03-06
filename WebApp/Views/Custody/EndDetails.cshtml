@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -21,20 +21,20 @@
 <br />
 <br />
 <div id="Custody"></div>
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var EmpCustody=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpCustody));
     var JobEmp;
     var Jobs=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.jobs));
-    var locations=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Locations));
+    var branches=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Branches));
     var CustCategory =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CustodyCategory));
     var Currency = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Currency));
 
     $(function () {
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         //tabs
         var formId = "PeopleForms";
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
@@ -69,7 +69,7 @@
                     //Append the form to the div
                     $("#Custody").Forms(data, model);
                     FormJs.fillOptionsDynamic($("#" + formId), "JobId", Jobs, model);
-                    FormJs.fillOptionsDynamic($("#" + formId), "LocationId", locations, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "BranchId", branches, model);
                     FormJs.fillOptionsDynamic($("#" + formId), "CustodyCatId",CustCategory, model);
                     FormJs.fillOptionsDynamic($("#" + formId), "Curr", Currency, model);
                     $("#Qty").closest(".form-group").remove();
@@ -105,7 +105,7 @@
                 if($("#" + formId).find(".k-invalid").length > 0) return ;
                 FormJs.saveForm($("#" + formId), $(this), function (res) {
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                     //  model = res;
                 });
             });

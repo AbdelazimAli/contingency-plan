@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -20,7 +20,7 @@
 </style>
 
 <div id="DeleverDoc"></div>
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
@@ -83,9 +83,10 @@
       
         $('#backToIndex').click(function (e) {
             e.stopPropagation();
-            var oldPage = localStorage.getItem("menuhigh").split(",");
-            var oldulr = $("#" + oldPage[2] + " a").attr("href");
-            $("#renderbody").load(oldulr );
+            //var oldPage = localStorage.getItem("menuhigh").split(",");
+            //var oldulr = $("#" + oldPage[2] + " a").attr("href");
+            //$("#renderbody").load(oldulr );
+            updateHistory(oldUlr);
         });
         $("#"+formId).on("click","#saveChanges",function (e) {
             if($("#" + formId).find(".k-invalid").length > 0) return ;

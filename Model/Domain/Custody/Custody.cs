@@ -55,8 +55,8 @@ namespace Model.Domain
         public float Qty { get; set; } = 0;
         public bool Freeze { get; set; } = false;
 
-        public int? LocationId { get; set; }
-        public Location Location { get; set; } // Internal location
+        public int? BranchId { get; set; }
+        public Branch Branch { get; set; }
 
         [MaxLength(20)]
         public string CreatedUser { get; set; }

@@ -78,9 +78,9 @@ namespace WebApp.Controllers
             lst.Add(new FormList {id=4,name= MsgUtils.Instance.Trls("SubGrade") });
             lst.Add(new FormList {id=5,name= MsgUtils.Instance.Trls("Points") });
             lst.Add(new FormList {id=6,name= MsgUtils.Instance.Trls("EditPoints") });
-            lst.Add(new FormList {id=7,name= MsgUtils.Instance.Trls("Locations") });
+            lst.Add(new FormList {id=7,name= MsgUtils.Instance.Trls("Branches") });
             lst.Add(new FormList {id=8,name= MsgUtils.Instance.Trls("Departments") });
-            lst.Add(new FormList {id=9,name= MsgUtils.Instance.Trls("OutLocations") });
+            lst.Add(new FormList {id=9,name= MsgUtils.Instance.Trls("Sites") });
             ViewBag.Srcs = lst;
 
             FillViewBag(CompanyId, Language);
@@ -92,8 +92,8 @@ namespace WebApp.Controllers
             ViewBag.payrollDeu = _hrUnitOfWork.Repository<PayrollDue>().Select(c => new { text = c.Name, value = c.Id }).ToList();
             ViewBag.pplgrp = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(c => new { text = c.Name, value = c.Id }).ToList();
             ViewBag.prollgrd = _hrUnitOfWork.PayrollRepository.ReadPayrollGrades(Culture, companyId).Select(c => new { text = c.Name, value = c.Id }).ToList();
-            ViewBag.job = _hrUnitOfWork.JobRepository.ReadJobs(companyId, Culture,0).Select(c => new { text = c.LocalName, value = c.Id }).ToList();
-            ViewBag.loc = _hrUnitOfWork.LocationRepository.ReadLocations(Culture, companyId).Select(c => new { text = c.LocalName, value = c.Id }).ToList();
+            ViewBag.job = _hrUnitOfWork.JobRepository.GetAllJobs(companyId, Culture,0).Select(c => new { text = c.LocalName, value = c.Id }).ToList();
+            ViewBag.loc = _hrUnitOfWork.SiteRepository.ReadSites(Culture, companyId).Select(c => new { text = c.LocalName, value = c.Id }).ToList();
             ViewBag.persnType = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Culture).Select(c => new { text = c.Title, value = c.Id }).ToList();
             ViewBag.Perf = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("Performance", Culture).Select(c => new { text = c.Title, value = c.Id }).ToList();
             var Formulalst = _hrUnitOfWork.Repository<Formula>().Where(a => a.CompanyId == companyId && (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate > DateTime.Today))).ToList();
@@ -138,13 +138,13 @@ namespace WebApp.Controllers
                     cols = GetPoints(PointValue);
                     break;
                 case 7:
-                    cols = GetLocations();
+                    cols = GetSites();
                     break;
                 case 8:
                     cols = GetDepartments();
                     break;
                 case 9:
-                    cols = GetOutLocations();
+                    cols = GetBranches();
                     break;
                 default:
                     cols = GetJobs();
@@ -240,9 +240,9 @@ namespace WebApp.Controllers
             return cols;
 
         }
-        public List<LinkTableViewModel> GetLocations()
+        public List<LinkTableViewModel> GetSites()
         {
-            var allLoc = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Select(a => a.Id).ToArray();
+            var allLoc = _hrUnitOfWork.SiteRepository.ReadSites(Language, CompanyId).Select(a => a.Id).ToArray();
             var cols = new List<LinkTableViewModel>();
       
             for (int i = 0; i < allLoc.Length; i++)
@@ -250,22 +250,23 @@ namespace WebApp.Controllers
                
                     cols.Add(new LinkTableViewModel
                     {
-                        LocationId = allLoc[i],
+                        BranchId = allLoc[i],
                     });
             }
             return cols;
         }
-        public List<LinkTableViewModel> GetOutLocations()
+
+        private List<LinkTableViewModel> GetBranches()
         {
-            var allLoc = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Where(s=>s.IsLocal == false).Select(a => a.Id).ToArray();
+            var branches = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId).Select(a => a.Id).ToArray();
             var cols = new List<LinkTableViewModel>();
 
-            for (int i = 0; i < allLoc.Length; i++)
+            for (int i = 0; i < branches.Length; i++)
             {
 
                 cols.Add(new LinkTableViewModel
                 {
-                    LocationId = allLoc[i],
+                    BranchId = branches[i],
                 });
             }
             return cols;
@@ -289,7 +290,7 @@ namespace WebApp.Controllers
         }
         public List<LinkTableViewModel> GetJobs()
         {
-            var allJob = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => a.Id).ToArray();
+            var allJob = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => a.Id).ToArray();
             var cols = new List<LinkTableViewModel>();
 
             for (int i = 0; i < allJob.Length; i++)
@@ -492,10 +493,6 @@ namespace WebApp.Controllers
         #region GetAllPayrollDesigns
         public ActionResult PayrollTables()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetAllDesignes(int MenuId)
@@ -588,7 +585,7 @@ namespace WebApp.Controllers
                         GradeId = c.GradeId != 0 ? c.GradeId : null,
                         JobId = c.JobId != 0 ? c.JobId : null,
                         GroupId = c.GroupId != 0 ? c.GroupId : null,
-                        LocationId = c.LocationId != 0 ? c.LocationId : null,
+                        BranchId = c.BranchId != 0 ? c.BranchId : null,
                         PayDueId = c.PayDueId != 0 ? c.PayDueId : null,
                         PersonType = c.PersonType != 0 ? c.PersonType : null,
                         Performance = c.Performance != 0 ? c.Performance : null,
@@ -632,7 +629,7 @@ namespace WebApp.Controllers
                                    JobId = c.JobId,
                                    GroupId = c.GroupId,
                                    MaxValue = c.MaxValue,
-                                   LocationId = c.LocationId,
+                                   BranchId = c.BranchId,
                                    MinValue = c.MinValue,
                                    PayDueId = c.PayDueId,
                                    PersonType = c.PersonType,
@@ -689,7 +686,7 @@ namespace WebApp.Controllers
                     Link.GradeId = item.GradeId != 0 ? item.GradeId : null;
                     Link.JobId = item.JobId != 0 ? item.JobId : null;
                     Link.GroupId = item.GroupId != 0 ? item.GroupId : null;
-                    Link.LocationId = item.LocationId != 0 ? item.LocationId : null;
+                    Link.BranchId = item.BranchId != 0 ? item.BranchId : null;
                     Link.PayDueId = item.PayDueId != 0 ? item.PayDueId : null;
                     Link.PersonType = item.PersonType != 0 ? item.PersonType : null;
                     Link.Performance = item.Performance != 0 ? item.Performance : null;

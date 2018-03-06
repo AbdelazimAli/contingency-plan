@@ -1,0 +1,168 @@
+﻿@using System.Web.Script.Serialization
+@model Model.ViewModel.Personnel.RequestWfFormViewModel
+@{
+    Layout = null;
+    var admin = User.Identity.CanCustomize();
+    var rtl = User.Identity.RTL();
+}
+
+<form id="RquestForm" action="@Url.Action("RequestDetails", "LeaveType")" method="post">
+    <fieldset name="Basic Data" id="129" class="set panel">
+        <legend class="set-title">
+            <button type="button" class="btn btn-primary o-collabsebtn" data-toggle="collapse" href="#d104">
+                <span class=""></span>
+                <span class="lblSpan">@MsgUtils.Instance.Trls("Basic Data")</span>
+            </button>
+        </legend>&nbsp;
+        <div id="d104">
+            <div name="HeirType" class="form-group row">
+                <label for="HeirType" class="col-md-3 col-form-label" style="color: rgb(213, 5, 5)">@MsgUtils.Instance.Trls("HeirType")</label>
+                <div class="col-md-3">@Html.DropDownListFor(a => a.HeirType, (SelectList)ViewBag.HeirTypeList, new { @class = "form-control" })</div>
+                <div>
+                    <label for="Hierarchy" class="col-md-1 col-form-label" style="color: rgb(213, 5, 5)">@MsgUtils.Instance.Trls("Hierarchy")</label>
+                    <div class="col-md-4">@Html.DropDownListFor(a => a.Hierarchy, new SelectList(Model.Diagrams, "id", "name", Model.Hierarchy), new { @class = "form-control" })</div>
+                </div>
+            </div>
+            <div class="form-group row">
+                <div>
+                    <label for="NofApprovals" class="col-md-3 col-form-label">@MsgUtils.Instance.Trls("NofApprovals")</label>
+                    <div class="col-md-2"><input type="number" name="NofApprovals" id="NofApprovals" class="form-control" value="@Model.NofApprovals"></div>
+                    <span class="col-md-1"></span>
+                </div>
+                <label for="TimeOutDays" class="col-md-3 col-form-label">@MsgUtils.Instance.Trls("TimeOutDays")</label>
+                <div class="col-md-2"><input type="number" name="TimeOutDays" id="TimeOutDays" class="form-control" value="@Model.TimeOutDays"></div>
+            </div>
+            <div class="form-group row">
+                <label for="TimeOutAction" class="col-md-3 col-form-label">@MsgUtils.Instance.Trls("TimeOutAction")</label>
+                <div class="col-md-3">@Html.DropDownListFor(a => a.TimeOutAction, (SelectList)ViewBag.WaitAction, new { @class = "form-control" })</div>
+                @*<label for="ForceUpload" class="col-md-3 col-form-label">@MsgUtils.Instance.Trls("Must upload request")</label>
+                <div class="col-md-1">@Html.CheckBoxFor(a => a.ForceUpload, new { @checked = "checked" })</div>*@
+                <div class="form-group checkbox col-md-3">
+                    <label for="ForceUpload"><input type="checkbox" @(Model.ForceUpload ? "checked" : "") name="ForceUpload" isvisible="true" formreq="formreq" id="ForceUpload" class="k-valid"><span class="lblSpan" style="color: rgb(213, 5, 5);"> @MsgUtils.Instance.Trls("Must upload request")</span></label>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+    <input type="hidden" id="Id" name="Id" value="@Model.Id">
+    <input type="hidden" name="SourceId" id="SourceId" value="@Model.SourceId">
+    <input type="hidden" name="Source" id="Source" value="@Model.Source">
+    <input type="hidden" name="WFlowId" id="Source" value="@Model.Id">
+</form>
+
+<fieldset class="set panel">
+    <legend class="set-title">
+        <button type="button" class="btn btn-primary o-collabsebtn" data-toggle="collapse" href="#d105">
+            <span class=""></span>
+            <span class="lblSpan">@MsgUtils.Instance.Trls("RoleaAfterApproving")</span>
+        </button>
+    </legend>&nbsp;
+    <div id="d105" name="GridSec" class="form-inline row" style="margin-bottom: 0px;">
+        <div id="WfRoleDiv"></div>
+    </div>
+</fieldset>
+
+<script>
+    $(function () {
+        var Rolee;
+        function changeHeirType(valume){
+            if(valume==3)
+                $("#Hierarchy").parent().parent().css("display","");
+            else
+                $("#Hierarchy").parent().parent().css("display","none");
+
+            if(valume>1)
+                $("#NofApprovals").parent().parent().css("display","");
+            else
+                $("#NofApprovals").parent().parent().css("display","none");
+
+            if(valume==1){
+                Rolee=@Html.Raw((new JavaScriptSerializer()).Serialize(Model.Roles.Select(a => new { text = a.text, value = a.value })));
+                if($("#WfRoleDiv").data("kendoGrid") != undefined) {
+                    var grid= $("#WfRoleDiv").data("kendoGrid").columns;
+                    for (var i = 0; i < grid.length; i++) {
+                        if(grid[i].field=="Role")
+                            grid[i].values=Rolee;
+                    }
+                }
+            } else {
+                Rolee=@Html.Raw((new JavaScriptSerializer()).Serialize(Model.Roles.Where(a => a.CodeId == null).Select(a => new { text = a.text, value = a.value })));
+                if($("#WfRoleDiv").data("kendoGrid") != undefined) {
+                    //var con=confirm("Are you sure you Want to change hierarcy type?");
+                    //if(con==true){
+                        var grid1= $("#WfRoleDiv").data("kendoGrid").columns;
+                        for (var i = 0; i < grid1.length; i++) {
+                            if(grid1[i].field=="Role")
+                                grid1[i].values=Rolee;
+                        }
+                        var grid=$("#WfRoleDiv").data("kendoGrid").dataSource;
+                        var gridData=grid._data;
+                        for (var i = 0; i <gridData.length; i++) {
+                            if(gridData[i].CodeId !=null){
+                                var record=$("#WfRoleDiv").data("kendoGrid").dataSource._data[i];
+                                grid.remove(record);
+                            }
+                        }
+                    //}
+                    //else $("#HeirType").val(old);
+                }
+            }
+
+        }
+
+        changeHeirType(@Model.HeirType);
+
+        var gridname = "'WfRoleDiv'";
+        Grids.batchGrid({
+        read: "@Url.Action("ReadWfRole", "LeaveType")?RequestWfId=@Model.Id",
+        lang: "@User.Identity.GetCulture()",
+        recordName: "Order",
+        gridName: "WfRoleDiv",
+        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')"  accesskey="s">&nbsp;<span>@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c">&nbsp;<span>@MsgUtils.Instance.Trls("CancelChanges")</span></a></div>',
+        admin: false,
+        height: 300,
+        scrollable: {
+            virtual: false,
+            endless: true
+        },
+        pageable: false,
+        select: { "Role": Rolee},
+        save:function(e){
+            if (e.values.Role && e.values.Role != e.model.Role) {
+                var role=Number(e.values.Role);
+
+                if(Number.isNaN(role)){
+                    e.model.RoleId=e.values.Role;
+                    e.model.CodeId=null;
+                } else {
+                    e.model.CodeId=e.values.Role;
+                    e.model.RoleId=null;
+                }
+            }
+        },
+        fields:
+        {
+            Id: { type: "number", editable: false },
+            Order: { type: "number", validation: { required: true } },
+            CodeId: { type: "number", editable: false },
+            Role: { type: "string" },
+            RoleId: { type: "string" }
+        },
+        columns: [{field:"Order", title: '@MsgUtils.Instance.Trls("Order")', width: 150}, {field:"Role", title: '@MsgUtils.Instance.Trls("Roles")', values: Rolee}, {command: { text: '@MsgUtils.Instance.Trls("Delete")', click: Grids.deleteClick, className: 'k-grid-delete', imageClass: "k-icon k-i-delete"}}]
+    });
+
+        $("#saveWorkFlow").off('click').on('click', function (e) {
+        FormJs.saveForm($("#RquestForm"), $(this), function (data) {
+            model = data;
+            toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+            $('#workFlowModal').modal('hide');
+        }, Grids.sendData("WfRoleDiv"));
+    });
+
+    $("#HeirType").on("change",function(e){
+        var record= $(this).val();
+        changeHeirType(record);
+    });
+
+ });
+</script>
+

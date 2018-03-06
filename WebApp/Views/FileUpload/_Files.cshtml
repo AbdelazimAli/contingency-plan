@@ -1,7 +1,7 @@
 ﻿
 @using System.Web.Script.Serialization
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -9,61 +9,10 @@
     Layout = null;
 }
 
-<style>
-     /*td {
-    text-align: right;
-}*/
-    #fileupload {
-        margin-top: 25px;
-    }
-    .displayOnly {
-        border: none;
-        background-color:transparent;
-        font-size:small;
-    }
-    .fullLine {
-        width: 80%;
-    }
-    .halfLine {
-        width: 32%;
-    }
-    .smallLabel {
-        font-size: small;
-        width: 16%;
-        padding-right: 21px !important;
-    }
-    p.small{
-        /*margin: -2px 1px -22.5px !important;*/
-    }
-    .bootbox {
-        z-index: 10006;
-    }
-    /*#myModal .modal-content {
-        width: 800px !important;
-    }*/
-
-    /*Form Style*/
-    #editDocForm .form-control {
-        height: 25px;
-    }
-    #editDocForm input, #editDocForm select, #editDocForm textarea {
-        margin-bottom: 0px;
-    }
-    #editDocForm .form-group, #editDocForm .section {
-        margin-bottom: 5px;
-    }
-    #editDocForm .o-collabsebtn {
-        width: 95%
-    }
-     #editDocForm  .k-datepicker:first-of-type {
-         margin-bottom: 15px;
-     }
-
-</style>
 
 <form id="fileupload" method="POST" enctype="multipart/form-data" data-url="@Url.Action("Upload","FileUpload")" enableDrop="@(ViewBag.Upload ? "true" : "false")" >
-    <div class="row fileupload-buttonbar">
-        <div class="col-lg-7">
+    <div class="fileupload-buttonbar">
+        <div class="btns btn">
             <!-- The fileinput-button span is used to style the file input field as button -->
             <span class="btn btn-default fileinput-button">
                 <i class="glyphicon glyphicon-plus"></i>
@@ -101,15 +50,6 @@
             <!-- The extended global progress state -->
             <div class="progress-extended">&nbsp;</div>
         </div>
-    </div>
-    <!-- The global progress state -->
-    <div class="col-lg-5 fileupload-progress fade">
-        <!-- The global progress bar -->
-        <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
-            <div class="progress-bar progress-bar-success" style="width:0%;"></div>
-        </div>
-        <!-- The extended global progress state -->
-        <div class="progress-extended">&nbsp;</div>
     </div>
 
     <!-- The table listing the files available for upload/download -->
@@ -366,14 +306,14 @@
                 DocType: $(currentrow).find('#_DocType').val(),
                 ExpiryDate: $(currentrow).find('#_ExpiryDate').val(),
             };
-
+            console.log(model);
             $("#editDoc").Forms(data, model);
 
             $("#editDoc").find(".editarea.col-sm-6.col-xs-12").removeClass("col-sm-6 col-xs-12").addClass("col-sm-5 col-xs-10");
             $("#" + formId).find(".col-md-10.col-lg-10").removeClass("col-md-10 col-lg-10").addClass("col-md-8 col-lg-8");
 
             FormJs.fillOptionsDynamic($("#"+ formId), "DocType", DocType, model, {objectName:"DocType" });
-
+            $("#"+ formId).find("#ExpiryDate").data("kendoDatePicker").value(model.ExpiryDate);
             var hiddenFields = '<input type="hidden" id="stream_id" name="stream_id" value="'+ model.stream_id +'"/>'
             + '<input type="hidden" id="ModifiedUser" name="ModifiedUser" value="@User.Identity.Name"/>';
             $("#" + formId).append(hiddenFields);
@@ -408,10 +348,10 @@
                         $(currentrow).find('#_Description').val(res.Description);
                         $(currentrow).find('#_DocType').val(res.DocType);
                         
-                        var ExpiryDate; //## convert serialized date
+                        @*var ExpiryDate; //## convert serialized date
                         if(res.ExpiryDate)
-                            ExpiryDate = new Date(parseInt(res.ExpiryDate.substr(6))).toLocaleDateString("@culture");
-                        $(currentrow).find('#_ExpiryDate').val(ExpiryDate);
+                            ExpiryDate = new Date(parseInt(res.ExpiryDate.substr(6))).toLocaleDateString("@culture");*@
+                        $(currentrow).find('#_ExpiryDate').val(FormJs.parseServerDate(res.ExpiryDate));
                         $(currentrow).find('#_DocName').val($('#DocType option:selected').text());
                         $(currentrow).find('#_ModifiedUser').val(res.ModifiedUser);
                         $(currentrow).find('#_name').val(res.name);

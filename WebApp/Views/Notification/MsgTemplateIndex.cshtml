@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -43,4 +43,4 @@
 </script>
 @Html.Partial("_IndexGrid", new ViewDataDictionary {
     { "AddRecord", @Url.Action("Details", "Notification") },
-    { "Admin", admin}, { "GridName", "msgDiv" } , {"Functions",ViewBag.Functions}})
+    { "Admin", admin}, { "GridName", "msgDiv" } })

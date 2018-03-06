@@ -25,6 +25,8 @@ namespace Model.ViewModel
         public string MoreInfo { get; set; }
         public string PicUrl { get; set; }
         public bool Read { get; set; }
+        public short Gender { get; set; }
         public DateTime SentDate { get; set; }
+        public string Source { get; set; }
     }
 }

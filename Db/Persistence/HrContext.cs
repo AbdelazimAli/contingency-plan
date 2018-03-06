@@ -29,12 +29,12 @@ namespace Db
         public DbSet<Country> Countries { get; set; }
         public DbSet<City> Cities { get; set; }
         public DbSet<District> Districts { get; set; }
-        public DbSet<Address> Addresses { get; set; }
-        public DbSet<Location> Locations { get; set; }
+        public DbSet<Site> Sites { get; set; }
+        public DbSet<Branch> Branches { get; set; }
+        public DbSet<SiteToEmp> SiteToEmployees { get; set; }
         public DbSet<Currency> Currencies { get; set; }
         public DbSet<Company> Companies { get; set; }
         public DbSet<CompanyDocsViews> CompanyDocsView { get; set; }
-        public DbSet<CompanyBranch> CompanyBranches { get; set; }
         public DbSet<ColumnTitle> ColumnTitles { get; set; }
         public DbSet<RoleColumns> RoleColumns { get; set; }
         public DbSet<PageDiv> PageDiv { get; set; }
@@ -161,11 +161,17 @@ namespace Db
         public DbSet<FlexForm> FlexForms { get; set; }
         public DbSet<FlexFormFS> FlexFormFS { get; set; }
         public DbSet<FlexFormColumn> FlexFormColumns { get; set; }
+        public DbSet<PersonForm> PersonForms { get; set; }
+        public DbSet<SendForm> SendForms { get; set; }
+        public DbSet<SendFormPeople> SendFormPeople { get; set; }
         public DbSet<Meeting> Meetings { get; set; }
+        public DbSet<MeetViewer> MeetViewers { get; set; }
         public DbSet<MeetAttendee> MeetAttendees { get; set; }
         public DbSet<MeetSchedual> MeetScheduals { get; set; }
+        public  DbSet<ErrandRequest> ErrandRequests { get; set; }
+        public DbSet<LoanType> LoanTypes { get; set; }
+        public DbSet<LoanRequest> LoanRequests { get; set; }
         /////////////////////////////////////////
-
         // 110 Tables in HR
         //Payroll Tables
         public DbSet<PayRequest> PayRequests { get; set; }
@@ -202,10 +208,16 @@ namespace Db
             return 0;
         }
 
-        [DbFunction("CodeFirstDatabaseSchema", "fn_GetDocsCount")]
-        public static Double GetDocsCount(int? CompanyId,int? EmpId, int? JobId)
+        [DbFunction("CodeFirstDatabaseSchema", "fn_ForceUpload")]
+        public static int ForceUpload(string Source, int SourceId)
         {
             return 0;
+        }
+
+        [DbFunction("CodeFirstDatabaseSchema", "fn_GetDocsCount")]
+        public static string GetDocsCount(int? CompanyId,int? EmpId, int? JobId)
+        {
+            return "";
         }
 
         [DbFunction("CodeFirstDatabaseSchema", "fn_GetEmpStatus")]
@@ -236,8 +248,21 @@ namespace Db
         {
             return "";
         }
+
         [DbFunction("CodeFirstDatabaseSchema", "fn_GetDoc")]
         public static string GetDoc(string Source, int SourceId)
+        {
+            return "";
+        }
+
+        [DbFunction("CodeFirstDatabaseSchema", "fn_GetDocument")]
+        public static string GetDocument(string Source, int SourceId)
+        {
+            return "";
+        }
+
+        [DbFunction("CodeFirstDatabaseSchema", "fn_CommaSeperatedNames")]
+        public static string CommaSeperatedNames(string table, string comma, string culture)
         {
             return "";
         }
@@ -290,9 +315,9 @@ namespace Db
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             modelBuilder.Entity<CompanyDocsViews>().
-                MapToStoredProcedures(s => s.Insert(u => u.HasName("sp_AddCompanyDoc"))
+                MapToStoredProcedures(s => s.Insert(i => i.HasName("sp_AddCompanyDoc").Result(a => a.stream_id, "DocId"))
                 .Update(u => u.HasName("sp_UpdateCompanyDoc"))
-                .Delete(u => u.HasName("sp_DeleteCompanyDoc")));
+                .Delete(d => d.HasName("sp_DeleteCompanyDoc")));
 
             modelBuilder.Entity<TrainCourse>()
            .HasMany(p => p.Pathes)
@@ -338,12 +363,17 @@ namespace Db
             valueParameter2 = FunctionParameter.Create("SourceId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.ReturnValue);
             function = this.CreateAndAddFunction(item, "fn_GetAttachments", new[] { valueParameter1, valueParameter2 }, new[] { returnValue });
+            // fn_ForceUpload
+            valueParameter1 = FunctionParameter.Create("Source", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
+            valueParameter2 = FunctionParameter.Create("SourceId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
+            returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.ReturnValue);
+            function = this.CreateAndAddFunction(item, "fn_ForceUpload", new[] { valueParameter1, valueParameter2 }, new[] { returnValue });
 
             // fn_GetDocsCount
             valueParameter1 = FunctionParameter.Create("CompanyId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             valueParameter2 = FunctionParameter.Create("EmpId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             valueParameter3 = FunctionParameter.Create("JobId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
-            returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Double), ParameterMode.ReturnValue);
+            returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.ReturnValue);
             function = this.CreateAndAddFunction(item, "fn_GetDocsCount", new[] { valueParameter1, valueParameter2, valueParameter3 }, new[] { returnValue });
 
             // fn_TrlsName
@@ -383,7 +413,6 @@ namespace Db
             valueParameter3 = FunctionParameter.Create("Version", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.ReturnValue);
             function = this.CreateAndAddFunction(item, "fn_GetPageId", new[] { valueParameter1, valueParameter2, valueParameter3 }, new[] { returnValue });
-
             //fn_GetColumnTitle
             valueParameter1 = FunctionParameter.Create("CompanyId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             valueParameter2 = FunctionParameter.Create("culture", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
@@ -401,12 +430,25 @@ namespace Db
             returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.ReturnValue);
             function = this.CreateAndAddFunction(item, "fn_GetWorkFlowStatus", new[] { valueParameter1, valueParameter2, valueParameter3, valueParameter4 }, new[] { returnValue });
 
+            // fn_CommaSeperatedNames
+            valueParameter1 = FunctionParameter.Create("table", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
+            valueParameter4 = FunctionParameter.Create("comma", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
+            valueParameter5 = FunctionParameter.Create("culture", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
+            returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.ReturnValue);
+            function = this.CreateAndAddFunction(item, "fn_CommaSeperatedNames", new[] { valueParameter1, valueParameter4, valueParameter5 }, new[] { returnValue });
+
             //fn_GetDoc
             var param1 = FunctionParameter.Create("Source", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
             var param2 = FunctionParameter.Create("SourceId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
             returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.ReturnValue);
             function = this.CreateAndAddFunction(item, "fn_GetDoc", new[] { param1, param2 }, new[] { returnValue });
-            
+
+            //fn_GetDocument
+            param1 = FunctionParameter.Create("Source", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
+            param2 = FunctionParameter.Create("SourceId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);
+            returnValue = FunctionParameter.Create("result", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.ReturnValue);
+            function = this.CreateAndAddFunction(item, "fn_GetDocument", new[] { param1, param2 }, new[] { returnValue });
+
             //fn_GetStramDoc
             var valueparam1 = FunctionParameter.Create("Source", this.GetStorePrimitiveType(model, PrimitiveTypeKind.String), ParameterMode.In);
             var valueparam2 = FunctionParameter.Create("SourceId", this.GetStorePrimitiveType(model, PrimitiveTypeKind.Int32), ParameterMode.In);

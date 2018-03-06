@@ -38,16 +38,16 @@ namespace Interface.Core.Repositories
         IQueryable<WfRoleViewModel> GetWfRole(int RId);
         Dictionary<string, string> ReadMailEmpLeave(string Language, int Id);
         LeaveAdjust GetLeaveAction(int? id);
-        IEnumerable GetAcuralGridLeaveTypes(int companyId, string culture);
+        IQueryable GetAcuralGridLeaveTypes(int companyId, string culture);
         IQueryable<FormList> GetDeptEmployees(int companyId, string culture, string Departments);
-        RequestWfFormViewModel ReadLeaveRequest(int leaveId, string Source);
+        RequestWfFormViewModel ReadRequestWF(int leaveId, string Source, string lang);
         IQueryable<LeaveActionViewModel> GetLeaveAction(string culture, int CompanyId);
         void Add(LeaveAdjust leaveAction);
         void Attach(LeaveAdjust leaveAction);
         DbEntityEntry<LeaveAdjust> Entry(LeaveAdjust leaveAction);
         void Remove(LeaveAdjust leaveAction);
         LeaveActionFormViewModel ReadleaveAction(int Id);
-        IEnumerable GetAcuralLeaveTypes(int companyId, string culture);
+        IQueryable GetAccrualLeaveTypes(int companyId, string culture);
         IQueryable<PeriodListViewModel> GetOpenedLeavePeriods();
         IQueryable<LeaveTransSummary> GetLeaveTransSummary(int YearId, int companyId, string culture);
         IQueryable<LeaveTransViewModel> GetLeaveTrans(int TypeId, int PeriodId, int EmpId, string culture);
@@ -57,7 +57,7 @@ namespace Interface.Core.Repositories
         IQueryable<LeaveRequestViewModel> ReadLeaveRequestArchive(int companyId, byte Range, string Depts, DateTime? Start, DateTime? End, string culture);
         IQueryable<AssignOrderViewModel> ReadAssignOrdersArchieve(int companyId, byte Range, string Depts, DateTime? Start, DateTime? End, string culture);
         IQueryable<DateTime> GetEmpAssignDates(int companyId, int EmpId);
-        AssignmentGridViewModel GetFullEmpInfo(int companyId, int EmpId, string culture);
+        PeopleGridViewModel GetFullEmpInfo(int companyId, int EmpId, string culture);
         int GetLastEmpCalcsMethod(int companyId, int EmpId);
         //IQueryable<AssignOrderViewModel> GetEmpAssignData(int companyId, int EmpId);
         IQueryable<AssignOrderViewModel> GetEmpAssignData(int companyId, int EmpId, string culture);
@@ -73,7 +73,7 @@ namespace Interface.Core.Repositories
         LeavePlanStarsVM GetStars(GetStarsParamVM param);
         List<string> CheckLeavePlan(GetStarsParamVM param, string culture, out int Stars, out int EmpStars);
         int GetLeaveBalance(ref RequestValidationViewModel requestVal, ReqDaysParamVM param);
-        IEnumerable GetLeaveTypesList(int companyId, string culture);
+        IQueryable GetLeaveTypesList(int companyId, string culture);
         //IEnumerable GetSpacificLeaveTypes(int companyId, string culture, int empId);
         IList<DropDownList> GetSpacificLeaveTypes(int companyId, string culture, int empId);
         CalenderViewModel GetHolidays(int compId);
@@ -83,7 +83,7 @@ namespace Interface.Core.Repositories
         //replacement emp
         List<string> IsReplacement(int EmpId, DateTime StartDate, DateTime EndDate, int CompanyId, string culture);
         List<RequestValidationViewModel> HavePervRequests(List<int> EmpIds, int Id, DateTime StartDate, DateTime EndDate, int companyId, bool isReplace = true);
-        IEnumerable<FormList> GetReplaceEmpList(int empId, string culture);
+        IQueryable<FormList> GetReplaceEmpList(int empId, string culture);
 
         //upcpming
         IEnumerable<HolidayViewModel> GetUpcomingHolidays(int companyId);
@@ -145,7 +145,7 @@ namespace Interface.Core.Repositories
         IQueryable<LeaveTransOpenBalanceViewModel> GetLeaveFirstTrans(int companyId, string culture, int LeaveType, DateTime FiscalYear, string Departments);
         IEnumerable GetAcuralRestLeaveTypes(int companyId, string culture);
         //API
-        ValidationMessages CheckLeaveRequestApi(int TypeId, int EmpId, DateTime StartDate, DateTime EndDate, string culture, int RequestId, bool isSSUser, int companyId, int? replaceEmp = null);
+        ValidationMessages CheckLeaveRequestApi(int TypeId, int EmpId, DateTime StartDate, DateTime EndDate, float NofDays, string culture, int RequestId, bool isSSUser, int companyId, int? replaceEmp = null);
         IEnumerable<WorkFlowObjectsViewModel> ReadWorkFlowObjects(int companyId, string culture);
         string CheckPeriods(DateTime Period, int LeaveId, string Culture);
 

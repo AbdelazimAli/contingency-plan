@@ -3,7 +3,7 @@
 @{
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
 }
 <br>
 <div id="WorkFlow"></div>

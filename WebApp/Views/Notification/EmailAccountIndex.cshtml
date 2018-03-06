@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -16,7 +16,7 @@
 <script>
     $("#NicePen").hide();
     var addUrl = "@Url.Action("DetailsOfEmail", "Notification")";
-    RequestFilters.ApplayAllFilters([], {}, "Users", "@Url.Action("GetEmailAccount", "Notification")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "Users", "@Url.Action("GetEmailAccount", "Notification")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var grid = "'emailDiv'"
     Grids.indexGrid({
         read: "@Url.Action("GetEmailAccount", "Notification")",

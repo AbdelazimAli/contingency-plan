@@ -15,8 +15,6 @@ namespace Model.ViewModel.Personnel
 
         public string Employee { get; set; }
         public int EmpId { get; set; }
-        public int? BranchId { get; set; }
-        public int? SectorId { get; set; }
         public string BranchName { get; set; }
         public string CreatedUser { get; set; }
         public string ModifiedUser { get; set; }
@@ -42,7 +40,7 @@ namespace Model.ViewModel.Personnel
         public int JobId { get; set; } // filter local jobs for login company or globals jobs 
         public int? PositionId { get; set; } // Position
       
-        public int? LocationId { get; set; } // filter local locations for login company or globals locations ((IsLocal == false) || (IsLocal && CompanyId == 0)) && IsInternal == true;
+        public int BranchId { get; set; } // 
         public int? GroupId { get; set; } // People Group
 
      
@@ -65,7 +63,7 @@ namespace Model.ViewModel.Personnel
         public IEnumerable<int> ICompanyStuctures { get; set; }
         public IEnumerable<int> IPositions { get; set; }
         public IEnumerable<int> IPayrollGrades { get; set; }
-        public IEnumerable<int> ILocations { get; set; }
+        public IEnumerable<int> IBranches { get; set; }
         public string PeopleGroups { get; set; } // comma seperated PeopleGroups
         public string Payrolls { get; set; } // comma seperated Payrolls
         public string Jobs { get; set; } // comma seperated Jobs   
@@ -73,10 +71,10 @@ namespace Model.ViewModel.Personnel
         public string CompanyStuctures { get; set; }
         public string Positions { get; set; }
         public string PayrollGrades { get; set; }
-        public string Locations { get; set; }
+        public string Branches { get; set; }
         public byte? EmpTasks { get; set; }
         public short? Performance { get; set; }
-
+        public string NotifyButtonLabel { set; get; }
 
 
     }

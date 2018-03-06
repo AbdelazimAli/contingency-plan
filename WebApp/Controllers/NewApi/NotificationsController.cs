@@ -1,12 +1,11 @@
 ﻿using Interface.Core;
+using Model.Domain;
 using System;
-using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
 using System.Web.Http.Cors;
-using WebApp.Controllers.Api;
 
 namespace WebApp.Controllers.NewApi
 {
@@ -18,7 +17,7 @@ namespace WebApp.Controllers.NewApi
         public string UserName { get; set; }
 
     }
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class NotificationsController : BaseApiController
     {
         public NotificationsController()
@@ -61,9 +60,40 @@ namespace WebApp.Controllers.NewApi
             {
                 return NotFound();
             }
+
+            var LetterCount = hrUnitOfWork.NotificationRepository.GetMyLetters(model.CompanyId, model.Language, model.EmpId).Count(l => l.read == false);
             var NotifyCount = hrUnitOfWork.NotificationRepository.GetAllNotifications(model.UserName, model.Language, model.CompanyId).Count(n => n.Read == false);
 
-            return Ok(NotifyCount);
+            return Ok(new { NotifyCount = NotifyCount, LetterCount = LetterCount });
+        }
+
+        [HttpPost]
+        [Route("newApi/Notifications/UpdateNotifyLetter/{id}")]
+        public IHttpActionResult UpdateNotifyLetter([FromUri] int? id)
+        {
+            if (id == null)
+            {
+                return BadRequest();
+            }
+            
+            var NotifyObject = hrUnitOfWork.Repository<NotifyLetter>().Where(s => s.Id == id).FirstOrDefault();
+            if (NotifyObject == null)
+            {
+                return NotFound();
+            }
+            
+            NotifyObject.read = true;
+            NotifyObject.ReadTime = DateTime.Now;
+            hrUnitOfWork.NotificationRepository.Attach(NotifyObject);
+            hrUnitOfWork.NotificationRepository.Entry(NotifyObject).State = EntityState.Modified;
+            //Create Notify Letters To Attendee to Cancel 
+            var Errors = SaveChanges("en-GB");
+            if (Errors.Count>0)
+            {
+                return StatusCode(HttpStatusCode.NotModified); //304
+            }
+
+            return Ok(NotifyObject);
         }
     }
 }

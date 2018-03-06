@@ -16,6 +16,8 @@ using Model.Domain.Notifications;
 using System.Web.Hosting;
 using System.IO;
 using System.Configuration;
+using Model.ViewModel.Personnel;
+using Db.Persistence.BLL;
 
 namespace WebApp.Controllers
 {
@@ -39,6 +41,7 @@ namespace WebApp.Controllers
         {
             _hrUnitOfWork = hrUnitOfWork;
         }
+
         public AccountController(ApplicationUserManager userManager, ApplicationSignInManager signInManager)
         {
             UserManager = userManager;
@@ -76,13 +79,13 @@ namespace WebApp.Controllers
 
             var getid = Session["getUserId"].ToString();
 
-            var user = db.UserLogs.Where(b => b.UserId == getid).Select(a => a).OrderByDescending(b => b.Id).FirstOrDefault();
+            var user = dbc.UserLogs.Where(b => b.UserId == getid).Select(a => a).OrderByDescending(b => b.Id).FirstOrDefault();
 
 
             var duration = Convert.ToDateTime(DateTime.Now.ToShortTimeString()).Subtract(Convert.ToDateTime(user.StartTime));
             user.EndTime = Convert.ToDateTime(DateTime.Now.ToShortTimeString());
             user.Duration = duration;
-            db.SaveChanges();
+            dbc.SaveChanges();
             AuthenticationManager.SignOut();
         }
 
@@ -107,123 +110,117 @@ namespace WebApp.Controllers
             return true;
         }
 
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<ActionResult> BlockUser(string name)
-        {
+        ////Account/GetUserObj
+        //[HttpPost]
+        //[AllowAnonymous]
+        //public async Task<ActionResult> UpdateUserObj(string id, string reset, string resetPassword)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        return View();
+        //    }
 
-            ApplicationUser user = await UserManager.FindByNameAsync(name);
-            user.Locked = true;
-            IdentityResult result = await UserManager.UpdateAsync(user);
-            return Json(result);
+        //    if (resetPassword == "true" && reset != null)
+        //    {
+        //        ApplicationUser user = await UserManager.FindByIdAsync(id);
+        //        user.PasswordHash = UserManager.PasswordHasher.HashPassword(reset);
+        //        user.ResetPassword = false;
+        //        UserManager.Update(user);
 
-        }
+        //        var model = new LoginViewModel() { UserName = user.UserName, Password = reset, RememberMe = false };
+        //        return await Login(model, null);
 
-        //Account/GetUserObj
+        //    }
 
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<ActionResult> UpdateUserObj(string id, string reset, string resetPassword)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View();
-            }
-
-            if (resetPassword == "true" && reset != null)
-            {
-                ApplicationUser user = await UserManager.FindByIdAsync(id);
-                user.PasswordHash = UserManager.PasswordHasher.HashPassword(reset);
-                user.ResetPassword = false;
-                UserManager.Update(user);
-
-                var model = new LoginViewModel() { UserName = user.UserName, Password = reset, RememberMe = false };
-                return await Login(model, null);
-
-            }
-
-            return RedirectToAction("Login", "Account");
-        }
+        //    return RedirectToAction("Login", "Account");
+        //}
 
 
-        [AllowAnonymous]
-        public ActionResult GetUserObj(string id)
-        {
+        //[AllowAnonymous]
+        //public ActionResult GetUserObj(string id)
+        //{
 
-            var db = new UserContext();
+        //    var db = new UserContext();
 
-            var user = (from p in db.Users
-                        where p.UserName == id
-                        select new
-                        {
-                            p.UserName,
-                            p.Locked,
-                            p.Id,
-                            p.ResetPassword,
-                            p.PasswordHash,
-                            p.Language,
-                            p.DefaultCompany
-                        }).SingleOrDefault();
+        //    var user = (from p in dbc.Users
+        //                where p.UserName == id
+        //                select new
+        //                {
+        //                    p.UserName,
+        //                  //  p.Locked,
+        //                    p.Id,
+        //                    p.ResetPassword,
+        //                    p.PasswordHash,
+        //                    p.Language,
+        //                    p.DefaultCompany
+        //                }).SingleOrDefault();
 
-            int numberofBlock = user == null ? 5 : _PersonSetup.MaxPassTrials;
-            string Language = user?.Language != null ? user.Language : "en-GB";
-            string invalidusername = Db.MsgUtils.Instance.Trls(Language, "InvalidUserName");
-            string invalidPassword = Db.MsgUtils.Instance.Trls(Language, "InvalidPassword");
-            string Block = Db.MsgUtils.Instance.Trls(Language, "Block");
-            string Notmatches = Db.MsgUtils.Instance.Trls(Language, "passandconfirmntmatch");
-            return Json(new { user = user, invalidname = invalidusername, invalidpass = invalidPassword, Block = Block, Notmatches = Notmatches, NumberBlock = numberofBlock }, JsonRequestBehavior.AllowGet);
-        }
+        //   // int numberofBlock = user == null ? 5 : _PersonSetup.MaxPassTrials;
+        //    string Language = user?.Language != null ? user.Language : "en-GB";
+        //    string invalidusername = Db.MsgUtils.Instance.Trls(Language, "InvalidUserName");
+        //    string invalidPassword = Db.MsgUtils.Instance.Trls(Language, "InvalidPassword");
+        //    string Block = Db.MsgUtils.Instance.Trls(Language, "Block");
+        //    string Notmatches = Db.MsgUtils.Instance.Trls(Language, "passandconfirmntmatch");
+        //    return Json(new { user = user, invalidname = invalidusername, invalidpass = invalidPassword, Block = Block, Notmatches = Notmatches/*, NumberBlock = numberofBlock*/ }, JsonRequestBehavior.AllowGet);
+        //}
 
         [AllowAnonymous]
         public ActionResult Login(string ReturnUrl)
         {
+            var model = new LoginViewModel();
+            model.UserName = Request.Cookies["userName"] != null ? Request.Cookies["userName"].Value : null;
+            model.Password = Request.Cookies["password"] != null ? Request.Cookies["password"].Value : null;
+            model.RememberMe = Request.Cookies["rememberMe"] != null ? bool.Parse(Request.Cookies["rememberMe"].Value) : false;
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+
             if (Session["getUserId"] != null)
                 CloseBrowser();
-            return PartialView("Loginform");
+
+            return PartialView("Loginform",model);
             //return View();
         }
 
-        public List<string> WriteEmpFile(int EmpId, int CompanyId)
-        {
-            var comdocs = _hrUnitOfWork.PeopleRepository.GetEmpDocsView(EmpId, CompanyId);
+        //public List<string> WriteEmpFile(int EmpId, int CompanyId)
+        //{
+        //    var comdocs = _hrUnitOfWork.PeopleRepository.GetEmpDocsView(EmpId, CompanyId);
             
-            var urlDic = new List<string>();
-            string fullPath = Path.Combine(StorageRoot);
-            if (Directory.Exists(fullPath))
-            {
-                DirectoryInfo dir = new DirectoryInfo(fullPath);
-                if (comdocs["ComoanyLogo"] != null)
-                {
-                    string ComoanyLogofullpath = Server.MapPath(serverMapPath + comdocs["ComoanyLogo"].name);
-                    if (!System.IO.File.Exists(ComoanyLogofullpath))
-                    {
-                        System.IO.File.WriteAllBytes(ComoanyLogofullpath, comdocs["ComoanyLogo"].file_stream);
-                    }
-                    urlDic.Add(serverMapPath + comdocs["ComoanyLogo"].name);
+        //    var urlDic = new List<string>();
+        //    string fullPath = Path.Combine(StorageRoot);
+        //    if (Directory.Exists(fullPath))
+        //    {
+        //        DirectoryInfo dir = new DirectoryInfo(fullPath);
+        //        if (comdocs["ComoanyLogo"] != null)
+        //        {
+        //            string ComoanyLogofullpath = Server.MapPath(serverMapPath + comdocs["ComoanyLogo"].name);
+        //            if (!System.IO.File.Exists(ComoanyLogofullpath))
+        //            {
+        //                System.IO.File.WriteAllBytes(ComoanyLogofullpath, comdocs["ComoanyLogo"].file_stream);
+        //            }
+        //            urlDic.Add(serverMapPath + comdocs["ComoanyLogo"].name);
 
-                }
-                else
-                {
-                    urlDic.Add("");
-                }
-                if (comdocs["EmployeePic"] != null)
-                {
-                    string EmployeePicfullpath = Server.MapPath(serverMapPath + comdocs["EmployeePic"].name);
-                    if (!System.IO.File.Exists(EmployeePicfullpath))
-                    {
-                        System.IO.File.WriteAllBytes(EmployeePicfullpath, comdocs["EmployeePic"].file_stream);
-                    }
-                    urlDic.Add(serverMapPath + comdocs["EmployeePic"].name);
-                }
-                else
-                {
-                    urlDic.Add("");
-                }
+        //        }
+        //        else
+        //        {
+        //            urlDic.Add("");
+        //        }
+        //        if (comdocs["EmployeePic"] != null)
+        //        {
+        //            string EmployeePicfullpath = Server.MapPath(serverMapPath + comdocs["EmployeePic"].name);
+        //            if (!System.IO.File.Exists(EmployeePicfullpath))
+        //            {
+        //                System.IO.File.WriteAllBytes(EmployeePicfullpath, comdocs["EmployeePic"].file_stream);
+        //            }
+        //            urlDic.Add(serverMapPath + comdocs["EmployeePic"].name);
+        //        }
+        //        else
+        //        {
+        //            urlDic.Add("");
+        //        }
 
 
-            }
-            return urlDic;
-        }
+        //    }
+        //    return urlDic;
+        //}
 
 
         // POST: /Account/Login
@@ -263,9 +260,9 @@ namespace WebApp.Controllers
            // #endregion
 
             var db = new UserContext();
-            
 
-            var user = await UserManager.FindByNameAsync(model.UserName);
+
+            var user = dbc.Users.Where(u => u.UserName == model.UserName).FirstOrDefault();
             if (user == null)
             {
                 ModelState.AddModelError("Password", MsgUtils.Instance.Trls("incorrectError", model.Culture));
@@ -273,6 +270,7 @@ namespace WebApp.Controllers
             }
 
             var excluded = new string[] { "admin", "hradmin" };
+            AssignmentVM assignment = null;
 
             // Check employee is active
             if (!excluded.Contains(model.UserName.ToLower()))
@@ -284,8 +282,8 @@ namespace WebApp.Controllers
                 }
                 else
                 {
-                    int active = db.Database.SqlQuery<int>("select 1 from Assignments A where A.EmpId = " + user.EmpId + " and (CONVERT(date, GetDate()) BETWEEN A.AssignDate And A.EndDate) And A.sysAssignStatus = 1").FirstOrDefault();
-                    if (active != 1)
+                    assignment = dbc.Database.SqlQuery<AssignmentVM>("select BranchId, DepartmentId, IsDepManager, JobId, PositionId, ManagerId from Assignments A where A.EmpId = " + user.EmpId + " and (CONVERT(date, GetDate()) BETWEEN A.AssignDate And A.EndDate) And A.sysAssignStatus = 1").FirstOrDefault();
+                    if (assignment == null)
                     {
                         ModelState.AddModelError("UserName", MsgUtils.Instance.Trls("activateError", model.Culture) ); //"Employee is not active"
                         return PartialView("Loginform", model);
@@ -293,13 +291,13 @@ namespace WebApp.Controllers
                 }
             }
 
-
-
-
             var result = await SignInManager.PasswordSignInAsync(model.UserName, model.Password, model.RememberMe, shouldLockout: true);
             switch (result)
             {
                 case SignInStatus.Success:
+                    // reset Access failed account
+                    await UserManager.ResetAccessFailedCountAsync(user.Id);
+
                     if (user.ResetPassword == true)
                     {
                         string vCode = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
@@ -309,46 +307,72 @@ namespace WebApp.Controllers
                             AuthenticationManager.SignOut();
                             Session.Abandon();
                             Session.Clear();
-                            return PartialView("ResetPassword", new ResetPasswordViewModel { UserName = model.UserName, Code = vCode, OldPassword = model.Password });
+                            return RedirectToAction("ResetPassword", "Account", new ResetPasswordViewModel() { UserName = model.UserName, Code = vCode, OldPassword = model.Password });
                         }
-                        ModelState.AddModelError("Password", MsgUtils.Instance.Trls("incorrectError", user.Language)); //"Incorrect UserName Or Password");
+                        ModelState.AddModelError("Password", MsgUtils.Instance.Trls("incorrectError", user.Language)); 
                         return PartialView("Loginform", model);
 
                     }
+
                     Session["getUserId"] = user.Id.ToString();
                     Response.Cookies["userName"].Expires = DateTime.Now.AddDays(-1);
-                    var domain = Request.Url.Scheme + System.Uri.SchemeDelimiter + Request.Url.Host + (Request.Url.IsDefaultPort ? "" : ":" + Request.Url.Port);
+                    Response.Cookies["userEmpId"].Expires = DateTime.Now.AddDays(-1);
+                    Response.Cookies["userCompanyId"].Expires = DateTime.Now.AddDays(-1);
                     Response.Cookies["password"].Expires = DateTime.Now.AddDays(-1);
+
+                    var domain = Request.Url.Scheme + System.Uri.SchemeDelimiter + Request.Url.Host + (Request.Url.IsDefaultPort ? "" : ":" + Request.Url.Port);
+                    
                     Response.Cookies.Add(new HttpCookie("userName", user.UserName) { Expires = DateTime.Now.AddDays(7) });
+                    Response.Cookies.Add(new HttpCookie("rememberMe", model.RememberMe.ToString()) { Expires = DateTime.Now.AddDays(7) });
+                    Response.Cookies.Add(new HttpCookie("culture", user.Language) { Expires = DateTime.Now.AddDays(7) });
+
                     if (model.RememberMe == true)
                     {
                         Response.Cookies.Add(new HttpCookie("password", model.Password) { Expires = DateTime.Now.AddDays(7) });
-                       
-                    }
-                    if (user.EmpId != null && user.DefaultCompany != null)
-                    {
-                        var locaName = _hrUnitOfWork.PeopleRepository.GetEpmLocalname((int)user.EmpId, user.Language);
-                        //Response.Cookies.Add(new HttpCookie("userName", user.UserName) { Expires= DateTime.Now.AddDays(7)});
-                        Response.Cookies.Add(new HttpCookie("culture", user.Language) { Expires = DateTime.Now.AddDays(7) });
-                        Response.Cookies.Add(new HttpCookie("userEmpId", user.EmpId.ToString()) { Expires = DateTime.Now.AddDays(7) });
-                        Response.Cookies.Add(new HttpCookie("userCompanyId", User.Identity.GetDefaultCompany().ToString()) { Expires = DateTime.Now.AddDays(7) });
-                        Response.Cookies.Add(new HttpCookie("localName", locaName) { Expires = DateTime.Now.AddDays(7) });
-                        if (user.LastLogin != null)
-                        {
-                            Response.Cookies.Add(new HttpCookie("lastLogin", user.LastLogin.Value.ToString("MM/dd/yyyy HH:mm:ss")) { Expires = DateTime.Now.AddDays(7) });
-                        }
-                        Response.Cookies.Add(new HttpCookie("welcomeMsg", Db.MsgUtils.Instance.Trls(user.Language, "Welcome")) { Expires = DateTime.Now.AddDays(7) });
                     }
 
-                    //DateTime? data = Convert.ToDateTime(DateTime.Now.ToString());
+                    if (user.LastLogin != null)
+                    {
+                        Response.Cookies.Add(new HttpCookie("lastLogin", user.LastLogin.Value.ToString("MM/dd/yyyy HH:mm:ss")) { Expires = DateTime.Now.AddDays(7) });
+                    }
+
+                    string locaName;
+                    Response.Cookies.Add(new HttpCookie("welcomeMsg", Db.MsgUtils.Instance.Trls(user.Language, "Welcome")) { Expires = DateTime.Now.AddDays(7) });
+                    if (user.EmpId != null && user.DefaultCompany != null)
+                    {
+                        locaName = _hrUnitOfWork.PeopleRepository.GetEpmLocalname((int)user.EmpId, user.Language);
+                        Response.Cookies.Add(new HttpCookie("userEmpId", user.EmpId.ToString()) { Expires = DateTime.Now.AddDays(7) });
+                        Response.Cookies.Add(new HttpCookie("userCompanyId", user.DefaultCompany.Value.ToString()) { Expires = DateTime.Now.AddDays(7)});
+                    }
+                    else
+                    {
+                        locaName = user.UserName;
+                    }
+                    Response.Cookies.Add(new HttpCookie("localName", locaName) { Expires = DateTime.Now.AddDays(7) });
+                    
                     UserLog loggedUser = new UserLog();
                     loggedUser.UserId = user.Id;
                     loggedUser.LogEvent = 1;
-                    loggedUser.CompanyId = User.Identity.GetDefaultCompany();
+                    loggedUser.CompanyId = user.DefaultCompany.Value;
                     loggedUser.StartTime = DateTime.Now; //Convert.ToDateTime(data.Value.ToString("H:mm"));
+                    user.AccessFailedCount = 0;
+                    user.LastLogin = DateTime.Now;
+                    
+                    //user.Locked = false;
+                    dbc.UserLogs.Add(loggedUser);
+                    int res = await dbc.SaveChangesAsync();
 
-                    db.UserLogs.Add(loggedUser);
-                    int res = await db.SaveChangesAsync();
+                    //set session variables
+                    if (assignment != null)
+                    {
+                        Session["DepartmentId"] = assignment.DepartmentId;
+                        Session["BranchId"] = assignment.BranchId;
+                        Session["PositionId"] = assignment.PositionId;
+                        Session["IsDepManager"] = assignment.IsDepManager.ToString();
+                        Session["BranchId"] = assignment.BranchId;
+                        Session["JobId"] = assignment.JobId;
+                    }
+
                     return RedirectToLocal(returnUrl);
                 case SignInStatus.RequiresVerification:
                     return RedirectToAction("SendCode", new { ReturnUrl = returnUrl, RememberMe = model.RememberMe });
@@ -356,15 +380,14 @@ namespace WebApp.Controllers
                     ModelState.AddModelError("UserName", MsgUtils.Instance.Trls("lockoutError", model.Culture));
                     return PartialView("Loginform", model);
                 case SignInStatus.Failure:
-                    
+                    user.AccessFailedCount = user.AccessFailedCount + 1;
+                    int rest = db.SaveChanges();
                     var msg = MsgUtils.Instance.Trls("incorrectError", model.Culture);
                     ModelState.AddModelError("Password", msg);
-
                     return PartialView("Loginform", model);
                 default:
                     msg = MsgUtils.Instance.Trls("incorrectError", model.Culture);
                     ModelState.AddModelError("Password", msg);
-
                     return PartialView("Loginform", model);
             }
 
@@ -394,7 +417,6 @@ namespace WebApp.Controllers
                 return features;
             }
         }
-        //
         // GET: /Account/VerifyCode
         [AllowAnonymous]
         public async Task<ActionResult> VerifyCode(string provider, string returnUrl, bool rememberMe)
@@ -406,8 +428,6 @@ namespace WebApp.Controllers
             }
             return View(new VerifyCodeViewModel { Provider = provider, ReturnUrl = returnUrl, RememberMe = rememberMe });
         }
-
-        //
         // POST: /Account/VerifyCode
         [HttpPost]
         [AllowAnonymous]
@@ -433,15 +453,13 @@ namespace WebApp.Controllers
             }
         }
 
-        //
         // GET: /Account/Register
         [AllowAnonymous]
         public ActionResult Register()
         {
             return View();
         }
-
-        //
+        
         // POST: /Account/Register
         [HttpPost]
         [AllowAnonymous]
@@ -491,8 +509,7 @@ namespace WebApp.Controllers
             // If we got this far, something failed, redisplay form
             return View(model);
         }
-
-        //
+        
         // GET: /Account/ConfirmEmail
         [AllowAnonymous]
         public async Task<ActionResult> ConfirmEmail(string userId, string code)
@@ -510,7 +527,9 @@ namespace WebApp.Controllers
         [AllowAnonymous]
         public ActionResult ForgotPassword()
         {
-            return PartialView();
+            var model = new ForgotPasswordViewModel();
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+            return PartialView(model);
         }
 
         //
@@ -535,7 +554,6 @@ namespace WebApp.Controllers
                     // Don't reveal that the user does not exist or is not confirmed
                     
                 }
-
                 string code = await UserManager.GeneratePasswordResetTokenAsync(user.Id);
                 var callbackUrl = Url.Action("ResetPassword", "Account", new { userId = user.Id, UserName = user.UserName, code = code }, protocol: Request.Url.Scheme);
                 EmailAccount emailAcc = HrUnitOfWork.Repository<EmailAccount>().FirstOrDefault();
@@ -548,22 +566,62 @@ namespace WebApp.Controllers
 
                 return RedirectToAction("ForgotPasswordConfirmation", "Account");
             }
+            else
+            {
+                foreach (var item in ModelState)
+                {
+                    if (ModelState["Username"].Errors.Count > 0)
+                    {
+                        var req0 = item.Value.Errors.SingleOrDefault(a => a.ErrorMessage == "The Username field is required.");
+                        item.Value.Errors.Remove(req0);
+                        ModelState.AddModelError("Username", MsgUtils.Instance.Trls("userNameRequired", model.Culture));
+
+
+                    }
+                    else if (ModelState["Email"].Errors.Count > 0)
+                    {
+                        var req = item.Value.Errors.SingleOrDefault(a => a.ErrorMessage == "The Email field is required.");
+                        var req1 = item.Value.Errors.SingleOrDefault(a => a.ErrorMessage == "The Email field is not a valid e-mail address.");
+                        if (req !=null)
+                        {
+                            item.Value.Errors.Remove(req);
+                            ModelState.AddModelError("Email", MsgUtils.Instance.Trls("emailRequired", model.Culture));
+                        }
+                        else if (req1 != null)
+                        {
+                            item.Value.Errors.Remove(req1);
+                            ModelState.AddModelError("Email", MsgUtils.Instance.Trls("emailNotValid", model.Culture));
+                        }
+                        
+                        
+                    }
+
+                }
+                return PartialView(model);
+            }
 
 
             // If we got this far, something failed, redisplay form
-            return PartialView(model);
+            
         }
 
         [AllowAnonymous]
         public ActionResult ForgotPasswordConfirmation()
         {
-            return View();
+            var model = new ForgotPasswordViewModel();
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+            return PartialView(model);
         }
 
         [AllowAnonymous]
-        public ActionResult ResetPassword(string UserName, string Code)
+        public ActionResult ResetPassword(string UserName, string Code,string OldPassword)
         {
-            return Code == null ? PartialView("Error") : PartialView();
+            var model = new ResetPasswordViewModel();
+            model.UserName = UserName;
+            model.Code = Code;
+            model.OldPassword = OldPassword;
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+            return Code == null ? PartialView("Error") : PartialView(model);
         }
 
         [HttpPost]
@@ -571,27 +629,27 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> ResetPassword(ResetPasswordViewModel model)
         {
+            var userbl = new UserBL();
 
             if (!ModelState.IsValid)
             {
-                
+                userbl.CheckPasswordStrength(ModelState, model.Culture);
                 return PartialView("ResetPassword", model);
             }
+
             //var db = new UserContext();
             var user = dbc.Users.FirstOrDefault(us => us.UserName == model.UserName); //await UserManager.FindByNameAsync(model.UserName);
             if (user == null)
             {
                 return RedirectToAction("Login", "Account");
             }
-            if (model.Password == model.OldPassword)
-            {
-                ModelState.AddModelError("Password", MsgUtils.Instance.Trls("dublicatePassword",user.Language));
+
+            if (!userbl.DuplicatePassword(ModelState, model.Password, model.OldPassword, user.Language))
                 return PartialView("ResetPassword", model);
-            }
 
             if (model.Password == model.ConfirmPassword)
             {
-                //var res = await UserManager.ChangePasswordAsync(user.Id, model.OldPassword, model.Password);
+                
                 var res = await UserManager.ResetPasswordAsync(user.Id, model.Code, model.Password);
 
                 if (res.Errors.Count() > 0)
@@ -599,7 +657,7 @@ namespace WebApp.Controllers
                     var ErrList = res.Errors.ToList();
                     foreach (var item in ErrList)
                     {
-                        ModelState.AddModelError("Password", item);
+                        ModelState.AddModelError("ConfirmPassword", userbl.TranslateError(item, user.Language));
                     }
                     return PartialView("ResetPassword", model);
                 }
@@ -613,33 +671,44 @@ namespace WebApp.Controllers
                         return PartialView("ResetPassword", model);
                     }
                 }
-
             }
+
+            Response.Cookies["userName"].Expires = DateTime.Now.AddDays(-1);
+            Response.Cookies["userEmpId"].Expires = DateTime.Now.AddDays(-1);
+            Response.Cookies["userCompanyId"].Expires = DateTime.Now.AddDays(-1);
+            Response.Cookies["password"].Expires = DateTime.Now.AddDays(-1);
+
+
+            Response.Cookies.Add(new HttpCookie("userName", user.UserName) { Expires = DateTime.Now.AddDays(7) });
+            Response.Cookies.Add(new HttpCookie("culture", user.Language) { Expires = DateTime.Now.AddDays(7) });
+            if (user.LastLogin != null)
+            {
+                Response.Cookies.Add(new HttpCookie("lastLogin", user.LastLogin.Value.ToString("MM/dd/yyyy HH:mm:ss")) { Expires = DateTime.Now.AddDays(7) });
+            }
+            string locaName;
+            Response.Cookies.Add(new HttpCookie("welcomeMsg", Db.MsgUtils.Instance.Trls(user.Language, "Welcome")) { Expires = DateTime.Now.AddDays(7) });
             if (user.EmpId != null && user.DefaultCompany != null)
             {
-                var locaName = _hrUnitOfWork.PeopleRepository.GetEpmLocalname((int)user.EmpId, user.Language);
-                Response.Cookies.Add(new HttpCookie("userName", user.UserName) { Expires = DateTime.Now.AddDays(7) });
-                Response.Cookies.Add(new HttpCookie("culture", user.Language) { Expires = DateTime.Now.AddDays(7) });
+                locaName = _hrUnitOfWork.PeopleRepository.GetEpmLocalname((int)user.EmpId, user.Language);
                 Response.Cookies.Add(new HttpCookie("userEmpId", user.EmpId.ToString()) { Expires = DateTime.Now.AddDays(7) });
                 Response.Cookies.Add(new HttpCookie("userCompanyId", User.Identity.GetDefaultCompany().ToString()) { Expires = DateTime.Now.AddDays(7) });
-                Response.Cookies.Add(new HttpCookie("localName", locaName) { Expires = DateTime.Now.AddDays(7) });
-                if (user.LastLogin != null)
-                {
-                    Response.Cookies.Add(new HttpCookie("lastLogin", user.LastLogin.Value.ToString("MM/dd/yyyy HH:mm:ss")) { Expires = DateTime.Now.AddDays(7) });
-                }
-                Response.Cookies.Add(new HttpCookie("welcomeMsg", Db.MsgUtils.Instance.Trls(user.Language, "Welcome")) { Expires = DateTime.Now.AddDays(7) });
-
-
             }
+            else
+            {
+                locaName = user.UserName;
+            }
+            Response.Cookies.Add(new HttpCookie("localName", locaName) { Expires = DateTime.Now.AddDays(7) });
+
             return RedirectToAction("ResetPasswordConfirmation", "Account");
             
         }
-
-
+        
         [AllowAnonymous]
         public ActionResult ResetPasswordConfirmation()
         {
-            return View();
+            var model = new ResetPasswordViewModel();
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+            return PartialView(model);
         }
 
         [HttpPost]
@@ -752,8 +821,8 @@ namespace WebApp.Controllers
 
         public async Task<ActionResult> LogOff()
         {
-            var db = new UserContext();
-            var LoginUser = db.Users.Where(a => a.UserName == User.Identity.Name).FirstOrDefault();
+            //var db = new UserContext();
+            var LoginUser = dbc.Users.Where(a => a.UserName == User.Identity.Name).FirstOrDefault();
             if (LoginUser != null)
             {
                 AuthenticationManager.SignOut(DefaultAuthenticationTypes.ApplicationCookie);
@@ -761,7 +830,7 @@ namespace WebApp.Controllers
                 Session.Abandon();
                 Session.Clear();
 
-                var userLog = db.UserLogs.Where(b => b.UserId == LoginUser.Id && b.EndTime == null).OrderByDescending(b => b.Id).FirstOrDefault();
+                var userLog = dbc.UserLogs.Where(b => b.UserId == LoginUser.Id && b.EndTime == null).OrderByDescending(b => b.Id).FirstOrDefault();
                 if (userLog == null)
                 {
                     View("Error");
@@ -771,7 +840,7 @@ namespace WebApp.Controllers
                 TimeSpan duration = userLog.EndTime.Value.Subtract(userLog.StartTime);
                 userLog.Duration = duration;
                 LoginUser.LastLogin = Convert.ToDateTime(DateTime.Now.ToShortTimeString());
-                int res = await db.SaveChangesAsync();
+                int res = await dbc.SaveChangesAsync();
 
               
             }
@@ -781,11 +850,14 @@ namespace WebApp.Controllers
         [HttpGet]
         public ActionResult SessionOff()
         {
+            var model = new LoginViewModel();
+            model.Culture = Request.Cookies["culture"] != null ? Request.Cookies["culture"].Value : "en-GB";
+
             if (User.Identity.IsAuthenticated)
                 Session["getUserId"] = User.Identity.GetUserId();
             AuthenticationManager.SignOut();
             //return View("HrLogin");
-            return View();
+            return PartialView(model);
         }
         public ActionResult ServerSessionOff()
         {
@@ -799,13 +871,13 @@ namespace WebApp.Controllers
 
             var db = new UserContext();
             var getid = Session["getUserId"].ToString();
-            var user = db.UserLogs.Where(b => b.UserId == getid).Select(a => a).OrderByDescending(b => b.Id).FirstOrDefault();
+            var user = dbc.UserLogs.Where(b => b.UserId == getid).Select(a => a).OrderByDescending(b => b.Id).FirstOrDefault();
             var duration = Convert.ToDateTime(DateTime.Now.ToShortTimeString()).Subtract(Convert.ToDateTime(user.StartTime));
             user.EndTime = Convert.ToDateTime(DateTime.Now.ToShortTimeString());
             user.Duration = duration;
             try
             {
-                db.SaveChanges();
+                dbc.SaveChanges();
             }
             catch (Exception ex)
             {

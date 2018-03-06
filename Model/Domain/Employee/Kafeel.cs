@@ -20,8 +20,6 @@ namespace Model.Domain
 
         public int? AddressId { get; set; }
 
-        public Address Address { get; set; }
-
         [MaxLength(100)]
         public string Tel { get; set; }
 

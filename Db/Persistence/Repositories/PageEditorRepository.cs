@@ -583,15 +583,7 @@ namespace Db.Persistence.Repositories
             }
             context.Sections.Remove(section);
         }
-        public void Remove(Address address)
-        {
-            if (Context.Entry(address).State == EntityState.Detached)
-            {
-                context.Addresses.Attach(address);
-            }
-            context.Addresses.Remove(address);
-        }
-
+        
         public void Remove(ColumnTitle title)
         {
             if (Context.Entry(title).State == EntityState.Detached)

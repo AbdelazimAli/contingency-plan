@@ -16,6 +16,7 @@ namespace Model.ViewModel.Personnel
         public string colorSchema { get; set; }
         public string Image { get; set; }
         public bool HasImage { get; set; }
+        public short Gender { get; set; }
         public IList<CompanyDiagramViewModel> Children { get; set; }
         
     }

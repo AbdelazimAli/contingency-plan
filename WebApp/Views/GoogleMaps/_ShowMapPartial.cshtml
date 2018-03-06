@@ -1,0 +1,63 @@
+﻿
+
+<div id="div_MapForShowPoint" style="width:100%;height:@(ViewBag.Height)px;">
+
+</div>
+
+<div id="div_Time_Distance" style="text-align:center;"></div>
+<script>
+    var Lat = '@ViewBag.Lat';
+    var Lng = '@ViewBag.Lng';
+    var destLat = '@ViewBag.destLat';
+    var destLng = '@ViewBag.destLng';
+    var txt_LatID = '@ViewBag.txt_LatID';
+    var txt_LngID = '@ViewBag.txt_LngID';
+
+    var DefaultPoint = new google.maps.LatLng(30.09625804168338, 31.238759860250752);
+    var ShowOnMap_Map = initializeGoogleMap("div_MapForShowPoint", DefaultPoint);
+    CreateClickEvent(txt_LatID, txt_LngID);
+
+    if (Lat != '' && Lng != '' && destLat != '' && destLng != '') {
+        var ShowOnMap_Source = new google.maps.LatLng(Lat, Lng);
+        var ShowOnMap_Destination = new google.maps.LatLng(destLat, destLng);
+
+        // get route from A to B
+        var ExtimatedTimeText = '@MsgUtils.Instance.Trls("Estimated travel time", ViewBag.Language)';
+        var KiloText = '@MsgUtils.Instance.Trls("Kilo", ViewBag.Language)';
+        var HourText = '@MsgUtils.Instance.Trls("Hour", ViewBag.Language)';
+        var MinuteText = '@MsgUtils.Instance.Trls("mins", ViewBag.Language)';
+
+        calculateAndDisplayRoute_Distance_Duration(ShowOnMap_Map, ShowOnMap_Source, ShowOnMap_Destination, 'div_Time_Distance', ExtimatedTimeText, KiloText, HourText, MinuteText);
+    }
+    else if (Lat != '' && Lng != '' && (destLat == '' || destLng == '')) {
+        var ShowOnMap_Source = new google.maps.LatLng(Lat, Lng);
+        ShowOnMap_Map.setCenter(ShowOnMap_Source);
+
+        var ShowOnMap_Marker = CreateDefaultMarker(ShowOnMap_Map, ShowOnMap_Source);
+        AllMarkers.push(ShowOnMap_Marker);
+    }
+
+
+
+    function CreateClickEvent(txt_LatID, txt_LngID) {
+        if (txt_LatID != '' && txt_LngID != '') {
+            google.maps.event.addListener(ShowOnMap_Map, 'click', function (args) {
+                ClearAllMarkers();
+
+                var Lat = args.latLng.lat();
+                var Lng = args.latLng.lng();
+
+                var ShowOnMap_SelectedLocation = new google.maps.LatLng(Lat, Lng);
+                ShowOnMap_Map.panTo(ShowOnMap_SelectedLocation);
+
+                var ShowOnMap_NewMarker = CreateDefaultMarker(ShowOnMap_Map, ShowOnMap_SelectedLocation);
+
+                AllMarkers = [];
+                AllMarkers.push(ShowOnMap_NewMarker);
+
+                $('#' + txt_LatID).val(Lat);
+                $('#' + txt_LngID).val(Lng);
+            });
+        }
+    }
+</script>

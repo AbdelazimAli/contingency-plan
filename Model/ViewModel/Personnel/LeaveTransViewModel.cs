@@ -32,7 +32,6 @@ namespace Model.ViewModel.Personnel
         public int EmpId { get; set; }
         public int DeptId { get; set; }
         public int? BranchId { get; set; }
-        public int? SectorId { get; set; }
         public string EmpCode { get; set; }
         public int TypeId { get; set; }
         public string Dept { get; set; }

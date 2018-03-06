@@ -28,7 +28,6 @@ namespace Model.ViewModel.Personnel
         public int? DeptId { get; set; }
         public int? PositionId { get; set; }
         public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
         public int? AuthBranch { get; set; } // Branch = 2
         public int? AuthDept { get; set; }
         public int? AuthPosition { get; set; }

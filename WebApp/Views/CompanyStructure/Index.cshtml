@@ -2,20 +2,17 @@
 @using WebApp.Extensions
 
 
-
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
 }
 
+
 <script src="~/Scripts/app/tree.js"></script>
 <script src="~/Scripts/app/Icons.js"></script>
-
-<script src="~/Scripts/starwars.js"></script>
-<link href="~/Content/starwars.css" rel="stylesheet" />
 
 <style>
 .fa.k-sprite{
@@ -70,10 +67,10 @@
 <div id="pageTabs"></div>
 <script>
     var icons = iconlist.icons;
-    var oldPage = localStorage.getItem("menuhigh").split(",");
     function preview(e){
         $("#ColorName").val(e.value);
     }
+
     function Drop(model){
         $("#Icon").kendoDropDownList({
             dataTextField:"text",
@@ -95,7 +92,6 @@
     }
 
     function GetTree(){
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         $('#lefttreeview').TreeView({
             dragAndDrop: true,
@@ -196,61 +192,18 @@
 
             FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
-
-            // if($("#LvPlanvDiv").find(".errorCell").length>0) return;
-
-            //var Obj=Grids.sendData("LvPlanvDiv");
-            //var gridDel= $("#LvPlanvDiv").data("kendoGrid");
-            //var NewArr=[];
-            //for (var i = 0; i <Obj.inserted.length; i++) {
-            //    NewArr.push(Obj.inserted[i])
-            //}
-            //for (var i = 0; i <Obj.updated.length; i++) {
-            //    NewArr.push(Obj.updated[i])
-            //}
-            //for (var i = 0; i <gridDel.dataSource._destroyed.length; i++) {
-            //    if (gridDel.dataSource._destroyed[i])
-            //        NewArr.push(Grids.toValidJson(gridDel.dataSource._destroyed[i]));
-            //}
-
-            @*if(NewArr.length >0 )
-                $.ajax({
-                    url:"@Url.Action("CheckLeavRequest", "CompanyStructure")",
-                    data:{model:NewArr },
-                    type: "POST",
-                    success: function (res) {
-                        if(res != "OK"){
-                            bootbox.confirm(("@MsgUtils.Instance.Trls("Find Request")"),function(con){
-                                if(con== true)
-                                    FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
-                                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                        $("#renderbody").load(oldulr);
-                                    },Grids.sendData("LvPlanvDiv"));
-                                else
-                                    return;
-                            });
-                        }
-                        else
-                            FormJs.saveForm($("#CompanyStructureForm"), $(this), function () {
-                                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                $("#renderbody").load(oldulr);
-                            },Grids.sendData("LvPlanvDiv"));
-                    }
-                });
-            else*@
-
 
         });
     }
 
 
     function Draw(read,model){
-
         var url = "@Url.Action("ReadFormInfo", "Pages")";
         var formId = "CompanyStructureForm";
         var Type = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.StructType));
+       
         $.getJSON(url, { objectname: 'CompanyStructure', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
             data.FormAction = "@Url.Action("Details", "CompanyStructure")";
             data.FormId = formId;
@@ -281,12 +234,7 @@
 
             $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
             var allSections = $("#" + formId).find(".set .section");
-            //Leave Plan
-            //drawGrid(model.Id,read);
-            //$("#Leaveyear").keydown(function(e){
-            //    if(e.keyCode==13)
-            //        drawGrid(model.Id,read);
-            //});
+
 
             $("#" + formId).on('blur','#StartDate', function(){
                 var elem = $(this);
@@ -326,94 +274,7 @@
             });
         });
     }
-    @*function drawGrid(Id,read){
-        var Job = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Job));
-        var YearVal=$("#Leaveyear").val();
-        $("div[name=GridSec]").html('<div id="LvPlanvDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
 
-        var Columns = [
-       { field: "MinAllowPercent",template:'#=kendo.format("{0:p0}",MinAllowPercent/100)#'},
-     {field:"Stars",
-     template:"<div id='#:uid#' class='rate_row' value='#:Stars#' ></div>"
-     }];
-        var gridname="'LvPlanvDiv'";
-        if($("#LvPlanvDiv").data("kendoGrid"))
-        {
-            $("#LvPlanvDiv").data("kendoGrid").dataSource.transport.options.read.url = "@Url.Action("GetLvPlanv", "CompanyStructure")?year="+YearVal+"&DeptId="+Id;
-            $("#LvPlanvDiv").data("kendoGrid").dataSource.read();
-        }
-        else
-            Grids.batchGrid({
-                read: "@Url.Action("GetLvPlanv", "CompanyStructure")?year="+YearVal+"&DeptId="+Id,
-                admin:"@admin",
-                lang:"@User.Identity.GetCulture()",
-                objectName: "LeavePlanDept",
-                tableName: "DeptLeavePlans",
-                recordName: "MinAllowPercent",
-                gridName: "LvPlanvDiv",
-                detailInit:detailInit,
-                height:400,
-                columns:Columns,
-                fields:{Stars:{editable:false}},
-                toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
-                dataBound: function (e) {
-                    $("#" + this.gridName).find(".rate_row").each(function (index, element) {
-                        $(".rate_row#"+ $(element).attr("id")).starwarsjs({
-                            stars : 5,
-                            count : 1,
-                            default_stars: ($(element).attr("value") > 5 ? 5 : $(element).attr("value")),
-                            on_select:function(data,id){
-                                star=data;
-                                var record=$("#LvPlanvDiv").data("kendoGrid").dataItem($("#" +id).closest("tr"));
-                                record.Stars=data;
-                                record.dirty = true;
-                            }
-                        });
-
-                    });
-                },
-                save:function(e){
-                    var grid = $("#LvPlanvDiv").data("kendoGrid");
-                    e.model.LeaveYear=YearVal;
-                    if (e.values.FromDate && e.values.FromDate != e.model.FromDate) {
-                        var fromDate=new Date(e.values.FromDate).getFullYear()
-                        if(fromDate != YearVal) {
-                            var columnsArray=grid.dataSource.data();
-                            grid.table.find(".errorCell").each(function () {
-                                $(this).removeClass("errorCell k-invalid");
-                            });
-                            $(e.container[0]).addClass("k-invalid errorCell");
-                            $(e.container[0]).append(kendo.template('<div class="k-widget k-tooltip k-tooltip-validation k-invalid-msg" style="margin: 0.5em; display: block;" data-for="'+e.model.FromDate+'" role="alert"><span class="k-icon k-i-warning"> </span>@MsgUtils.Instance.Trls("Must Equal LeaveYear")<div class="k-callout k-callout-n"></div></div>'));
-                        }
-                        else $(e.container[0]).removeClass("k-invalid errorCell");
-                    }
-                }
-            });
-        function detailInit(e) {
-            var objectName = "DeptJobLvPlan";
-            $("<div id='JobLvPlan" + e.data.Id + "'/>").appendTo(e.detailCell);
-            var gridname = "'JobLvPlan" + e.data.Id + "'";
-            Grids.batchGrid({
-                read:"@Url.Action("ReadDeptJobLvPlan","Personnel")?LvPlanId="+e.data.Id,
-                create:"@Url.Action("CreateDeptJobLvPlan","Personnel")",
-                update:"@Url.Action("UpdateDeptJobLvPlan","Personnel")",
-                destroy:"@Url.Action("DeleteDeptJobLvPlan","Personnel")",
-                admin: "@admin",
-                lang: "@User.Identity.GetCulture()",
-                objectName: "DeptJobLvPlan",
-                tableName: "DeptJobLvPlans",
-                parentColumnName:"DeptPlanId",
-                parentColumnId:e.data.Id,
-                recordName: "JobId",
-                gridName: 'JobLvPlan' + e.data.Id,
-                height: 650,
-                toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
-                columns: [{field: "JobId", values: Job},{ field: "MinAllowPercent",template:'#=kendo.format("{0:p0}",MinAllowPercent/100)#'},],
-                select: { "JobId": Job  },
-            });
-        }
-
-    }*@
     $(function () {
 
         FormJs.DrawTabs("pageTabs"); // "CompanyStructure"
@@ -455,7 +316,6 @@
         $("#t_CompanyStructure").click();
 
     });
-
-
-
 </script>
+
+

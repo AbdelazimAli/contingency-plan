@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
 }
@@ -177,7 +177,7 @@
                         { field: "GradeId", values: prollgrd ,hidden: HideShow("GradeId") },
                         { field: "GroupId", values: pplgrp , hidden: HideShow("GroupId") },
                         { field: "JobId", values: job ,hidden: HideShow("JobId") },
-                        { field: "LocationId", values: loc ,hidden: HideShow("LocationId") },
+                        { field: "BranchId", values: loc ,hidden: HideShow("BranchId") },
                         { field: "Grade",hidden: HideShow("Grade")},
                         { field: "Point" ,hidden: HideShow("Point")  },
                         { field: "PersonType", values: persnType , hidden: HideShow("PersonType") },
@@ -190,7 +190,7 @@
 
             ],
             select: [{ "DeptId": dept },{ "FormulaId": Formula },{ "GradeId": prollgrd },{ "GroupId": pplgrp },
-                     { "JobId": job },{ "LocationId": loc },{ "PayDueId": payrollDeu },{ "Performance": Performance },
+                     { "JobId": job },{ "BranchId": loc },{ "PayDueId": payrollDeu },{ "Performance": Performance },
                      { "PersonType": persnType },{ "YesNoForm": yesNoFrm },{ "CreditGlAccT": Credit },{ "DebitGlAccT": Credit }
             ]
         });

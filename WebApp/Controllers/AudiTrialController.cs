@@ -47,10 +47,6 @@ namespace WebApp.Controllers
 
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if(MenuId != 0)
-            ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -98,10 +94,6 @@ namespace WebApp.Controllers
         #region Translation tbl
         public ActionResult TranslationIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadLanguage()
@@ -229,7 +221,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "MsgTbl",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.AudiTrialRepository.Remove(Obj);
@@ -354,35 +345,31 @@ namespace WebApp.Controllers
 
         #region Employee request
 
-        public ActionResult EmpRequestIndex()
-        {
-            ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { value = a.Id, text = a.Employee }).Distinct().ToList();
-            ViewBag.Depts = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId,null, Language);
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            return View();
-        }
-        public ActionResult ReadEmpRequest(int MenuId)
-        {
-            var query = _hrUnitOfWork.PeopleRepository.GetAllRequests(CompanyId, Language);
-            string whecls = GetWhereClause(MenuId);
-            if (whecls.Length > 0)
-            {
-                try
-                {
-                    query = query.Where(whecls);
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                    Models.Utils.LogError(ex.Message);
-                    return Json("", JsonRequestBehavior.AllowGet);
-                }
-            }
-            return Json(query, JsonRequestBehavior.AllowGet);
-        }
+        //public ActionResult EmpRequestIndex()
+        //{
+        //    ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { value = a.Id, text = a.Employee }).Distinct();
+        //    ViewBag.Depts = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId,null, Language);
+        //    return View();
+        //}
+        //public ActionResult ReadEmpRequest(int MenuId)
+        //{
+        //    var query = _hrUnitOfWork.PeopleRepository.GetAllRequests(CompanyId, Language);
+        //    string whecls = GetWhereClause(MenuId);
+        //    if (whecls.Length > 0)
+        //    {
+        //        try
+        //        {
+        //            query = query.Where(whecls);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            TempData["Error"] = ex.Message;
+        //            Models.Utils.LogError(ex.Message);
+        //            return Json("", JsonRequestBehavior.AllowGet);
+        //        }
+        //    }
+        //    return Json(query, JsonRequestBehavior.AllowGet);
+        //}
         #endregion
         //Refresh Msg Tabel 
         public void DestroySingleToneObj()
@@ -393,10 +380,6 @@ namespace WebApp.Controllers
         #region Langauge tbl
         public ActionResult LanguageIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadLang()

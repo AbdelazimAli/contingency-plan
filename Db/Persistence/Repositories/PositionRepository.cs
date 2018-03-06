@@ -25,7 +25,7 @@ namespace Db.Persistence.Repositories
         public IQueryable<PositionViewModel> GetPositions(string Culture,int CompanyId)
         {
             var Postions = from P in context.Positions
-                           where (P.StartDate <= DateTime.Today && (P.EndDate == null || P.EndDate >= DateTime.Today )) && P.CompanyId== CompanyId
+                           where (P.CompanyId == CompanyId && P.StartDate <= DateTime.Today && (P.EndDate == null || P.EndDate >= DateTime.Today ))
                            select new PositionViewModel
                            {
                                 Code=P.Code,
@@ -41,6 +41,7 @@ namespace Db.Persistence.Repositories
                                 Headcount = P.Headcount,
                                 SysResponse=P.SysResponse
                            };
+
             return Postions;
         }
         public PositionViewModel ReadPosition(int id , string culure)

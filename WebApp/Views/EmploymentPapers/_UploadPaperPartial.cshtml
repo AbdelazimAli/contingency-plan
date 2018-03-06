@@ -1,0 +1,548 @@
+﻿@using Model.Domain;
+@model EmploymentPapersUploadVModel
+
+
+@using (Html.BeginForm("SaveDoc", "EmploymentPapers", new { area = "" }, FormMethod.Post, new { id = "RequestForm", enctype = "multipart/form-data" }))
+{
+    @Html.HiddenFor(m => m.ValidFileExtensions)
+    @Html.HiddenFor(m => m.EmpID)
+    @Html.HiddenFor(m => m.OldModel_Serialized)
+    @Html.Hidden("BatchGridData", "", new { id = "hdnf_BatchGridData" });
+    @Html.Hidden("BatchGridData_Old", "", new { id = "hdnf_BatchGridData_Old" });
+    @Html.HiddenFor(m => m.Stream_Id)
+    @Html.HiddenFor(m => m.RequiredDocTypeIDs)
+    @Html.HiddenFor(m => m.HasExpiryDate)
+    <div class="collapse-label" data-toggle="collapse" href="#d104">
+        <span class="arrow"></span>
+        <span class="lblSpan">@MsgUtils.Instance.Trls("Basic Data")</span>
+    </div>
+
+    <div id="d104" class="collapse-body collapse in">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group horisontal-form">
+                    @Html.TextBoxFor(m => m.name, new { @class = "form-control", formreq = "formreq" })
+                    <label>@MsgUtils.Instance.Trls("File Name") </label>
+                </div>
+                @if (Model.DocumenType != (int)Constants.SystemCodes.DocType.DocTypeEnum.Employment_Papers)
+                {
+                    <div class="form-group horisontal-form">
+                        @Html.TextBoxFor(m => m.Keyword, new { @class = "form-control" })
+                        <label>@MsgUtils.Instance.Trls("Keyword") </label>
+                    </div>
+                }
+                <div class="form-group horisontal-form">
+                    @Html.TextAreaFor(m => m.Description, new { @class = "form-control" })
+                    <label>@MsgUtils.Instance.Trls("Description") </label>
+                </div>
+                <div class="form-group horisontal-form">
+                    @if (Model.IsAddNewOthers)
+                    {
+                        @Html.HiddenFor(m => m.TypeId)
+                    }
+                    else
+                    {
+                        @Html.DropDownListFor(a => a.TypeId, Model.DocTypesList, new { @class = "form-control", onchange = "OnDocTypeChanged(this);" })
+                        <label>@MsgUtils.Instance.Trls("Doc Type") </label>
+                    }
+                </div>
+
+                <div class="form-group horisontal-form" id="div_ExpireDate">
+                    @*style="@((!Model.HasExpiryDate) ? "display:none;" : "")"*@
+                    @Html.TextBoxFor(m => m.ExpireDate_string, new { @class = "form-control" })@*, formreq = "formreq"*@
+                    <label>@MsgUtils.Instance.Trls("Expiration date") </label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="view-area">
+                    <div class="label">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 611.5 611.5">
+                            <path id="Forma_1" data-name="Forma 1" class="cls-1" d="M579.287,263.8H349.2V33.71C349.2,23.229,334.964.5,306.5,0.5S263.8,23.23,263.8,33.71V263.8H33.709C23.229,263.8.5,278.035,0.5,306.5s22.729,42.7,33.209,42.7H263.8V579.29c0,10.479,14.232,33.209,42.7,33.209s42.7-22.73,42.7-33.209V349.2H579.291c10.478,0,33.209-14.231,33.209-42.7S589.768,263.8,579.287,263.8Z" transform="translate(-0.5 -0.5)" />
+                        </svg>
+                        <label for="Image">@Model.ValidFileExt_ForAcceptAttribute</label>
+                    </div>
+                    <div class="view">
+                        @if (Model.IsImage == true)
+                        {
+                            <img alt="" id="img_Paper" src="@Url.Action("GetFile", "EmploymentPapers", new { Stream_Id = Model.Stream_Id, timestamp = DateTime.Now })" />
+                            <embed id="empd_Element">
+
+                        }
+                        else if (Model.IsImage == false)
+                        {
+                            <embed id="empd_Element" src="@Url.Action("GetFile", "EmploymentPapers", new { Stream_Id = Model.Stream_Id, timestamp = DateTime.Now })">
+                        }
+                        else
+                        {
+                            <embed id="empd_Element">
+                        }
+                        <div class="file-uploader">
+                            <input type="file" id="Image" accept="@Model.ValidFileExt_ForAcceptAttribute" name="Images" onchange="OnImageChange(this);" multiple />
+                            <div class="label">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 611.5 611.5">
+                                    <path id="Forma_1" data-name="Forma 1" class="cls-1" d="M579.287,263.8H349.2V33.71C349.2,23.229,334.964.5,306.5,0.5S263.8,23.23,263.8,33.71V263.8H33.709C23.229,263.8.5,278.035,0.5,306.5s22.729,42.7,33.209,42.7H263.8V579.29c0,10.479,14.232,33.209,42.7,33.209s42.7-22.73,42.7-33.209V349.2H579.291c10.478,0,33.209-14.231,33.209-42.7S589.768,263.8,579.287,263.8Z" transform="translate(-0.5 -0.5)" />
+                                </svg>
+                                <label for="Image">@Model.ValidFileExt_ForAcceptAttribute</label>
+                            </div>
+
+                        </div>
+                    </div>
+                    <div id="div_ImageMessage"></div>
+                    @*<div><label for="Image">Please select image file</label></div>*@
+                </div><!-- /.view-area -->
+            </div>
+
+
+
+        </div>
+        <div class="row">
+            <input id="Button1" type="button" value="Scan"  onclick="scanToJpg();"/>
+        </div>
+    </div>
+    <div class="collapse-label" data-toggle="collapse" href="#d105">
+        <span class="arrow"></span>
+        <span class="lblSpan">@MsgUtils.Instance.Trls("Additional info")</span>
+    </div>
+
+    <div id="d105" name="GridSec" class="collapse-body collapse in">
+        <div id='docAttrGrid'></div>
+    </div>
+
+
+    <div class="modal-btns">
+        <button type="button" class="btn save MyButtons submit" id="btn_Submit">@MsgUtils.Instance.Trls("Save")</button>
+        @if (Model.IsUploaded && !Model.IsEmpPaper)
+        {
+            <button id="btn_Remove" type="button" class="btn cancel MyButtons submit" data-dismiss="modal" data-StreamId="@Model.Stream_Id">@MsgUtils.Instance.Trls("Remove")</button>
+        }
+    </div>
+
+}
+
+<div class="modal fade dalert" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                Connection Failed
+            </div>
+            <div class="modal-body">
+                No Scan app application found in your machine please download,install and open first then refresh the browser.
+                <a href="~/SrcFile/Scan_App_SetUp.msi" download>Download Files</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script>
+    var Element_ToPreview = 'empd_Element';
+    var Input_File = 'Image';
+    var AdditionalImageElement = 'img_Paper';
+
+    var codesList;
+    var formId = 'RequestForm';
+    var HasExpiryDate=('@Model.HasExpiryDate' ==="True");
+
+    HasExpirationDateLogic(HasExpiryDate);
+    RegisterAjaxForm();
+    // RegisterUnobtrusiveValidation();
+    RegisterDatePicker();
+    Fire_OnDocTypeChanged_OnLoad();
+    RegisterRemoveButton();
+    if(parseInt('@Model.TypeId')>0 )
+        DrawGrid();
+
+    RegisterScannerApp();
+
+
+
+    function readURL_Image_PDF(input, ImgID,width,height) {
+        $('#img_Paper').hide();
+        $('#' + ImgID).replaceWith('<embed id="empd_Element" alt="pdf" >');
+
+        if (input.files && input.files[0]) {
+            var reader = new FileReader();
+
+            reader.onload = function (e) {
+                $('#' + ImgID)
+                    .attr('src', e.target.result);
+            };
+
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function OnImageChange(img)
+    {
+        readURL_Image_PDF(img, 'empd_Element',400,400);
+        var CurrentFileNameValue=$('#@Html.IdFor(m=>m.name)').val();
+        if(CurrentFileNameValue=='')
+        {
+            var fileInput = document.getElementById('Image');
+            var filename = fileInput.files[0].name.replace(/\.[^/.]+$/, "");
+            $('#@Html.IdFor(m=>m.name)').val(filename);
+        }
+    }
+    function GetDocTypeID() {
+
+        var typeId = '@Model.TypeId';
+
+        if (parseInt(typeId) == 0)
+            typeId = $('#@Html.IdFor(m => m.TypeId)').val();
+
+        return typeId;
+    }
+
+    function SaveOldData_BatchGrid()
+    {
+        var data = $("#docAttrGrid").data("kendoGrid")._data;
+        var Data_String = JSON.stringify(data);
+        $('#hdnf_BatchGridData_Old').val(Data_String);
+    }
+
+    function getAllCodes() {
+        var typeId = GetDocTypeID();
+        $.ajax({
+            async: false,
+            url: "@Url.Action("GetLookUpCodesLists", "FileUpload")",
+            data: { typeId: typeId },
+            success: function (result) {
+                codesList = result;
+            },
+            error: function (result) {
+                console.log(result.responseText);
+            }
+        });
+    }
+
+
+    function DrawGrid() {
+        var typeId = GetDocTypeID();
+        //-- Grid
+        var div_gridname = "docAttrGrid", grid = "'docAttrGrid'";
+        getAllCodes(typeId);  //All LookUp Codes List for this DocType
+
+        //Drow Grid
+        Grids.batchGrid({
+            read: "@Url.Action("ReadDocTypeAttr", "EmploymentPapers", new { area = "" })" + "?streamId=@Model.Stream_Id&typeId=" + typeId,
+            //update: "@Url.Action("UpdateDocTypeAttr", "FileUpload")",
+            lang: "@User.Identity.GetCulture()",
+            //objectName: "CompanyDocAttrs",
+            gridName: div_gridname,
+            admin:false @*"@ViewBag.admin"*@,
+            height: 300,
+            scrollable: {
+                virtual: false,
+                endless: true
+            },
+            pageable: false,
+            toolbar:'<div></div>',
+            // toolbar: '<div><div style="@(ViewBag.rtl ? "float: left" : "float: right")">&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li>' +
+            //'<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li></ul></div></div></div>',
+            fields: {
+                ValueText:{/*editable: false*/},
+
+            },
+            columns: [
+                {
+                    field: "Attribute",
+                    title:'@MsgUtils.Instance.Trls("Attribute")',
+                    editor:function (container, options)
+                    {
+                        $('#' + div_gridname).data("kendoGrid").closeCell();
+                    }
+                },
+                {   //Custom Value Field
+                    field: "ValueText",
+                    title:'@MsgUtils.Instance.Trls("ValueText")',
+                    editor: function (container, options) {
+                        var input, inputTypeId = options.model.InputType;
+                        debugger;
+                        switch (inputTypeId) {
+                            case @((int)Constants.Enumerations.InputTypesEnum.Number):
+                                input = '<input type="number" name="ValueText" style="height: 90%;"/>';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.Select): //select
+                                input = '<select name="Value" style="margin-bottom: 0;">';
+                                var optionList = codesList;
+                                for (var i = 0; i < optionList.length; i++) {
+                                    if (optionList[i].CodeName == options.model.CodeName)
+                                        input += '<option id=' + optionList[i].Id + ' value=' + optionList[i].CodeId + '>' + optionList[i].Name + '</option>';
+                                }
+                                input += '</select>';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.Date): //Date
+                                options.model.Value = options.model.ValueText; //for bind data
+                                input = '<input type="date" name="Value" style="height: 90%; width: 70% !important; margin-bottom: 0;" />';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.Time): //time
+                                options.model.Value = options.model.ValueText; //for bind data
+                                input = '<input type="time" name="Value" style="width: 80% !important; margin-bottom: 0;" />';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.DateTime): //datetime
+                                options.model.Value = options.model.ValueText; //for bind data
+                                input = '<input type="datetime" name="Value" style="height: 90%; width: 80% !important; margin-bottom: 0;" />';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.TextArea): //textarea
+                                input = '<textarea rows="2" cols="40" name="ValueText" ></textarea>';
+                                break;
+                            case @((int)Constants.Enumerations.InputTypesEnum.CheckBox):
+                                input = '<input class="k-valid"   onchange="Grids.CheckBoxChanged(this,\'ValueText\',\''+div_gridname+'\')" type="checkbox" ' + (options.model.ValueText == "True" ? 'checked' : '') + '/>'; //' + (options.model.ValueText == "1" ? 'checked' : '') + '
+                                break;
+                            default:
+                                input = '<input type="text" name="ValueText" style="height: 90%; width: 80% !important; margin-bottom: 0;"/>';
+                                break;
+                        }
+                        $(input).appendTo(container);
+                        //Kendo
+                        $("#" + div_gridname + " [name='Value'][type='date']").kendoDatePicker({ culture: "@ViewBag.culture",value:options.model.ValueText , format:'dd/MM/yyyy',parseFormats:'yyyy/MM/dd'});
+                        $("#" + div_gridname + " [name='Value'][type='time']").kendoTimePicker({ culture: "@ViewBag.culture" ,value:options.model.ValueText});
+                        $("#" + div_gridname + " [name='Value'][type='datetime']").kendoDateTimePicker({ culture: "@ViewBag.culture",value:options.model.ValueText });
+                        $("#" + div_gridname + " select[name='Value']").kendoDropDownList({ valuePrimitive: true, dataTextField: "Name", dataValueField: "CodeId" }); //, value: options.model.Value
+                    },
+                    //checkbox
+                    template: '#if(InputType == @((int)Constants.Enumerations.InputTypesEnum.CheckBox)){# <input type="checkbox"  onchange="Grids.CheckBoxChanged(this,\'ValueText\',\''+div_gridname+'\')" name="ValueText" #:ValueText == "True" ? "checked" : ""#  /> #}else{# <div> #: ValueText ? ValueText : ""  # </div> #}#'
+                }
+            ],
+            save: function (e) {
+
+                e.model.StreamId = $("#" + formId + " #Stream_Id").val(); //Bind StreamId
+                if (e.values.Value && e.values.Value != e.model.Value) {
+
+                    //select
+                    if (e.model.InputType == '@((int)Constants.Enumerations.InputTypesEnum.Select)') {
+                        var code = $.grep(codesList, function (item) {
+                            if (item.CodeName == e.model.CodeName && item.CodeId == e.values.Value)
+                                return true;
+                            return false;
+                        })[0];
+                        e.model.ValueText = code.Name;
+                        e.model.ValueId = code.Id;
+                    }
+
+                    if (e.model.InputType == '@((int)Constants.Enumerations.InputTypesEnum.Date)') {
+                        e.values.Value = kendo.toString(new Date(e.values.Value), 'd');
+                        e.model.Value = e.values.Value; //kendo.toString(new Date(e.values.Value), 'yyyy-MM-dd');
+                        e.model.ValueText = e.values.Value;
+                    }
+                    else if (e.model.InputType == '@((int)Constants.Enumerations.InputTypesEnum.Time)') {
+                        e.values.Value = kendo.toString(new Date(e.values.Value), 't');
+                        e.model.ValueText = e.values.Value;
+                    }
+                    else if (e.model.InputType == '@((int)Constants.Enumerations.InputTypesEnum.DateTime)') {
+                        e.values.Value = kendo.toString(new Date(e.values.Value), 'g');
+                        e.model.ValueText = e.values.Value;
+                    }
+                }
+                else
+                {
+                    e.model.Value = ""
+                    e.model.ValueText = "";
+                }
+
+                if (e.values.ValueText != e.model.ValueText) {
+                    e.model.Value = e.values.ValueText;
+                }
+            },
+            dataBound: function (e) {
+
+                SaveOldData_BatchGrid();
+            }
+        });
+
+
+    }
+
+
+
+    function RegisterAjaxForm() {
+        $('#btn_Submit').off('click').on('click', function (e) {
+
+            var Ar_Data =$("#docAttrGrid").data("kendoGrid").dataSource._data;// Grids.sendData("docAttrGrid");
+            var GridViewModel=new Array();
+            for(var i=0;i<Ar_Data.length;i++)
+            {
+                GridViewModel.push(Ar_Data[i]);
+            }
+
+            var Data_String = JSON.stringify(GridViewModel);
+            $('#hdnf_BatchGridData').val(Data_String);
+
+            if(IsFormValid())
+            {
+                AjaxStart();
+                SubmitDataWithScannedImage(formId,'Image'
+                    , function (R) {
+                        $(".modal-backdrop.fade.in").remove();
+                        AjaxComplete() ;
+                        var data=JSON.parse(R.currentTarget.response);
+                        if(data.Result)
+                        {
+                            toastr.success(data.Message);
+                            UpdatePeopleTrainStatus(data.OldEmpStatus, data.CurrentEmpStatus);
+                            UpdateAttachmentsCount();
+                            $("#tab_EmpAttachment").load("@Url.Action("Index", "EmploymentPapers")?EmpID=@Model.EmpID");
+                        }
+                        else
+                            toastr.error(data.Message);
+                    });
+
+            }
+        });
+    }
+
+    function UpdateAttachmentsCount()
+    {
+        var data='{}';
+        var url='@Url.Action("GetAttachmentsCount","People",new {area="",EmpID=Model.EmpID })';
+        do_AjaxCall_WithMethod(url, data, 'GET', function(data){
+            if(data.Result)
+                $('#docProgress span').text(data.Docs);
+        });
+    }
+
+    function IsFormValid()
+    {
+        var Array_validExtensions=new Array(@Html.Raw(Model.ValidFileExtensions));
+
+        var IsImageValid= CheckFileValidation('Image', 'div_ImageMessage', '@MsgUtils.Instance.Trls("Invalid file extension")',Array_validExtensions);
+        var IsKendogridValid = $("#docAttrGrid").kendoValidator().data("kendoValidator").validate();
+        var IsKendogridRequiredValid=CheckGridRequiredValidation();
+        var IsFormValid= $('#'+formId+'').kendoValidator().data("kendoValidator").validate();
+
+        return IsKendogridValid && IsFormValid && IsImageValid && IsKendogridRequiredValid;
+    }
+
+    function CheckGridRequiredValidation()
+    {
+        var IsValid=true;
+        var grid = $('#docAttrGrid').data("kendoGrid");
+        var Ar_GridData=$("#docAttrGrid").data("kendoGrid").dataSource._data;
+
+        var Ar_DataHasErrors=new Array();
+        var Ar_MajorErrorList=new Array();
+
+        if(Ar_GridData&&Ar_GridData.length>0)
+        {
+            for(var i=0;i<Ar_GridData.length;i++)
+            {
+                var record=Ar_GridData[i];
+                if(record.IsRequired&&(record.ValueText==null||record.ValueText==''))
+                {
+
+                    var Ar_Errors=new Array();
+                    Ar_Errors.push({field:'ValueText',message:'@MsgUtils.Instance.Trls("Required", ViewBag.culture)'});
+
+                    Ar_MajorErrorList.push({id:record.Id,page:1,row:i+1,errors:Ar_Errors});
+                    Ar_DataHasErrors.push(record);
+
+                    IsValid=false;
+                }
+            }
+        }
+
+        if(IsValid==false)
+        {
+            var parms = { data: Ar_DataHasErrors, errors:Ar_MajorErrorList };
+            Grids.setErrors(parms, "#docAttrGrid");
+            grid.refresh();
+        }
+        return IsValid;
+    }
+
+
+    function RegisterRemoveButton() {
+        $('#btn_Remove').off('click').on('click', function (e) {
+
+            if(confirm('@MsgUtils.Instance.Trls("AreYouSureToDeleteDoc")'))
+            {
+                var Stream_Id = $(this).data('streamid');
+
+                var RequiredDocTypeIDs=$('#@Html.IdFor(m=>m.RequiredDocTypeIDs)').val();
+                var url = '@Url.Action("RemoveDocument", "EmploymentPapers", new {area="" })?Stream_Id=' + Stream_Id+'&RequiredDocTypeIDs='+RequiredDocTypeIDs;
+                $.get(url, function (data, status) {
+                    if(data.Result)
+                    {
+                        UpdatePeopleTrainStatus(data.OldEmpStatus, data.CurrentEmpStatus);
+
+                        ResetForm();
+                        toastr.success(data.Message);
+                    }
+                    else
+                        toastr.error(data.Message);
+                });
+            }
+
+
+
+        });
+    }
+
+    function ResetForm() {
+        HideModal('myModal');
+        $("#tab_EmpAttachment").load("@Url.Action("Index", "EmploymentPapers")?EmpID=@Model.EmpID");
+    }
+
+
+
+    function Fire_OnDocTypeChanged_OnLoad() {
+
+        var InitialDocType = '@Model.TypeId';
+        if (parseInt(InitialDocType) == 0) {
+            OnDocTypeChanged($('#@Html.IdFor(m=>m.TypeId)'))
+        }
+    }
+
+    function RegisterDatePicker() {
+        var txt_ExpireDate = $('#' + '@Html.IdFor(m=>m.ExpireDate_string)' + '');
+        if ($(txt_ExpireDate).length > 0) {
+            $(txt_ExpireDate).removeAttr('type');
+            $(txt_ExpireDate).kendoDatePicker();
+        }
+
+    }
+
+    function RegisterUnobtrusiveValidation() {
+        var form = $('#'+formId+'');
+        $.validator.unobtrusive.parse(form);
+    }
+
+    function OnDocTypeChanged(ddl) {
+        var DocTypeID = $(ddl).val();
+        var url = '@Url.Action("HasExpirationDate", "EmploymentPapers", new {area="" })';
+        var data = '{"DocTypeID":' + DocTypeID + '}';
+        do_AjaxCall(url, data, function (d) {
+            DrawGrid();
+            HasExpirationDateLogic(d.HasExpirationDate);
+        });
+    }
+
+    function HasExpirationDateLogic(HasExpirationDate)
+    {
+
+        if (HasExpirationDate)
+        {
+            $('#@Html.IdFor(m=>m.HasExpiryDate)').val(true);
+            $('#@Html.IdFor(m=>m.ExpireDate_string)').attr('formreq','formreq');
+            $('#div_ExpireDate').show();
+
+        }
+        else {
+            $('#@Html.IdFor(m=>m.HasExpiryDate)').val(false);
+            $('#@Html.IdFor(m=>m.ExpireDate_string)').removeAttr('formreq');
+            $('#div_ExpireDate').hide();
+            $('#@Html.IdFor(m=>m.ExpireDate_string)').val('');
+        }
+    }
+
+
+
+
+
+    //************New Scanner app************//
+   
+    //data:image/jpeg;base64,
+    //data:;base64,
+</script>

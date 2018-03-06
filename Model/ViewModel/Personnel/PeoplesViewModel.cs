@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Model.Domain;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -10,7 +11,6 @@ namespace Model.ViewModel.Personnel
 {
    public class PeoplesViewModel
     {
-
         public int Id { get; set; }
         [MaxLength(20)]
         public string Title { get; set; }
@@ -36,11 +36,7 @@ namespace Model.ViewModel.Personnel
         public DateTime? JoinDate { get; set; }
         public DateTime? StartExpDate { get; set; } // Display Experience: 9Y as integer label  
         public int? QualificationId { get; set; }
-        //Employment
-        public short? PersonType { get; set; }
-        public string Code { get; set; }
-        public DateTime? StartDate { get; set; } = new DateTime(2000, 1, 1);
-
+       
         // Personal Data
         [Column(TypeName = "Date")]
         public DateTime BirthDate { get; set; }  // Display Age: 36Y as integer label
@@ -53,11 +49,6 @@ namespace Model.ViewModel.Personnel
         public byte? BnftFamlyCnt { get; set; } // Family count in Benefits
         public short? Religion { get; set; } // 1-Muslim 2-Christian
 
-        // Contact Information
-        public int? AddressId { get; set; }
-        public int? HoAddressId { get; set; }
-        public string Address { get; set; }
-        public string HostAddress { get; set; }
         [MaxLength(20)]
         public string Mobile { get; set; }
         [MaxLength(20)]
@@ -113,12 +104,6 @@ namespace Model.ViewModel.Personnel
         [MaxLength(200)]
         public string Recommend { get; set; }
         public short? RecommenReson { get; set; }
-
-        // Location Information
-        public int? LocationId { get; set; }
-
-        [MaxLength(10)]
-        public string RoomNo { get; set; }
         public int Age { get; set; }
         public int? ExpYear { get; set; }
         public int Attachments { get; set; }
@@ -132,23 +117,47 @@ namespace Model.ViewModel.Personnel
         public DateTime? ModifiedTime { get; set; }
         public int EmpStatus { get; set; }
         public bool HasImage { get; set; }
-        public int sequence { get; set; }
         public DateTime? SubscripDate { get; set; }
         public decimal? BasicSubAmt { get; set; }
         public decimal? VarSubAmt { get; set; }
 
+
         //progress bars
-        public double Docs { get; set; } 
+        public string Docs { get; set; } 
         public double profileProgress { get; set; }
 
-    }
+        // New
+        [MaxLength(20)]
+        public string TreatCardNo { get; set; } // Treatment card number
+        public PersonStatus Status { get; set; }
 
-    public class PersonProfileVM
+        [MaxLength(500)]
+        public string Address1 { get; set; }
+        public int? CountryId { get; set; }
+        public Country Country { get; set; }
+        public int? CityId { get; set; }
+        public City City { get; set; }
+        public int? DistrictId { get; set; }
+        public District District { get; set; }
+
+        [Range(-90, 90, ErrorMessage = "The valid Latitude range is -90 to 90")]
+        public double? Latitude { get; set; }
+
+        [Range(-180, 180, ErrorMessage = "The valid Longitude range is -180 to 180")]
+        public double? Longitude { get; set; }
+
+        [MaxLength(500)]
+        public string HoAddress { get; set; }
+        public string BirthLocation { get; set; }
+        public string Location { get; set; }
+        public string PaperStatus { set; get; }
+    }
+   public class PersonProfileVM
     {
         public float NofVisible { get; set; }
         public float NofData { get; set; }
     }
-    public class EmpLoginDataViewModel
+   public class EmpLoginDataViewModel
     {
         public int EmpId { get; set; }
         public int CompanyId { get; set; }

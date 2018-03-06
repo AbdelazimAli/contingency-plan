@@ -2,7 +2,7 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     var version = Request.QueryString["Version"];
@@ -16,7 +16,7 @@
 <div id="AdjustWindow"></div>
 <script>
     var addUrl = "@Url.Action("AddNewAdjustment", "LeaveAction")";
-    RequestFilters.ApplayAllFilters([], {}, "MoneyBalnaceDiv", "@Url.Action("ReadLeaveAdjust", "LeaveAction")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "MoneyBalnaceDiv", "@Url.Action("ReadLeaveAdjust", "LeaveAction")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var LeaveTypes = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.GridLeaveTypes));
     var Periods = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Periods));
     var TransType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TransType));

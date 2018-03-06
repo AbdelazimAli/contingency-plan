@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         {
             var Code = _hrUnitOfWork.Repository<PayrollGrade>().DefaultIfEmpty().Max(a => a == null ? 0 : a.Code);
             ViewBag.Code = Code + 1;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadPayrollGrades(int MenuId)
@@ -105,7 +101,6 @@ namespace WebApp.Controllers
                         Destination = payroll,
                         Source = p,
                         ObjectName = "PayrollGrades",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
                     payroll.CompanyId = p.IsLocal ? CompanyId : (int?)null;
@@ -155,7 +150,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "PayrollGrades",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.PayrollRepository.Remove(Obj);
@@ -205,7 +199,6 @@ namespace WebApp.Controllers
                         Destination = PayrollGrade,
                         Source = p,
                         ObjectName = "PayrollGrades",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Update
                     });
                     PayrollGrade.CompanyId = p.IsLocal ? CompanyId : (int?)null;
@@ -237,10 +230,6 @@ namespace WebApp.Controllers
         {
             var Code = _hrUnitOfWork.Repository<PayrollGrade>().DefaultIfEmpty().Max(a => a == null ? 0 : a.Code);
             ViewBag.Code = Code + 1;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadAccount(int MenuId)
@@ -297,7 +286,6 @@ namespace WebApp.Controllers
                         Destination = account,
                         Source = model,
                         ObjectName = "Accounts",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
                     account.CreatedUser = UserName;
@@ -381,7 +369,6 @@ namespace WebApp.Controllers
                         Destination = account,
                         Source = model,
                         ObjectName = "Accounts",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Update
                     });
                     account.CompanyId = CompanyId;
@@ -412,7 +399,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Accounts",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.PayrollRepository.Remove(Obj);

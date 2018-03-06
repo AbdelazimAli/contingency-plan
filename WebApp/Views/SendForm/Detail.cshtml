@@ -1,0 +1,77 @@
+﻿@using System.Web.Script.Serialization;
+@model Model.ViewModel.Personnel.SendFormPageVM
+
+@{
+    Layout = null;
+}
+
+@Html.Partial("_FormButtons")
+<div id="SendFormDiv"></div>
+
+<script>
+    // 1-Save  2-Save&New 3-Save&Close 4-Correct  5-Update
+    // 6-Download  7-upload  8-Send  11-Exit
+    $(function () {
+        showToolbar([2, 3, 11]);
+        var model;
+
+        //serialize The model to JavaScript to send to form.js
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var formId = "SendFormPage";
+
+        //Send the serialized model and props to form.js
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: "SendFormPage", version:"@Request.QueryString["Version"]", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="SendForms";
+                data.FormAction = "@Url.Action("SaveSendForm", "SendForm")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @User.Identity.RTL().ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@User.Identity.CanCustomize()";
+                $("#SendFormDiv").Forms(data, model);
+
+                $('#ExpiryDate').val('');
+                FormJs.fillOptionsDynamic($("#" + formId), "FormId", @Html.Raw((new JavaScriptSerializer()).Serialize(Model.FormList)));
+                FormJs.fillOptionsDynamic($("#" + formId), "Departments", @Html.Raw((new JavaScriptSerializer()).Serialize(Model.DeptList)));
+                FormJs.fillOptionsDynamic($("#" + formId), "Jobs", @Html.Raw((new JavaScriptSerializer()).Serialize(Model.JobList)));
+                FormJs.fillOptionsDynamic($("#" + formId), "Employees", @Html.Raw((new JavaScriptSerializer()).Serialize(Model.EmpList)));
+
+                $("#b2,#b3").off('click').on('click', function (e) {
+                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+
+                    //Check if the expiry date greater than date today
+                    if( $("#ExpiryDate").data('kendoDatePicker').value()  < new Date())
+                    {
+                        toastr.error("@MsgUtils.Instance.Trls("DateMustGrtThanToday")");
+                        return;
+                    }
+
+                    //Check if at least user entered Department, job or employee at least
+                    if ($("#Departments").data("kendoMultiSelect").value().length == 0 &&
+                        $("#Jobs").data("kendoMultiSelect").value().length == 0 &&
+                        $("#Employees").data("kendoMultiSelect").value().length == 0) {
+                        toastr.error("@MsgUtils.Instance.Trls("MustSelectAtLeast")");
+                        return;
+                    }
+
+                    var buttId = $(this).attr("id");
+                    FormJs.saveForm($("#"+formId), $(this), function (data) {
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        model = data;
+
+                        if (buttId == "b3") updateHistory(oldUlr);
+
+                    }, buttId == "b2");
+                });
+            }
+        });
+
+    })
+</script>

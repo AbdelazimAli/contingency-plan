@@ -18,7 +18,6 @@ namespace Model.Domain
         public short ProviderType { get; set; } // lookup user code
 
         public int? AddressId { get; set; }
-        public Address Address { get; set; }
 
         [MaxLength(100)]
         public string Manager { get; set; }

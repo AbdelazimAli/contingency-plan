@@ -3,7 +3,7 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
@@ -11,12 +11,12 @@
     int.TryParse(Request.QueryString["Read"], out read);
     string[] function = ViewData["Functions"] as string[];
 }
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "MedicalRequests" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "acceptedMedical" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "MedicalRequests" } })
 <div id="acceptedMedical"></div>
 
 <script>
     var addUrl = "@Url.Action("AcceptedMedicalDetails", "Medical")";
-    RequestFilters.ApplayAllFilters([], {}, "acceptedMedical", "@Url.Action("ReadAcceptedMedical", "Medical")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "acceptedMedical", "@Url.Action("ReadAcceptedMedical", "Medical")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var grid = "'acceptedMedical'";
     var approvalStatus = [
          { value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
@@ -30,19 +30,10 @@
          { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }
     ];
 
-    function Exist(data) {
-        if (data.HasImage)
-            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
-
     var columns = [
           {
               field: "Employee",
-              template: "<div class='k-people-photo' " +
-                              "style='background-image: #:Exist(data)# '></div>" +
-                              "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>"
+              template: "<div><img class='k-people-photo' src=#:Exist(data.Gender,data.Attachement)# />&nbsp;<span class='k-people-name'>#: Employee #</span></div>"
           },
           { field: "ApprovalStatus", values: approvalStatus }
     ];

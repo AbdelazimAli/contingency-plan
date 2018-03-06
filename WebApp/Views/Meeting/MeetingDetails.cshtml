@@ -1,0 +1,840 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@*@model Model.ViewModel.Notification.MeetingViewModel*@
+
+@{
+    Layout = null;
+    var admin = User.Identity.CanCustomize();
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+}
+
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
+<script src="~/Scripts/cultures/lang.js"></script>
+@Html.Partial("_FormButtons")
+
+<div id="MeetingDiv"></div>
+
+<script>
+    // append activate button to toolbar
+    $('<div class="btn-group"><button type="submit" class="btn ajaxBtn" id="ActivateBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 328.95 328.96"><path d="M329,164.51C328.76,255.27,255,329,164.51,329,73.7,328.94-.55,254.58,0,164.21.56,73.15,74.23-.36,164.57,0,255.5.36,329.15,74.06,329,164.51Zm-25.23.08A139.22,139.22,0,1,0,164.5,303.73,139,139,0,0,0,303.72,164.59Z" /><path d="M98.34,156.23l40.5,40.67L231,104.71l17,18.08-109,109-58.15-58Z" /></svg><span>@MsgUtils.Instance.Trls("Activate")</span></button></div>').insertBefore('#div11');
+
+    var Employees=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+    var Emps;
+    var BranchId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.BranchId));
+    var SiteId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.SiteId));
+    @*var Attendee =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Attendee));
+    var Viewer =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Viewer));*@
+    var LocationType =[{id:1,name:"@MsgUtils.Instance.Trls("Inside Company")"},{id:2,name:"@MsgUtils.Instance.Trls("Client Location")"},{id:3,name:"@MsgUtils.Instance.Trls("Outside Company")"}];
+    $(function () {
+
+        function MeetingAgenda(id,Level){
+            $("div[name=AgendaSec]").html('<div id="AgendaDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+            var gridname = "'AgendaDiv'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadAgenda", "Meeting")?MeetingId=" + id,
+                lang: "@User.Identity.GetCulture()",
+                height: 300,
+                objectName: "MeetingAgenda",
+                admin: "@admin",
+                columns: (Level == 1 ? [{ field: "Delete", input: "none"}]: [{ field: "Delete", input: ""}, { field: "StartTime", editor: timeEditor },{ field: "EndTime", format: "{0:hh:mm tt}", editor: timeEditor },
+                           {
+                               field: "EmpName", editor: function (container, options) {
+                                   var input = "<select name='EmpId' dataTextField: 'text' data-bind:'text'  dataValueField:'value' style='width: 80%; margin-bottom: 0;'>";
+                                   for (var i = 0; i < Emps.length; i++) {
+                                       input += "<option value='" + Emps[i].value + "'>" + Emps[i].text + "</option>";
+                                   }
+                                   input += "</select>";
+                                   var dllSelect = $(input).appendTo(container).kendoDropDownList({
+                                       change: function (ee) {
+                                           var id =this.value();
+                                           for (var x = 0; x <Emps.length; x++) {
+                                               if (Emps[x].value == id )
+                                               {
+                                                   options.model.EmpName = Emps[x].text;
+                                               }
+                                           }
+
+                                           options.model.EmpId = this.value();
+                                       }
+                                   }).data("kendoDropDownList");
+                               }
+                           },
+                    {
+                        field:"Time",editor: function (container, options) {
+                        $('#AgendaDiv').data("kendoGrid").closeCell();
+                    }
+                    }
+                ]),
+                fields: {StartTime: { defaultValue: null,
+                        validation: {
+                            customColumnType: function (input) {
+                                var dataItem = $("#AgendaDiv").data("kendoGrid").dataItem($(input).closest("tr"));
+                                if ($(input).data("kendoTimePicker"))
+                                {
+                                    //var oldValue = dataItem.EndTime;
+                                    //var newValue = $(input).data("kendoTimePicker").value();
+                                    //var Difftime = getDiffKendoTime(newValue,oldValue);
+                                    //if( Difftime && Difftime.length > 15)
+                                    //{
+                                    //    $(input).attr("validationMessage", Difftime);
+                                    //    return false;
+                                    //}
+                                    //if($("#StartTime").data("kendoTimePicker").value()!= null && $("#EndTime").data("kendoTimePicker").value()!= null )
+                                    //{
+                                    //    var meetingStart = $("#StartTime").data("kendoTimePicker").value();
+                                    //    var meetingEnd = $("#EndTime").data("kendoTimePicker").value();
+                                    //    var chkStart = checkAgendaStart(newValue,meetingStart,meetingEnd);
+                                    //    if(chkStart)
+                                    //    {
+                                    //        $(input).attr("validationMessage", chkStart);
+                                    //        return false;
+                                    //    }
+                                    //}
+                                    //var dataSource = $("#AgendaDiv").data("kendoGrid").dataSource.data();
+                                    //for (var x = 0; x <dataSource.length; x++) {
+                                    //    if (dataSource[x].EndTime != null){
+                                    //        var prevEndTime = dataSource[x].EndTime;
+                                    //        var chkOverLap = checkOverLap(newValue,prevEndTime);
+                                    //        if(chkOverLap)
+                                    //        {
+                                    //            $(input).attr("validationMessage", chkOverLap);
+                                    //            return false;
+                                    //        }
+                                    //    }
+                                    //}
+                                }
+                                return true;
+
+                        }
+                    } },
+                    EndTime:{ defaultValue: null,
+                    validation: {
+                        customColumnType: function (input) {
+                             var dataItem = $("#AgendaDiv").data("kendoGrid").dataItem($(input).closest("tr"));
+                            if ($(input).data("kendoTimePicker"))
+                            {
+                                var oldValue = dataItem.StartTime;
+                                var StartOldValue = dataItem.StartTime;
+                                var newValue = $(input).data("kendoTimePicker").value();
+                                var Difftime = getDiffKendoTime(oldValue,newValue);
+                                if(Difftime && Difftime.length > 15)
+                                {
+                                    $(input).attr("validationMessage", Difftime);
+                                    return false;
+                                }
+                                //if($("#StartTime").data("kendoTimePicker").value()!= null && $("#EndTime").data("kendoTimePicker").value()!= null )
+                                //{
+                                //    var meetingStart = $("#StartTime").data("kendoTimePicker").value();
+                                //    var meetingEnd = $("#EndTime").data("kendoTimePicker").value();
+                                //    var chkEnd = checkAgendaEnd(newValue,meetingStart,meetingEnd,StartOldValue);
+                                //    if(chkEnd)
+                                //    {
+                                //        $(input).attr("validationMessage", chkEnd);
+                                //        return false;
+                                //    }
+                                //}
+                            }
+                            return true;
+
+                            }
+                        } }},
+                toolbar:Level==1 ?'<div></div>':'<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a><div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                gridName: "AgendaDiv",
+                dataBound:function(e)
+                {
+                    var view = e.sender.dataSource.view();
+                    var dropdownlist = $(e.sender).data("kendoDropDownList");
+                    //for (var i = 0; i <view.length; i++)
+                    //{
+                    //    var Difftime = getDiffKendoTime(view[i].StartTime,view[i].EndTime);
+                    //    var row = $("#AgendaDiv [data-uid=" + view[i].uid + "]");;
+                    //    var model = $("#AgendaDiv").data("kendoGrid").dataItem(row);
+                    //    if(Difftime !== undefined)
+                    //    {
+                    //        model.set("Time", Difftime);
+                    //    }
+                    //}
+                },
+                save : function (e) {
+                    if (e.values.StartTime && e.values.StartTime != e.model.StartTime)
+                    {
+                        var Difftime = getDiffKendoTime(e.values.StartTime,e.model.EndTime);
+                        var row = $("#AgendaDiv [data-uid=" + e.model.uid + "]");
+                        model = $("#AgendaDiv").data("kendoGrid").dataItem(row);
+                        model.set("Time", Difftime);
+                    }
+                    else if(e.values.EndTime && e.values.EndTime != e.model.EndTime)
+                    {
+
+                        var Difftime = getDiffKendoTime(e.model.StartTime,e.values.EndTime);
+                        var row = $("#AgendaDiv [data-uid=" + e.model.uid + "]");
+                        model = $("#AgendaDiv").data("kendoGrid").dataItem(row);
+                        model.set("Time", Difftime);
+                    }
+
+                },
+
+            });
+        }
+        function timeEditor(container, options) {
+            $('<input data-text-field="' + options.field + '" data-value-field = "' + options.field + '"data-bind="value:' + options.field + '"data-format="' + options.format + '" />')
+                .appendTo(container)
+                .kendoTimePicker({ culture: "@culture", format: 'h:mm tt', parseFormats: ["HH:mm"],dateInput: true });
+        }
+
+        function checkAgendaStart(agendaStart,meetingStart,meetingEnd)
+        {
+            var agendaHours = agendaStart.getHours();
+            var agendaMinutes = agendaStart.getMinutes();
+            var meetingHours = meetingStart.getHours();
+            var meetingMinutes = meetingStart.getMinutes();
+            var meetingEndHours = meetingEnd.getHours();
+            var meetingEndMinutes = meetingEnd.getMinutes();
+            if(agendaHours < meetingHours ||(agendaHours == meetingHours && agendaMinutes < meetingMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("StartAgendaMustGthMeeting")";
+            }
+            else if(agendaHours > meetingEndHours ||(agendaHours == meetingEndHours && agendaMinutes == meetingMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("StartAgendaMustLthEndMeeting")";
+            }else if(agendaHours > meetingEndHours || (agendaHours == meetingEndHours && agendaMinutes > meetingEndMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("StartAgendaMustLthEndMeeting")";
+
+            }
+        }
+
+        function checkAgendaEnd(agendaEnd,meetingStart,meetingEnd,StartOldValue)
+        {
+            var agendaHours = agendaEnd.getHours();
+            var agendaMinutes = agendaEnd.getMinutes();
+            var agendaStartHours = StartOldValue.getHours();
+            var agendaStartMinutes = StartOldValue.getMinutes();
+            var meetingEndHours = meetingEnd.getHours();
+            var meetingEndMinutes = meetingEnd.getMinutes();
+            if(agendaHours < agendaStartHours|| (agendaHours == agendaStartHours && agendaMinutes <= agendaStartMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("EndAgendaMustGthStartAgenda")";
+            }
+            else if(meetingEndHours < agendaHours ||(meetingEndHours == agendaHours && meetingEndMinutes < agendaMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("EndAgendaMustLthEndMeeting")";
+            }
+        }
+        function checkOverLap(newStartTime,prevEndTime)
+        {
+            var startHours = newStartTime.getHours();
+            var startMinutes = newStartTime.getMinutes();
+            var endHours = prevEndTime.getHours();
+            var endMinutes = prevEndTime.getMinutes();
+            if(startHours < endHours ||(startHours == endHours && endMinutes > startMinutes))
+            {
+                return "@MsgUtils.Instance.Trls("StartLthPrevEndtime")";
+            }
+
+        }
+        //Get Time Calculated field in  Agenda
+        function getDiffKendoTime(startTime,EndTime)
+        {
+            if(startTime && EndTime)
+            {
+                var diffHours , diffMinutes;
+                var startHours = startTime.getHours();
+                var startMinutes = startTime.getMinutes();
+                var endHours = EndTime.getHours();
+                var endMinutes = EndTime.getMinutes();
+                diffHours = endHours - startHours;
+                diffMinutes = 00;
+                if(endHours < 12 && startHours > 12)
+                {
+                    diffHours = (12 + endHours) - (startHours-12);
+                }
+                else if(endHours < 12 && startHours < 12 && endHours < startHours )
+                {
+                    return "@MsgUtils.Instance.Trls("EndMustGthanStart")";
+                    // diffHours =  (endHours + 12) + (12-startHours);
+                }
+                else if(endHours < 12 && startHours < 12 && (endHours == startHours && endMinutes < startMinutes))
+                {
+                    return "@MsgUtils.Instance.Trls("EndMustGthanStart")";
+                }
+                else if(endHours < 12 && startHours == 12)
+                {
+                    return "@MsgUtils.Instance.Trls("StartMustLessEnd")"
+                    // diffHours =  (endHours + 12) + (12-startHours);
+                }
+                else if(endHours > 12 && startHours > 12 && Number(startMinutes) > Number(endMinutes) && startHours > endHours)
+                {
+                    return "@MsgUtils.Instance.Trls("StartMustLessEnd")";
+                    // diffHours =  (endHours + 12) + (12-startHours);
+                }
+                else if(endHours > 12 && startHours > 12 && startHours > endHours)
+                {
+                    return "@MsgUtils.Instance.Trls("StartMustLessEnd")";
+
+                    // diffHours =  (endHours + 12) + (12-startHours);
+                }
+                else if(endHours == startHours && startMinutes > endMinutes)
+                {
+                    return "@MsgUtils.Instance.Trls("StartMustLessEnd")"
+
+                }
+                else  if(endHours == startHours && startMinutes == endMinutes)
+                {
+                    return "@MsgUtils.Instance.Trls("EndMustGthanStart")"
+                }
+                else if(startMinutes < endMinutes)
+                {
+                    var h = 60 - startMinutes;
+                    var endCalcStartHours = startHours + 1 ;
+                    if(endHours == endCalcStartHours)
+                    {
+                        diffMinutes = h + endMinutes;
+                        if(diffMinutes >= 60)
+                        {
+                            diffHours = 1;
+                            diffMinutes = (h + endMinutes)- 60;
+                        }
+                        else
+                        {
+                            diffHours = 0;
+                            diffMinutes =  h + endMinutes;
+                        }
+                    }
+                    else if(endHours > endCalcStartHours)
+                    {
+                        diffHours = endHours - endCalcStartHours;
+                        diffMinutes = h + endMinutes;
+                        if(diffMinutes >= 60 )
+                        {
+                            diffHours = diffHours +1;
+                            diffMinutes = (h + endMinutes)- 60;
+                        }
+                    }
+                    else if(endHours == startHours)
+                    {
+                        diffHours = 0;
+                        diffMinutes = endMinutes - startMinutes;
+                    }
+
+                }
+                else if(startMinutes > endMinutes )
+                {
+                    var h = 60 - startMinutes;
+                    var endCalcStartHours = startHours + 1 ;
+                    if(endHours == endCalcStartHours)
+                    {
+                        diffMinutes = h + endMinutes;
+                        if(diffMinutes >= 60)
+                        {
+                            diffHours = 1;
+                            diffMinutes = (h + endMinutes)- 60;
+                        }
+                        else
+                        {
+                            diffHours = 0;
+                            diffMinutes =  h + endMinutes;
+                        }
+                    }
+                    else if(endHours > endCalcStartHours)
+                    {
+                        diffHours = endHours - endCalcStartHours;
+                        diffMinutes = h + endMinutes;
+                        if(diffMinutes >= 60 )
+                        {
+                            diffHours = diffHours +1;
+                            diffMinutes = (h + endMinutes)- 60;
+                        }
+                    }
+                    else if(endHours == startHours)
+                    {
+                        diffHours = 0;
+                        diffMinutes = endMinutes - startMinutes;
+                    }
+                }
+                var timeDiff = diffHours +":"+diffMinutes;
+                return timeDiff;
+            }
+        }
+
+        var model = @Html.Raw(Json.Encode(Model)); @*@Html.Raw((new JavaScriptSerializer()).Serialize(Model));*@
+        var Language = lang.getList("@culture");
+        var flag = false;
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var formId = "MeetingForm";
+
+        var read = "@Request.QueryString["Read"]";
+        var dataLevel= "@Request.QueryString["DataLevel"]";
+
+        $.ajax({
+            async: false,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: 'MeetingForm', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" },
+            success: function (data) {
+                data.FormId = formId;
+                data.TableName ="Meetings";
+                data.FormAction = "@Url.Action("SaveMeetingForm", "Meeting")";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+                if(read == 1) data.mode = 'show';
+                $("#MeetingDiv").Forms(data, model);
+                MeetingAgenda(model.Id , read);
+                FormJs.fillOptionsDynamic($("#" + formId), "MeetingAttendee", Employees, null,{ remoteTableName: "People"});
+                FormJs.fillOptionsDynamic($("#" + formId), "MeetingViewer", Employees, null,{ remoteTableName: "People"});
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Employees, model,{ remoteTableName: "People"});
+                FormJs.fillOptionsDynamic($("#" + formId), "SiteId", SiteId, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "BranchId", BranchId, model);
+                FormJs.fillOptionsDynamic($("#"+formId),"LocationType",LocationType,model);
+                // 1-Save  2-Save&New 3-Save&Close 4-Correct  5-Update
+                // 6-Download  7-upload  8-Send
+                // 9-WorkFlow 10-Attachment 11-Exit
+
+                showToolbar([1,2,3,11]);
+
+                // Load schedual automatically open form
+                $("input[name='LocationType'][value='1']").attr('checked', true);
+                $("#"+formId).find("#SiteId").removeAttr("formreq");
+                $("#"+formId).find("#BranchId").removeAttr("formreq");
+                $("#"+formId).find("#LocationText").removeAttr("formreq");
+                $("#"+formId).find("#LocationText").closest(".form-group").css("display","none");
+
+                $("input[name='LocationType']").change(function()
+                {
+                   
+                    FormJs.removeFormError(formId,"SiteId");
+                    FormJs.removeFormError(formId,"BranchId");
+                    FormJs.removeFormError(formId,"LocationText");
+                    var value = $("input[name='LocationType']:checked").val();
+                    if(value == 1)
+                    {
+                        $("#"+formId).find("#LocationText").closest(".form-group").css("display","none");
+                        $("#"+formId).find("#SiteId").closest(".form-group").css("display","none");
+                        $("#"+formId).find("#BranchId").closest(".form-group").css("display","");
+                        FormJs.fillOptionsDynamic($("#" + formId), "BranchId", BranchId, model);
+                        $("#"+formId).find("#LocationText").removeAttr("formreq");
+                    }
+                    else if(value == 2)
+                    {
+                        $("#"+formId).find("#LocationText").closest(".form-group").css("display","none");
+                        $("#"+formId).find("#SiteId").closest(".form-group").css("display","");
+                        $("#"+formId).find("#BranchId").closest(".form-group").css("display","none");
+                        FormJs.fillOptionsDynamic($("#" + formId), "SiteId", SiteId, model);
+                        $("#"+formId).find("#LocationText").removeAttr("formreq");
+                    }
+                    else
+                    {
+                        $("#"+formId).find("#LocationText").closest(".form-group").css("display","");
+                        $("#"+formId).find("#SiteId").closest(".form-group").css("display","none");
+                        $("#"+formId).find("#BranchId").closest(".form-group").css("display","none");
+                        $("#"+formId).find("#SiteId").removeAttr("formreq");
+                        $("#"+formId).find("#BranchId").removeAttr("formreq");
+                    }
+                });
+
+                function LoadChart(){
+                    if(read != 1)
+                    {
+
+                        var ids = $("#" + formId).find("#MeetingAttendee").getKendoMultiSelect().value();
+                        var date = new Date(new Date($("#MeetDate").data("kendoDatePicker").value()).toString()).toLocaleDateString();
+                        //var date = FormJs.parseServerDate($('#MeetDate').val());
+                        var serverStartTime = "00:00";
+                        var serverEndTime = "00:00";
+                        if($("#StartTime").val() != "" && $("#EndTime").val() != "")
+                        {
+                            if($("#StartTime").data("kendoTimePicker").value().getHours().toString().length == 1)
+                                serverStartTime = "0"+$("#StartTime").data("kendoTimePicker").value().getHours()+":"+$("#StartTime").data("kendoTimePicker").value().getMinutes();
+                            else
+                                serverStartTime = $("#StartTime").data("kendoTimePicker").value().getHours()+":"+$("#StartTime").data("kendoTimePicker").value().getMinutes();
+                            if($("#EndTime").data("kendoTimePicker").value().getHours().toString().length == 1)
+                                serverEndTime = "0"+$("#EndTime").data("kendoTimePicker").value().getHours()+":"+$("#EndTime").data("kendoTimePicker").value().getMinutes();
+                            else
+                               serverEndTime =$("#EndTime").data("kendoTimePicker").value().getHours()+":"+$("#EndTime").data("kendoTimePicker").value().getMinutes();
+                        }
+                        // Load Sechdual /Home/GetEmpSechedual
+                        $("div[name=EmpSchedualSec]").load('/Home/GetEmpSechedual?Ids='+ids+'&date='+date+'&StartTime='+serverStartTime+'&EndTime='+serverEndTime+'&id='+model.Id, function(){
+
+                        });
+                    }
+                }
+
+                //function get Time of Meeting in loading Meetting Form
+                getDiffTime();
+                if(model.Id > 0)
+                {
+                    var multiAttendeeEditor =  $("#" + formId).find("#MeetingAttendee").getKendoMultiSelect();
+                    if(multiAttendeeEditor)multiAttendeeEditor.value(model.MeetingAttendee);
+                    var multiViewerEditor = $("#" + formId).find("#MeetingViewer").getKendoMultiSelect();
+                    if(multiViewerEditor)multiViewerEditor.value(model.MeetingViewer);
+
+                    if (read != 1) {
+                        LoadChart();
+                        $("input[name='LocationType'][value='"+model.LocationType+"']").attr('checked', true);
+                        var value = model.LocationType;
+                        if(value == 1)
+                        {
+                            $("#"+formId).find("#LocationText").closest(".form-group").css("display","none");
+                            $("#"+formId).find("#SiteId").closest(".form-group").css("display","none");
+                            $("#"+formId).find("#BranchId").closest(".form-group").css("display","");
+                            FormJs.fillOptionsDynamic($("#" + formId), "BranchId", BranchId, model);
+                            $("#"+formId).find("#LocationText").removeAttr("formreq");
+                        }
+                        else if(value == 2)
+                        {
+                            $("#"+formId).find("#LocationText").closest(".form-group").css("display","none");
+                            $("#"+formId).find("#SiteId").closest(".form-group").css("display","");
+                            $("#"+formId).find("#BranchId").closest(".form-group").css("display","none");
+                            FormJs.fillOptionsDynamic($("#" + formId), "SiteId", SiteId, model);
+                            $("#"+formId).find("#LocationText").removeAttr("formreq");
+                        }
+                        else
+                        {
+                            $("#"+formId).find("#LocationText").closest(".form-group").css("display","");
+                            $("#"+formId).find("#SiteId").closest(".form-group").css("display","none");
+                            $("#"+formId).find("#BranchId").closest(".form-group").css("display","none");
+                            $("#"+formId).find("#SiteId").removeAttr("formreq");
+                            $("#"+formId).find("#BranchId").removeAttr("formreq");
+                        }
+                    }
+                }
+
+                $("#StartTime,#EndTime").on('blur change',function()
+                {
+                    flag = true;
+                    getDiffTime();
+                    LoadChart();
+                });
+                $("#MeetDate").on('blur change',function()
+                {
+                    flag = true;
+                    LoadChart();
+                });
+
+                $("#SiteId,#BranchId").on('blur change',function()
+                {
+                    flag = true;
+                });
+                $("#MeetingAttendee,#LocationText").on('change',function()
+                {
+                    flag = true;
+                    LoadChart();
+                    var ids = $("#MeetingAttendee").data("kendoMultiSelect").value();
+                    $.getJSON("/Meeting/FillSpeakers", { Ids: JSON.stringify(ids) }, function (res) {
+                        Emps = res;
+                    });
+                });
+
+                if(read ==1)
+                {
+                    
+                    $("#MeetingAttendee").text(model.MeetingAttendeeNames);
+                    $("#MeetingViewer").text(model.MeetingViewerNames);
+                    $('label[for="Time"]').hide();
+                    setShowLocation(model.LocationType);
+                }
+                function setShowLocation(LocationType){
+                    if(LocationType == 1)
+                    {
+                        $('label[for="SiteId"]').hide();
+
+                    }
+                    else if (LocationType == 2)
+                    {
+                        $('label[for="BranchId"]').hide();
+
+                    }
+                    else
+                    {
+                        $('label[for="BranchId"]').hide();
+                        $('label[for="SiteId"]').hide();
+                        $('label[for="LocationText"]').show();
+                        $("#LocationText").text(model.LocationText);
+                    }
+                }
+
+
+                function getDiffTime()
+                {
+                    FormJs.removeFormError(formId,"EndTime");
+                    FormJs.removeFormError(formId,"StartTime");
+                    if($("#StartTime").val() && $("#EndTime").val())
+                    {
+                        var diffHours , diffMinutes;
+                        var startHours = $("#StartTime").data("kendoTimePicker").value().getHours();
+                        var startMinutes = $("#StartTime").data("kendoTimePicker").value().getMinutes();
+                        var endHours = $("#EndTime").data("kendoTimePicker").value().getHours();
+                        var endMinutes = $("#EndTime").data("kendoTimePicker").value().getMinutes();
+                        diffHours = endHours - startHours;
+                        diffMinutes = 00;
+                        if(endHours < 12 && startHours > 12)
+                        {
+                            diffHours = (12 + endHours) - (startHours-12);
+                        }
+                        else if(endHours < 12 && startHours < 12 && endHours < startHours )
+                        {
+                            FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMustGthanStart")")
+                        }
+                        else if(endHours < 12 && startHours < 12 && (endHours == startHours && endMinutes < startMinutes))
+                        {
+                            FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMustGthanStart")")
+                        }
+                        else if(endHours < 12 && startHours == 12)
+                        {
+                            FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMustLessEnd")")
+                        }
+                        else if(endHours > 12 && startHours > 12 && Number(startMinutes) > Number(endMinutes) && startHours > endHours)
+                        {
+                            FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMustLessEnd")")
+                        }
+                        else if(endHours == startHours && startMinutes > endMinutes)
+                        {
+                            FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMustLessEnd")")
+
+                        }
+                        else if(endHours > 12 && startHours > 12 && startHours > endHours)
+                        {
+                            FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMustLessEnd")")
+                        }
+                        else if(endHours == startHours && startMinutes == endMinutes)
+                        {
+                            FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMustGthanStart")")
+                        }
+                        else if(startMinutes < endMinutes)
+                        {
+                            var h = 60 - startMinutes;
+                            var endCalcStartHours = startHours + 1 ;
+                            if(endHours == endCalcStartHours)
+                            {
+                                diffMinutes = h + endMinutes;
+                                if(diffMinutes >= 60)
+                                {
+                                    diffHours = 1;
+                                    diffMinutes = (h + endMinutes)- 60;
+                                }
+                                else
+                                {
+                                    diffHours = 0;
+                                    diffMinutes =  h + endMinutes;
+                                }
+                            }
+                            else if(endHours > endCalcStartHours)
+                            {
+                                diffHours = endHours - endCalcStartHours;
+                                diffMinutes = h + endMinutes;
+                                if(diffMinutes >= 60 )
+                                {
+                                    diffHours = diffHours +1;
+                                    diffMinutes = (h + endMinutes)- 60;
+                                }
+                            }
+                            else if(endHours == startHours)
+                            {
+                                diffHours = 0;
+                                diffMinutes = endMinutes - startMinutes;
+                            }
+
+                        }
+                        else if(startMinutes > endMinutes )
+                        {
+                            var h = 60 - startMinutes;
+                            var endCalcStartHours = startHours + 1 ;
+                            if(endHours == endCalcStartHours)
+                            {
+                                diffMinutes = h + endMinutes;
+                                if(diffMinutes >= 60)
+                                {
+                                    diffHours = 1;
+                                    diffMinutes = (h + endMinutes)- 60;
+                                }
+                                else
+                                {
+                                    diffHours = 0;
+                                    diffMinutes =  h + endMinutes;
+                                }
+                            }
+                            else if(endHours > endCalcStartHours)
+                            {
+                                diffHours = endHours - endCalcStartHours;
+                                diffMinutes = h + endMinutes;
+                                if(diffMinutes >= 60 )
+                                {
+                                    diffHours = diffHours +1;
+                                    diffMinutes = (h + endMinutes)- 60;
+                                }
+                            }
+                            else if(endHours == startHours)
+                            {
+                                diffHours = 0;
+                                diffMinutes = endMinutes - startMinutes;
+                            }
+                        }
+                        var timeDiff = diffHours +":"+diffMinutes;
+                        $("#Time").val(timeDiff);
+                    }
+                }
+                // Input Type Hidden for checking on Click ActivateBtn or Save
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'Activate',
+                    name:'Activate',
+                    value:'false'
+                }).appendTo('#MeetingForm');
+                // Input Type Hidden for Meet subject
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'subjectText',
+                    name:'subjectText',
+                    value:''
+                }).appendTo('#MeetingForm');
+                // Hidden field for organiser
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'organiser',
+                    name:'organiser',
+                    value:''
+                }).appendTo('#MeetingForm');
+                // Hidden field for branches
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'CompanyLocation',
+                    name:'CompanyLocation',
+                    value:''
+                }).appendTo('#MeetingForm');
+
+                //Hidden field for branches
+                $('<input>').attr({
+                    type: 'hidden',
+                    id: 'SiteLocation',
+                    name:'SiteLocation',
+                    value:''
+                }).appendTo('#MeetingForm');
+                //Track Changes in Critical Input
+                $("#SiteId,#BranchId,#LocationText").on('blur change',function()
+                {
+                    flag = true;
+                });
+
+            },
+            error: function (data) {
+            }
+        });
+
+        function GetListOfSpeakers(){
+            $.getJSON("/Meeting/FillSpeakers", { Ids: JSON.stringify(model.MeetingAttendee) }, function (res) {
+                Emps = res;
+            });
+        }
+
+        if(model.Id > 0)
+        {
+            GetListOfSpeakers();
+        }
+
+        if(model.Id == 0)
+        {
+            var meetDate= $("#MeetDate").data("kendoDatePicker");
+            meetDate.value("");
+            $("#MeetDate").kendoDatePicker({
+                min: new Date()
+            });
+        }
+        else if(model.Id > 0 && model.IsActivate)
+        {
+            $("#ActivateBtn").attr("disabled","disabled");
+            var subjectEditor = $("#" +formId).find('#MeetSubject').data("kendoDropDownList");
+            if(subjectEditor) subjectEditor.enable(false);
+            var empEditor =  $("#" +formId).find('#EmpId').data("kendoDropDownList");
+            if(empEditor) empEditor.enable(false);
+        }
+       
+
+        //Enter Save Button
+        $("#b1,#b2,#b3").off('click').on('click', function (e) {
+            var buttId = $(this).attr('id');
+
+            if($("#ActivateBtn").attr("disabled")== "disabled" && flag)
+            {
+                //var Attendes = $("#MeetingAttendee").data("kendoMultiSelect").value().length;
+                bootbox.confirm("@MsgUtils.Instance.Trls("AreYouSureToInform")", function (result) {
+                    if(result)
+                    {
+                        var subjectText = $("#MeetSubject").data("kendoDropDownList").text();
+                         var  organiser = $("#EmpId").data("kendoDropDownList").text();
+                         var CompanyLocation = $("#BranchId").data("kendoDropDownList").text();
+                         var SiteLocation = $("#SiteId").data("kendoDropDownList").text();
+                        $("#subjectText").attr("value", subjectText);
+                        $("#organiser").attr("value",organiser);
+                        $("#Activate").attr("value", "true");
+                        $("#CompanyLocation").attr("value",CompanyLocation);
+                        FormJs.saveForm($("#"+formId), $(this), function (res) {
+                            model = res;
+                            bootbox.alert('@MsgUtils.Instance.Trls("EmpInformed")');
+                            if (buttId === 'b2') 
+                            {
+                                LoadChart();
+                                $("#AgendaDiv").data("kendoGrid").dataSource.data([]);
+
+                            }
+                            else if (buttId === 'b3') updateHistory(oldUlr);
+                            $("#" +formId).find('#MeetSubject').data("kendoDropDownList").enable(false);
+                            $("#" +formId).find('#EmpId').data("kendoDropDownList").enable(false);
+                        },Grids.sendData("AgendaDiv"), buttId === 'b2');
+                    }
+                });
+            }
+            else
+            {
+                $("#Activate").attr("value", "false");
+                FormJs.saveForm($("#"+formId), $(this), function (res) {
+                    model = res;
+                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                    if (buttId === 'b2') {
+                        LoadChart();                    
+                        $("#AgendaDiv").data("kendoGrid").dataSource.data([]);
+                    }
+                    else if (buttId === 'b3') updateHistory(oldUlr);
+                }, Grids.sendData("AgendaDiv"), buttId === 'b2');
+            }
+        });
+
+        //Enter ActivateBtn Button
+        $("#ActivateBtn").off('click').on('click',function(e)
+        {
+            var buttId = $(this).attr('id');
+            e.preventDefault();
+            e.stopPropagation();
+           // var res = $("#MeetingAttendee").data("kendoMultiSelect").value().length;
+            bootbox.confirm("@MsgUtils.Instance.Trls("AreYouSureToInform")", function (result) {
+                if (result) {
+                    $("#Activate").attr("value", "true");
+                    var subjectText = $("#MeetSubject").data("kendoDropDownList").text();
+                    var organiser = $("#EmpId").data("kendoDropDownList") == "undefined"?$("#EmpId").val():$("#EmpId").data("kendoDropDownList").text();
+                    var CompanyLocation = $("#BranchId").data("kendoDropDownList").text();
+                    var SiteLocation = $("#SiteId").data("kendoDropDownList").text();
+                    $("#subjectText").attr("value", subjectText);
+                    $("#organiser").attr("value",organiser);
+                    $("#CompanyLocation").attr("value",CompanyLocation);
+                    FormJs.saveForm($("#"+formId), $(this), function () {
+                        bootbox.alert('@MsgUtils.Instance.Trls("EmpInformed")');
+                        updateHistory(oldUlr);
+                        $("#" +formId).find('#MeetSubject').data("kendoDropDownList").enable(false);
+                        $("#" +formId).find('#EmpId').data("kendoDropDownList").enable(false);
+                    },Grids.sendData("AgendaDiv"),buttId === 'b2');
+                }
+            });
+        })
+    });
+
+    var btns=$('.btns-form');
+    $('#MeetingDiv').prepend(btns);
+
+</script>

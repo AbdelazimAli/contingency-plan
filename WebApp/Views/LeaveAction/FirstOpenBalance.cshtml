@@ -2,7 +2,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     var version = Request.QueryString["Version"];
@@ -91,7 +91,7 @@
         var element =$(this);
         console.log(element);
         var ddlLeave = $("#ddlPicker").val();     
-        var date = new Date($("#FiscalddlPicker").val());
+        var date = FormJs.parseServerDate($('#FiscalddlPicker').val());
         var grid = $("#LeaveActionDiv").data("kendoGrid");
         if(grid)
         {
@@ -102,7 +102,7 @@
             $.ajax({
                 async: false,
                 url: "@Url.Action("CheckPeriod", "LeaveAction")",
-                data: { Period:  date.toUTCString(),LeaveId : ddlLeave },
+                data: { Period:  date,LeaveId : ddlLeave },
                 success: function (result) {
                     result = result.split(',');
                     $("#FiscalddlPicker").removeClass("k-invalid").prop("aria-invalid", false);
@@ -148,10 +148,11 @@
         {            
             grid.dataSource.data([]);
         }
+        var date = FormJs.parseServerDate($('#FiscalddlPicker').val());
         $.ajax({
             async: false,
             url: "@Url.Action("CheckPeriod", "LeaveAction")",
-            data: { Period:  $("#FiscalddlPicker").val(),LeaveId : ddlLeave },
+            data: { Period:date,LeaveId : ddlLeave },
             success: function (result) {
                 result = result.split(',');
             element.removeClass("k-invalid").prop("aria-invalid", false);
@@ -228,7 +229,7 @@
     });
     function PostLeaveTransAjax() {
         var grid = $("#LeaveActionDiv").data("kendoGrid");
-        var TransDate = new Date($('#FiscalddlPicker').val());      
+        var TransDate = FormJs.parseServerDate($('#FiscalddlPicker').val());     
         if(grid)
         {
             var currentData = [], newRecords = [];
@@ -240,7 +241,7 @@
                 $.ajax({
                     url: "/LeaveAction/PostLeaveTrans",
                     type: "POST",
-                    data: { models: newRecords ,transDate :TransDate.toUTCString()},
+                    data: { models: newRecords ,transDate :TransDate},
                     success: function (data) {
                         if(data == "Ok")
                         {

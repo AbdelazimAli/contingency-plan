@@ -14,11 +14,12 @@ namespace Interface.Core.Repositories
 {
     public interface IPeopleRepository : IRepository<PeopleGroup>
     {
+        void GetJob_Department_Branch_Translated(string Lang, int EmpID, int JobID, int DepartmentID, int BranchID, out string JobName, out string DeptName, out string BranchName);
+        string GetDocument(string source, int sourceid);
         IQueryable<WorkFlowViewModel> GetAllRequests(int companyId, string culture);
-        IQueryable<DropDownList> GetAllPeoples(string culture, int CompanyId);
+        IQueryable<DropDownList> GetAllPeoples(string culture);
         PeoplesViewModel ReadPerson(int id, string culture);
         string GetMissingAttachments(int companyId, int empId, string culture, int Gender, int? Nationality);
-        string AddEmployee(Person person, string Code, short? personType, int sequence, DateTime? start, string culture, int companyId);
         EmployementViewModel GetEmployment(int EmpId);
         string CheckCode(Employement Emp, string culture);
         IQueryable<PeopleGroupViewModel> GetPeoples();
@@ -28,14 +29,11 @@ namespace Interface.Core.Repositories
         Assignment FindAssignment(int? id);
         void Remove(Employement employment);
         void Remove(Assignment assignment);
-        void ReadEmployeesPhotos();
-        IQueryable<PersonViewModel> ReadPeoples(string culture);
         void Add(Person person);
         void Attach(Person person);
         void Remove(Person person);
         void RemovePerson(int? id);
         DbEntityEntry<Person> Entry(Person person);
-        IQueryable<EmployementViewModel> ReadEmployments(int id);
         IQueryable<EmployementViewModel> GetHistoryEmployement(int Id);
         void Add(Employement Emp);
         void Add(PeopleTraining person);
@@ -53,16 +51,15 @@ namespace Interface.Core.Repositories
         DbEntityEntry<PeopleQual> Entry(PeopleQual qual);
         // IEnumerable GetActiveEmployees(int companyId, string culture);
         IQueryable<PeopleTrainGridViewModel> ReadEmployeeTraining(int Id);
-        double GetAttachmentsCount(int Id, out int attachments);
+        string GetAttachmentsCount(int Id/*, out int attachments*/);
         double GetProfileCount(int empId, int companyId, byte version);
         IEnumerable<FormList> GetEmployeeById(int companyId, string culture, int EmpId);
-        IEnumerable<FormList> GetActiveEmployees(int companyId, string culture);
-        IEnumerable<FormList> GetActiveDeptMangers(int companyId, string culture);
-        IEnumerable<FormList> GetActiveMangers(int companyId, string culture);
-        IEnumerable<FormList> GetActiveMangersByMangerId(int companyId, string culture, int MangerId);
-        IEnumerable<FormList> GetEmployeeManagedByManagerId(int companyId, string culture, int MangId);
-        IEnumerable<GridListViewModel> getQualification(string CodeName);
-        IEnumerable<GridListViewModel> getCertification(string CodeName);
+        IQueryable<FormList> GetActiveEmployees(int companyId, string culture);
+        IQueryable<FormList> GetActiveMangers(int companyId, string culture);
+        IQueryable<FormList> GetActiveMangersByMangerId(int companyId, string culture, int MangerId);
+        IQueryable<FormList> GetEmployeeManagedByManagerId(int companyId, string culture, int MangId);
+        IQueryable<GridListViewModel> getQualification(string CodeName);
+        IQueryable<GridListViewModel> getCertification(string CodeName);
         IQueryable<AuditViewModel> EmployeesLog(int companyId, byte version, int Id, string culture);
         void RemoveRange(IEnumerable<Assignment> AssignmentEntities);
         void RemoveRange(IEnumerable<Employement> EmploymentEntities);

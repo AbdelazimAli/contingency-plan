@@ -3,7 +3,7 @@
 @model Model.Domain.AssignOrder
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var companyId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -42,7 +42,8 @@
             var daydate=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Today));
 
             // serializing Menu functions region
-            var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+            @*var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+            var funs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
             // end region
 
             var try1=kendo.toString(new Date(parseInt(daydate.substr(6))), "yyyy-MM-dd");
@@ -62,7 +63,7 @@
                 data.admin = '@admin';
                 data.rtl = @rtl.ToString().ToLower();
                 data.companyId = "@companyId";
-                data.btns = ["back", "doc"];
+                data.btns = ["back", "doc"];    
                 if(isShow) {
                     data.mode = 'show';
                 }
@@ -189,7 +190,7 @@
                     var isDisabled = false;
                     if (date && calender) {
                         //weekends
-                        if (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2  ) { 
+                        if (date.getDay() == calender.weekend1 || date.getDay() == calender.weekend2  ) {
                             isDisabled = true;}
                         //Custom Holidays
                         for (var i = 0; i < calender.CustomHolidays.length; i++) {
@@ -216,11 +217,12 @@
                         FormJs.fillOptionsDynamic($("#" + formId), "EmpId", result.emps, model);
                     })
                 }
-                $("input[name='CalcMethod'][value='1']").attr('checked', true);
+                
+                
                 function ChangeEmpCalcsData(EmpId){
                     $.get("/AssignOrder/EmpChanged", {EmpId : EmpId}, function (result) {
                         if(result.value > 0){
-                  
+
                             $("input[name='CalcMethod'][value="+result.value+"]").attr('checked', true);
                             editCalcsMethod(result.value);
                         }
@@ -359,9 +361,11 @@
                         FormJs.addFormError(formId,"LeaveTypeId",'@MsgUtils.Instance.Trls("Required")');
                     }
                 });
-               
-       
-                if(model.Id==0){
+
+
+                if(model.Id==0)
+                {
+                    $("input[name='CalcMethod'][value='1']").attr('checked', true);
                     $("#AssignDate").data('kendoDatePicker').value("");
                     $("#ExpiryDate").closest(".form-group").hide();
                     $("#LeaveTypeId").closest(".form-group").hide();
@@ -369,7 +373,7 @@
 
                 var calmethod=$("input[name='CalcMethod']:checked").val();
                 if(calmethod){
-                    
+
                     editCalcsMethod(calmethod);
                 }
 
@@ -418,7 +422,7 @@
                     return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
                 }
               //  $('input[type=radio]').attr('required',true);
-             
+
                 $('#prevAssignorder').click(function(e) {
                     e.preventDefault();
 

@@ -6,10 +6,7 @@
     Layout = null;
     var rtl = User.Identity.RTL();
     string culture = User.Identity.GetCulture();
-    var admin = User.IsInRole("Admin");
-
-
-
+    var admin = User.Identity.CanCustomize();
 }
 <ul class="dropdown-menu">
     @foreach (var module in Model)
@@ -37,7 +34,10 @@
                                 if (submodule.MenuObj.Url == null)
                                 {
                                     <li>
-                                        <h3>@submodule.SubName</h3>
+                                        <a href="#" class="title">
+                                            <span class="@submodule.MenuObj.Icon"></span>
+                                            <h4>@submodule.SubName</h4>
+                                        </a>
                                         <ul id="@submodule.SubId" data-parentID="@submodule.ModuleId">
                                             @foreach (var menu in submodule.MenuItems)
                                             {
@@ -54,7 +54,7 @@
                             }
                             @if (xMenu.Count > 0)
                             {
-                                <li>                                    
+                                <li class="no-parent">
                                     <ul data-parentID="@module.ModuleId">
                                         @foreach (var menu in xMenu)
                                         {

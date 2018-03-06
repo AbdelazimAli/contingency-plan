@@ -37,12 +37,12 @@
 
 <div id="divChange">  <div id="CustodyDiv"></div> </div>
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
 }
 
 <script>
     var addUrl = "@Url.Action("ConsumeDetails", "Custody")";
-    RequestFilters.ApplayAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadConsumeCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadConsumeCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
 
     $('#filterDiv #addDiv').after('<div class="col-md-3"><div class="switch"><input id="switchDesign" type="checkbox" />' +
         '<div class="slider round"></div><span></spam></div><span id="own" class="badge badge-default" ></span></div>');

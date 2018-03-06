@@ -1,0 +1,209 @@
+﻿
+
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    var admin = User.Identity.CanCustomize();
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "MeetingDiv" }, { "HasDepts", "false" }, { "TableName", "Meetings" } })
+@Html.Partial("_ThumpImageGrid")
+<div id="MeetingDiv"></div>
+
+<script>
+    //format: '{0:hh:mm}'
+    var addUrl = "@Url.Action("MeetingDetails", "Meeting")";
+    RequestFilters.applyAllFilters([], {}, "MeetingDiv", "@Url.Action("ReadMeeting", "Notification")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    var gridname = "'MeetingDiv'";
+
+    //1-Created  2-Modified  3-Canceled
+    var Status = [{ value: 1, text: '@MsgUtils.Instance.Trls("Created")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Modified")' }];
+    Grids.indexGrid({
+        read: "@Url.Action("ReadMeeting", "Meeting")?MenuId=@Request.QueryString["MenuId"]",
+        edit: "@Url.Action("MeetingDetails", "Meeting")",
+        objectName: "Meeting",  // name of the page or table name used to create local db key
+        gridName: "MeetingDiv",
+        recordName: "",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{ field: "Status", values: Status },
+            {
+                field: "MeetSubject",
+                template: "<span class='status #:IsActivate#' data-toggle='tooltip' data-placement='top' title=''></span><div >#:MeetSubject #</div>",
+            },
+            {
+                field: "UploadPic",
+                template: "<div class='upFile'><input type='file' class='upload' name='files'/><span></span></div>"
+            },
+             {
+                 field: "Attachment",
+                 template: "<img class='myThumpImg'src='#:ThumpImage.CheckPic(data) #' width='80' height='80'>"
+
+             }
+        ],
+        select: { "Status": Status },
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100, 125, 150, 175] },
+        dataBound: function () {
+            var gridName = this.gridName;
+            var name = $("#" + this.gridName);
+            var gridd = name.data("kendoGrid");
+            name.find(".k-grid-Cancel").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if (model.IsOrganiser == false || model.AttUrl != null || (model.CanCancel && model.IsActivate == "active")) $(this).hide();
+                $(this).click(ClickCancel);
+                $(this).attr("modelid", model.Id);
+                $(this).attr("status", model.Status);
+                $(this).attr("Activate", model.IsActivate);
+                $(this).attr("MeetSubject", model.MeetSubject);
+                $(this).attr("organiser", model.organiser);
+                if (model.IsActivate == "active") {
+                    $(this).prop("innerHTML", "<span class='k-icon k-i-Cancel'></span> @MsgUtils.Instance.Trls("CancelMeeting")");
+                }
+                else {
+                    $(this).prop("innerHTML", "<span class='k-icon k-i-Cancel'></span> @MsgUtils.Instance.Trls("DeleteMeet")");
+
+                }
+
+            });
+            var state;
+            $('.status').each(function () {
+                if ($(this).hasClass('active')) {
+                    state = '@MsgUtils.Instance.Trls("Active")';
+                }
+                else {
+                    state = '@MsgUtils.Instance.Trls("InActive")';
+                }
+                $(this).attr('title', state);
+                $(this).tooltip();
+            });
+            var grid = $("#" + gridName).data("kendoGrid");
+            name.find(".upload").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if (model != null) {
+                    if (!model.IsOrganiser || !model.CanUpload) {
+                        $(this).remove();
+                    }
+
+                }
+
+            });
+            name.find(".myThumpImg").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if (model != null) {
+                    //if (model.IsOrganiser == false) {
+                    //    $(this).remove();
+                    //}
+                }
+
+            });
+
+            grid.tbody.find(".upload").kendoUpload({
+                multiple: false,
+                async: {
+                    saveUrl: "/FileUpload/UploadOneFile",
+                    autoUpload: true
+                },
+                validation: {
+                    allowedExtensions: [".jpg", ".png", ".pdf"]
+                },
+                upload: function (e) {
+                    var item = grid.dataItem(this.element.closest("tr"));
+                    e.data = { SourceId: item.Id.toString(), Source: "Meeting" }
+                }, error: function (e) {
+                    console.log(e);
+                },
+                success: function (e) {
+                    $("#MeetingDiv").data('kendoGrid').dataSource.read();
+                    $("#MeetingDiv").data('kendoGrid').refresh();
+                }
+            });
+
+            ThumpImage.BindLoadImage(gridName, 'Meeting');
+
+            name.find(".k-grid-edit ").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                if (model.AttUrl != null) {
+                    $(this).attr("disabled", "disabled");
+                    $(this).removeClass('k-grid-edit');
+                    $(this).removeClass('k-grid-تعديل');
+                    $(this).off('click');
+                }
+                if (model.IsOrganiser == false)
+                    $(this).hide();
+            });
+
+            name.find(".k-grid-show ").each(function (e) {
+                var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                //if (model.IsOrganiser == true)
+                //    $(this).hide();
+            });
+        }
+    });
+
+    function ClickCancel(e) {
+        var msg = {};
+        e.stopPropagation();
+        e.preventDefault();
+        var modelId = $(this).attr("modelid");
+        var status = $(this).attr("status");
+        var MeetSubject = $(this).attr("MeetSubject");
+        var Organiser = $(this).attr("organiser");
+        var Activate = $(this).attr("Activate");
+        if (Activate === "inactive") {
+            bootbox.confirm("@MsgUtils.Instance.Trls("DeleteMeeting")", function (result) {
+                if (result) {
+                    $.ajax({
+                        url: "@Url.Action("DeleteMeeting", "Meeting")",
+                        data: { Id: modelId },
+                        success: function (response) {
+                            if (response == "OK") {
+                                bootbox.alert('@MsgUtils.Instance.Trls("MeetingDeleted")');
+                                $("#MeetingDiv").data('kendoGrid').dataSource.read();
+                                $("#MeetingDiv").data('kendoGrid').refresh();
+                            }
+                        }
+                    });
+                }
+            });
+        } else {
+            $.getJSON("/Notification/GetAttendeeCount", { Id: modelId }, function (res) {
+                bootbox.confirm("@MsgUtils.Instance.Trls("AreYouSureToCancel")" + "(" + res + ")" + "@MsgUtils.Instance.Trls("NumberofAttendee")", function (result) {
+                    if (result) {
+                        $.ajax({
+                            url: "@Url.Action("CancelMeeting", "Meeting")",
+                            data: { Id: modelId, MeetSubject: MeetSubject, Organiser: Organiser },
+                            success: function (response) {
+                                if (response == "OK") {
+                                    bootbox.alert('@MsgUtils.Instance.Trls("This Meeting Canceled")' + "(" + res + ")" + '@MsgUtils.Instance.Trls("ConfirmCancelMeeting")')
+                                    $("#MeetingDiv").data('kendoGrid').dataSource.read();
+                                    $("#MeetingDiv").data('kendoGrid').refresh();
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+        }
+    }
+    function ClickEdit(e) {
+        var chkDisabled = $(this).attr("disabled");
+        if (chkDisabled == "disabled") {
+            return;
+        }
+    }
+
+</script>
+
+
+
+
+

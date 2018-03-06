@@ -12,14 +12,18 @@ namespace Model.ViewModel
 
         public string UserName { get; set; }
         public string Email { get; set; }
+
         [RegularExpression("[0-9()\\-+]*")]
         public string PhoneNumber { get; set; }
 
         public string OldPassword { get; set; }
 
+        [StringLength(100, ErrorMessage = "passWordlenght", MinimumLength = 6)]
+        [DataType(DataType.Password)]
         public string NewPassword { get; set; }
 
-        [Compare("NewPassword", ErrorMessage = "The new password and confirmation password do not match.")]
+        [Compare("NewPassword", ErrorMessage = "confirmNotMatch")]
+        [DataType(DataType.Password)]
         public string ConfirmPassword { get; set; }
 
         public string Culture { get; set; }

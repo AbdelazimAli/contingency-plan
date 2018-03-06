@@ -30,6 +30,7 @@ namespace Db.Persistence.Repositories
             }
         }
 
+      
         #region Catch immediatally notification
         public IList<NotifyCondition> GetNotifyConditions(int companyId)
         {
@@ -273,6 +274,7 @@ namespace Db.Persistence.Repositories
 
 
         #endregion
+
         #region Notify Condition Index
 
         public IQueryable<NotifyConditionIndexViewModel> ReadNotificationConditions(int companyId)
@@ -349,7 +351,7 @@ namespace Db.Persistence.Repositories
         public IQueryable<NotifiyLetterViewModel> GetEmpLetters(int CompanyId,string Language)
         {
             DateTime Today = DateTime.Today.Date;
-            return (from n in context.NotifyLetters
+            var query=(from n in context.NotifyLetters
                     join a in context.Assignments on n.EmpId equals a.EmpId into g1
                     from a in g1.Where(x => x.CompanyId == n.CompanyId && x.AssignDate <= Today && x.EndDate >= Today).DefaultIfEmpty()
                     select new NotifiyLetterViewModel
@@ -363,126 +365,49 @@ namespace Db.Persistence.Repositories
                         Job = HrContext.TrlsName(a.Job.Name, Language),
                         NotifyDate = n.NotifyDate,
                         NotifySource = n.NotifySource,
-                        ReadTime = n.ReadTime,
+                        Readdatetime = n.ReadTime,
                         read = n.read,
                         Sent = n.Sent,
                         EmpId = n.EmpId
-                    });
+                    }).OrderByDescending(s=>s.NotifyDate);
+            return query;
         }
-
-        #region Meetings
-        public IQueryable<MeetingViewModel> GetMeetings(byte Range, DateTime? Start, DateTime? End, string culture, int CompanyId)
+        public IQueryable<NotifiyLetterViewModel> GetMyLetters(int CompanyId, string Language,int EmpId)
         {
-            //10- All, 0-Custom
-            if (Range != 10 && Range != 0) RequestRangeFilter(Range, CompanyId, out Start, out End);
-            var query = (from m in context.Meetings
-                         where m.Status != 3 && m.CompanyId == CompanyId
-                         select new MeetingViewModel
+            DateTime Today = DateTime.Today.Date;
+            var query = (from n in context.NotifyLetters
+                         where n.EmpId == EmpId
+                         join a in context.Assignments on n.EmpId equals a.EmpId into g1
+                         from a in g1.Where(x => x.CompanyId == n.CompanyId && x.AssignDate <= Today && x.EndDate >= Today).DefaultIfEmpty()
+                         select new NotifiyLetterViewModel
                          {
-                             Id = m.Id,
-                             MeetDate = m.MeetDate,
-                             Status = m.Status,
-                             StartTime = m.StartTime.ToString(),
-                             EndTime = m.EndTime.ToString(),
-                             MeetSubject = HrContext.GetLookUpCode("MeetSubject", m.MeetSubject, culture),
-                             EmpId = m.EmpId
-                         }).ToList().Select(l => new MeetingViewModel
-                         {
-                             Id = l.Id,
-                             StartTime = Convert.ToDateTime(l.StartTime).ToString("hh:mm tt"),
-                             EndTime = Convert.ToDateTime(l.EndTime).ToString("hh:mm tt"),
-                             Status = l.Status,
-                             MeetDate = l.MeetDate,
-                             SubjectDesc = l.SubjectDesc,
-                             MeetSubject = l.MeetSubject,
-                             Time = (Convert.ToDateTime(l.EndTime) - Convert.ToDateTime(l.StartTime)).ToString(@"hh\:mm"),
-                             EmpId = l.EmpId
-                         });
-            if (Range != 10)
-                query = query.Where(c => Start <= c.MeetDate && End >= c.MeetDate);
-
+                             CompanyId = n.CompanyId,
+                             Department = HrContext.TrlsName(a.Department.Name, Language),
+                             Description = n.Description,
+                             Employee = HrContext.TrlsName(n.Emp.Title + " " + n.Emp.FirstName + " " + n.Emp.Familyname, Language),
+                             EventDate = n.EventDate,
+                             Id = n.Id,
+                             Job = HrContext.TrlsName(a.Job.Name, Language),
+                             NotifyDate = n.NotifyDate,
+                             NotifySource = n.NotifySource,
+                             Readdatetime = n.ReadTime,
+                             read = n.read,
+                             Sent = n.Sent,
+                             EmpId = n.EmpId
+                         }).OrderByDescending(s => s.NotifyDate);//.ThenByDescending(ss => ss.NotifyDate);
             return query.AsQueryable();
         }
 
-        public MeetingFormViewModel ReadMeeting (int Id)
-        {
-            var query = (from m in context.Meetings
-                        where m.Id == Id
-                        select new MeetingFormViewModel
-                        {
-                            Id = m.Id,
-                            MeetDate = m.MeetDate,
-                            SubjectDesc = m.SubjectDesc,
-                            StartTime = m.StartTime,
-                            EndTime = m.EndTime,
-                            MeetSubject = m.MeetSubject.ToString(),
-                            MeetingAttendee = context.MeetAttendees.Where(a => a.MeetingId == Id).Select(s => s.EmpId).ToList(),
-                            EmpId = m.EmpId,
-                            LocationText = m.LocationText,
-                            LocationId = m.LocationId
-                        }).ToList().Select(l=>new MeetingFormViewModel
-                        {
-
-                            Id = l.Id,
-                            StartTime = l.StartTime,
-                            EndTime = l.EndTime,
-                            Status = l.Status,
-                            MeetDate = l.MeetDate,
-                            SubjectDesc = l.SubjectDesc,
-                            LocationText = l.LocationText,
-                            MeetSubject = l.MeetSubject,
-                            Time = (Convert.ToDateTime(l.EndTime) - Convert.ToDateTime(l.StartTime)).ToString(@"hh\:mm"),
-                            EmpId = l.EmpId,
-                            MeetingAttendee = l.MeetingAttendee,
-                            LocationId = l.LocationId
-                        }
-                        ).FirstOrDefault();
-            return query;
-        }
-        //GetMeetingAttendee
-        public List<FormList> GetMeetingAttendee(int Id, string culture)
-        {
-            var query = (from m in context.MeetAttendees
-                         where m.MeetingId == Id
-                         select new FormList
-                         {
-                             id = m.EmpId,
-                             name = HrContext.TrlsName(m.Attendee.Title + " " + m.Attendee.FirstName + " " + m.Attendee.Familyname, culture)
-                         }).ToList();
-
-            return query;
-
-        }
-
-        public IQueryable<MeetingAgendaViewModel> GetAgenda(int Id,string culture)
-        {        
-            var query = (from m in context.MeetScheduals
-                        where m.MeetingId == Id
-                         select new MeetingAgendaViewModel
-                         {
-                             Id = m.Id,
-                             StartTime = m.StartTime.ToString(),
-                             EndTime = m.EndTime.ToString(),
-                             Description = m.Description,
-                             EmpId = m.EmpId ,
-                         }).ToList().Select(l => new MeetingAgendaViewModel
-                         {
-                             Id = l.Id,
-                             StartTime = Convert.ToDateTime(l.EndTime).ToString("hh:mm tt"),
-                             EndTime = Convert.ToDateTime(l.EndTime).ToString("hh:mm tt"),
-                             Description = l.Description,
-                             Time = (Convert.ToDateTime(l.EndTime) - Convert.ToDateTime(l.StartTime)).ToString(@"hh\:mm")
-                         });
-            return query.AsQueryable();
-        }
-
-
-        #endregion
+     
         public void AddNotifyLetter(NotifyLetter notify)
         {
             context.NotifyLetters.Add(notify);
         }
         public void AttachNotifyLetter(NotifyLetter notify)
+        {
+            context.NotifyLetters.Attach(notify);
+        }
+        public void Attach(NotifyLetter notify)
         {
             context.NotifyLetters.Attach(notify);
         }
@@ -501,7 +426,8 @@ namespace Db.Persistence.Repositories
         public void Add(NotifyCondition notify)
         {
             context.NotifyConditions.Add(notify);
-        }  
+        }
+      
         public void Add(WebMobLog weblog)
         {
             context.WebMobLog.Add(weblog);
@@ -510,6 +436,8 @@ namespace Db.Persistence.Repositories
         {
             context.Filters.Add(Filter);
         }
+       
+       
         public void Attach(Filter Filter)
         {
             context.Filters.Attach(Filter);
@@ -558,9 +486,63 @@ namespace Db.Persistence.Repositories
             }
             context.NotifyConditions.Remove(Notify);
         }
+        public void Add(Meeting meeting)
+        {
+            context.Meetings.Add(meeting);
+        }
+        public void Add(MeetAttendee meetAttendee)
+        {
+            context.MeetAttendees.Add(meetAttendee);
+        }
+        public void Attach(Meeting meeting)
+        {
+            context.Meetings.Attach(meeting);
+        }
+        public DbEntityEntry<MeetSchedual> Entry(MeetSchedual Agenda)
+        {
+            return Context.Entry(Agenda);
+        }
+        public void Add(MeetSchedual Agenda)
+        {
+            context.MeetScheduals.Add(Agenda);
+        }
+        public void Attach(MeetSchedual Agenda)
+        {
+            context.MeetScheduals.Attach(Agenda);
+        }
+        public void Remove(MeetSchedual Agenda)
+        {
+            if (Context.Entry(Agenda).State == EntityState.Detached)
+            {
+                context.MeetScheduals.Attach(Agenda);
+            }
+            context.MeetScheduals.Remove(Agenda);
+        }
+        public void Remove(Meeting Meeting)
+        {
+            if (Context.Entry(Meeting).State == EntityState.Detached)
+            {
+                context.Meetings.Attach(Meeting);
+            }
+            context.Meetings.Remove(Meeting);
+        }
+        public void Remove(MeetAttendee attendee)
+        {
+            if (Context.Entry(attendee).State == EntityState.Detached)
+            {
+                context.MeetAttendees.Attach(attendee);
+            }
+            context.MeetAttendees.Remove(attendee);
+        }
+        public DbEntityEntry<Meeting> Entry(Meeting meeting)
+        {
+            return Context.Entry(meeting);
+        }
+
         public IEnumerable<NotifyColumnsViewModel> GetColumnList(string tableName, string ObjectName, byte version, string type, int companyId, string culture)
         {
             IEnumerable<NotifyColumnsViewModel> query = null;
+            //var pageTitle = MsgUtils.Instance.Trls(culture, "ColumnProperties");
 
             if (type == null)
                 type = context.PageDiv.Where(p => p.CompanyId == companyId && p.ObjectName == ObjectName && p.Version == version).Select(p => p.DivType).FirstOrDefault();
@@ -619,15 +601,17 @@ namespace Db.Persistence.Repositories
         }
         public IQueryable<NavBarItemVM> GetAllNotifications(string UserName, string Lan , int CompanyId)
         {
-            return context.WebMobLog.Include(ww=>ww.Notificat).Where(a => a.SentToUser == UserName && a.CompanyId == CompanyId ).Select(c => new NavBarItemVM
+            //context.CompanyDocsView.Where(c=>c.SourceId==)
+            //_hrUnitOfWork.Repository<CompanyDocsViews>().Where(a => a.Source == source && a.SourceId == id).Select(a => a.file_stream).FirstOrDefault();
+            return context.WebMobLog.Include(ww => ww.Notificat).Where(a => a.SentToUser == UserName && a.CompanyId == CompanyId).Select(c => new NavBarItemVM
             {
                 Id = c.Id,
                 From = c.Subject == null ? " " : c.Subject,
                 Message = c.Message,
-                PicUrl = c.Notificat.EmpId != null ? c.Notificat.EmpId + ".jpeg" : "noimage.jpg",
+                PicUrl = HrContext.GetDoc("EmployeePic", c.Notificat.EmpId.Value), // please check null in view not here
                 Read = c.MarkAsRead,
-                SentDate=c.SentTime
-                
+                SentDate = c.SentTime
+
             }).OrderByDescending(a => a.SentDate);
         }
         public IQueryable<NotificationViewModel> GetCompanyNotifications(string UserName, int CompanyId)
@@ -653,7 +637,8 @@ namespace Db.Persistence.Repositories
         public NavBarItemVM GetNotify(int Id, string culture, int CompanyId, string UserName)
         {
 
-            var weblog = context.WebMobLog.Include(w=>w.Notificat).Where(a => a.Id == Id && a.CompanyId == CompanyId && a.SentToUser == UserName).FirstOrDefault();
+            var log = context.WebMobLog.Include(w=>w.Notificat).Where(a => a.Id == Id && a.CompanyId == CompanyId && a.SentToUser == UserName).Select(a => new { weblog = a, PicUrl = HrContext.GetDoc("EmployeePic", a.Notificat.EmpId.Value) }).FirstOrDefault();
+            var weblog = log.weblog;
             bool Read = true;
 
             if (weblog != null)
@@ -673,7 +658,7 @@ namespace Db.Persistence.Repositories
                     Read = Read,
                     Id = weblog.Id,
                     Message = weblog.Message,
-                    PicUrl = weblog.Notificat.EmpId == null ? "noimage.jpg" : weblog.Notificat.EmpId + ".jpeg",
+                    PicUrl = log.PicUrl ?? "noimage.jpg", // please adjust ur view
                     SentDate=weblog.SentTime
                 };
             }
@@ -781,6 +766,9 @@ namespace Db.Persistence.Repositories
             return log;
         }
         #endregion
+
+
+        
 
     }
 }

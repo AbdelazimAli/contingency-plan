@@ -4,19 +4,21 @@
 @{
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     var version = Request.QueryString["Version"];
-    string[] function = ViewBag.Functions as string[];
+    //string[] function = ViewBag.Functions as string[];
 }
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "EmpListDiv" }, { "HasDepts", "false" }, { "Functions", function }, { "HasRange", "false" }, { "TableName", "EmpChkLists" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "EmpListDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "TableName", "EmpChkLists" } })
 <div id="EmpListDiv"></div>
 <script>
     var addUrl = "@Url.Action("EmplistDetails", "CheckList")";
-    RequestFilters.ApplayAllFilters([], {}, "EmpListDiv", "@Url.Action("ReadEmpCheckList", "CheckList")?MenuId=@Request.QueryString["MenuId"]", addUrl);
-    var funcs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+    RequestFilters.applyAllFilters([], {}, "EmpListDiv", "@Url.Action("ReadEmpCheckList", "CheckList")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    @*var funcs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+    var funcs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+
 
     var listType = [
          { value: 1, text: '@MsgUtils.Instance.Trls("Employment Checklist")' },
@@ -38,9 +40,9 @@
         locked:true
 
     }, {
-        field: "ListType", values: listType
-    },{field:"UpdateStatus" , hidden:(($.inArray("UpdateStatus",funcs) == -1) ? true : false)}, {
-        field: "Status", values: ListStatus
+        field: "ListType", values: listType},
+        {field:"UpdateStatus" , hidden:(($.inArray("UpdateStatus",funcs) == -1) ? true : false)},
+        {field: "Status", values: ListStatus
     },{field:"PrograssBar",template:"<div class='progress'></div>"}];
     function copy(){
         var dropvalue =  $("#checklist").val();
@@ -52,9 +54,9 @@
     }
     var checklist = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.checkList));
     var gridname = "'EmpListDiv'";
-    toolbar = '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm fa fa-plus ajaxify" href="/CheckList/EmplistDetails?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]" style="@(dataLevel < 2 || read == 1 ? "display: none" : "") accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")" class="btn btn-default btn-sm fa fa-copy" onclick="copy()" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("Copy")</span></a>&nbsp;<input id="checklist" style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")"/>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm fa fa-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+    @*toolbar = '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm fa fa-plus ajaxify" href="/CheckList/EmplistDetails?RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]" style="@(dataLevel < 2 || read == 1 ? "display: none" : "") accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")" class="btn btn-default btn-sm fa fa-copy" onclick="copy()" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("Copy")</span></a>&nbsp;<input id="checklist" style="@(Array.Exists(function,f=> f== "Copy") ? "" : "display: none")"/>&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm fa fa-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
               '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
-              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';
+              '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';*@
    var updatetask = function(e){
         var currentAnchor=$(e.currentTarget)
         var dataItem = $("#EmpListDiv").getKendoGrid().dataItem(currentAnchor.closest("tr"));
@@ -97,7 +99,7 @@
         gridName: "EmpListDiv",
         admin: "@admin",
         columns: columns,
-        toolbar: toolbar,
+        //toolbar: toolbar,
         select: { "ListType": listType,"Status":ListStatus },
         dataBound: function (e) {
             var grid =this.gridName;
@@ -126,6 +128,7 @@
             })
         }
     });
+
     $("#renderbody").on("ajaxComplete",function(){
 
         if($.inArray("Copy",funcs) >= 0){

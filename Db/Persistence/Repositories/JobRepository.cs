@@ -51,14 +51,17 @@ namespace Db.Persistence.Repositories
                           CreatedUser=c.CreatedUser,
                           CreatedTime=c.CreatedTime
 
-                      }).Where(a => ((a.IsLocal && a.CompanyId == companyId) || a.IsLocal == false) && (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today )));
+                      }).Where(a => (a.CompanyId == companyId || a.IsLocal == false) && (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today )));
 
             return carrer;
         }
-        public IQueryable GetPayrollGrade()
+
+        public IQueryable GetPayrollGrade(int companyId)
         {
-            var PayrollGrade = Context.Set<PayrollGrade>().Where(a => (a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today ))) 
+            var PayrollGrade = Context.Set<PayrollGrade>()
+                .Where(a => (a.CompanyId == companyId || !a.IsLocal) &&  a.StartDate <= DateTime.Today && (a.EndDate == null || a.EndDate >= DateTime.Today ))
                 .Select(c => new { id = c.Id, name = c.Name });
+
             return PayrollGrade;
         }
 
@@ -98,10 +101,11 @@ namespace Db.Persistence.Repositories
             }
             return Job;
         }
-        public IEnumerable<JobGridViewModel> ReadJobs(int company,string culture ,int Id)
+
+        public IQueryable<JobGridViewModel> GetAllJobs(int company,string culture , int Id)
         {
             var Job = (from J in context.Jobs
-                        where (((J.IsLocal &&J.CompanyId == company) || J.IsLocal == false) && (J.StartDate <= DateTime.Today && (J.EndDate == null || J.EndDate >= DateTime.Today)) || J.Id == Id)
+                        where ((J.CompanyId == company || J.IsLocal == false) && (J.StartDate <= DateTime.Today.Date && (J.EndDate == null || J.EndDate >= DateTime.Today.Date)) || J.Id == Id)
                         select new JobGridViewModel
                         {
                             Id = J.Id,
@@ -113,8 +117,8 @@ namespace Db.Persistence.Repositories
                             Islocal = J.IsLocal,
                             CompanyId = J.CompanyId,
                             LocalName=HrContext.TrlsName(J.Name,culture)
+                        });
 
-                        }).ToList();
             return Job;
         }
        

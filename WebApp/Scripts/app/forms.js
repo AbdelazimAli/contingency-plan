@@ -169,6 +169,7 @@ var FormJs = function () {
     }
 
     function fillOptionsDynamic(context, elementName, optionList, model, options) {
+
         //options: { remoteTableName, objectName, hasFilter }
 
         //Add List Dynamic from ViewBag -- model(optional): for model binding.
@@ -233,15 +234,13 @@ var FormJs = function () {
 
                         //template
                         var noData = "<div> " + allMsgs.NoDataFound + (isAllowed ? " <input type='button' class='k-button addOption addOptionF' value='" + allMsgs.AddNewOption + "' formId='" + $(context).attr("id") + "' elementName='" + elementName + "' />" : "") + "</div>";
-
-                        var template = "<div  class='myCustTemp'>" + (hasPic ? "<div class='k-people-photo'" + "style='background-image: url(" + ("#:data.PicUrl#" == 'noimage.jpg' ? "/SpecialData/Photos/#:data.PicUrl#" : "/SpecialData/Photos/" + companyid + "/#:data.PicUrl#?dummy=" + (new Date().getTime()) + "#:data.PicUrl#?dummy=" + (new Date().getTime())) + ")'></div>&nbsp;" : "") +
+                        var template = "<div  class='myCustTemp'>" + (hasPic ? "<img class='k-people-photo' src=#:Exist(data.Gender,data.PicUrl)# />&nbsp;" : "") +
                             (hasIcon ? "<i class='ace-icon fa fa-circle stat#:data.Icon#'></i>&nbsp;" : "") +
                             "<div class='k-people-name'>#: data.name # </div></div>";
 
                         var hasFilter = true;
                         if (options) hasFilter = options.hasFilter != false
                         else if ($(myField[0]).attr("has-filter")) hasFilter = ($(myField[0]).attr("has-filter") != "false");
-
                         $(myField).kendoDropDownList({
                             valuePrimitive: true,
                             dataSource: activeOptionList,
@@ -254,13 +253,14 @@ var FormJs = function () {
                             filter: !hasFilter ? "none" : "contains",
                             noDataTemplate: noData
                         });
-
                     }
                     else { //Multi Select
                         myField.kendoMultiSelect({
                             valuePrimitive: true,
+                            filter: "contains",
                             dataSource: activeOptionList,
                             dataTextField: "name",
+                            filter: "contains",
                             dataValueField: "id",
                             value: (model && model[elementName] != undefined ? model[elementName] : []),
                             animation: {
@@ -279,12 +279,11 @@ var FormJs = function () {
                     var optionSource;
                     if (options && options.remoteTableName) {
                         $(myField).attr('tablename', options.remoteTableName);
-
-                        var remoteUrl = '/Pages/ReadRemoteList?tableName=' + options.remoteTableName + '&formTblName=' + $(context).attr("tablename") + '&query=%QUERY'
+                        var remoteUrl = '/Pages/ReadRemoteList?tableName=' + options.remoteTableName + '&formTblName=' + $(context).attr("tablename") + '&query=%QUERY';
                         optionSource = new Bloodhound({
                             datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
                             queryTokenizer: Bloodhound.tokenizers.whitespace,
-                            //  prefetch: '/Pages/ReadRemoteList?tableName=' + options.remoteTableName, //cache
+                            //prefetch: '/Pages/ReadRemoteList?tableName=' + options.remoteTableName, //cache
                             remote: {
                                 url: remoteUrl + (!model || model.Id != 0 || model[elementName] != undefined ? '&Id=' + model[elementName] : ''),
                                 wildcard: '%QUERY',
@@ -323,13 +322,12 @@ var FormJs = function () {
                         name: elementName,
                         display: 'name',
                         source: optionSource,
-                        limit: 7,
                         templates: {
                             suggestion: function (data) {
-                                if (data)
-                                    return "<div class='myCustTemp'>" + (hasPic ? "<div class='k-people-photo'" + "style='background-image: url(" + (data.PicUrl == 'noimage.jpg' ? "/SpecialData/Photos/" + data.PicUrl : "/SpecialData/Photos/" + companyid + "/" + data.PicUrl + "?dummy=" + (new Date().getTime())) + ")'></div>&nbsp;" : "") +
-                                        (hasIcon ? "<i class='ace-icon fa fa-circle stat" + data.Icon + "'></i>&nbsp;" : "") +
-                                        "<div class='k-people-name'>" + data.name + "</div></div>";
+                                if (data) if (hasPic)
+                                        return "<div class='myCustTemp'>" + (hasPic ? "<img class='k-people-photo' src=" + Exist(data.Gender, data.PicUrl) + ">&nbsp;" : "") +
+                                            (hasIcon ? "<i class='ace-icon fa fa-circle stat" + data.Icon + "'></i>&nbsp;" : "") +
+                                            "<div class='k-people-name'>" + data.name + "</div></div>"; else return "<div class='myCustTemp'>" + data.name + "</div>";
                             }
                         }
                     }).on("typeahead:select", function (e, item) {
@@ -376,14 +374,7 @@ var FormJs = function () {
                 //Radioset
                 for (var i in activeOptionList) {
                     var option = new listitem(activeOptionList[i])
-                    optionsMarkup += "<label class='radio-inline ";
-                    if (option.disabled) { optionsMarkup += " disabled" }
-                    optionsMarkup += "'>";
-                    optionsMarkup += "<input type='radio'";
-                    if (option.selected || model && model[elementName] == option.id) { optionsMarkup += " checked" };
-                    if (option.disabled) { optionsMarkup += " disabled" }
-
-                    optionsMarkup += " name='" + elementName + "' id='" + elementName + i + "' value='" + option.id + "' /> " + option.name + "</label>";
+                    optionsMarkup += "<label class='radio-inline " + (option.disabled ? " disabled" : "") + "'>" + "<input type='radio'" + (option.selected || model && model[elementName] == option.id ? " checked" : "") + (option.disabled ? " disabled" : "") + " name='" + elementName + "' id='" + elementName + i + "' value='" + option.id + "' /> " + option.name + "</label>";
                 }
                 $("[for=" + elementName + "]").next("div").append(optionsMarkup);
             }
@@ -429,8 +420,8 @@ var FormJs = function () {
             var IntializedForSort = false;
             //var IntializedForEdit = false;
             var rtl = options.rtl === undefined ? false : options.rtl;
-            var ExpandClass = options.ExpandClass == undefined ? "glyphicon glyphicon-chevron-down" : options.ExpandClass.trim();
-            var CollabseClass = options.CollabseClass == undefined ? "glyphicon glyphicon-chevron-up" : options.CollabseClass.trim();
+            var ExpandClass = options.ExpandClass == undefined ? "" : options.ExpandClass.trim();
+            var CollabseClass = options.CollabseClass == undefined ? "" : options.CollabseClass.trim();
             var admin = options.admin;
             var formTitle = options.Title;
 
@@ -560,13 +551,13 @@ var FormJs = function () {
                 if ((myfield.type == "date" || myfield.type == "time") && model && model[myfield.name] != undefined)
                     if (model[myfield.name].indexOf('/Date') != -1) {
                         if (mode == "show") {
-                            if (myfield.type == "time") model[myfield.name] = kendo.toString(new Date(parseInt(model[myfield.name].substr(6))), "t");
+                            if (myfield.type == "time") { var x = new Date(parseInt(model[myfield.name].substr(6)));  model[myfield.name] = kendo.toString(x, "t") }
                             else if (new Date(parseInt(model[myfield.name].substr(6))).getHours() == 0) model[myfield.name] = kendo.toString(new Date(parseInt(model[myfield.name].substr(6))), "d");
                             else model[myfield.name] = kendo.toString(new Date(parseInt(model[myfield.name].substr(6))), 'g');
                         } else if (myfield.type == "date") {
                             model[myfield.name] = parseServerDate(model[myfield.name]);
                         }
-                        else if (myfield.type == "time") model[myfield.name] = kendo.toString(new Date(parseInt(model[myfield.name].substr(6))), "HH:mm");
+                        else if (myfield.type == "time") { var x = new Date(parseInt(model[myfield.name].substr(6)));  model[myfield.name] = kendo.toString(x, "HH:mm") }
 
                     }
                 if (myfield.type != "checkbox" && myfield.type != "radio" && myfield.type != "radioset" && myfield.type != "label" && mode != "show") {
@@ -670,8 +661,9 @@ var FormJs = function () {
                     }
                     else if (myfield.type == 'button' && myfield.HtmlAttribute.indexOf("back") != -1) {
                         var additionalMarkup = '<input type="' + myfield.type + '" ' + A3(myfield) + ' />';
-                    }
-                    else {
+                    } else if (myfield.type == 'xtextarea') {
+                        var additionalMarkup = '<textarea value="' + model[myfield.name] + '" readonly="" style="border: none; max-width: 1313px;"/>';
+                    } else {
                         myfield.disabled = true;
                         var additionalMarkup = '<input type="' + myfield.type + '" ' + A3(myfield) + ' />';
                     }
@@ -799,7 +791,7 @@ var FormJs = function () {
             // rendering a panel with title and Glyphicon is the default behavior
             //---if HasPanel
             markup += (HasPanel ? "<div class=' panel " + PanelType + "'" + (PanelId ? " id ='" + PanelId + "'" : " ") + " >"
-            + "<div class='panel-heading row' >" + "<div class='panel-title col-xs-12 col-sm-6'>"
+            + "<div class='panel-heading' >" + "<div class='panel-title'>"
             + "<span  class='panelicon " + Icon + "'> </span>"
             + " <span class='paneltitle' name='" + Title + "' id='titleLbl'><span class='lblSpan'> " + (options.TitleTrls ? options.TitleTrls : Title) + " </span></span>" + "</div>" + "<hr class='visible-xs-block clearfix'/>" : "")
 
@@ -885,7 +877,6 @@ var FormJs = function () {
 
 
             function drawSections(sections, secModel) {
-                console.log("hi");
                 if (secModel) model = secModel;
                 var markup = '';
                 sections.sort(reorder);
@@ -901,7 +892,6 @@ var FormJs = function () {
                     markup += "<div " + (CurrentSection.name != undefined ? "name='" + CurrentSection.name + "'" : "")
                     + " id='" + CurrentSection.Id + "' class='" + CurrentSection.layout + " section row "
                     + (CurrentSection.Freez ? "frozen " : "") + "'>"
-
                     + (CurrentSection.SectionTitle != undefined && CurrentSection.layout == layouts.inline ? "<label  class='section-title col-md-" + CurrentSection.labelmd + " col-lg-" + CurrentSection.labellg + "'>" + CurrentSection.SectionTitle + "</label>" : "");
 
                     var fields = CurrentSection.fields;
@@ -910,7 +900,7 @@ var FormJs = function () {
                     // fields loop starts
                     for (var i in fields) {
                         // making current field strongly typed :) :) ... checks properties ... sets defaults
-                        var CurrentField = new field(fields[i])
+                        var CurrentField = new field(fields[i]);
                         if (CurrentField.name === undefined) {
                             console.error("the name property must be set for each field for the OmegaForm library to work well !!!");
                         }
@@ -1115,7 +1105,6 @@ var FormJs = function () {
                             }
 
                             function DrawFormWindow(data, qualGroupLst) {
-                                console.log(data);
                                 if (data && data.indexOf("false,") == 0) {
                                     toastr.error(data.split(",")[1]);
                                     return;
@@ -1149,7 +1138,6 @@ var FormJs = function () {
                             }
 
                             function saveOption(event) {
-                            console.log("here");
                                 if (event) event.preventDefault();
                                 if (objectName || formData.IsLookUp == 2) {
                                     var windowBody = $("#addSelectWindow");
@@ -1325,7 +1313,7 @@ var FormJs = function () {
             }
 
 
-            
+
             function UseKendo(context) {
                 var calender,
                     dateField = $(context).find("input[type=" + FieldTypes.Date + "]").filter("[disable-weekend],[disable-holidays]");
@@ -1362,30 +1350,29 @@ var FormJs = function () {
                     }
                     return isDisabled;
                 }
-
                 $(context).find("input[type=" + FieldTypes.Date + "]").attr("data-type", 'date').kendoDatePicker({ culture: culture, value: parseServerDate($(this).val()) });
 
                 for (var i = 0; i < dateField.length; i++) {
-                    var field = $(dateField[i]);
-                    if (field.filter('[disable-weekend][disable-holidays]').length > 0) {
-                        field.data('kendoDatePicker').setOptions({
+                    var field2 = $(dateField[i]);
+                    if (field2.filter('[disable-weekend][disable-holidays]').length > 0) {
+                        field2.data('kendoDatePicker').setOptions({
                             disableDates: function (date) {
                                 if (disableWeekEnd(date)) return true;
                                 if (disableHolidays(date)) return true;
                             }
                         });
                     }
-                    else if (field.filter('[disable-weekend]').length > 0) {
-                        field.data('kendoDatePicker').setOptions({ disableDates: disableWeekEnd });
+                    else if (field2.filter('[disable-weekend]').length > 0) {
+                        field2.data('kendoDatePicker').setOptions({ disableDates: disableWeekEnd });
                     }
-                    else if (field.filter('[disable-holidays]').length > 0) {
-                        field.data('kendoDatePicker').setOptions({ disableDates: disableHolidays });
+                    else if (field2.filter('[disable-holidays]').length > 0) {
+                        field2.data('kendoDatePicker').setOptions({ disableDates: disableHolidays });
                     }
                 }
 
                 //--Date & Time Pickers 
                 $(context).find("input[type=" + FieldTypes.DateTime + "]").attr("data-type", 'datetime').kendoDateTimePicker({ culture: culture });
-                $(context).find("input[type=" + FieldTypes.Time + "]").attr("data-type", 'time').kendoTimePicker({ culture: culture, format: 'h:mm tt', parseFormats: ["HH:mm"] });
+                $(context).find("input[type=" + FieldTypes.Time + "]").attr("data-type", 'time').kendoTimePicker({ culture: culture, format: 'h:mm tt', parseFormats: ["HH:mm"], dateInput: true });
 
                 //--MaskedTextBox
                 var maskedField = $(context).find("input[type=" + FieldTypes.MaskedTextBox + "]");
@@ -1433,54 +1420,22 @@ var FormJs = function () {
             //--------------------------------
 
             //Documents & BackToIndex Buttons
-            if (formBtns.length) {
-                var container = ($(context).closest(".tab-content").length ? $(context).closest(".tab-content") : $(context).find(".sets-container"));
+            //if (formBtns.length) {
+            //    var container = ($(context).closest(".tab-content").length ? $(context).closest(".tab-content") : $(context).find(".sets-container"));
 
-                var BtnsTxt = (formBtns.indexOf("doc") != -1 ? "<button id='Documents' name='Documents' onClick='return false;' class='btn btn-info ajaxBtn button' accesskey='d'><span class='fa fa-link'></span> " + (allMsgs.Documents ? allMsgs.Documents : "Documents") + " <span id='nofdocs' class='badge badge-red'>" + (model && model.Attachments ? model.Attachments : 0) + "</span></button>" : "")
-                + (formBtns.indexOf("back") != -1 ? "<button id='backToIndex' name='backToIndex' onClick='return false;' class='btn btn-warning back button ' accesskey='b'> " + (allMsgs.backToIndex ? allMsgs.backToIndex : "Back To Index") + " </button>" : "")
+            //    var BtnsTxt = (formBtns.indexOf("doc") != -1 ? "<button id='Documents' name='Documents' onClick='return false;' class='btn btn-info ajaxBtn button' accesskey='d'><span class='fa fa-link'></span> " + (allMsgs.Documents ? allMsgs.Documents : "Documents") + " <span id='nofdocs' class='badge badge-red'>" + (model && model.Attachments ? model.Attachments : 0) + "</span></button>" : "")
+            //    + (formBtns.indexOf("back") != -1 ? "<button id='backToIndex' name='backToIndex' onClick='return false;' class='btn btn-warning back button ' accesskey='b'> " + (allMsgs.backToIndex ? allMsgs.backToIndex : "Back To Index") + " </button>" : "")
 
-                if (container.find("#Documents, #backToIndex").length == 0) {
-                    container.append("<div id='btnsDiv' class='form-inline section row frozen'>" + BtnsTxt + "</div>");
-                    $(container).on('click', '#backToIndex', function () {
-                        var oldPage = localStorage.getItem("menuhigh").split(",");
-                        var oldulr = $("#" + oldPage[2] + " a").attr("href");
-                        // $("#renderbody").load(oldulr);
-                        updateHistory(oldulr);
-                    });
-                }
-            }
-
-
-            //RequestPages Buttons
-            if (formreqBtns.length) {
-                var secBtn = $(context).find('.submit').closest('.section');
-
-                var reqBtns = (formreqBtns.indexOf('Download') != -1 ? "<div class='form-group'><div><button id='Download' name='Download' class='btn btn-info funcbtn ajaxBtn button' onclick='return false;' disabled='disabled'>" + (allMsgs.Download ? allMsgs.Download : "Download") + "</button></div></div>" : "")
-                + (formreqBtns.indexOf('Upload') != -1 ? "<div class='form-group'><div><button id='Upload' name='Upload' class='btn btn-info funcbtn ajaxBtn button' onclick='return false;' disabled='disabled'>" + (allMsgs.Upload ? allMsgs.Upload : "Upload") + "</button></div></div>" : "")
-                + (formreqBtns.indexOf('Send') != -1 ? "<div class='form-group'><div><button id='submitRequest' name='submitRequest' class='btn btn-info funcbtn ajaxBtn button' onclick='return false;' disabled='disabled'>" + (allMsgs.submitRequest ? allMsgs.submitRequest : "submitRequest") + "</button></div></div>" : "")
-                if (secBtn.length >= 0) {
-                    secBtn.append(reqBtns);
-                    $(secBtn).on('click', '#Upload', function () {
-                        $('#UploadPopup').modal('show');
-                    });
-
-                    $(secBtn).on('click', '#Download', function () {
-
-                        var Idelem = context.find("#Id");
-                        var Id = Idelem.is("input") ? Idelem.val() : Idelem.text();
-                        var field = context.find("#EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
-                        var EmpId = (field.prop("type") == "text" ? field.prop("data-val") : field.val());
-                        if (EmpId === undefined)
-                            EmpId = model.EmpId;
-                        if (Id != 0 && EmpId != "" && EmpId != 0)
-                            MergeData(objectName, Id, EmpId);
-                        else if (Id == 0)
-                            toastr.error(allMsgs.NotSave)
-                        else
-                            toastr.error(allMsgs.NoEmp)
-                    });
-                }
-            }
+            //    if (container.find("#Documents, #backToIndex").length == 0) {
+            //        container.append("<div id='btnsDiv' class='form-inline section row frozen'>" + BtnsTxt + "</div>");
+            //        $(container).on('click', '#backToIndex', function () {
+            //            //var oldPage = localStorage.getItem("menuhigh").split(",");
+            //            //var oldulr = $("#" + oldPage[2] + " a").attr("href");
+            //            // $("#renderbody").load(oldulr);
+            //            updateHistory(oldUlr);
+            //        });
+            //    }
+            //}
 
             //----------------Formula-----------------
             bindFormulaFunc();
@@ -1500,7 +1455,7 @@ var FormJs = function () {
                         fields = columns.filter('[formula-columns="' + selector + '"]');
 
                         for (var i = 0; i < fields.length; i++) {
-                            var formula, field = $(fields[i]), fieldName = field.attr("id");
+                            var formula, field2 = $(fields[i]), fieldName = field2.attr("id");
 
                             var foundObj = formulaObjArr.filter(function (item) { return item.column == fieldName; });
                             if (foundObj.length) formula = foundObj[0].formula;
@@ -1512,21 +1467,20 @@ var FormJs = function () {
                                 console.log(ex);
                             }
 
-                            //1-validate value(undefiend | NaN | ...). 2-field type(input | label | ...).
+                            //1-validate value(undefiend | NaN | ...). 2-field2 type(input | label | ...).
                             if (value != NaN) {
                                 if (!isNaN(Number(value))) { //is Number
                                     value = parseFloat(value).toFixed(2);
                                     //if (value % 1 == 0)  value = parseInt(value); ///is Int
                                 }
                                 //Bind Value
-                                if (field.length && field[0].localName == "label") field.text(value);
-                                else field.val(value);
+                                if (field2.length && field2[0].localName == "label") field2.text(value);
+                                else field2.val(value);
                             }
                         }
                     }
                 });
             }
-
             //----------------End Formula-----------------
 
             // intialize the edit mode functionality with out mixing the logic with the UI switcher element
@@ -1621,7 +1575,7 @@ var FormJs = function () {
                 animation: {
                     open: {
                         effects: "slideIn:left fadeIn",//"expand:vertical", //"slideIn:top fadeIn", //":top fadeIn",
-                        duration: 1000
+                        duration: 500
                     }
                 }
             });
@@ -1641,8 +1595,6 @@ var FormJs = function () {
                 editable.each(function () {
                     $(this).css("display", "inline");
                     $(this).attr("data-default", $(this).text());
-                    // console.log($(this).closest("input").first())
-
                     //auto generate IDs if it doesn't exist
                     if ($(this).attr("id") === undefined) {
                         //get the first parent that has id  - H1 idea :)
@@ -1814,10 +1766,8 @@ var FormJs = function () {
                 var msg = mode + (allMsgs.warningSave == undefined ? " Changed" : allMsgs.warningSave);
                 var modeFlag = mode == "Data" ? hasdatachanges : hasdesignchanges;
                 var otherFlag = mode == "Data" ? hasdesignchanges : hasdatachanges;
-
                 function clickHandler(e) {
                     otherFlag = mode == "Data" ? hasdesignchanges : hasdatachanges; //In first time when Ok the flag becomes false
-
                     var result = confirm(msg);
                     if (result) {
                         e.preventDefault();
@@ -1894,11 +1844,13 @@ var FormJs = function () {
             ///end Design & data Changed
 
             //Data Changed
-            if (model && model.Id != 0) { $(context).find(".submit").attr("disabled", true); $(context).find(".funcbtn").attr("disabled", false); }
+            if (model && model.Id != 0) { $('.save-group').find('button').attr('disabled', true); $(context).find('form').attr('data-disable', false); $("#b6,#b7").attr('disabled', false); }
 
             $(context).find('form').on('change', ':input:not(:button, #switchDesign)', function () {
-                $(context).find(".submit").attr("disabled", false);
-                $(context).find(".funcbtn").attr("disabled", true);
+                //$(context).find(".submit").attr("disabled", false);
+                $('.save-group').find('button').attr('disabled', false);
+                $(context).find('form').attr('data-disable', true);
+                $("#b6,#b7").attr('disabled', true);
             });
 
             $(context).find(':input:not(:button, #switchDesign)').change(function () {
@@ -2025,15 +1977,14 @@ var FormJs = function () {
             });
 
             //when save, make hasdatachanges flag = false
-            $(context).find('.sets-container').on('click', '.submit', null, function (e) {
+            //$(context).find('.sets-container').on('click', '.submit', null, function (e) {
+            $(".save-group").off('click').on('click', ':not(#div12345)', function (e) {
                 e.preventDefault();
                 if (hasdatachanges) datachanged(false);
             });
-
             //Alt + 'char'
-            $(context).find('.submit[name^=save], .submit[name^=Save]').filter(":eq(0)").attr("accesskey", "s");
-            $(context).find('.back[name="backToIndex"]').filter(":eq(0)").attr("accesskey", "b");
-
+            //$(context).find('.submit[name^=save], .submit[name^=Save]').filter(":eq(0)").attr("accesskey", "s");
+            //$(context).find('.back[name="backToIndex"]').filter(":eq(0)").attr("accesskey", "b");
             //Log Tooltip
             $(context).on("keydown", "input, select", function (e) {
                 if (model && (model.Id > 0 || typeof (model.Id) == "string" && model.Id.length > 2)) {
@@ -2116,7 +2067,7 @@ var FormJs = function () {
     });
     // #endregion formregion
 
-    function saveForm(context, btn, afterSave, grid1, grid2, grid3) {
+    function saveForm(context, btn, afterSave) {
         context = $(context);
         var validator = context.data("kendoValidator");
 
@@ -2125,8 +2076,9 @@ var FormJs = function () {
 
         if (isValid) {
             ///forbidden user to click again (save changes button)
-            $(btn).attr('disabled', true);
-            context.find(".submit").attr('disabled', true);
+            $(".save-group").find("button").attr('disabled', true);
+            $("#b6,#b7").attr('disabled', false);
+            $(context).find('form').attr('data-disable', false);
             ///
 
             var formData = {}, visibleColumns = [], selected = {};
@@ -2181,10 +2133,14 @@ var FormJs = function () {
             formData["visibleColumns"] = selected.visibleColumns;
             formData["NewValues"] = selected.NewValues;
             formData["OldValues"] = selected.OldValues;
+            formData["clear"] = false;
 
-            if (grid1) formData["grid1"] = grid1;
-            if (grid2) formData["grid2"] = grid2;
-            if (grid3) formData["grid3"] = grid3;
+            for (var i = 3; i < arguments.length; i++) {
+                if (typeof arguments[i] != 'boolean')
+                    formData["grid" + (i - 2)] = arguments[i];
+                else
+                    formData["clear"] = arguments[i];
+            }
 
             //Send data to server
             var formAction = context.attr("action");
@@ -2244,10 +2200,8 @@ var FormJs = function () {
         }
         else
             formData[node.name] = node.checked;
-
         return newValue;
     }
-
 
     ///bind errors on views 
     function postSuccessFunc(context, btn, data, afterSave) {
@@ -2258,45 +2212,54 @@ var FormJs = function () {
                     savedObject = JSON.parse(savedData);
                     if (typeof (savedObject) == 'number') $(context).find("#Id").val(savedObject);
                     else if (savedObject.Id) $(context).find("#Id").val(savedObject.Id);
-                    $("#Download").attr('disabled', false);
-                    $("#Upload").attr('disabled', false);
-                    $("#submitRequest").attr('disabled', false);
-
+                    else if (savedObject.Id == 0) {
+                        $("[data-role='multiselect']").each(function () {$(this).data("kendoMultiSelect").value([])});
+                        $(context)[0].reset();
+                        for (var i in savedObject) {
+                            if (savedObject.hasOwnProperty(i)) {
+                                var f = $(context).find("#" + i);
+                                if (f) (savedObject[i] ? f.val(null) : f.val(savedObject[i]));
+                            }
+                        }
+                    }
                 }
                 afterSave(savedObject);
             }
             else {
                 toastr.success(allMsgs.SaveComplete);
-                var oldPage = localStorage.getItem("menuhigh").split(",");
-                var oldulr = $("#" + oldPage[2] + " a").attr("href");
-                if (oldulr) $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             }
         }
             ///Array of errors
         else if (Array.isArray(data)) {
             closeWindow();
+
             var msg = "";
             for (var i in data) {
                 msg += data[i].Message + " ";
                 if (data[i].Field) {
-                    var field = $(context).find("#" + data[i].Field);
-                    if (field && !field.hasClass("k-invalid")) {
-                        field.addClass("k-invalid").prop("aria-invalid", true);
-                        field.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + data[i].Field + "' role='alert'>" + data[i].Message + "</span>");
+                    var field2 = $(context).find("#" + data[i].Field);
+                    if (field2 && !field2.hasClass("k-invalid")) {
+                        field2.addClass("k-invalid").prop("aria-invalid", true);
+                        field2.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + data[i].Field + "' role='alert'>" + data[i].Message + "</span>");
                     }
                 }
             }
-            $(btn).attr('disabled', false);
-            $(context).find(".submit").attr('disabled', false);
-            toastr.error(msg);
 
+            $(".save-group").find("button").attr('disabled', false);
+            $(context).find('form').attr('data-disable', true);
+            $("#b6,#b7").attr('disabled', true);
+            var errorbox = $('#errorbox');
+            if (errorbox.length == 0) toastr.error(msg); else { errorbox.css('display', '').text(msg); $(".alert").css("display", ""); };
         }
             ///errors from DB
         else {
             closeWindow();
-            $(btn).attr('disabled', false);
-            $(context).find(".submit").attr('disabled', false);
-            toastr.error(data);
+            $(".save-group").find("button").attr('disabled', false);
+            $(context).find('form').attr('data-disable', true);
+            $("#b6,#b7").attr('disabled', true);
+            var errorbox = $('#errorbox');
+            if (errorbox.length == 0) toastr.error(msg); else errorbox.css('display','').text(msg);
         }
 
         function closeWindow() { //for company
@@ -2310,13 +2273,13 @@ var FormJs = function () {
         $.extend(true, kendo.ui.validator, {
             rules: {
                 "disable-weekend": function (input) {
-                    var field;
+                    var field2;
 
-                    if (input.is("[data-role=datepicker]")) field = input.data("kendoDatePicker");
-                    else if (input.is("[data-role=datetimepicker]")) field = input.data("kendoDateTimePicker");
+                    if (input.is("[data-role=datepicker]")) field2 = input.data("kendoDatePicker");
+                    else if (input.is("[data-role=datetimepicker]")) field2 = input.data("kendoDateTimePicker");
 
-                    if (field)
-                        return !(field.value() == null && input.val()); //disabled date and not empty
+                    if (field2)
+                        return !(field2.value() == null && input.val()); //disabled date and not empty
 
                     return true;
                 },
@@ -2456,9 +2419,9 @@ var FormJs = function () {
             var uniqueCols = element.attr("uniquecolumns").split(',');
 
             for (var i = 0; i < uniqueCols.length; i++) {
-                columnsData = {}, field = $('#' + uniqueCols[i]);
-                if (field.length) {
-                    getColumnData(field[0], columnsData);
+                var columnsData = {}, field2 = $('#' + uniqueCols[i]);
+                if (field2.length) {
+                    getColumnData(field2[0], columnsData);
 
                     model.columns.push(uniqueCols[i]);
                     model.values.push(columnsData[uniqueCols[i]]);
@@ -2472,32 +2435,32 @@ var FormJs = function () {
 
 
     function addFormError(formId, fieldName, message) {
-        var field = $("#" + formId + " #" + fieldName);
-        if (field && !field.hasClass("k-invalid")) {
-            field.addClass("k-invalid").prop("aria-invalid", true);
-            field.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + fieldName + "' role='alert'>" + message + "</span>");
+        var field2 = $("#" + formId + " #" + fieldName);
+        if (field2 && !field2.hasClass("k-invalid")) {
+            field2.addClass("k-invalid").prop("aria-invalid", true);
+            field2.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='" + fieldName + "' role='alert'>" + message + "</span>");
         }
     }
 
     function removeFormError(formId, fieldName) {
-        var field = $("#" + formId + " #" + fieldName);
-        field.removeClass("k-invalid").prop("aria-invalid", false);
-        field.next("span.k-tooltip-validation").remove();
+        var field2 = $("#" + formId + " #" + fieldName);
+        field2.removeClass("k-invalid").prop("aria-invalid", false);
+        field2.next("span.k-tooltip-validation").remove();
     }
 
-    function disbaleKendoDates(field, disableDatesFunc) {
-        var container = $(field).closest("div"),
-            culture = $(field).closest('form').attr('culture');
+    function disbaleKendoDates(field2, disableDatesFunc) {
+        var container = $(field2).closest("div"),
+            culture = $(field2).closest('form').attr('culture');
 
-        for (var i = 0; i < field.length; i++) {
+        for (var i = 0; i < field2.length; i++) {
             var options = { culture: culture, disableDates: disableDatesFunc, parseFormats: ["yyyy-MM-dd"] }; ///$(field[i]).data(picker).options.disableDates
-            if (field[i].attributes.value) $(field[i]).val(kendo.toString(field[i].attributes.value.nodeValue, "yyyy-MM-dd"));
+            if (field2[i].attributes.value) $(field2[i]).val(kendo.toString(field2[i].attributes.value.nodeValue, "yyyy-MM-dd"));
 
-            $(field[i]).removeAttr("data-role");
+            $(field2[i]).removeAttr("data-role");
             $(container[i]).empty();
-            $(container[i]).append(field[i]);
+            $(container[i]).append(field2[i]);
 
-            $(field[i]).kendoDatePicker(options);
+            $(field2[i]).kendoDatePicker(options);
         }
     }
 
@@ -2528,7 +2491,6 @@ var FormJs = function () {
     ///Editables : colName, objectName, culture, Title
     ///Orders(Feilds & Section) : Id, Order
     function saveFormDesign(context) {
-
         var data = {};
         data.ColumnTitles = [];
         data.FieldSets = [];
@@ -2574,9 +2536,8 @@ var FormJs = function () {
                 label.ColumnName = $(editables[i]).closest(".set").attr("name");
             else //form title
                 label.ColumnName = $(editables[i]).closest("#titleLbl").attr("name");
-
+            
             label.Title = editables[i].innerText;
-
             data.ColumnTitles.push(label);
         }
 
@@ -2615,7 +2576,6 @@ var FormJs = function () {
     }
 
     ///#region Tabs
-    // Load Tabs
     //container: div --- tabs(optional): [{Name, Title}]
     function DrawTabs(container, tabs) {
         var it;
@@ -2625,12 +2585,11 @@ var FormJs = function () {
             var menu = $.urlParam('MenuId');
             it = $.grep(JSON.parse(localStorage["Tabs"]), function (e) { return e.RoleId == role && e.ParentId == menu; });
         }
+
         var menuHtml = '<div class="portlet box"><div class="portlet-body">';
         menuHtml += '<div id="classrow">';
         menuHtml += '<div id="classcol-md-2">'
-        //menuHtml += '<a href="javascript:;" class="btn btn-icon-only diret_align"><i class="glyphicon glyphicon-align-justify" id="alignjustify"></i></a>';
         menuHtml += '<div class="tab-tools">';
-        menuHtml += '<a href="javascript:;" class="btn btn-icon-only diret_align"><i class="glyphicon glyphicon-align-justify" id="alignjustify"></i></a>';
         menuHtml += '</div>'
         menuHtml += '<ul class="nav nav-tabs" id="menu_tabs">';
         var content = '<div id="classcol-md-10"><div class="tab-content">';
@@ -2640,29 +2599,21 @@ var FormJs = function () {
                 + (it[i].Class ? '<span class="' + it[i].Class + '"></span> ' : '') + it[i].Title + '</a></li>';
             content += '<div class="tab-pane fade" id="tab_' + it[i].Name + '"></div>';
         }
+
         menuHtml += '</ul></div>';
-        content += '';
+        //content += '';
 
         //pageTabs
         $("#" + container).prepend(menuHtml + content + '</div></div></div></div>');
         $('a[href*="tab_"]').first().parent().addClass('active');
         $('[id*="tab_"]').first().addClass('active in');
     }
-    // End Tabs
     ///#endregion Tabs
 
     function parseServerDate(date) {
         if (date && date.indexOf('/Date') != -1) return kendo.toString(new Date(parseInt(date.substr(6))), "yyyy-MM-dd"); //.toLocaleDateString();
         else return date;
     }
-
-    //#region MailMergeFunc
-    //Excute Function
-    function MergeData(objectName, Id, EmpId) {
-        $.post('/Letters/MergeEmp', { objectName: objectName, Id: Id, EmpId: EmpId }, function (res) { if (res.Exist) location.href = res.Path; else toastr.error(res.Error); });
-    }
-    //End MailMergeFunc
-    //End region
 
     return {
         DrawTabs: DrawTabs,
@@ -2673,7 +2624,6 @@ var FormJs = function () {
         getColumnData: getColumnData,
         saveWindowSize: saveWindowSize,
         field: field,
-        MergeData: MergeData,
         addFormError: addFormError,
         removeFormError: removeFormError,
         disbaleKendoDates: disbaleKendoDates

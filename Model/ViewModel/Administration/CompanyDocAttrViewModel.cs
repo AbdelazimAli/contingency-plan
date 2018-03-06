@@ -20,6 +20,7 @@ namespace Model.ViewModel
         public string ValueText { get; set; }
         public int? ValueId { get; set; }
 
-        public Guid StreamId { get; set; }
+        public Guid? StreamId { get; set; }
+        public bool IsRequired { set; get; }
     }
 }

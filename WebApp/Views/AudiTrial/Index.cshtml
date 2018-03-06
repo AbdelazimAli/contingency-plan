@@ -3,13 +3,13 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    string[] function = ViewBag.Functions as string[];
+    //string[] function = ViewBag.Functions as string[];
 }
 <style>
     .esss{
@@ -21,11 +21,11 @@
 <div id="AudiDiv"></div>
 <script>
     var gridname="'AudiDiv'";
-    var toolbar = '<div><div style="@(rtl ? "float: right; " : "float: left;")">' +
+    @*var toolbar = '<div><div style="@(rtl ? "float: right; " : "float: left;")">' +
        '&nbsp;&nbsp; <a style="height:30px;" class="btn btn-default btn-sm fa fa-eye" onclick="AudiTrailEditor()" accesskey="s"><span >&nbsp;@MsgUtils.Instance.Trls("Show Data")</span></a></div>&nbsp;&nbsp;&nbsp;' +
        '&nbsp;&nbsp;<div style="@(rtl ? "float: right" : "float: left")">&nbsp;<div class="btn-group"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
        '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
-       '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';
+       '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';*@
 
     Grids.indexGrid({
         read: "@Url.Action("ReadAudiTrials", "AudiTrial")?MenuId=@Request.QueryString["MenuId"]",
@@ -34,7 +34,7 @@
         admin: "@admin",
         lang: "@User.Identity.GetCulture()",
         selectable: "row",
-        toolbar: toolbar,
+      //  toolbar: toolbar,
         serverPaging: true,
         serverFiltering: true,
         serverSorting: true,

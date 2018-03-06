@@ -11,6 +11,7 @@ namespace Model.ViewModel.Personnel
         public int Id { get; set; }
         public string Name { get; set; }
         public string PicUrl { get; set; }
+        public short Gender { get; set; }
         public string Description { get; set; }
         public int? EmpId { get; set; } // Employee
         public int? ListId { get; set; }

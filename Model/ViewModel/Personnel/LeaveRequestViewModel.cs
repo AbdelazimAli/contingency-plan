@@ -14,31 +14,20 @@ namespace Model.ViewModel.Personnel
         public DateTime RequestDate { get; set; } = DateTime.Today;
         public string Employee { get; set; }
         public int TypeId { get; set; }
-        public string Type { get; set; } // Apply Eligiblity criteria & Conditions
         public byte ReqStatus { get; set; } // 1- Planned   2-Confirmed   from hr always 2
         public byte ApprovalStatus { get; set; } // 1- New  2-Cancelled 4-Rejected  5-Approved
-        public string ApprovalName { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime? ReturnDate { get; set; }
         public float NofDays { get; set; }
-        public string RoleId { get; set; }
-        public int? PositionId { get; set; }
-        public int? DeptId { get; set; }
-        public int? EmpId { get; set; }
-        public string FlowWork { get; set; }
+        public int DeptId { get; set; }
+        public int EmpId { get; set; }
         public int CompanyId { get; set; }
-        public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
-        public int? AuthBranch { get; set; } // Branch = 2
-        public int? AuthDept { get; set; }
-        public int? AuthPosition { get; set; }
-        public int? AuthEmp { get; set; }
-        public string AuthEmpName { get; set; }
-        public string AuthPosName { get; set; }
-        public string AuthDeptName { get; set; }
+        public int BranchId { get; set; } // Branch = 2
         public bool HasImage { get; set; }
         public DateTime EndDate { get; set; }
         public int? ReplaceEmpId { get; set; }
+        public bool? isBreaked { get; set; }
+        public bool? isStarted { get; set; }
         //last Add Property by Abdelazim 
         public short? ReqReason { get; set; } // lookup code LeaveReason
         [MaxLength(250)]
@@ -48,14 +37,18 @@ namespace Model.ViewModel.Personnel
         public string RejectDesc { get; set; }
         public short? CancelReason { get; set; } // lookup code CancelReason
         public string CancelDesc { get; set; }
-
         public string Notes { get; set; }
-        public DateTime? WorkflowTime { get; set; }
-
         public DateTime? ActualEndDate { get; set; }
+        public DateTime? ActualStartDate { get; set; }
         public float? ActualNofDays { get; set; }
         public byte DayFraction { get; set; } = 0;
         public string AttUrl { get; set; }
+        public string Code { get; set; }
+        public string DeptName { get; set; }
+        public string JobName { get; set; }
+        public string BranchName { get; set; }
+        public int JobId { get; set; }
+        public string Type { get; set; }
     }
 
     public class LeaveReqViewModel
@@ -104,7 +97,7 @@ namespace Model.ViewModel.Personnel
         public float? ActualNofDays { get; set; }
         public int? ReplaceEmpId { get; set; }
         public int? AuthbyEmpId { get; set; }
-        //public short? StartTolerance { get; set; } = 0; // leave request start tolerance
+        public int ForceUpload { get; set; }
 
         //Validation 
         public float? AllowedDays { get; set; }
@@ -272,6 +265,10 @@ namespace Model.ViewModel.Personnel
         public string DeptPercentError { get; set; }
         public float Percentage { get; set; }
         public bool IsError { get; set; }
+        public string AllowedDaysError { get; set; }
+        public string PeriodError { get; set; }
+        public string CantGreaterError { get; set; }
+        public string NoWorkFlowError { get; set; } = null;
     }
     #endregion
 }

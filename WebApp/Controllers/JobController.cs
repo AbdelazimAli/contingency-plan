@@ -45,10 +45,6 @@ namespace WebApp.Controllers
        
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult PeriodIndex()
@@ -57,7 +53,7 @@ namespace WebApp.Controllers
         }
         public ActionResult GetAllJobs(int MenuId)
         {
-            var query = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).AsQueryable();
+            var query = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).AsQueryable();
             string whereclause = GetWhereClause(MenuId);
             if (whereclause.Length > 0)
             {
@@ -79,7 +75,7 @@ namespace WebApp.Controllers
         void FillViewBag(bool Islocal)
         {
             ViewBag.Frequency = _hrUnitOfWork.CompanyRepository.GetLookUpCode(Language, "Frequency");
-            ViewBag.PayrollGrade = _hrUnitOfWork.JobRepository.GetPayrollGrade();
+            ViewBag.PayrollGrade = _hrUnitOfWork.JobRepository.GetPayrollGrade(CompanyId);
             ViewBag.JobClass = _hrUnitOfWork.JobRepository.GetJobClass(CompanyId);
         }
 
@@ -107,7 +103,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "Job",
@@ -156,7 +152,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Job",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -177,7 +172,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Job",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -293,7 +287,6 @@ namespace WebApp.Controllers
                 {
                     Source = Job,
                     ObjectName = "Job",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.JobRepository.Remove(Job);

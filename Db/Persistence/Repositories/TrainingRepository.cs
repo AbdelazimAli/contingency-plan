@@ -78,7 +78,7 @@ namespace Db.Persistence.Repositories
                 IEmployments = obj.a.Employments == null ? null : obj.a.Employments.Split(',').Select(int.Parse).ToList(),
                 IPayrollGrades = obj.a.PayrollGrades == null ? null : obj.a.PayrollGrades.Split(',').Select(int.Parse).ToList(),
                 IPositions = obj.a.Positions == null ? null : obj.a.Positions.Split(',').Select(int.Parse).ToList(),
-                ILocations = obj.a.Locations == null ? null : obj.a.Locations.Split(',').Select(int.Parse).ToList(),
+                IBranches = obj.a.Branches == null ? null : obj.a.Branches.Split(',').Select(int.Parse).ToList(),
                 IJobs = obj.a.Jobs == null ? null : obj.a.Jobs.Split(',').Select(int.Parse).ToList(),
                 IPeopleGroups = obj.a.PeopleGroups == null ? null : obj.a.PeopleGroups.Split(',').Select(int.Parse).ToList()
 
@@ -164,7 +164,7 @@ namespace Db.Persistence.Repositories
                 IEmployments = obj.a.Employments == null ? null : obj.a.Employments.Split(',').Select(int.Parse).ToList(),
                 IPayrollGrades = obj.a.PayrollGrades == null ? null : obj.a.PayrollGrades.Split(',').Select(int.Parse).ToList(),
                 IPositions = obj.a.Positions == null ? null : obj.a.Positions.Split(',').Select(int.Parse).ToList(),
-                ILocations = obj.a.Locations == null ? null : obj.a.Locations.Split(',').Select(int.Parse).ToList(),
+                IBranches = obj.a.Branches == null ? null : obj.a.Branches.Split(',').Select(int.Parse).ToList(),
                 IJobs = obj.a.Jobs == null ? null : obj.a.Jobs.Split(',').Select(int.Parse).ToList(),
                 IPeopleGroups = obj.a.PeopleGroups == null ? null : obj.a.PeopleGroups.Split(',').Select(int.Parse).ToList()
 
@@ -251,8 +251,7 @@ namespace Db.Persistence.Repositories
                             AuthEmpName = HrContext.TrlsName(ap.Title + " " + ap.FirstName + " " + ap.Familyname, culture),
                             AuthPosition = wft.AuthPosition,
                             AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
-                            BranchId = wft.BranchId,
-                            SectorId = wft.SectorId
+                            BranchId = wft.BranchId
                         };
 
             return query;
@@ -303,7 +302,6 @@ namespace Db.Persistence.Repositories
                             AuthPosition = wft.AuthPosition,
                             AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                             BranchId = wft.BranchId,
-                            SectorId = wft.SectorId,
                             CourseTitle=c.CourseTitle,
                             Attachement = HrContext.GetDoc("EmployeePic", p.Id),
                             Gender = p.Gender,
@@ -357,13 +355,14 @@ namespace Db.Persistence.Repositories
         public IQueryable<PeoplesViewModel> GetPeople(string culture)
         {
             var q = from p in context.People
-                    join e in context.Employements on p.Id equals e.EmpId into g
-                    from e in g.Where(s => s.Status == 1)
+                    join e in context.Employements on p.Id equals e.EmpId
+                    where e.Status == 1
                     select new PeoplesViewModel
                     {
                         Id = e.EmpId,
                         Title = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                        PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
+                        PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                        Gender = p.Gender,
                         EmpStatus = HrContext.GetEmpStatus(p.Id)
                     };
             return q;

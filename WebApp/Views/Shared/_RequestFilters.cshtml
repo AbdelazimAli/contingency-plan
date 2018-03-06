@@ -4,55 +4,37 @@
     Layout = null;
     var rtl = User.Identity.RTL();
     string culture = User.Identity.GetCulture();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     bool hasDepts = ViewData["HasDepts"] == null || ViewData["HasDepts"] as string == "true";
     bool hasRange = ViewData["HasRange"] == null || ViewData["HasRange"] as string == "true";
-    bool hasPdfExcel = ViewData["HasPdfExcel"] == null || ViewData["HasPdfExcel"] as string == "true";
-    string[] function = ViewData["Functions"] as string[];
-    string objectName = ViewData["ObjectName"]?.ToString();
     string OldObjectName = ViewData["OldObjectName"]?.ToString();
     string TableName = ViewData["TableName"]?.ToString();
     string GridName = ViewData["GridName"]?.ToString();
+    string AddUrl = ViewData["AddUrl"]?.ToString();
 }
 
-<script src="~/Scripts/app/tree.js"></script>
+
+<script src="~/Scripts/app/tree.js" defer></script>
+@*<script src="~/Scripts/app/requestfilters.js"></script>*@
+
 <br />
+
 <div id="filterDiv" class="btns-grid">
 
-    @if (dataLevel > 2)
+    @if (dataLevel >= 2)
     {
         <button id="AddRecord" class="btn add"></button>
     }
-    @if (function != null && function.Length > 0)
-    {
-        if (Array.Exists(function, f => f == "Import"))
-        {
-          
-                <button class="btn import" onclick="ReturnView()">@MsgUtils.Instance.Trls("Import")</button>
-            
-        }
-        if (Array.Exists(function, f => f == "Export"))
-        {
-            
-                <button class="btn export" onclick="AddFields()">@MsgUtils.Instance.Trls("Export")</button>
 
-        }
-        if (Array.Exists(function, f => f == "ExportPdf"))
-        {
+    <button class="btn import">@MsgUtils.Instance.Trls("Import")</button>
+    <button class="btn export">@MsgUtils.Instance.Trls("Export")</button>
+    @if (!rtl)
+    { <button class="btn pdf">@MsgUtils.Instance.Trls("SaveAsPDF")</button> }
+    <button class="btn excel">@MsgUtils.Instance.Trls("SaveAsExcel")</button>
 
-        <button class="btn pdf" onclick="Grids.saveAsPdf('@GridName')">@MsgUtils.Instance.Trls("SaveAsPDF")</button>
-
-        }
-
-        if (Array.Exists(function, f => f == "ExportExcel"))
-        {
-
-        <button class="btn excel" onclick="Grids.saveAsXsl('@GridName')">@MsgUtils.Instance.Trls("SaveAsExcel")</button>
-        }
-    }
-
+  
     @if (hasDepts)
     {
         <button id="deptsFiletrBtn" class="btn reload"></button>
@@ -165,280 +147,274 @@
 
 
 <script>
-    
-    /// <summary>
-    /// Filter Department, Ranges & Draw Tabs if Exists
-    /// </summary>
-    /// mainFunctions:
-    ///   #ApplayAllFilters,
-    ///   --Use Once before call any thing else
-    ///   --Params:
-    ///     "tabList": list of objects    -> list of tabs
-    ///     "hiddenCols": object          ->  for tabs to hide columns for some tabs
-    ///     "gridName", "readUrl"
-    ///     "isMultiGrid": bool(optional) -> fot pages that contains more than 1 grid.
-    ///------------------------------------------------------------------------
-    ///   #GetReadUrl,
-    ///   --Use in read url in grid to apply cashed filter form LocalStorage.
-    ///   --Params:
-    ///     "baseUrl": string(optional)   -> needed if isMultiGrid only
 
-    //Import & Export Function region
-    var file = {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"],objectName:"@objectName",OldObjectName:"@OldObjectName",TableName:"@TableName",ErrorData:false,DataLevel:@dataLevel};
-
-    var waitWindow = $("#waitWindow").kendoWindow({
-        title: "@MsgUtils.Instance.Trls("Please Wait")",
-        actions: [], //to remove close btn
-        width: "40%",
-        height: "100",
-        visible: false
-    }).data("kendoWindow");
-
-    function AddFields() {
-        waitWindow.center().open();
-
-        $.ajax({
-            url:"/ImportData/AddFields",
-            type:"POST",
-            data:file,
-            success:function(res){
-                var ok = res.substring(0,2);
-                if(ok != "Ok")
-                    toastr.error(res);
-                else
-                    window.location = "/SpecialData/EmployeesData/"+res.substring(2,res.length)+".xlsx?DataLevel=@dataLevel&dummy="+(new Date().getTime());
-
-                waitWindow.close();
-            },error:function(err){
-            }
+    // read user functions
+    var funcs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+    function funcExists(name) {
+        return funcs.some(function(el) {
+            return el.Name === name;
         });
     }
 
-    function ReturnView(){
-        updateHistory("/ImportData/ImportDataView",{File:file})
-    }
+    if ($.inArray("Import", funcs) == -1) $('#filterDiv button.import').remove(); else $('#filterDiv button.import').click(function(){ReturnView()});;
+    if ($.inArray("Export", funcs) == -1) $('#filterDiv button.export').remove(); else $('#filterDiv button.export').click(function(){AddFields()});
+    if ($.inArray("ExportPdf", funcs) == -1) $('#filterDiv button.pdf').remove(); else $('#filterDiv button.pdf').click(function(){Grids.saveAsPdf('@GridName')});
+    if ($.inArray("ExportExcel", funcs) == -1) $('#filterDiv button.excel').remove(); else $('#filterDiv button.excel').click(function(){Grids.saveAsXsl('@GridName')});
 
-    //End region
-    var RequestFilters = function () {
-        var gridName, baseReadUrl, addUrl, tabList, hiddenCols = [],
-            tab = 1, selectedRange = 10, selectedDepts = [],
-            culture = "@culture";
+        /// <summary>
+        /// Filter Department, Ranges & Draw Tabs if Exists
+        /// </summary>
+        /// mainFunctions:
+        ///   #applyAllFilters,
+        ///   --Use Once before call any thing else
+        ///   --Params:
+        ///     "tabList": list of objects    -> list of tabs
+        ///     "hiddenCols": object          ->  for tabs to hide columns for some tabs
+        ///     "gridName", "readUrl"
+        ///     "isMultiGrid": bool(optional) -> fot pages that contains more than 1 grid.
+        ///------------------------------------------------------------------------
+        ///   #getReadUrl,
+        ///   --Use in read url in grid to apply cashed filter form LocalStorage.
+        ///   --Params:
+        ///   "baseUrl": string(optional) -> needed if isMultiGrid only
 
-        function loadFromLocalStrorage(gridName) {
-            //Range Filter
-            var storedRange = localStorage.getItem(gridName + '-range-filter');
-            if (storedRange != null) {
-                var rangeObj = JSON.parse(storedRange);
-                if (rangeObj) {
-                    selectedRange = rangeObj.selectedRange;
-                    if (rangeObj.startRange) $("#start").data('kendoDatePicker').value(rangeObj.startRange);
-                    if (rangeObj.endRange) $("#end").data('kendoDatePicker').value(rangeObj.endRange);
+   //Import & Export Function region
+    var file = {ver:@Request.QueryString["Version"] , MenuId:@Request.QueryString["MenuId"], objectName:"@OldObjectName",OldObjectName:"@OldObjectName",TableName:"@TableName",ErrorData:false,DataLevel:@dataLevel};
+        var waitWindow = $("#waitWindow").kendoWindow({
+            title: "@MsgUtils.Instance.Trls("Please Wait")",
+            actions: [], //to remove close btn
+            width: "40%",
+            height: "100",
+            visible: false
+        }).data("kendoWindow");
+
+        function AddFields() {
+            waitWindow.center().open();
+
+            $.ajax({
+                url:"/ImportData/AddFields",
+                type:"POST",
+                data:file,
+                success:function(res){
+                    var ok = res.substring(0,2);
+                    if(ok != "Ok")
+                        toastr.error(res);
+                    else
+                        window.location = "/SpecialData/EmployeesData/"+res.substring(2,res.length)+".xlsx?DataLevel=@dataLevel&dummy="+(new Date().getTime());
+
+                    waitWindow.close();
+                },error:function(err){
                 }
-            }
-            $('#filterRange #' + selectedRange + ' .checkedRange').addClass('fa-check');
-
-            //Depts Filter
-            var storedDepts = localStorage.getItem(gridName + "-depts-filter");
-            if (storedDepts != null) selectedDepts = JSON.parse(storedDepts);
+            });
         }
 
-        function ApplayAllFilters(tabList, hiddenCols, gridName, readUrl, addUrl, isMultiGrid) {
-            tabList = tabList;
-            var grids;
-            if (isMultiGrid) {
-                grids = gridName;
-                gridName = gridName[0];
-            }
-            else
-                gridName = gridName;
+        function ReturnView() {
+            updateHistory("/ImportData/ImportDataView",{File:file})
+        }
 
-            baseReadUrl = readUrl;
-            addUrl = addUrl;
-            hiddenCols = hiddenCols;
-            $('.dates').find('#start,#end').kendoDatePicker({ culture: culture, change: dateChange });
-            loadFromLocalStrorage(gridName);
+    //End region
+        var addUrl;
+        var RequestFilters = function () {
+            var gridName, baseReadUrl, tabList, hiddenCols = [],
+                tab = 1, selectedRange = 10, selectedDepts = [],
+                culture = "@culture";
 
-            //-----------Tabs-----------
-            if (tabList && tabList.length) {
-                FormJs.DrawTabs('pageTabs', tabList);
-                $('#pageTabs .tab-tools').remove();
-
-                $('#menu_tabs').on('click', 'a', function (e) {
-                    var name = $(this).attr('id'), grid = $('#' + gridName).data('kendoGrid'),
-                        columns = [];
-
-                    var tabObj = tabList.find(t => 't_' + t.Name == name);
-                    if (tabObj) tab = tabObj.Id;
-
-                    if (hiddenCols && grid) {
-                        columns = hiddenCols[tab]; //current hidden columns
-
-                        $.each(hiddenCols, function (index, item) {
-                            for (var j = 0 ; j < item.length; j++) {
-                                if (columns && columns.indexOf(item[j]) > -1) //hide columns
-                                    grid.hideColumn(columns[j]);
-                                else
-                                    grid.showColumn(item[j]);  //show other column if not hidden
-                            }
-                        });
-
-                        var designChanged = $('#' + gridName).attr('designChanged');
-                        if (designChanged == 'true') Grids.TriggerChanges(gridName, 'Design', false);
+            function loadFromLocalStrorage(gridName) {
+                //Range Filter
+                var storedRange = localStorage.getItem(gridName + '-range-filter');
+                if (storedRange != null) {
+                    var rangeObj = JSON.parse(storedRange);
+                    if (rangeObj) {
+                        selectedRange = rangeObj.selectedRange;
+                        if (rangeObj.startRange) $("#start").data('kendoDatePicker').value(rangeObj.startRange);
+                        if (rangeObj.endRange) $("#end").data('kendoDatePicker').value(rangeObj.endRange);
                     }
+                }
+                $('#filterRange #' + selectedRange + ' .checkedRange').addClass('fa-check');
 
-                    refreshGrid();
-
-
-                });
-            }
-            //-----------End Tabs-----------
-
-
-            function refreshGrid() {
-                //if (isMultiGrid) { //for leaveTrans
-                //    for (var i = 0; i < grids.length; i++) {
-                //        var grid = $('#' + grids[i]).data('kendoGrid');
-                //        grid.dataSource.transport.options.read.url = GetReadUrl(baseReadUrl[i]);
-                //        grid.dataSource.read();
-                //    }
-                //}
-                //else {
-                //    var grid = $('#' + gridName).data('kendoGrid');
-                //    grid.dataSource.transport.options.read.url = GetReadUrl();
-                //    grid.dataSource.read();
-                //}
-                $("#"+ gridName +"f1 > a").removeAttr('onclick');
-                $("#"+ gridName).off('click', '#'+ gridName + 'f1 > a', filterClick);
-                $("#"+ gridName).on('click', '#'+ gridName + 'f1 > a', filterClick);
-                var grid = $('#' + gridName).data('kendoGrid'), dSUrl = GetReadUrl();
-
-                grid.dataSource.transport.options.read.url = dSUrl;
-                grid.dataSource.read();
-
-                //Update Filter
-                FilterColumn(gridName);
-
+                //Depts Filter
+                var storedDepts = localStorage.getItem(gridName + "-depts-filter");
+                if (storedDepts != null) selectedDepts = JSON.parse(storedDepts);
             }
 
-            function filterClick() {
-                Grids.redrawGrid(1, this);
-                $('#'+ gridName +'f1 > a').removeAttr('onclick');
-                FilterColumn(gridName);
-            }
+            function applyAllFilters(tabList, hiddenCols, gridName, readUrl, addingUrl, isMultiGrid) {
+                tabList = tabList;
+                var grids;
+                if (isMultiGrid) {
+                    grids = gridName;
+                    gridName = gridName[0];
+                }
+                else
+                    gridName = gridName;
 
-            function FilterColumn(gridName) {
-                var filterFields = $('#' + gridName).find('[data-role="autocomplete"]');
-                filterFields.each(function (index, item) {
-                    var autoComp = $(item).data('kendoAutoComplete');
-                    if(autoComp) autoComp.dataSource.transport.options.read.url = GetReadUrl();
-                });
-            }
+                baseReadUrl = readUrl;
+                addUrl = addingUrl;
+                hiddenCols = hiddenCols;
+                $('.dates').find('#start,#end').kendoDatePicker({ culture: culture, change: dateChange });
+                loadFromLocalStrorage(gridName);
 
+                //-----------Tabs-----------
+                if (tabList && tabList.length) {
+                    FormJs.DrawTabs('pageTabs', tabList);
+                    $('#pageTabs .tab-tools').remove();
 
-            //-----------Range Filter-----------
-            if($('.dates').length)
-            {
-                toggleDates();
+                    $('#menu_tabs').on('click', 'a', function (e) {
+                        var name = $(this).attr('id'), grid = $('#' + gridName).data('kendoGrid'),
+                            columns = [];
 
-                //filter range
-                $('#filterRange').on('click', '.range', function (e) {
-                    var element = $(this);
-                    selectedRange = element.prop('id');
+                        var tabObj = tabList.find(t => 't_' + t.Name == name);
+                        if (tabObj) tab = tabObj.Id;
+                        if (hiddenCols && grid) {
+                            columns = hiddenCols[tab]; //current hidden columns
 
-                    element.closest('#filterRange').find('.checkedRange').removeClass('fa-check');
-                    element.find('.checkedRange').addClass('fa-check');
+                            $.each(hiddenCols, function (index, item) {
+                                for (var j = 0 ; j < item.length; j++) {
+                                    if (columns && columns.indexOf(item[j]) > -1) //hide columns
+                                        grid.hideColumn(columns[j]);
+                                    else
+                                        grid.showColumn(item[j]);  //show other column if not hidden
+                                }
+                            });
 
-                    toggleDates();
-                    if (selectedRange == 0) dateChange();
-                    else refreshGrid();
+                            var designChanged = $('#' + gridName).attr('designChanged');
+                            if (designChanged == 'true') Grids.TriggerChanges(gridName, 'Design', false);
+                        }
 
-                    var rangeObj = { selectedRange: selectedRange };
-                    localStorage.setItem(gridName + '-range-filter', JSON.stringify(rangeObj));
-                });
-
-                var validator = $('.dates').kendoValidator().data('kendoValidator');
-                validator.validateInput();
-
-                function dateChange() {
-                    var startRange = kendo.toString($('#start').data('kendoDatePicker').value(), 'yyyy-MM-dd');
-                    endRange = kendo.toString($('#end').data('kendoDatePicker').value(), 'yyyy-MM-dd');
-
-                    if (startRange && endRange) {
                         refreshGrid();
-                        var rangeObj = { selectedRange: selectedRange, startRange: startRange, endRange: endRange };
+                    });
+                }
+                //-----------End Tabs-----------
+
+
+                function refreshGrid() {
+                    $("#"+ gridName).attr('tab', tab);
+                    $("#"+ gridName +"f1 > a").removeAttr('onclick');
+                    $("#"+ gridName).off('click', '#'+ gridName + 'f1 > a', filterClick);
+                    $("#"+ gridName).on('click', '#'+ gridName + 'f1 > a', filterClick);
+                    var grid = $('#' + gridName).data('kendoGrid'), dSUrl = getReadUrl();
+
+                    grid.dataSource.transport.options.read.url = dSUrl;
+                    grid.dataSource.read();
+
+                    //Update Filter
+                    FilterColumn(gridName);
+                }
+
+                function filterClick() {
+                    Grids.redrawGrid(1, this);
+                    $('#'+ gridName +'f1 > a').removeAttr('onclick');
+                    FilterColumn(gridName);
+                }
+
+                function FilterColumn(gridName) {
+                    var filterFields = $('#' + gridName).find('[data-role="autocomplete"]');
+                    filterFields.each(function (index, item) {
+                        var autoComp = $(item).data('kendoAutoComplete');
+                        if(autoComp) autoComp.dataSource.transport.options.read.url = getReadUrl();
+                    });
+                }
+
+
+                //-----------Range Filter-----------
+                if($('.dates').length)
+                {
+                    toggleDates();
+
+                    //filter range
+                    $('#filterRange').on('click', '.range', function (e) {
+                        var element = $(this);
+                        selectedRange = element.prop('id');
+
+                        element.closest('#filterRange').find('.checkedRange').removeClass('fa-check');
+                        element.find('.checkedRange').addClass('fa-check');
+
+                        toggleDates();
+                        if (selectedRange == 0) dateChange();
+                        else refreshGrid();
+
+                        var rangeObj = { selectedRange: selectedRange };
                         localStorage.setItem(gridName + '-range-filter', JSON.stringify(rangeObj));
+                    });
+
+                    var validator = $('.dates').kendoValidator().data('kendoValidator');
+                    validator.validateInput();
+
+                    function dateChange() {
+                        var startRange = kendo.toString($('#start').data('kendoDatePicker').value(), 'yyyy-MM-dd');
+                        endRange = kendo.toString($('#end').data('kendoDatePicker').value(), 'yyyy-MM-dd');
+
+                        if (startRange && endRange) {
+                            refreshGrid();
+                            var rangeObj = { selectedRange: selectedRange, startRange: startRange, endRange: endRange };
+                            localStorage.setItem(gridName + '-range-filter', JSON.stringify(rangeObj));
+                        }
+                    }
+
+                    function toggleDates() {
+                        if (selectedRange == 0) $('.dates').show(); //custom
+                        else $('.dates').hide();
                     }
                 }
 
-                function toggleDates() {
-                    if (selectedRange == 0) $('.dates').show(); //custom
-                    else $('.dates').hide();
+                //-----------End Range Filter-----------
+
+
+
+                //-----------Department Filter-----------
+
+                //to prevent toggle button when expand tree
+                if($('#filterDeptItem').length)
+                {
+                    $('#filterDept').on('click', 'li', function (e) { e.stopPropagation(); });
+
+                    $("#filterDeptItem").TreeView({
+                        loadOnDemand: false,
+                        dragAndDrop: false,
+                        table: "CompanyStructures",
+                        root: "Company",
+                        lang: culture,
+                        checkboxes: { checkChildren: true },
+                        dataBound: function (e) {
+                            var treeView = $("#filterDeptItem").data("kendoTreeView");
+                            treeView.expand(".k-item");
+                            if (e.node) bindChecked([treeView.dataItem(e.node)], selectedDepts);
+                        }
+                    });
+
+                    $("#deptsFiletrBtn").click(function (e) {
+                        var treeView = $("#filterDeptItem").data("kendoTreeView");
+                        selectedDepts = [];
+                        checkNodeIds(treeView.dataSource.view(), selectedDepts);
+                        refreshGrid();
+                        localStorage.setItem(gridName + "-depts-filter", JSON.stringify(selectedDepts));
+                    });
                 }
+                //-----------End Department Filter-----------
             }
 
-            //-----------End Range Filter-----------
-
-
-
-            //-----------Department Filter-----------
-
-            //to prevent toggle button when expand tree
-            $('#filterDept').on('click', 'li', function (e) { e.stopPropagation(); });
-
-            $("#filterDeptItem").TreeView({
-                loadOnDemand: false,
-                dragAndDrop: false,
-                table: "CompanyStructures",
-                root: "Company",
-                lang: culture,
-                checkboxes: { checkChildren: true },
-                dataBound: function (e) {
-                    var treeView = $("#filterDeptItem").data("kendoTreeView");
-                    treeView.expand(".k-item");
-                    if (e.node) bindChecked([treeView.dataItem(e.node)], selectedDepts);
-                }
-            });
-
-            $("#deptsFiletrBtn").click(function (e) {
-                var treeView = $("#filterDeptItem").data("kendoTreeView");
-                selectedDepts = [];
-                checkNodeIds(treeView.dataSource.view(), selectedDepts);
-                console.log(selectedDepts)
-                refreshGrid();
-                localStorage.setItem(gridName + "-depts-filter", JSON.stringify(selectedDepts));
-            });
-            //-----------End Department Filter-----------
-
-
-
-            //-----------Add New Record-----------
             $('#AddRecord').click(function () {
+                if ("@AddUrl".length > 0) addUrl = "@AddUrl";
                 updateHistory(addUrl + '/0?Read=0&Version=@Request.QueryString["Version"]&DataLevel=@dataLevel&RoleId=@Request.QueryString["RoleId"]&MenuId=@Request.QueryString["MenuId"]');
             });
 
-        }
+            function getReadUrl(baseUrl) {
+                var startRange, endRange;
 
-        function GetReadUrl(baseUrl) {
-            var startRange, endRange;
+                if (selectedRange == 0) {
+                    startRange = kendo.toString($('#start').data('kendoDatePicker').value(), 'yyyy-MM-dd');
+                    endRange = kendo.toString($('#end').data('kendoDatePicker').value(), 'yyyy-MM-dd');
+                }
 
-            if (selectedRange == 0) {
-                startRange = kendo.toString($('#start').data('kendoDatePicker').value(), 'yyyy-MM-dd');
-                endRange = kendo.toString($('#end').data('kendoDatePicker').value(), 'yyyy-MM-dd');
+                if (!baseUrl) baseUrl = baseReadUrl;
+                return (baseUrl + "&Tab=" + tab + "&Range=" + selectedRange + "&Depts=" + selectedDepts.join(',') + "&Start=" + startRange + "&End=" + endRange);
             }
 
-            if (!baseUrl) baseUrl = baseReadUrl;
-            return (baseUrl + "&Tab=" + tab + "&Range=" + selectedRange + "&Depts=" + selectedDepts.join(',') + "&Start=" + startRange + "&End=" + endRange);
-        }
-
-        function setTab(id) {
-            tab = id;
-        }
-
-        return {
-            ApplayAllFilters: ApplayAllFilters,
-            GetReadUrl: GetReadUrl,
-            setTab: setTab
-        }
-    }();
+            function setTab(id){tab = id;}
+            return {
+                applyAllFilters: applyAllFilters,
+                getReadUrl: getReadUrl,
+                setTab: setTab
+            }
+        }();
 
 </script>

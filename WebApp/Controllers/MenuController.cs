@@ -14,9 +14,7 @@ namespace WebApp.Controllers
     public class MenuController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
+    
         protected override void Initialize(RequestContext requestContext)
         {
             base.Initialize(requestContext);
@@ -35,9 +33,9 @@ namespace WebApp.Controllers
         public ActionResult Index1()
         {
             int Id = _hrUnitOfWork.Repository<Menu>().Select(a => a.Id).FirstOrDefault();
-            var Menu = _hrUnitOfWork.MenuRepository.GetMenu(Id, Language);
+            var menu = _hrUnitOfWork.MenuRepository.GetMenu(Id, Language);
             ViewBag.Functions = _hrUnitOfWork.MenuRepository.Functions().ToList();
-            return View(Menu);
+            return View(menu);
         }
 
         [HttpPost]
@@ -544,7 +542,6 @@ namespace WebApp.Controllers
                     {
                         Source = menu,
                         ObjectName = "Menus",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Delete
                     });
 

@@ -8,7 +8,7 @@
     //var grid = ViewData["GridName"];
 
 }
-@{ var admin = User.IsInRole("Admin");}
+@{ var admin = User.Identity.CanCustomize();}
 
 <div id="userCompany"></div>
 <script>

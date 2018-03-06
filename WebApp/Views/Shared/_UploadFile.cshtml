@@ -1,5 +1,4 @@
-﻿@using System.Web.Script.Serialization
-
+﻿@*@model string*@
 <style>
     .image-preview {
         position: relative;
@@ -161,79 +160,68 @@
     }
 </style>
 
-<div class="modal fade" id="UploadPopup" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" onclick="Close()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">@MsgUtils.Instance.Trls("Upload")</h4>
+<div class="form-group" style="@(User.Identity.RTL() ? "float: right" : "float: left")">
+    <input type="radio" name="Type" checked value="1" />@MsgUtils.Instance.Trls("ChooseFile")
+    <input type="radio" name="Type" value="2" />@MsgUtils.Instance.Trls("ScanFile")
+    <div id="FileS" class="hidden">
+        <label for="image_file">@MsgUtils.Instance.Trls("SelectFileType")</label>
+        <input type="radio" name="FileType" checked value="PDF" />@MsgUtils.Instance.Trls("PDF")
+        <input type="radio" name="FileType" value="JPG" />@MsgUtils.Instance.Trls("JPG")
+        <input type="radio" name="FileType" value="TIFF" />@MsgUtils.Instance.Trls("TIFF")
+    </div>
+    <button id="startScan" name="startScan" class="btn btn-primary hidden">@MsgUtils.Instance.Trls("StartScan")</button>
+</div>
+<div class="upload_form_cont">
+
+    <form id="upload_form" enctype="multipart/form-data" method="post">
+        <div id="chooseF">
+            <div>
+                <label for="image_file">@MsgUtils.Instance.Trls("selectfile")</label>
             </div>
-            <div id="bodyContainer" style="min-height: 670px;" class="modal-body" tabindex="0">
-                <div class="form-group" style="@(User.Identity.RTL() ? "float: right" : "float: left")">
-                    <input type="radio" name="Type" checked value="1" />@MsgUtils.Instance.Trls("ChooseFile")
-                    <input type="radio" name="Type" value="2" />@MsgUtils.Instance.Trls("ScanFile")
-                    <div id="FileS" class="hidden">
-                        <label for="image_file">@MsgUtils.Instance.Trls("SelectFileType")</label>
-                        <input type="radio" name="FileType" checked value="PDF" />@MsgUtils.Instance.Trls("PDF")
-                        <input type="radio" name="FileType" value="JPG" />@MsgUtils.Instance.Trls("JPG")
-                        <input type="radio" name="FileType" value="TIFF" />@MsgUtils.Instance.Trls("TIFF")
-                    </div>
-                    <button id="startScan" name="startScan" class="btn btn-primary hidden">@MsgUtils.Instance.Trls("StartScan")</button>
-                </div>
-                <div class="upload_form_cont">
-
-                    <form id="upload_form" enctype="multipart/form-data" method="post">
-                        <div id="chooseF">
-                            <div>
-                                <label for="image_file">@MsgUtils.Instance.Trls("selectfile")</label>
-                            </div>
-                            <div>
-                                <input type="file" accept="image/*" name="image_file" id="image_file" />
-                            </div>
-                            <div id="nofile">@MsgUtils.Instance.Trls("Noselectfile")</div>
-
-                        </div>
-                        <div>
-                            <input id="xhrUpload" class="hide" type="button" value="Upload" />
-                        </div>
-                        <div class="form-group" style="@(User.Identity.RTL() ? "float: left" : "float:right")">
-                            <img id="preview" />
-                            <embed id="pdf" src="" class="hidden" />
-                        </div>
-                        <div id="fileinfo" style="@(!User.Identity.RTL() ? "float: left" : "float: right")">
-                            <div id="filename"></div>
-                            <div id="filesize"></div>
-                            <div id="filetype"></div>
-                        </div>
-                        <div id="error">@MsgUtils.Instance.Trls("imageFileonly")</div>
-                        <div id="error2">@MsgUtils.Instance.Trls("erroruploading")</div>
-                        <div id="abort">@MsgUtils.Instance.Trls("cancelUploading")</div>
-                        <div id="warnsize">@MsgUtils.Instance.Trls("fileisbig")</div>
-
-                        <div id="progress_info">
-                            <div id="progress"></div>
-                            <div id="progress_percent">&nbsp;</div>
-                            <div class="clear_both"></div>
-                            <div>
-                                <div id="speed">&nbsp;</div>
-                                <div id="remaining">&nbsp;</div>
-                                <div id="b_transfered">&nbsp;</div>
-                                <div class="clear_both"></div>
-                            </div>
-                            <div id="upload_response"></div>
-                        </div>
-
-                    </form>
-                    <div class="form-group">
-                        <button id="Ok" name="Ok" style="@(User.Identity.RTL() ? "float: right" : "float: left")" class="btn btn-primary" onclick="ChooseFile()">@MsgUtils.Instance.Trls("Upload")</button>
-                        <button id="Close" name="Close" style="@(User.Identity.RTL() ? "float: right" : "float: left")" class="btn btn-primary hidden" onclick="Close()">@MsgUtils.Instance.Trls("Close")</button>
-                    </div>
-                </div>
-
+            <div>
+                <input type="file" accept="image/*" name="image_file" id="image_file" />
             </div>
+            <div id="nofile">@MsgUtils.Instance.Trls("Noselectfile")</div>
+
         </div>
+        <div>
+            <input id="xhrUpload" class="hide" type="button" value="Upload" />
+        </div>
+        <div class="form-group" style="@(User.Identity.RTL() ? "float: left" : "float:right")">
+            <img id="preview" src="@(ViewBag.Document==""?"":"data:image/jpg;base64,"+ViewBag.Document)"/>
+            <embed id="pdf" src="" class="hidden" />
+        </div>
+        <div id="fileinfo" style="@(!User.Identity.RTL() ? "float: left" : "float: right")">
+            <div id="filename"></div>
+            <div id="filesize"></div>
+            <div id="filetype"></div>
+        </div>
+        <div id="error">@MsgUtils.Instance.Trls("imageFileonly")</div>
+        <div id="error2">@MsgUtils.Instance.Trls("erroruploading")</div>
+        <div id="abort">@MsgUtils.Instance.Trls("cancelUploading")</div>
+        <div id="warnsize">@MsgUtils.Instance.Trls("fileisbig")</div>
+
+        <div id="progress_info">
+            <div id="progress"></div>
+            <div id="progress_percent">&nbsp;</div>
+            <div class="clear_both"></div>
+            <div>
+                <div id="speed">&nbsp;</div>
+                <div id="remaining">&nbsp;</div>
+                <div id="b_transfered">&nbsp;</div>
+                <div class="clear_both"></div>
+            </div>
+            <div id="upload_response"></div>
+        </div>
+
+    </form>
+    <div class="form-group">
+        <button id="Ok" name="Ok" style="@(User.Identity.RTL() ? "float: right" : "float: left")" class="btn btn-primary" onclick="ChooseFile()">@MsgUtils.Instance.Trls("Upload")</button>
+        <button id="Close" name="Close" style="@(User.Identity.RTL() ? "float: right" : "float: left")" class="btn btn-primary hidden" onclick="Close()">@MsgUtils.Instance.Trls("Close")</button>
     </div>
 </div>
+
+
 <script>
     function ChooseFile(){
         var value = $("input[name='Type']:checked").val();
@@ -265,7 +253,8 @@
         }
     });
     $("#xhrUpload").hide();
-    var FormId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewData["FormId"]));
+    @*var sourceId = "@ViewBag.SourceId";
+    var source = "@ViewBag.Source";*@
     /////////////////////////////////////////////////////////////////////
     var chooseF = document.getElementById('chooseF');
     var oImage = document.getElementById('preview');
@@ -395,9 +384,9 @@
         oXHR.addEventListener('load', uploadFinish, false);
         oXHR.addEventListener('error', uploadError, false);
         oXHR.addEventListener('abort', uploadAbort, false);
-        var Idelemd =  $("#"+FormId).find("#Id").is('input');
-        var sourceId = Idelemd ? $("#"+FormId).find("#Id").val():$("#"+FormId).find("#Id").text();
-        oXHR.open('POST', '/FileUpload/UploadOneFile?Source='+$("#"+FormId).attr('objectname')+'&SourceId=' +sourceId);
+        //var Idelemd =  $("#"+FormId).find("#Id").is('input');
+        //var sourceId = Idelemd ? $("#"+FormId).find("#Id").val():$("#"+FormId).find("#Id").text();
+        oXHR.open('POST', '/FileUpload/UploadOneFile?Source='+source+'&SourceId=' +sourceId);
         oXHR.send(vFD);
 
         // set inner timer
@@ -437,9 +426,9 @@
         oXHR.addEventListener('load', uploadFinish,false);
         oXHR.addEventListener('error', uploadError, false);
         oXHR.addEventListener('abort', uploadAbort, false);
-        var Idelemd =  $("#"+FormId).find("#Id").is('input');
-        var sourceId = Idelemd ? $("#"+FormId).find("#Id").val():$("#"+FormId).find("#Id").text();
-        oXHR.open('POST', '/FileUpload/UploadOneFile?Source='+$("#"+FormId).attr('objectname')+'&SourceId=' +sourceId);
+        //var Idelemd =  $("#"+FormId).find("#Id").is('input');
+        //var sourceId = Idelemd ? $("#"+FormId).find("#Id").val():$("#"+FormId).find("#Id").text();
+        oXHR.open('POST', '/FileUpload/UploadOneFile?Source='+source+'&SourceId=' +sourceId);
 
         oXHR.send(vFD);
         // set inner timer
@@ -507,7 +496,7 @@
                 document.getElementById('progress_info').style.display = 'block';
                 $("#Close").removeClass("hidden");
                 $("#Ok").addClass("hidden");
-
+                $('#b8').attr('disabled', false);
             }
         } else {
             document.getElementById('progress').innerHTML = 'unable to compute';

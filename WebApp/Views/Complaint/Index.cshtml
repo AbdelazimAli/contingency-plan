@@ -10,19 +10,19 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     string[] function = ViewData["Functions"] as string[];
 }
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "ComplainRequest" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "complaintDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "ComplainRequest" } })
 
 <div id="complaintDiv"></div>
 
 <script>
     var addUrl = "@Url.Action("Details", "Complaint")";
-    RequestFilters.ApplayAllFilters([], {}, "complaintDiv", "@Url.Action("GetComplaintRequest", "Complaint")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "complaintDiv", "@Url.Action("GetComplaintRequest", "Complaint")?MenuId=@Request.QueryString["MenuId"]", addUrl);
 
     var ComplainType = [{ value: 1, text: "@MsgUtils.Instance.Trls("Complaint")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Grievance")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Enquiry")" }];
     var Against = [{ value: 1, text: "@MsgUtils.Instance.Trls("Employee")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Manager")" }, { value: 3, text: "@MsgUtils.Instance.Trls("Procedure")" }, { value: 4, text: "@MsgUtils.Instance.Trls("Decision")" }, { value: 5, text: "@MsgUtils.Instance.Trls("Other")" }];

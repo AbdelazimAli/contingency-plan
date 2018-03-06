@@ -10,7 +10,7 @@
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     string[] function = ViewData["Functions"] as string[];
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
 }
 <br />
 <style>
@@ -41,7 +41,7 @@
     <script>
 
         var addUrl = "@Url.Action("Details", "Custody")";
-        RequestFilters.ApplayAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+        RequestFilters.applyAllFilters([], {}, "CustodyDiv", "@Url.Action("ReadCustody", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
 
         $('#filterDiv').after('<div class="switch-zone"><div class="switch"><input id="switchDesign" type="checkbox" />' +
             '<div class="slider round"></div><span></span></div><h2 id="own"></span></h2>');

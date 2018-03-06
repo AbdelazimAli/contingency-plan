@@ -17,12 +17,12 @@ namespace Model.Domain
         public Person Emp { get; set; }
 
         [Index("IX_NotifyLetter", Order = 1)]
-        public int SourceId { get; set; }
+        [MaxLength(128)]
+        public string SourceId { get; set; }
 
         [MaxLength(30)]
         [Index("IX_NotifyLetter", Order = 2)]
         public string NotifySource { get; set; } // ContractRenew  ContractTerminate  MeetingCreate  MeetingModify  MeetingCancel Dicipline
-
         public bool Sent { get; set; }
         public bool read { get; set; }
         public DateTime? ReadTime { get; set; }

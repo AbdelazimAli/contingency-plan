@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Mvc;
 using System.Linq.Dynamic;
+using Db.Persistence;
+using System.Linq.Expressions;
+using System;
 
 namespace WebApp.Models
 {
@@ -13,6 +16,24 @@ namespace WebApp.Models
         {
 
         }
+
+        private class MyConfig
+        {
+            public byte MaxPassTrials { get; set; }
+            public int WaitingInMinutes { get; set; }
+        }
+
+        static Utils()
+        {
+            UserContext db = new UserContext();
+            var myconfig = db.Database.SqlQuery<MyConfig>("select MaxPassTrials, WaitingInMinutes from PersonSetup where PersonSetup.Id = 0").FirstOrDefault();
+            WaitingInMinutes = myconfig == null || myconfig.WaitingInMinutes == 0 ? 5 : myconfig.WaitingInMinutes;
+            MaxPassTrials = myconfig == null || myconfig.MaxPassTrials == 0 ? (byte)5 : myconfig.MaxPassTrials;
+        }
+
+        public static byte MaxPassTrials;
+        public static int WaitingInMinutes;
+
         public static List<Error> ParseErrors(ICollection<ModelState> Values)
         {
 
@@ -65,7 +86,6 @@ namespace WebApp.Models
             }
             return formErrorsList;
         }
-
 
         public static IList<ColumnsView> GetModifiedRows(IEnumerable<KeyValuePair<string, ModelState>> models)
         {
@@ -240,6 +260,74 @@ namespace WebApp.Models
 
             return query;
         }
+
+        //public static string GetWhereClause(HrUnitOfWork unitofwork, int MenuId, string RoleId)
+        //{
+        //    if (MenuId > 0)
+        //    {
+        //        var menu = unitofwork.MenuRepository.Get(MenuId);
+        //        if (menu != null && menu.WhereClause != null)
+        //        {
+        //            string whereclause = menu.WhereClause.Trim();
+        //            if (whereclause.Length > 0)
+        //            {
+        //                if (whereclause.IndexOf("@Company") != -1) whereclause = whereclause.Replace("@Company", User.Identity.GetDefaultCompany().ToString());
+        //                if (whereclause.IndexOf("@User") != -1) whereclause = whereclause.Replace("@User", User.Identity.Name);
+        //                if (whereclause.IndexOf("@RoleId") != -1) whereclause = whereclause.Replace("@RoleId", "\"" + RoleId + "\"");
+        //                if (whereclause.IndexOf("@EmpId") != -1) whereclause = whereclause.Replace("@EmpId", User.Identity.GetEmpId().ToString());
+        //                if (whereclause.IndexOf("@IsDepManager") != -1) whereclause = whereclause.Replace("@IsDepManager", Session["IsDepManager"] == null ? "false" : Session["IsDepManager"].ToString());
+        //                if (whereclause.IndexOf("@JobId") != -1) whereclause = whereclause.Replace("@JobId", Session["JobId"] == null ? "0" : Session["JobId"].ToString());
+        //                if (whereclause.IndexOf("@PositionId") != -1) whereclause = whereclause.Replace("@PositionId", Session["PositionId"] == null ? "0" : Session["PositionId"].ToString());
+        //                if (whereclause.IndexOf("@DepartmentId") != -1) whereclause = whereclause.Replace("@DepartmentId", Session["DepartmentId"] == null ? "0" : Session["DepartmentId"].ToString());
+        //                if (whereclause.IndexOf("@BranchId") != -1) whereclause = whereclause.Replace("@BranchId", Session["BranchId"] == null ? "0" : Session["BranchId"].ToString());
+        //            }
+
+        //            return whereclause;
+        //        }
+        //    }
+
+        //    return "";
+        //}
+
+        //public static JsonResult ApplyFilter<T>(IQueryable<T> query, Expression<Func<T, string>> orderby, int MenuId, int pageSize, int skip)
+        //{
+        //    string filter = "";
+        //    string Sorting = "";
+        //    string whecls = GetWhereClause(MenuId);
+        //    query = (IQueryable<T>)WebApp.Models.Utils.GetFilter(query, ref filter, ref Sorting);
+        //    if (whecls.Length > 0 || filter.Length > 0)
+        //    {
+        //        try
+        //        {
+        //            if (whecls.Length > 0 && filter.Length == 0)
+        //                query = query.Where(whecls);
+        //            else if (filter.Length > 0 && whecls.Length == 0)
+        //                query = query.Where(filter);
+        //            else
+        //                query = query.Where(filter).Where(whecls);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            TempData["Error"] = ex.Message;
+        //            WebApp.Models.Utils.LogError(ex.Message);
+        //            return Json("", JsonRequestBehavior.AllowGet);
+        //        }
+        //    }
+
+        //    var total = query.Count();
+
+        //    if (Sorting.Length > 0)
+        //        query = query.OrderBy(Sorting);
+        //    else if (orderby != null)
+        //        query = query.OrderBy(orderby);
+
+        //    if (skip > 0)
+        //        query = query.Skip(skip).Take(pageSize);
+        //    else
+        //        query = query.Take(pageSize);
+
+        //    return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
+        //}
 
     }
 }

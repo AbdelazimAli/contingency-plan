@@ -3,7 +3,7 @@
 @model Model.ViewModel.Personnel.RenewRequestViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -213,17 +213,9 @@
 <div id="xhr" class="container">
 
 </div>
-@*<div>
-        <div class="k-content k-rtl">
-            <input name="file" id="file" type="file" />
-        </div>
-    </div>*@
+
 <script>
     $(function () {
-
-        var oldPage=localStorage.getItem("menuhigh").split(",");
-        var oldUrl = $("#"+oldPage[2]+" a").attr("href")
-
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         var colDropDown = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.colDropDown));
         var qualificationId =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.QualificationId));

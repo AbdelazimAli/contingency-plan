@@ -4,7 +4,7 @@
 @model EmpDisciplineFormViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -16,7 +16,7 @@
 <div id="EmpDiscipline"></div>
 <div id="docWindow"></div>
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
@@ -154,8 +154,8 @@
                 }
             }
         }
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         var formId = "EmpDisplinForms";
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
@@ -349,7 +349,7 @@
                         // res is saved company Id
                         $("#" + formId + " #Id").val(res);
                         model=res;
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                     });
                 });
             }

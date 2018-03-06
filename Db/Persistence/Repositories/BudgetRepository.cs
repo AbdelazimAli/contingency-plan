@@ -167,9 +167,8 @@ namespace Db.Persistence.Repositories
         }
         public IQueryable<HRCalendarViewModel> GetCalender(int companyId)
         {
-
             var calendar = from c in context.PeriodNames
-                           where ((c.IsLocal && c.CompanyId == companyId) || c.IsLocal == false)
+                           where (c.CompanyId == companyId || c.IsLocal == false)
                            select new HRCalendarViewModel
                            {
                                Id = c.Id,
@@ -382,7 +381,8 @@ namespace Db.Persistence.Repositories
                               CreatedUser = p.CreatedUser,
                               ModifiedTime = p.ModifiedTime,
                               ModifiedUser = p.ModifiedUser
-                          }).OrderByDescending(a => a.EndDate);
+                          })
+                          .OrderByDescending(a => a.StartDate);
 
             return fiscal;
         }

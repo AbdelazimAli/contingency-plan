@@ -1,0 +1,179 @@
+﻿@using System.Web.Script.Serialization
+@using Model.ViewModel
+@model UserViewModel
+@using WebApp.Extensions
+@{ var admin = User.Identity.CanCustomize();}
+
+@{
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    var culture = User.Identity.GetLanguage();
+    Layout = null;
+}
+
+<div id="userprof"></div>
+
+
+<script>
+    $(function(){
+
+        var userfunctions = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+        @*var country = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Country))*@
+        var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var objectname = "UserProfile", formId = "UserProfile";
+        var read = ("@Request.QueryString["Read"]" == "" ? 0: "@Request.QueryString["Read"]");
+
+        //-- Form
+        $.ajax({
+            //async: true,
+            url: "@Url.Action("ReadFormInfo","Pages")",
+            type: "GET",
+            dataType: "json",
+            contentType: 'application/json',
+            data: { objectname: objectname, version: "@version", roleId: "@Request.QueryString["RoleId"]"},
+            success: function (data) {
+
+
+                data.FormId = formId;
+                data.TableName ="AspNetUsers";
+                var menuTitle = $("#changemenu").find(".active > .ajaxify").text();
+                data.Title = menuTitle == "" ? data.Title : menuTitle;
+                data.FormAction = "@Url.Action("UserProfile", "UserProfile", new { Id=TempData["id"], EmpId=ViewBag.EmpId })";
+                data.Culture = "@User.Identity.GetCulture()";
+                data.rtl = @rtl.ToString().ToLower();
+                if(read == 1) data.mode = 'show';
+
+                data.companyId = "@User.Identity.GetDefaultCompany()";
+                data.admin = "@admin";
+
+                $("#userprof").Forms(data, model);
+
+                do_AjaxCall_WithMethod('@Url.Action("FillDropdownlists", "UserProfile")?id=@Model.Id','','GET',function(data){
+                    var company = data.Company;
+                    var roles = data.Roles;
+                    var cultureList = [];
+                    for (var i=0; i < data.Culture.length; i++) {
+                        var f = culture.find(function(e) {
+                            return e.id == data.Culture[i];
+                        });
+                        if (f) cultureList.push(f);
+                    }
+                    FormJs.fillOptionsDynamic($("#" + formId), "Language", cultureList, model);
+                    FormJs.fillOptionsDynamic($("#" + formId), "TimeZone", data.TimeZones, model);
+
+                    gridname = "'userCompany'";
+                    Grids.batchGrid({
+                        dataSource: data.Usercompany,
+                        lang: "@User.Identity.GetCulture()",
+                        recordName: "CompanyId", // custom delete message
+                        gridName: "userCompany",
+                        toolbar: read==1 ? '<div></div>': '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')"  accesskey="s">&nbsp;<span>@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')"  accesskey="c">&nbsp;<span>@MsgUtils.Instance.Trls("CancelChanges")</span></a></div>',
+                        admin: false,
+                        height: 350,
+                        fields:
+                        {
+                            Id: { type: "number", editable: false },
+                            CompanyId: { type: "number", validation: { required: true }},
+                            RoleId: { type: "string", validation: { required: true }}
+                        },
+                        columns: [{field:"CompanyId", title: '@MsgUtils.Instance.Trls("Company")', values: company}, {field:"RoleId", title: '@MsgUtils.Instance.Trls("Role")', values: roles}, {command: { name: "delete", imageClass: "k-icon k-i-delete", text: " ", click: Grids.deleteClick}}],
+                        readCompleted: function(e) {
+                            // To remove AddNotification Button
+                            $("#userCompany .k-header-column-menu").click(function(){
+                                $("#addNotifyMenu").remove();
+                            })
+                        }
+                    });
+                });
+
+                @*var isSuper = "@ViewBag.isSuper";
+                    if(isSuper == 'False')
+                        $("#" + formId).find("#SuperUser").parent().parent().remove();*@
+
+                if(model.Id != null)
+                    $("#" + formId).find("#Password").parents(".section").remove();
+                else
+                    $("#" + formId).find("#ResetPassword").prop("checked", true);
+
+
+                var Exportto = [{id:0,name:"@MsgUtils.Instance.Trls("Client")"}, {id:1,name:"@MsgUtils.Instance.Trls("Server")"}];
+                var Infolog = [{id:0, name:"@MsgUtils.Instance.Trls("All")"}, {id:2, name:"@MsgUtils.Instance.Trls("Errors and warnings")"}, {id:3, name:"@MsgUtils.Instance.Trls("Errors only")"}, {id:4, name:"@MsgUtils.Instance.Trls("None")"}];
+                var culture = lang.getList("@culture");
+
+                FormJs.fillOptionsDynamic($("#" + formId), "ExportTo", Exportto, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Infolog", Infolog, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "Culture", culture, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "DefaultCountry", null, model, {remoteTableName: "Countries"});
+                $("#" + formId).find("#EmpId").val('@ViewBag.EmpId');
+
+                $("#" + formId + " .form-control").filter(':has("#Language")').css("width", "100%");
+
+                $("div[name=gridsSec]").prepend('<div class="form-group col-lg-12 col-md-12 col-sm-12"><div id="userCompany" class="col-lg-12 col-sm-12 col-md-12"></div></div>');
+
+                $("#b1,#b3").off('click').on('click', function () {
+                    var b = $(this).attr('id');
+                    FormJs.saveForm($("#" + formId), $(this), function (res) {
+                        if (model.Id == null || model.Status != 6){
+                            $('div.tab-group > div > ul > li:nth-child(5)').removeClass('current').addClass('done');
+                        }
+                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                        if (b == 'b1')
+                            model = res;
+                        else if (b == 'b3')
+                            updateHistory(oldUlr);
+                    }, Grids.sendData("userCompany"));
+                });
+
+                $('div[name=btnSec]').hide();
+
+                InitiatNotifyButton();
+            },
+            error: function (data) {
+            }
+        });
+    });
+
+    function InitiatNotifyButton()
+    {
+        var UserName='@Model.UserName';
+        var EmpID='@Model.EmpId';
+        var UserID='@Model.Id';
+
+        if(UserName!='' && parseInt(EmpID)>0 && UserID!='')
+        {
+            $('#NotifyButton').show();
+        }
+        else
+        {
+            $('#NotifyButton').hide();
+        }
+
+
+        var btn=$('#NotifyButton');
+        $('#NotifyButton').val('@Model.NotifyButtonLabel');
+        $('#NotifyButton').off('click').on('click',function(){
+
+            var UserName='@Model.UserName';
+            var EmpID='@Model.EmpId';
+            var UserID='@Model.Id';
+
+            if(UserName!='' && parseInt(EmpID)>0 && UserID!='')
+            {
+                var url='@Url.Action("SendNotifyLetter", "UserProfile",new {area="" })';
+                var data='{"UserName":\''+UserName+'\',"EmpID":'+EmpID+',"ID":\''+UserID+'\'}';
+
+                do_AjaxCall(url,data,function(data){
+
+                    if(data.Result)
+                        toastr.success(data.Message);
+                    else
+                        toastr.error(data.Message);
+                });
+            }
+
+        });
+    }
+</script>
+
+<script src="~/Scripts/cultures/lang.js"></script>
+

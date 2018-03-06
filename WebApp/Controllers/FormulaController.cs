@@ -36,10 +36,6 @@ namespace WebApp.Controllers
         // GET: Formula
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -150,7 +146,6 @@ namespace WebApp.Controllers
                 {
                     Source = request,
                     ObjectName = "Formula",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PayrollRepository.Remove(request);

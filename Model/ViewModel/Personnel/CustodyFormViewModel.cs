@@ -23,7 +23,7 @@ namespace Model.ViewModel.Personnel
         public string Curr { get; set; }
         public float CurrencyRate { get; set; } = 1;
         public byte Status { get; set; } = 100; // 0 - 100
-        public int? LocationId { get; set; }
+        public int? BranchId { get; set; }
         [MaxLength(20)]
         public string SerialNo { get; set; }
         public DateTime? PurchaseDate { get; set; }
@@ -58,7 +58,7 @@ namespace Model.ViewModel.Personnel
         public int CustodyCatId { get; set; } // 1-Office Tools 2-Car
         public DateTime RecvDate { get; set; } // Recieve Date
         public byte RecvStatus { get; set; } // 0 - 100
-        public int? LocationId { get; set; }
+        public int? BranchId { get; set; }
         public DateTime? PurchaseDate { get; set; }
         [MaxLength(30)]
         public string ItemCode { get; set; } // Custody code in inventory

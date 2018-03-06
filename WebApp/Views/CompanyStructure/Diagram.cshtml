@@ -62,7 +62,7 @@
             fill:"#fff"
         }));  
         g.append(new dataviz.diagram.Image({
-            source:"/SpecialData/Photos/"+(!dataItem.HasImage?"noimage.jpg": "@User.Identity.GetDefaultCompany()/"+dataItem.Image+".jpeg"),
+            source: Exist(dataItem.Gender,dataItem.Image),
             x:3,
             y:3,
             width:68,

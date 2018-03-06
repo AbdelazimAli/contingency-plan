@@ -40,10 +40,6 @@ namespace WebApp.Controllers
         {
             ViewBag.QualRank = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("QualRank", Language).Select(a => new { value = a.CodeId, text = a.Title });
             ViewBag.QualCat = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("QualCat", Language).Select(a => new { value = a.CodeId, text = a.Title });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult SchoolIndex()
@@ -51,10 +47,6 @@ namespace WebApp.Controllers
             string culture = Language;
             ViewBag.SchoolTypes = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("SchoolType", culture).Select(a => new { value = a.CodeId, text = a.Title });
             ViewBag.classifications = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("SchoolClass", culture).Select(a => new { value = a.CodeId, text = a.Title });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -102,7 +94,6 @@ namespace WebApp.Controllers
                         Destination = qualGroup,
                         Source = model,
                         ObjectName = "QualGroups",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert,
                         Options = moreInfo
                     });
@@ -195,7 +186,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "QualGroups",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.QualificationRepository.Remove(Obj);
@@ -295,7 +285,6 @@ namespace WebApp.Controllers
                         Destination = school,
                         Source = model,
                         ObjectName = "Schools",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert,
                         Options = options
                     });
@@ -335,7 +324,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Schools",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.QualificationRepository.Remove(Obj);
@@ -391,7 +379,6 @@ namespace WebApp.Controllers
                         Destination = qualGroup,
                         Source = model,
                         ObjectName = "Qualifications",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert,
                         Options = moreInfo
                     });
@@ -489,7 +476,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Qualification",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.QualificationRepository.Remove(Obj);

@@ -29,10 +29,6 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
             ViewBag.pageDiv = _hrUnitOfWork.PageEditorRepository.GetTablesHasCust(CompanyId, Language);
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 

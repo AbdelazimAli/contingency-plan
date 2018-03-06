@@ -37,19 +37,10 @@ namespace WebApp.Controllers
         }       
         public ActionResult Index()
         {
-           
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult OpenPeriodIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -471,7 +462,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "HRCalendar",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.BudgetRepository.Remove(Obj);
@@ -757,7 +747,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Periods",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.JobRepository.Remove(Obj);
@@ -933,7 +922,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "SubPeriods",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.JobRepository.Remove(Obj);
@@ -952,20 +940,12 @@ namespace WebApp.Controllers
         #region CRUD FiscalYeasr
         public ActionResult FiscalIndex()
         {
-            ViewBag.count = _hrUnitOfWork.Repository<FiscalYear>().Count();          
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.count = _hrUnitOfWork.Repository<FiscalYear>().Count();
             return View();
         }
         public ActionResult FiscalYearIndex()
         {
             ViewBag.count = _hrUnitOfWork.Repository<FiscalYear>().Count();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -1249,7 +1229,6 @@ namespace WebApp.Controllers
                 {
                     Source = Obj,
                     ObjectName = "FiscalYear",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.BudgetRepository.Remove(Obj);
@@ -1282,7 +1261,7 @@ namespace WebApp.Controllers
             var StartDate = DateTime.Now;
             if(date == "" || date == null)
             {
-                DateTime? End = _hrUnitOfWork.Repository<FiscalYear>().Select(a => a.EndDate).LastOrDefault();
+                DateTime? End = _hrUnitOfWork.Repository<FiscalYear>().Select(a => a.EndDate).OrderByDescending(a => a).FirstOrDefault();
                 StartDate = End.Value.AddDays(1);
             }
             else

@@ -9,5 +9,7 @@ namespace Model.ViewModel.Notification
     {
         public List<string> User { get; set; }
         public Domain.Notifications.Notification Notify { get; set; }
+        public string PicUrl { get; set; }
+        public short Gender { get; set; }
     }
 }

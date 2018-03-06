@@ -10,18 +10,15 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     int.TryParse(Request.QueryString["Version"], out read);
-    string[] function = ViewBag.Functions as string[];
 
 }
-<br>
 <div id="Log"></div>
 <script>
-
     var objectName="AudiTrails";
     var gridname1 = "'Log'";
    
@@ -34,14 +31,22 @@
         recordName: "Name",
         gridName: "Log",
         admin: "@admin",
+        dataBound: function(e) {
+            var selector= $('[objectname="AudiTrails"]').closest('.tab-pane').attr('id');
+            console.log(selector);
+            $("#"+selector).parent('li').addClass('history');
+        },
        serverPaging: true,
        serverFiltering: true,
        serverSorting: true,
        pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100,125, 150, 175] },
-       toolbar:' <div >&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right")"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
+       @*toolbar:' <div >&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right")"><button type="button" class="btn btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
                '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
-               '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
+               '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',*@
           });
+
+
+
 </script>
 
 

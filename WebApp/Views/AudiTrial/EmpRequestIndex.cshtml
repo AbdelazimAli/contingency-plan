@@ -3,24 +3,18 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
     var version = Request.QueryString["Version"];
-    string[] function = ViewBag.Functions as string[];
+    //string[] function = ViewBag.Functions as string[];
 }
 <br />
 
 <div id="EmpReqDiv"></div>
 
 <script>
-    function Exist(data){
-        if(data.HasImage)
-            return "url(/SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
     var ApprovalStatus = [{ value: 1, text: "@MsgUtils.Instance.Trls("Darft")" }, { value: 2, text: "@MsgUtils.Instance.Trls("Submit")" }, { value: 3, text: "@MsgUtils.Instance.Trls("AprovalEmployeeReview")" }, { value: 4, text: "@MsgUtils.Instance.Trls("Cancel before accepted")" }, { value: 5, text: "@MsgUtils.Instance.Trls("Rejected")" }, { value: 6, text: "@MsgUtils.Instance.Trls("Accepted")" }, { value: 7, text: "@MsgUtils.Instance.Trls("Cancel after accepted")" }, { value: 8, text: "@MsgUtils.Instance.Trls("Manager Review")" }];
     var Source = [{ value: "Leave", text: "@MsgUtils.Instance.Trls("Leave")" }, { value: "Complaint1", text: "@MsgUtils.Instance.Trls("Complain1")" }, { value: "Complaint2", text: "@MsgUtils.Instance.Trls("Complain2")" }, { value: "Complaint3", text: "@MsgUtils.Instance.Trls("Complain3")" }, { value: "Complaint4", text: "@MsgUtils.Instance.Trls("Complain4")" }, { value: "Complaint5", text: "@MsgUtils.Instance.Trls("Complain5")" }, { value: "Termination", text: "@MsgUtils.Instance.Trls("Termination")" }];
     var Employees= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
@@ -42,7 +36,7 @@
           locked:true
       }],
         select: { "ApprovalStatus": ApprovalStatus, "Source": Source ,"DeptId": Depts ,"AuthDept":Employees},
-        toolbar: kendo.template($("#Newtemplate").html()),
+        //toolbar: kendo.template($("#Newtemplate").html()),
     });
 </script>
 <script type="text/x-kendo-template" id="Newtemplate">
@@ -58,7 +52,7 @@
                     <li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid('EmpReqDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>
                 }
                 <li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid('EmpReqDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li>
-                @if (function != null && function.Length > 0)
+                @*@if (function != null && function.Length > 0)
                 {
                     if (Array.Exists(function, f => f == "ExportExcel"))
                     {
@@ -68,7 +62,7 @@
                     {
                         <li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf('EmpReqDiv')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>
                     }
-                }
+                }*@
             </ul>
         </div>
     </div>

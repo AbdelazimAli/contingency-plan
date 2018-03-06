@@ -15,6 +15,7 @@ using WebApp.Models;
 
 namespace WebApp.Controllers
 {
+    [OutputCache(VaryByParam = "*", Duration = 60)]
     public class LeaveController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
@@ -39,16 +40,8 @@ namespace WebApp.Controllers
         // GET: Leave
         public ActionResult Index()
         {
-            
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
             int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            bool isSSMenu = false;
-            if (MenuId != 0)
-            {
-                isSSMenu = _hrUnitOfWork.MenuRepository.Get(MenuId)?.SSMenu ?? false;
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            }
-            ViewBag.isSSMenu = isSSMenu;
+            ViewBag.isSSMenu = _hrUnitOfWork.Repository<Model.Domain.Menu>().Where(a => a.Id == MenuId).Select(a => a.SSMenu).FirstOrDefault();
 
             //for date range (sun - sat)
             string[] weekDays = { MsgUtils.Instance.Trls("Sunday"), MsgUtils.Instance.Trls("Monday"), MsgUtils.Instance.Trls("Tuesday"), MsgUtils.Instance.Trls("Wednesday"), MsgUtils.Instance.Trls("Thursday"), MsgUtils.Instance.Trls("Friday"), MsgUtils.Instance.Trls("Saturday") };
@@ -113,7 +106,8 @@ namespace WebApp.Controllers
         //validation 
         public ActionResult CheckLeave(int TypeId, int EmpId, float NofDays, DateTime StartDate, DateTime EndDate, int ReqId, int? ReplaceEmp)
         {
-            return Json(_hrUnitOfWork.LeaveRepository.CheckLeaveRequest(TypeId, EmpId, StartDate, EndDate, NofDays, Language, ReqId, User.Identity.IsSelfServiceUser(), CompanyId, ReplaceEmp), JsonRequestBehavior.AllowGet);
+            // TODO
+            return Json(_hrUnitOfWork.LeaveRepository.CheckLeaveRequest(TypeId, EmpId, StartDate, EndDate, NofDays, Language, ReqId, true, CompanyId, ReplaceEmp), JsonRequestBehavior.AllowGet);
         }
 
         public ActionResult ChangEmployee(int EmpId)
@@ -157,34 +151,25 @@ namespace WebApp.Controllers
 
         public ActionResult Details(int id = 0, byte Version = 0)
         {
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("LeaveRequest", CompanyId, Version);
-            if (columns.Where(fc => fc == "EmpId").FirstOrDefault() == null)
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("LeaveRequest", CompanyId, Version, "EmpId"))
                 ViewBag.Employees = _hrUnitOfWork.PeopleRepository.GetActiveEmployees(CompanyId, Language);
 
             ViewBag.Calender = _hrUnitOfWork.LeaveRepository.GetHolidays(CompanyId); //for Calender
+            ViewBag.isSSMenu = Request.QueryString["SSMenu"] != null ? bool.Parse(Request.QueryString["SSMenu"].ToString()) : false;
 
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            bool isSSMenu = false;
-            if (MenuId != 0)
-            {
-                isSSMenu = _hrUnitOfWork.MenuRepository.Get(MenuId)?.SSMenu ?? false;
-                ViewBag.isSSMenu = isSSMenu;
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-            }
             if (id == 0)
             {
-                if (isSSMenu)
+                if (ViewBag.isSSMenu)
                     fillViewBags(User.Identity.GetEmpId(), DateTime.Today);
                 else
                     ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetLeaveTypesList(CompanyId, Language);
 
                 return View(new LeaveReqViewModel() { CompanyId = CompanyId });
             }
+
             LeaveReqViewModel request = _hrUnitOfWork.LeaveRepository.GetRequest(id, Language);
 
             request.NofDays = (int)request.NofDays;
-
             ViewBag.CalcOptions = _hrUnitOfWork.LeaveRepository.GetLeaveType(request.TypeId); //for Calender
             fillViewBags(request.EmpId, request.StartDate);
 
@@ -199,7 +184,7 @@ namespace WebApp.Controllers
         }
 
         [HttpPost]
-        public ActionResult Details(LeaveReqViewModel model, OptionsViewModel moreInfo)
+        public ActionResult Details(LeaveReqViewModel model, OptionsViewModel moreInfo, bool clear)
         {
             List<Error> errors = new List<Error>();
 
@@ -262,17 +247,26 @@ namespace WebApp.Controllers
                 request.CompanyId = CompanyId;
                 request.PeriodId = _hrUnitOfWork.LeaveRepository.GetLeaveRequestPeriod(type.CalendarId, request.StartDate, Language, out message);
                 request.ApprovalStatus = (byte)(model.submit ? (type.ExWorkflow ? 6 : 2) : 1); //ApprovalStatus 1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
+                model.CompanyId = request.CompanyId;
+                model.PeriodId = request.PeriodId;
+                model.ApprovalStatus = request.ApprovalStatus;
 
                 if (type.ExWorkflow && model.submit)
                 {
                     request.ActualStartDate =request.StartDate;
                     request.ActualEndDate =  request.EndDate;
                     request.ActualNofDays =  request.NofDays;
+                    model.ActualStartDate = request.StartDate;
+                    model.ActualEndDate = request.EndDate;
+                    model.ActualNofDays = request.NofDays;
                 }
 
                 request.CreatedUser = UserName;
                 request.CreatedTime = DateTime.Now;
                 _hrUnitOfWork.LeaveRepository.Add(request);
+
+                if (!type.ExWorkflow && !clear && request.ApprovalStatus == 1)
+                    model.ForceUpload = _hrUnitOfWork.Repository<RequestWf>().Where(a => a.Source == "Leave" && a.SourceId == type.Id).Select(a => a.ForceUpload).FirstOrDefault() ? 1 : 0;
             }
             else
             { /// Edit
@@ -294,6 +288,7 @@ namespace WebApp.Controllers
                     });
 
                 request.ApprovalStatus = (byte)(model.submit ? (type.ExWorkflow ? 6 : 2) : model.ApprovalStatus); //1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
+                model.ApprovalStatus = request.ApprovalStatus;
                 request.ModifiedUser = UserName;
                 request.ModifiedTime = DateTime.Now;
                 if (type.ExWorkflow && model.submit)
@@ -301,7 +296,11 @@ namespace WebApp.Controllers
                     request.ActualStartDate = request.StartDate;
                     request.ActualEndDate = request.EndDate;
                     request.ActualNofDays = request.NofDays;
+                    model.ActualStartDate = request.StartDate;
+                    model.ActualEndDate = request.EndDate;
+                    model.ActualNofDays = request.NofDays;
                 }
+
                 _hrUnitOfWork.LeaveRepository.Attach(request);
                 _hrUnitOfWork.LeaveRepository.Entry(request).State = EntityState.Modified;
             }
@@ -309,16 +308,23 @@ namespace WebApp.Controllers
             if (model.submit && type.ExWorkflow && request.ApprovalStatus == 1)
                 _hrUnitOfWork.LeaveRepository.AddAcceptLeaveTrans(request, UserName);
 
+            // update using transactions
+            var trans = _hrUnitOfWork.BeginTransaction();
+
             // #First save changes
             var Errors = SaveChanges(Language);
             if (Errors.Count > 0)
             {
                 message = Errors.First().errors.First().message;
+                trans.Rollback();
+                trans.Dispose();
+                
+                // return string error message
                 return Json(message);
             }
 
-
-            if (model.submit && type.AbsenceType != 8) //Casual
+            model.Id = request.Id;
+            if (model.submit) //Casual  && type.AbsenceType != 8
             {
                 WfViewModel wf = new WfViewModel()
                 {
@@ -343,14 +349,27 @@ namespace WebApp.Controllers
                     _hrUnitOfWork.LeaveRepository.Add(wfTrans);
 
                 // #Second Save changes
-                Errors = SaveChanges(Language);
+                Errors = Save(Language);
                 if (Errors.Count > 0)
+                {
                     message = Errors.First().errors.First().message;
+                    trans.Rollback();
+                    trans.Dispose();
+
+                    // return string error message
+                    return Json(message);
+                }
 
             }
 
-            if(message == "OK")
-                message += "," + ((new JavaScriptSerializer()).Serialize(new { model = request }));
+            if (clear) model = new LeaveReqViewModel();
+
+            if (message == "OK")
+            {
+                // send OK,model
+                message += "," + ((new JavaScriptSerializer()).Serialize(new { model = model }));
+                trans.Commit();
+            }
 
             return Json(message);
         }
@@ -366,7 +385,6 @@ namespace WebApp.Controllers
             {
                 Source = request,
                 ObjectName = "LeaveRequest",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -409,10 +427,6 @@ namespace WebApp.Controllers
         {
             ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetLeaveTypesList(CompanyId, Language);
             ViewBag.Calender = _hrUnitOfWork.LeaveRepository.GetHolidays(CompanyId); //for Calender
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 

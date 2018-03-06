@@ -44,10 +44,6 @@ namespace WebApp.Controllers
         // GET: Letters
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetLettersData()
@@ -189,7 +185,6 @@ namespace WebApp.Controllers
             {
                 Source = Letter,
                 ObjectName = "HrLetters",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -299,9 +294,9 @@ namespace WebApp.Controllers
             MailMergeViewmodel mail = new MailMergeViewmodel();
             List<string> ArryList;
             if (User.Identity.RTL())
-                ArryList = new List<string>() { "اسم_الموظف", "الرقم_القومى", "تاريخ_اصدار_البطاقة", "عنوان_الموظف", "رقم_جواز_السفر", "تاريخ_اصدار_الجواز", "AddressingNo", "مدة_العقد", "تاريخ_بداية_التعيين", "«تاريخ_نهاية_التعيين", "الوظيفة", "الراتب", "البدلات", "العملة", "عدد_تذاكر_السفر", "قيمة_تذكرة_السفر", "من_دولة", "الى_دولة", "مدة_الاجازة", "يوم_التعيين", "SuggestedJob", "الموقع", "رقم_المحمول", "تليفون_المنزل", "الكفيل", "الادارة", "تاريخ_التكليف", "الموقع_الوظيفى", "حالة_التعيين", "الدرجة_المالية", "المسار_الوظيفى", "مدة_تعيين_الموظف", "مدة_التحاق_الموظف", "الجنسية", "اسم_الشركة", "نوع_الموظف", "مدة_الخبرة", "اخر_مؤهل_دراسى", "تاريخ_الميلاد", "الحالة_الاجتماعية", "الديانة", "الحالة_العسكرية", "تاريخ_تحرير_العقد", "يوم_تاريخ_تحرير_العقد»", "كورسات_التدريب", "المؤهلات" };
+                ArryList = new List<string>() { "اسم_الموظف", "الرقم_القومى", "تاريخ_اصدار_البطاقة", "عنوان_الموظف", "رقم_جواز_السفر", "تاريخ_اصدار_الجواز", "AddressingNo", "مدة_العقد", "تاريخ_بداية_التعيين", "«تاريخ_نهاية_التعيين", "الوظيفة", "الراتب", "البدلات", "العملة", "عدد_تذاكر_السفر", "قيمة_تذكرة_السفر", "من_دولة", "الى_دولة", "مدة_الاجازة", "يوم_التعيين", "SuggestedJob", "الفرع", "رقم_المحمول", "تليفون_المنزل", "الكفيل", "الادارة", "تاريخ_التكليف", "الموقع_الوظيفى", "حالة_التعيين", "الدرجة_المالية", "المسار_الوظيفى", "مدة_تعيين_الموظف", "مدة_التحاق_الموظف", "الجنسية", "اسم_الشركة", "نوع_الموظف", "مدة_الخبرة", "اخر_مؤهل_دراسى", "تاريخ_الميلاد", "الحالة_الاجتماعية", "الديانة", "الحالة_العسكرية", "تاريخ_تحرير_العقد", "يوم_تاريخ_تحرير_العقد»", "كورسات_التدريب", "المؤهلات" };
             else
-                ArryList = new List<string>() { "EmployeeName", "NationalId", "NationalIdDate", "EmployeeAddress", "PassportNo", "PassportIssueDate", "AddressingNo", "ContractPeriod", "EmploymentStartDate", "EmploymentEndDate", "Job", "Salary", "Allowances", "Currency", "TicketCnt", "TicketAmt", "FromCountry", "ToCountry", "SeasonHolidayPeriod", "EmploymentDay", "SuggestedJob", "Location", "Mobile", "HomeTelephone", "Kafel", "Department", "AssignDate", "Position", "AssignStatus", "PayrollGrad", "CareerPath", "JoinWorkingPeriod", "EmployWorkingPeriod", "Nationality", "CompanyName", "Gender", "ExpPeriod", "LastQual", "BirthDate", "MaritalStatus", "Religion", "MilitaryStatus", "ContractDate", "ContractDay", "TrainingCrs", "Qualifications" };
+                ArryList = new List<string>() { "EmployeeName", "NationalId", "NationalIdDate", "EmployeeAddress", "PassportNo", "PassportIssueDate", "AddressingNo", "ContractPeriod", "EmploymentStartDate", "EmploymentEndDate", "Job", "Salary", "Allowances", "Currency", "TicketCnt", "TicketAmt", "FromCountry", "ToCountry", "SeasonHolidayPeriod", "EmploymentDay", "SuggestedJob", "Branch", "Mobile", "HomeTelephone", "Kafel", "Department", "AssignDate", "Position", "AssignStatus", "PayrollGrad", "CareerPath", "JoinWorkingPeriod", "EmployWorkingPeriod", "Nationality", "CompanyName", "Gender", "ExpPeriod", "LastQual", "BirthDate", "MaritalStatus", "Religion", "MilitaryStatus", "ContractDate", "ContractDay", "TrainingCrs", "Qualifications" };
 
 
             string[] EmpData = _hrUnitOfWork.EmployeeRepository.GetEmpMergeData(EmpId, CompanyId, Language);
@@ -430,10 +425,6 @@ namespace WebApp.Controllers
         #region EmpLetters
         public ActionResult EmpLetters()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetEmpLettersData()

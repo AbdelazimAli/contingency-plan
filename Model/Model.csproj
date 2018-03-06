@@ -36,17 +36,23 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Web" />
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Mvc">
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.5.2.3\lib\net45\System.Web.Mvc.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Domain\Benefits\BenefitPlan.cs" />
@@ -60,18 +66,26 @@
     <Compile Include="Domain\Budgets\FiscalYear.cs" />
     <Compile Include="Domain\Budgets\PosBudget.cs" />
     <Compile Include="Domain\Benefits\BenefitRequest.cs" />
+    <Compile Include="Domain\CompanyStructure\Branch.cs" />
     <Compile Include="Domain\Custody\CustodyCat.cs" />
     <Compile Include="Domain\Custody\DocBorrowList.cs" />
     <Compile Include="Domain\Custody\EmpCustody.cs" />
     <Compile Include="Domain\Custody\EmpDocBorrow.cs" />
     <Compile Include="Domain\Discipline\Investigation.cs" />
     <Compile Include="Domain\Employee\RenewRequest.cs" />
-    <Compile Include="Domain\Form\FlexForm.cs" />
-    <Compile Include="Domain\Form\FlexFormColumn.cs" />
-    <Compile Include="Domain\Form\FlexFormFS.cs" />
+    <Compile Include="Domain\FlexForms\FlexForm.cs" />
+    <Compile Include="Domain\FlexForms\FlexFormColumn.cs" />
+    <Compile Include="Domain\FlexForms\FlexFormFS.cs" />
+    <Compile Include="Domain\FlexForms\PersonForm.cs" />
+    <Compile Include="Domain\FlexForms\SendForm.cs" />
+    <Compile Include="Domain\FlexForms\SendFormPeople.cs" />
     <Compile Include="Domain\Job\CareerPathJobs.cs" />
     <Compile Include="Domain\Leave\AssignOrder.cs" />
     <Compile Include="Domain\Leave\DeptJobLeavePlan.cs" />
+    <Compile Include="Domain\Leave\ErrandRequest.cs" />
+    <Compile Include="Domain\Loans\LoanInstall.cs" />
+    <Compile Include="Domain\Loans\LoanRequest.cs" />
+    <Compile Include="Domain\Loans\LoanType.cs" />
     <Compile Include="Domain\MailMerge\HRLetterLog.cs" />
     <Compile Include="Domain\MailMerge\MailToken.cs" />
     <Compile Include="Domain\MailMerge\Meeting.cs" />
@@ -79,6 +93,7 @@
     <Compile Include="Domain\MailMerge\NotifyLetter.cs" />
     <Compile Include="Domain\MailMerge\PagePrint.cs" />
     <Compile Include="Domain\Menu\MenuFunction.cs" />
+    <Compile Include="Domain\Notifications\CheckOverLapping.cs" />
     <Compile Include="Domain\Training\PeopleQual.cs" />
     <Compile Include="Domain\Leave\GroupLeave.cs" />
     <Compile Include="Domain\Menu\Language.cs" />
@@ -109,14 +124,12 @@
     <Compile Include="Domain\Leave\LeaveRequest.cs" />
     <Compile Include="Domain\Leave\LeaveTrans.cs" />
     <Compile Include="Domain\Leave\LeaveType.cs" />
-    <Compile Include="Domain\Countries\Address.cs" />
     <Compile Include="Domain\Employee\Assignment.cs" />
     <Compile Include="Domain\Budgets\Budget.cs" />
     <Compile Include="Domain\Job\CareerPath.cs" />
     <Compile Include="Domain\Countries\City.cs" />
     <Compile Include="Domain\Grid\ColumnTitle.cs" />
     <Compile Include="Domain\Company\Company.cs" />
-    <Compile Include="Domain\Company\CompanyBranch.cs" />
     <Compile Include="Domain\Company\CompanyDocAttr.cs" />
     <Compile Include="Domain\Company\CompanyDocsViews.cs" />
     <Compile Include="Domain\Company\CompanyPartner.cs" />
@@ -157,11 +170,12 @@
     <Compile Include="obj\Debug\TemporaryGeneratedFile_036C0B5B-1481-4323-8D20-8F5ADCB23D92.cs" />
     <Compile Include="obj\Debug\TemporaryGeneratedFile_5937a670-0e60-4077-877b-f7221da3dda1.cs" />
     <Compile Include="obj\Debug\TemporaryGeneratedFile_E7A71F73-0F8D-4B9B-B56E-8E70B10BC5D3.cs" />
+    <Compile Include="ViewModel\Administration\AddSiteViewModel.cs" />
     <Compile Include="ViewModel\Administration\AuditViewModel.cs" />
     <Compile Include="ViewModel\Administration\ExcelCustodyViewModel.cs" />
-    <Compile Include="ViewModel\Administration\ExcelFormLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelFormSiteViewModel.cs" />
     <Compile Include="ViewModel\Administration\ExcelGridCustodyViewModel.cs" />
-    <Compile Include="ViewModel\Administration\ExcelGridFormLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\ExcelGridFormSiteViewModel.cs" />
     <Compile Include="ViewModel\Administration\ExcelGridJobViewModel.cs" />
     <Compile Include="ViewModel\Administration\ExcelGridPeopleViewModel.cs" />
     <Compile Include="ViewModel\Administration\ExcelJobViewModel.cs" />
@@ -178,17 +192,21 @@
     <Compile Include="ViewModel\Administration\FlexDataViewModel.cs" />
     <Compile Include="ViewModel\Administration\FunctionVM.cs" />
     <Compile Include="ViewModel\Administration\LanguageGridViewModel.cs" />
+    <Compile Include="ViewModel\Administration\BranchViewModel.cs" />
     <Compile Include="ViewModel\Administration\LookupUserCodeViewModel.cs" />
     <Compile Include="Domain\SystemTools\PersonSetup.cs" />
     <Compile Include="Domain\Menu\RoleMenu.cs" />
     <Compile Include="Domain\SystemTools\SystemCode.cs" />
-    <Compile Include="ViewModel\Administration\AddLocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\AddBranchViewModel.cs" />
     <Compile Include="ViewModel\Administration\CityViewModel.cs" />
     <Compile Include="ViewModel\Administration\MailMergeArrayViewModel.cs" />
     <Compile Include="ViewModel\Administration\MsgTblViewModel.cs" />
     <Compile Include="ViewModel\Administration\PeopleExportViewModel.cs" />
     <Compile Include="ViewModel\Administration\UserLogViewModel.cs" />
     <Compile Include="ViewModel\Administration\WorkFlowRangVM.cs" />
+    <Compile Include="ViewModel\Loans\LoanTypeViewModel.cs" />
+    <Compile Include="ViewModel\MissionRequest\ErrandRequestViewModel.cs" />
+    <Compile Include="ViewModel\MissionRequest\LocationInfoViewModel.cs" />
     <Compile Include="ViewModel\NewCompany.cs" />
     <Compile Include="ViewModel\Notification\AppendMsgViewModel.cs" />
     <Compile Include="ViewModel\Notification\EmailAccountFormViewModel.cs" />
@@ -196,6 +214,7 @@
     <Compile Include="ViewModel\Notification\EmailLogViewModel.cs" />
     <Compile Include="ViewModel\Notification\FilterGridViewModel.cs" />
     <Compile Include="ViewModel\Notification\MeetingViewModel.cs" />
+    <Compile Include="ViewModel\Notification\MeetNotifyAttendeeViewModel.cs" />
     <Compile Include="ViewModel\Notification\MsgTemplateViewModel.cs" />
     <Compile Include="ViewModel\Notification\NotificationMenuViewModel.cs" />
     <Compile Include="ViewModel\Notification\NotificationViewModel.cs" />
@@ -226,7 +245,8 @@
     <Compile Include="ViewModel\Administration\UserCompaniesVM.cs" />
     <Compile Include="ViewModel\Personnel\AssignHistoryViewModel.cs" />
     <Compile Include="ViewModel\Personnel\AssignmentFormViewModel.cs" />
-    <Compile Include="ViewModel\Personnel\AssignmentGridViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmploymentPaper_ToNotify.cs" />
+    <Compile Include="ViewModel\Personnel\PeopleGridViewModel.cs" />
     <Compile Include="ViewModel\Personnel\AssignmentVM.cs" />
     <Compile Include="ViewModel\Personnel\AssignOrderViewModel.cs" />
     <Compile Include="ViewModel\Personnel\BenefitViewModel.cs" />
@@ -238,6 +258,7 @@
     <Compile Include="ViewModel\Personnel\ColumnDropdownViewModel.cs" />
     <Compile Include="ViewModel\Personnel\CompanyDiagramViewModel.cs" />
     <Compile Include="ViewModel\Administration\OptionsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\CompanyDocAttrVM.cs" />
     <Compile Include="ViewModel\Personnel\CompanyFormViewModel.cs" />
     <Compile Include="ViewModel\Personnel\CompanyStructureViewModel.cs" />
     <Compile Include="ViewModel\Administration\CountryViewModel.cs" />
@@ -251,7 +272,7 @@
     <Compile Include="Domain\Form\FormColumn.cs" />
     <Compile Include="Domain\Grid\PageDiv.cs" />
     <Compile Include="Domain\Job\Job.cs" />
-    <Compile Include="Domain\CompanyStructure\Location.cs" />
+    <Compile Include="Domain\CompanyStructure\Site.cs" />
     <Compile Include="Domain\SystemTools\LookUpUserCode.cs" />
     <Compile Include="Domain\SystemTools\LookUpCode.cs" />
     <Compile Include="Domain\Menu\Menu.cs" />
@@ -267,7 +288,6 @@
     <Compile Include="Domain\SystemTools\SysColumns.cs" />
     <Compile Include="Domain\Countries\World.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ViewModel\Administration\BranchesViewModel.cs" />
     <Compile Include="ViewModel\Administration\CheckParm.cs" />
     <Compile Include="ViewModel\Administration\ColumnInfoViewModel.cs" />
     <Compile Include="ViewModel\Administration\ColumnsView.cs" />
@@ -282,7 +302,7 @@
     <Compile Include="ViewModel\Administration\keyAttribute.cs" />
     <Compile Include="ViewModel\Administration\LabelViewModel.cs" />
     <Compile Include="ViewModel\Administration\FormViewModel.cs" />
-    <Compile Include="ViewModel\Administration\LocationViewModel.cs" />
+    <Compile Include="ViewModel\Administration\SiteViewModel.cs" />
     <Compile Include="ViewModel\Administration\LookupCodesViewModel.cs" />
     <Compile Include="ViewModel\Administration\MenuTreeListViewModel.cs" />
     <Compile Include="ViewModel\Administration\PageDivViewModel.cs" />
@@ -326,12 +346,15 @@
     <Compile Include="ViewModel\Personnel\EmpDisciplineViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmpDocBorrowViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmpLeaveDays.cs" />
+    <Compile Include="ViewModel\Personnel\EmpLettersViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmployeeBenefitViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmployeeMessagesViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmployeePointsViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmployeeTrainPathViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmployementViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmploymentPapersUploadVModel.cs" />
     <Compile Include="ViewModel\Personnel\EmpQualificationViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\EmpSchedual.cs" />
     <Compile Include="ViewModel\Personnel\EmpsInYearViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmpTaskViewModel.cs" />
     <Compile Include="ViewModel\Personnel\EmpTasksViewModel.cs" />
@@ -374,6 +397,8 @@
     <Compile Include="ViewModel\Personnel\PeopleTrainViewModel.cs" />
     <Compile Include="ViewModel\Personnel\PeriodIDTypeViewModel.cs" />
     <Compile Include="ViewModel\Personnel\PeriodsViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\PersonFormPageVM.cs" />
+    <Compile Include="ViewModel\Personnel\PersonFormVM.cs" />
     <Compile Include="ViewModel\Personnel\PersonnelViewModel.cs" />
     <Compile Include="ViewModel\Personnel\PersonViewModel.cs" />
     <Compile Include="ViewModel\Personnel\PositionDiagram.cs" />
@@ -388,9 +413,12 @@
     <Compile Include="ViewModel\Personnel\RequestEmpCustodyGrid.cs" />
     <Compile Include="ViewModel\Personnel\RequestWfFormViewModel.cs" />
     <Compile Include="ViewModel\Administration\UserRoleVm.cs" />
+    <Compile Include="ViewModel\Personnel\SendFormGridVM.cs" />
     <Compile Include="ViewModel\Personnel\SetCurrencyInfoViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\StreamID_DocTypeFormViewModel.cs" />
     <Compile Include="ViewModel\Personnel\SubperiodVM.cs" />
     <Compile Include="ViewModel\Personnel\SysCodeViewModel.cs" />
+    <Compile Include="ViewModel\Personnel\TakePhotoVModel.cs" />
     <Compile Include="ViewModel\Personnel\TermDurationViewModel.cs" />
     <Compile Include="ViewModel\Personnel\TrainEventFormViewModel.cs" />
     <Compile Include="ViewModel\Personnel\TrainEventViewModel.cs" />
@@ -406,6 +434,7 @@
     <Compile Include="ViewModel\Personnel\WorkFlowGridViewModel.cs" />
     <Compile Include="ViewModel\Personnel\WorkFlowObjectsViewModel.cs" />
     <Compile Include="ViewModel\Personnel\WorkFlowViewModel.cs" />
+    <Compile Include="ViewModel\RequestAgendaGrid.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -1,0 +1,58 @@
+﻿
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    @Scripts.Render("~/bundles/jquery")
+    <script src="~/Scripts/app/CommonScripts.js"></script>
+    <script>
+        LoadGoogleMapsScripts();
+    </script>
+
+
+
+
+</head>
+<body>
+    <div>
+
+        <input id="txt_Lat" type="text" placeholder="Lat" />
+        <input id="txt_Lng" type="text" placeholder="Lng" />
+
+        <input id="txt_destLat" type="text" placeholder="dest Lat" />
+        <input id="txt_destLng" type="text" placeholder="dest Lng" />
+        <input id="btn_submit" type="button" value="button" onclick="LoadMap();" />
+
+        <div id="div_MapPartial"></div>
+
+      
+        <script>
+            function LoadMap() {
+                var Lng = $('#txt_Lng').val();
+                var Lat = $('#txt_Lat').val();
+
+                var destLng = $('#txt_destLng').val();
+                var destLat = $('#txt_destLat').val();
+                var ActionUrl = '@Url.Action("ShowMapPartial", "GoogleMaps",new {area="" })?Lng=' + Lng + '&Lat=' + Lat + '&destLng=' + destLng + '&destLat=' + destLat + '&Height=700&txt_LatID=txt_Lat&txt_LngID=txt_Lng';
+                $("#div_MapPartial").load(ActionUrl, function (responseTxt, statusTxt, xhr) {
+                    if (statusTxt == "success") {
+
+                    }
+                    if (statusTxt == "error")
+                        alert("Error: " + xhr.status + ": " + xhr.statusText);
+                });
+            }
+
+       
+        </script>
+
+
+    </div>
+</body>
+</html>

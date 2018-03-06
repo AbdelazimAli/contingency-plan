@@ -3,7 +3,7 @@
 @model Model.ViewModel.FlexFormViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -30,8 +30,8 @@
     console.log('hi');
 
     $(function() {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         //InputTypes: Number, Text, Radio buttons, Checkboxes
         var inputTypes = [{ id: 1, name: '@MsgUtils.Instance.Trls("number")' }, { id: 2, name: '@MsgUtils.Instance.Trls("text")' },{ id: 3, name: '@MsgUtils.Instance.Trls("radioset")' },{ id: 4, name: '@MsgUtils.Instance.Trls("checkboxes")' }];
@@ -39,8 +39,8 @@
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
 
 
-        var oldPage = localStorage.getItem("menuhigh").split(","), oldulr = $("#"+ oldPage[2] + " a").attr("href"),
-            myForm, formId = "FlexForm",
+       // var oldPage = localStorage.getItem("menuhigh").split(","), oldulr = $("#"+ oldPage[2] + " a").attr("href"),
+         var   myForm, formId = "FlexForm",
             url = "@Url.Action("ReadFormInfo", "Pages")",
             read = "@Request.QueryString["Read"]";
 
@@ -244,7 +244,7 @@
                         model = result;
 
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                     });
                 });
             });
@@ -293,7 +293,7 @@
             }
 
             myForm.on('click',"#backToIndex", function() {
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
         });
 

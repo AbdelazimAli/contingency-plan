@@ -1,6 +1,7 @@
 E:\HRMS\Hr\Model\bin\Debug\Model.dll.config
 E:\HRMS\Hr\Model\bin\Debug\Model.dll
 E:\HRMS\Hr\Model\bin\Debug\Model.pdb
+E:\HRMS\Hr\Model\bin\Debug\System.Web.Mvc.dll
+E:\HRMS\Hr\Model\bin\Debug\System.Web.Mvc.xml
 E:\HRMS\Hr\Model\obj\Debug\Model.dll
 E:\HRMS\Hr\Model\obj\Debug\Model.pdb
-E:\HRMS\Hr\Model\obj\Debug\Model.csprojResolveAssemblyReference.cache

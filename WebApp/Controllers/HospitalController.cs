@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
             ViewBag.Prov = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Provider", Language).Select(a=> new {value=a.CodeId,text=a.Title });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         
@@ -153,7 +149,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Providers",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 

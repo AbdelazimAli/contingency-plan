@@ -11,28 +11,16 @@ using System.Data.Entity;
 using System.Linq.Dynamic;
 using WebApp.Models;
 using Model.Domain.Payroll;
-using System.Web.Routing;
+using Db.Persistence.BLL;
 using System.Web.Script.Serialization;
+using Db.Persistence;
+using Db.Persistence.Services;
 
 namespace WebApp.Controllers
 {
     public class AssignmentController : BaseController
     {
         private IHrUnitOfWork _hrUnitOfWork;
-
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
-        protected override void Initialize(RequestContext requestContext)
-        {
-            base.Initialize(requestContext);
-            if (requestContext.HttpContext.User.Identity.IsAuthenticated)
-            {
-                Language = requestContext.HttpContext.User.Identity.GetLanguage();
-                CompanyId = requestContext.HttpContext.User.Identity.GetDefaultCompany();
-                UserName = requestContext.HttpContext.User.Identity.Name;
-            }
-        }
         public AssignmentController(IHrUnitOfWork unitOfWork) : base(unitOfWork)
         {
             _hrUnitOfWork = unitOfWork;
@@ -54,14 +42,14 @@ namespace WebApp.Controllers
         public ActionResult GetBenPlanDetails(int BenPlanId)
         {
             var record = _hrUnitOfWork.Repository<BenefitPlan>().FirstOrDefault(a => a.Id == BenPlanId);
-            return Json(record,JsonRequestBehavior.AllowGet);
+            return Json(record, JsonRequestBehavior.AllowGet);
         }
-        public ActionResult GetBenfitClass(int[] Ids,int BenId)
+        public ActionResult GetBenfitClass(int[] Ids, int BenId)
         {
             //ids=benfitId
 
             string Msg = "";
-            var listBen = _hrUnitOfWork.Repository<Benefit>().Where(a => Ids.Contains( a.Id));
+            var listBen = _hrUnitOfWork.Repository<Benefit>().Where(a => Ids.Contains(a.Id));
             foreach (var item in listBen)
             {
                 int countx = item.MaxFamilyCnt.GetValueOrDefault();
@@ -205,7 +193,7 @@ namespace WebApp.Controllers
                         CreatedUser = model.CreatedUser
                     };
 
-                  //  AutoMapper(new AutoMapperParm() { ObjectName = "EmpBenefits", Destination = empBen, Source = models.ElementAtOrDefault(i), Version = 0, Options = options.ElementAtOrDefault(i),Id="EmpId", });
+                    //  AutoMapper(new AutoMapperParm() { ObjectName = "EmpBenefits", Destination = empBen, Source = models.ElementAtOrDefault(i), Version = 0, Options = options.ElementAtOrDefault(i),Id="EmpId", });
 
                     if (empBen.StartDate > empBen.EndDate)
                     {
@@ -237,7 +225,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "EmpBenefits",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.EmployeeRepository.Remove(Obj);
@@ -397,7 +384,7 @@ namespace WebApp.Controllers
                     //    CreatedTime = model.CreatedTime,
                     //    CreatedUser = model.CreatedUser
                     //};
-                    AutoMapper(new AutoMapperParm() { ObjectName = "EmpRelatives", Destination = empRelative, Source = models.ElementAtOrDefault(i), Version = 0, Options = options.ElementAtOrDefault(i),Id = "EmpId", });
+                    AutoMapper(new AutoMapperParm() { ObjectName = "EmpRelatives", Destination = empRelative, Source = models.ElementAtOrDefault(i), Version = 0, Options = options.ElementAtOrDefault(i), Id = "EmpId", });
 
                     if (empRelative.BirthDate > empRelative.ExpiryDate)
                     {
@@ -429,7 +416,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "EmpRelatives",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.EmployeeRepository.Remove(Obj);
@@ -444,84 +430,71 @@ namespace WebApp.Controllers
         #endregion
 
         #region Assignment
-        public ActionResult GetAssignment(int MenuId, int pageSize, int skip)
-        {
-            var query = _hrUnitOfWork.EmployeeRepository.GetAssignments(Language);
-            string filter = "";
-            string Sorting = "";
-            string whecls = GetWhereClause(MenuId);
-            query = (IQueryable<AssignmentGridViewModel>)Utils.GetFilter(query, ref filter, ref Sorting);
-            if (whecls.Length > 0 || filter.Length > 0)
-            {
-                try
-                {
-                    if (whecls.Length > 0 && filter.Length == 0)
-                        query = query.Where(whecls);
-                    else if (filter.Length > 0 && whecls.Length == 0)
-                        query = query.Where(filter);
-                    else
-                        query = query.Where(filter).Where(whecls);
-                }
-                catch (Exception ex)
-                {
-                    TempData["Error"] = ex.Message;
-                    Utils.LogError(ex.Message);
-                    return Json("", JsonRequestBehavior.AllowGet);
-                }
-            }
-
-            var total = query.Count();
-
-            if (Sorting.Length > 0)
-                query = query.OrderBy(Sorting).Skip(skip).Take(pageSize);
-            else if(skip > 0)
-                query = query.OrderBy(a=>a.Code).Skip(skip).Take(pageSize);
-            else
-                query = query.Take(pageSize);
-
-            return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
-        }
         public ActionResult Details(int Id)
         {
-          
-            var assignment = _hrUnitOfWork.EmployeeRepository.GetAssignment(Id,Language);
-            var oldAssignment = _hrUnitOfWork.EmployeeRepository.Find(a => a.EmpId == Id).OrderByDescending(b => b.EndDate).FirstOrDefault();
-            if (oldAssignment != null && assignment == null)
+            var assignment = _hrUnitOfWork.EmployeeRepository.GetAssignment(Id, Language);
+
+            if (assignment == null)
             {
-                assignment.DepartmentId = oldAssignment.DepartmentId;
-                assignment.LocationId = oldAssignment.LocationId;
-                assignment.ManagerId = oldAssignment.ManagerId;
-                assignment.NoticePrd = oldAssignment.NoticePrd;
-                assignment.PayGradeId = oldAssignment.PayGradeId;
-                assignment.PayrollId = oldAssignment.PayrollId;
-                assignment.PositionId = oldAssignment.PositionId;
-                assignment.ProbationPrd = oldAssignment.ProbationPrd;
-                assignment.SalaryBasis = oldAssignment.SalaryBasis;
-                assignment.JobId = oldAssignment.JobId;
+                var oldAssignment = _hrUnitOfWork.EmployeeRepository.Find(a => a.EmpId == Id).OrderByDescending(b => b.EndDate).FirstOrDefault();
+                if (oldAssignment != null)
+                {
+                    assignment.DepartmentId = oldAssignment.DepartmentId;
+                    assignment.BranchId = oldAssignment.BranchId;
+                    assignment.ManagerId = oldAssignment.ManagerId;
+                    assignment.NoticePrd = oldAssignment.NoticePrd;
+                    assignment.PayGradeId = oldAssignment.PayGradeId;
+                    assignment.PayrollId = oldAssignment.PayrollId;
+                    assignment.PositionId = oldAssignment.PositionId;
+                    assignment.ProbationPrd = oldAssignment.ProbationPrd;
+                    assignment.SalaryBasis = oldAssignment.SalaryBasis;
+                    assignment.JobId = oldAssignment.JobId;
+                }
             }
-            int EmpolyeeCompany = _hrUnitOfWork.PeopleRepository.GetEmployment(assignment.EmpId).CompanyId;
 
+            if (assignment == null)
+            {
+                var emp = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == Id && a.Status == 1).Select(a => new { a.CompanyId, a.Code, a.StartDate }).FirstOrDefault();
+                if (emp == null) return HttpNotFound();
+                assignment = new AssignmentFormViewModel { CompanyId = emp.CompanyId, Code = emp.Code, AssignDate = emp.StartDate };
+            }
 
-            FillViewBag(Language, EmpolyeeCompany,assignment.EmpId,assignment.PositionId,assignment.JobId,assignment.DepartmentId);
+            FillViewBag(Language, assignment.CompanyId, Id, assignment.PositionId, assignment.JobId, assignment.DepartmentId);
+
+            assignment.NotifyButtonLabel = MsgUtils.Instance.Trls("SendNotifyLetter", Culture);
             return View(assignment);
         }
-        private void FillViewBag(string Lang,int EmpCompany,int EmpId,int? positionid,int? JobId,int? DeptId)
+        private void FillViewBag(string Lang, int EmpCompany, int EmpId, int? positionid, int? JobId, int? DeptId)
         {
             var personel = _PersonSetup;
             ViewBag.JobDoc = personel != null ? personel.JobDoc : 0;
             ViewBag.AssignFlex = personel != null ? personel.AssignFlex : 0;
-            ViewBag.AssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Lang).Where(a => a.SysCodeId == 1 || a.SysCodeId == 2).Select(a => new { id = a.CodeId, name = a.Title }).ToList();
-            ViewBag.LocationId = _hrUnitOfWork.LocationRepository.ReadLocations(Lang, EmpCompany).Where(a => a.IsInternal).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.job = _hrUnitOfWork.JobRepository.ReadJobs(EmpCompany, Lang,0).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.Dept = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId,null, Language);
-            ViewBag.Payroll = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.Position = _hrUnitOfWork.PositionRepository.GetPositions(Lang, EmpCompany).Where(p =>(p.JobId == JobId && p.DeptId == DeptId) && ((p.HiringStatus == 2) || (p.Id == (positionid != null ?positionid.Value : 0)))).Select(a => new { id = a.Id, name = a.Name, HeadCount = a.Headcount, ErrorMes = a.SysResponse }).ToList();
-            ViewBag.PeopleGroup = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.PayrollGrad = _hrUnitOfWork.JobRepository.GetPayrollGrade();
-            ViewBag.CareerPath = _hrUnitOfWork.JobRepository.ReadCareerPaths(EmpCompany).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.CompanyId = EmpCompany;
-            ViewBag.ManagerId = _hrUnitOfWork.EmployeeRepository.EmployeeMangers(EmpCompany, Language, positionid).ToList();
         }
+
+        [HttpGet]
+        public JsonResult FillDropdownlists(int? PositionId)
+        {
+            try
+            {
+                var AssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Language).Where(a => a.SysCodeId == 1 || a.SysCodeId == 2).Select(a => new { id = a.CodeId, name = a.Title }).ToList();
+                var CareerPath = _hrUnitOfWork.Repository<CareerPath>().Where(a => a.CompanyId == CompanyId).Select(a => new { id = a.Id, name = a.Name }).ToList();
+                var ManagerId = _hrUnitOfWork.EmployeeRepository.EmployeeMangers(CompanyId, Language, PositionId).ToList();
+
+                return Json(new
+                {
+                    Result = true,
+                    AssignStatus = AssignStatus,
+                    CareerPath = CareerPath,
+                    ManagerId = ManagerId
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch
+            {
+                return Json(new { Result = false }, JsonRequestBehavior.AllowGet);
+            }
+        }
+
         private void RemoveChildren(List<ManagerEmployeeDiagram> array, int id)
         {
             var child = array.Where(a => a.ParentId == id).ToList();
@@ -628,7 +601,7 @@ namespace WebApp.Controllers
                 record.PayrollGrades = null;
                 record.Payrolls = null;
                 record.CompanyStuctures = null;
-                record.Locations = null;
+                record.Branches = null;
                 record.Jobs = null;
                 record.Employments = null;
                 record.Positions = null;
@@ -703,177 +676,255 @@ namespace WebApp.Controllers
             }
             else
                 return Json(Models.Utils.ParseFormErrors(ModelState));
-            var currentJobId = 0;
-            var currentDepartmentId = 0;
-            var currentAssignment = _hrUnitOfWork.EmployeeRepository.Find(a => a.Id == model.Id).FirstOrDefault();
-            Assignment newAssignment = new Assignment();
-
-            if (currentAssignment != null)
-            {
-                currentJobId = currentAssignment.JobId;
-                currentDepartmentId = currentAssignment.DepartmentId;
-            }
-            // employee has active assignment and u try to insert new in the same period
-            if (currentAssignment != null && model.AssignDate >= currentAssignment.AssignDate && model.AssignDate <= currentAssignment.EndDate && currentAssignment.EndDate < EndDate)
-            {
-                // Employee already has assignment in this period
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("AlreadyHasAssignmentInPeriod"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-            }
-
-            if (currentAssignment == null) // New
-                currentAssignment = new Assignment() { AssignDate = model.AssignDate };
 
 
-            var oldAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.Id != currentAssignment.Id && a.EmpId == model.EmpId && a.AssignDate < model.AssignDate).OrderByDescending(c => c.AssignDate).FirstOrDefault();
+            using (var trans = _hrUnitOfWork.BeginTransaction())
+            {
 
-            // employee has active assignment and you try to insert new before current period
-            if (currentAssignment.Id > 0 && oldAssignment == null && model.AssignDate < currentAssignment.AssignDate)
-            {
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("CantAssignOldDate"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-                // error: You can't assign employee in old date
-            }
-            else if (oldAssignment != null && oldAssignment.AssignDate >= currentAssignment.AssignDate)
-            {
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("AlreadyHasAssignmentInPeriod"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-                // error: system found future assignment between current assignment and new assignment
-            }
-            else if (oldAssignment != null && oldAssignment.EndDate >= model.AssignDate)
-            {
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("foundoldAssignment"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-                // error: system found old assignment terminated on oldAssignment.EndDate
-            }
 
-            var futureAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.Id != currentAssignment.Id && a.EmpId == model.EmpId && a.AssignDate > model.AssignDate).OrderBy(c => c.AssignDate).FirstOrDefault();
-            if (futureAssignment != null && futureAssignment.AssignDate <= model.AssignDate)
-            {
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("foundFutureAssignment"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-                // error: system found future assignment will start on futureAssignment.AssignDate
-            }
-            Employement Employment = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == model.EmpId && a.Status == 1 && a.CompanyId == CompanyId).FirstOrDefault();
-            bool chkEmployment = _hrUnitOfWork.EmployeeRepository.CheckEmployment(Employment, model.EmpId, model.AssignDate);
-            if (chkEmployment == false)
-            {
-                ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("haventcontract"));
-                return Json(Models.Utils.ParseFormErrors(ModelState));
-            }
-            var AllSysAssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Language);
+                var currentJobId = 0;
+                var currentDepartmentId = 0;
+                var currentAssignment = _hrUnitOfWork.EmployeeRepository.Find(a => a.Id == model.Id).FirstOrDefault();
+                var status = currentAssignment == null ? PersonStatus.Assignment : 0;
+                Assignment newAssignment = new Assignment();
 
-            if (currentAssignment.Id == 0) // New
-            {
-                //currentAssignment = new Assignment();
-                //model.Id = currentAssignment.Id;
-                if (model.EmpTasks == 2)
-                    MapEligibilityCriteria(model, moreInfo);
-
-                AutoMapper(new Models.AutoMapperParm
+                if (currentAssignment != null)
                 {
-                    Destination = currentAssignment,
-                    Source = model,
-                    ObjectName = "AssignmentsForm",
-                    Version = 0,
-                    Id = "EmpId",
-                    Options = moreInfo
-                });
-
-                if (currentJobId != 0 && currentDepartmentId != 0)
-                {
-                    currentAssignment.JobId = currentJobId;
-                    currentAssignment.DepartmentId = currentDepartmentId;
+                    currentJobId = currentAssignment.JobId;
+                    currentDepartmentId = currentAssignment.DepartmentId;
                 }
-                currentAssignment.EndDate = futureAssignment == null ? EndDate : futureAssignment.AssignDate.AddDays(-1);
-                currentAssignment.CreatedTime = Now;
-                currentAssignment.CreatedUser = UserName;
-                currentAssignment.SysAssignStatus = AllSysAssignStatus.Where(a => a.CodeId == model.AssignStatus).FirstOrDefault().SysCodeId;
-                _hrUnitOfWork.EmployeeRepository.Add(currentAssignment);
-            }
-            else // Edit
-            {
-
-                if (currentAssignment.AssignDate == model.AssignDate)
+                // employee has active assignment and u try to insert new in the same period
+                if (currentAssignment != null && model.AssignDate >= currentAssignment.AssignDate && model.AssignDate <= currentAssignment.EndDate && currentAssignment.EndDate < EndDate)
                 {
-                    // error: you must change assignment date to successfully update assignment
-                    // return
-                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("can't updateassignment"));
+                    // Employee already has assignment in this period
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("AlreadyHasAssignmentInPeriod"));
                     return Json(Models.Utils.ParseFormErrors(ModelState));
                 }
 
-                DateTime oldDate = currentAssignment.AssignDate;
-                var assignStatus = currentAssignment.AssignStatus;
-                if (model.EmpTasks == 2)
-                    MapEligibilityCriteria(model, moreInfo);
+                if (currentAssignment == null) // New
+                    currentAssignment = new Assignment() { AssignDate = model.AssignDate };
+
+
+                var oldAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.Id != currentAssignment.Id && a.EmpId == model.EmpId && a.AssignDate < model.AssignDate).OrderByDescending(c => c.AssignDate).FirstOrDefault();
+
+                // employee has active assignment and you try to insert new before current period
+                if (currentAssignment.Id > 0 && oldAssignment == null && model.AssignDate < currentAssignment.AssignDate)
+                {
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("CantAssignOldDate"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                    // error: You can't assign employee in old date
+                }
+                else if (oldAssignment != null && oldAssignment.AssignDate >= currentAssignment.AssignDate)
+                {
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("AlreadyHasAssignmentInPeriod"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                    // error: system found future assignment between current assignment and new assignment
+                }
+                else if (oldAssignment != null && oldAssignment.EndDate >= model.AssignDate)
+                {
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("foundoldAssignment"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                    // error: system found old assignment terminated on oldAssignment.EndDate
+                }
+
+                var futureAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.Id != currentAssignment.Id && a.EmpId == model.EmpId && a.AssignDate > model.AssignDate).OrderBy(c => c.AssignDate).FirstOrDefault();
+                if (futureAssignment != null && futureAssignment.AssignDate <= model.AssignDate)
+                {
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("foundFutureAssignment"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                    // error: system found future assignment will start on futureAssignment.AssignDate
+                }
+                Employement Employment = _hrUnitOfWork.Repository<Employement>().Where(a => a.EmpId == model.EmpId && a.Status == 1 && a.CompanyId == CompanyId).FirstOrDefault();
+                bool chkEmployment = _hrUnitOfWork.EmployeeRepository.CheckEmployment(Employment, model.EmpId, model.AssignDate);
+                if (chkEmployment == false)
+                {
+                    ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("haventcontract"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                }
+                var AllSysAssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Language);
+
+                if (currentAssignment.Id == 0) // New
+                {
+                    //currentAssignment = new Assignment();
+                    //model.Id = currentAssignment.Id;
+                    if (model.EmpTasks == 2)
+                        MapEligibilityCriteria(model, moreInfo);
+
+                    AutoMapper(new Models.AutoMapperParm
+                    {
+                        Destination = currentAssignment,
+                        Source = model,
+                        ObjectName = "AssignmentsForm",
+                        Version = 0,
+                        Id = "EmpId",
+                        Options = moreInfo
+                    });
+
+                    if (currentJobId != 0 && currentDepartmentId != 0)
+                    {
+                        currentAssignment.JobId = currentJobId;
+                        currentAssignment.DepartmentId = currentDepartmentId;
+                    }
+                    currentAssignment.EndDate = futureAssignment == null ? EndDate : futureAssignment.AssignDate.AddDays(-1);
+                    currentAssignment.CreatedTime = Now;
+                    currentAssignment.CreatedUser = UserName;
+                    currentAssignment.SysAssignStatus = AllSysAssignStatus.Where(a => a.CodeId == model.AssignStatus).FirstOrDefault().SysCodeId;
+                    _hrUnitOfWork.EmployeeRepository.Add(currentAssignment);
+
+                    errors.AddRange(SaveChanges(Language));
+                   // string Message;
+                   // SendNotifyLetterMethod(currentAssignment, out Message);
+                }
+                else // Edit
+                {
+
+                    if (currentAssignment.AssignDate == model.AssignDate)
+                    {
+                        // error: you must change assignment date to successfully update assignment
+                        // return
+                        ModelState.AddModelError("AssignDate", MsgUtils.Instance.Trls("can't updateassignment"));
+                        return Json(Models.Utils.ParseFormErrors(ModelState));
+                    }
+
+                    DateTime oldDate = currentAssignment.AssignDate;
+                    var assignStatus = currentAssignment.AssignStatus;
+                    if (model.EmpTasks == 2)
+                        MapEligibilityCriteria(model, moreInfo);
+                    else
+                    {
+                        currentAssignment.PeopleGroups = null;
+                        currentAssignment.PayrollGrades = null;
+                        currentAssignment.Payrolls = null;
+                        currentAssignment.CompanyStuctures = null;
+                        currentAssignment.Branches = null;
+                        currentAssignment.Jobs = null;
+                        currentAssignment.Employments = null;
+                        currentAssignment.Positions = null;
+                    }
+
+                    if (currentAssignment.PositionId != model.PositionId && currentAssignment.PositionId != null)
+                        ChangeManager(model.EmpId, model.PositionId);
+
+                    //update assignment
+                    AutoMapper(new Models.AutoMapperParm
+                    {
+                        Destination = currentAssignment,
+                        Source = model,
+                        ObjectName = "AssignmentsForm",
+                        Version = 0,
+                        Id = "EmpId",
+                        Options = moreInfo
+                    });
+                    if (currentJobId != 0 && currentDepartmentId != 0)
+                    {
+                        currentAssignment.JobId = currentJobId;
+                        currentAssignment.DepartmentId = currentDepartmentId;
+                    }
+                    currentAssignment.AssignStatus = assignStatus;
+                    currentAssignment.AssignDate = oldDate;
+                    currentAssignment.EndDate = model.AssignDate.AddDays(-1); ;
+                    currentAssignment.ModifiedTime = Now;
+                    currentAssignment.ModifiedUser = UserName;
+                    currentAssignment.SysAssignStatus = AllSysAssignStatus.FirstOrDefault(a => a.CodeId == assignStatus).SysCodeId;
+
+                    _hrUnitOfWork.EmployeeRepository.Attach(currentAssignment);
+                    _hrUnitOfWork.EmployeeRepository.Entry(currentAssignment).State = EntityState.Modified;
+
+                    //insert new assignment
+                    AutoMapper(new AutoMapperParm
+                    {
+                        Destination = newAssignment,
+                        Source = model,
+                        ObjectName = "AssignmentsForm",
+                        Version = 0,
+                        Id = "EmpId",
+                        Options = moreInfo
+                    });
+
+
+                    newAssignment.EndDate = new DateTime(2099, 1, 1);
+                    newAssignment.CreatedTime = Now;
+                    newAssignment.Id = 0;
+                    newAssignment.CreatedUser = UserName;
+                    newAssignment.SysAssignStatus = AllSysAssignStatus.Where(a => a.CodeId == model.AssignStatus).FirstOrDefault().SysCodeId;
+                    _hrUnitOfWork.EmployeeRepository.Add(newAssignment);
+
+                    errors.AddRange(SaveChanges(Language));
+                   // string Message;
+                    // SendNotifyLetterMethod(newAssignment, out Message);
+                }
+
+                if (status == PersonStatus.Assignment)
+                {
+                    var person = _hrUnitOfWork.PeopleRepository.GetPerson(model.EmpId);
+                    person.Status = PersonStatus.UserProfile;
+                }
+
+                errors.AddRange(SaveChanges(Language));
+                if (errors.Count > 0)
+                {
+                    trans.Rollback();
+                    trans.Dispose();
+                    message = errors.First().errors.First().message;
+                }
                 else
                 {
-                    currentAssignment.PeopleGroups = null;
-                    currentAssignment.PayrollGrades = null;
-                    currentAssignment.Payrolls = null;
-                    currentAssignment.CompanyStuctures = null;
-                    currentAssignment.Locations = null;
-                    currentAssignment.Jobs = null;
-                    currentAssignment.Employments = null;
-                    currentAssignment.Positions = null;
+                    trans.Commit();
+                    model.Id = currentAssignment.Id == 0 ? currentAssignment.Id : newAssignment.Id;
+                    message += "," + (new JavaScriptSerializer()).Serialize(model);
                 }
-
-                if (currentAssignment.PositionId != model.PositionId && currentAssignment.PositionId != null)
-                    ChangeManager(model.EmpId, model.PositionId);
-
-                //update assignment
-                AutoMapper(new Models.AutoMapperParm
-                {
-                    Destination = currentAssignment,
-                    Source = model,
-                    ObjectName = "AssignmentsForm",
-                    Version = 0,
-                    Id = "EmpId",
-                    Options = moreInfo
-                });
-                if (currentJobId != 0 && currentDepartmentId != 0)
-                {
-                    currentAssignment.JobId = currentJobId;
-                    currentAssignment.DepartmentId = currentDepartmentId;
-                }
-                currentAssignment.AssignStatus = assignStatus;
-                currentAssignment.AssignDate = oldDate;
-                currentAssignment.EndDate = model.AssignDate.AddDays(-1); ;
-                currentAssignment.ModifiedTime = Now;
-                currentAssignment.ModifiedUser = UserName;
-                currentAssignment.SysAssignStatus = AllSysAssignStatus.FirstOrDefault(a => a.CodeId == assignStatus).SysCodeId;
-
-                _hrUnitOfWork.EmployeeRepository.Attach(currentAssignment);
-                _hrUnitOfWork.EmployeeRepository.Entry(currentAssignment).State = EntityState.Modified;
-
-                //insert new assignment
-                AutoMapper(new AutoMapperParm
-                {
-                    Destination = newAssignment,
-                    Source = model,
-                    ObjectName = "AssignmentsForm",
-                    Version = 0,
-                    Id = "EmpId",
-                    Options = moreInfo
-                });
-
-
-                newAssignment.EndDate = new DateTime(2099, 1, 1);
-                newAssignment.CreatedTime = Now;
-                newAssignment.Id = 0;
-                newAssignment.CreatedUser = UserName;
-                newAssignment.SysAssignStatus = AllSysAssignStatus.Where(a => a.CodeId == model.AssignStatus).FirstOrDefault().SysCodeId;
-                _hrUnitOfWork.EmployeeRepository.Add(newAssignment);
             }
-
-            errors = SaveChanges(Language);
-            if (errors.Count > 0)
-                message = errors.First().errors.First().message;
-            else
-                message += "," + (new JavaScriptSerializer()).Serialize(currentAssignment.Id == 0 ? currentAssignment : newAssignment);
             return Json(message);
         }
 
+        public JsonResult SendNotifyLetter(int ID = 0)
+        {
+            if (ID==0)
+            {
+                return Json(new { Result = false });
+            }
+
+            var Assign = _hrUnitOfWork.EmployeeRepository.Find(a => a.Id == ID).FirstOrDefault();
+
+            string Message;
+            bool Result = SendNotifyLetterMethod(Assign, out Message);
+
+            return Json(new { Result = Result, Message = Message });
+        }
+
+        private bool SendNotifyLetterMethod(Assignment Assign,out string ErrorMessage)
+        {
+            bool Result = false;
+            ErrorMessage = "";
+            try
+            {
+                string JobName = "", DeptName = "", BranchName = "";
+                _hrUnitOfWork.PeopleRepository.GetJob_Department_Branch_Translated(Culture, Assign.EmpId, Assign.JobId, Assign.DepartmentId, Convert.ToInt32(Assign.BranchId), out JobName, out DeptName, out BranchName);
+
+
+                string Description = string.Format(MsgUtils.Instance.Trls("WeTakeNote", Language) + " {0} " + MsgUtils.Instance.Trls("InDepartment", Language) + " {1} " + MsgUtils.Instance.Trls("InBranch", Language) + " {2} " + MsgUtils.Instance.Trls("StartedFrom", Language) + " {3} ", JobName, DeptName, BranchName, Assign.AssignDate.ToMyDateString(Language, "yyyy-MM-dd"));
+
+                NotifyLetter NL = new NotifyLetter()
+                {
+                    CompanyId = Assign.CompanyId,
+                    EmpId = Assign.EmpId,
+                    NotifyDate = DateTime.Now.Date,
+                    NotifySource =MsgUtils.Instance.Trls(Constants.Sources.NewAssignment,Language),
+                    SourceId = Assign.Id.ToString(),
+                    Sent = true,
+                    EventDate = Assign.AssignDate.Date,
+                    Description = Description
+
+                };
+                // _hrUnitOfWork.NotifyLetterRepository.Add(NL);
+                AddNotifyLetters AddNotifyLetters = new AddNotifyLetters(_hrUnitOfWork, NL, Language);
+                 Result = AddNotifyLetters.Run(out ErrorMessage);
+            }
+            catch
+            {
+            }
+            return Result;
+        }
         public ActionResult AssignmentHistory(int id)
         {
             ViewBag.Id = id;
@@ -906,9 +957,7 @@ namespace WebApp.Controllers
         }
         public ActionResult CheckManager(int? assid, int DepId)
         {
-            var assignment = _hrUnitOfWork.Repository<Assignment>().Where(a => (a.DepartmentId == DepId) && (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today)&&(a.CompanyId==CompanyId) && (a.IsDepManager)).Select(b => b).FirstOrDefault();
-            var BranchName = _hrUnitOfWork.EmployeeRepository.BranchName(DepId,Language).FirstOrDefault();
-            var Sector = _hrUnitOfWork.EmployeeRepository.Sector(DepId,Language).FirstOrDefault();
+            var assignment = _hrUnitOfWork.Repository<Assignment>().Where(a => (a.DepartmentId == DepId) && (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today) && (a.CompanyId == CompanyId) && (a.IsDepManager)).Select(b => b).FirstOrDefault();
             if (assignment == null)
             {
                 assignment = new Assignment();
@@ -922,15 +971,11 @@ namespace WebApp.Controllers
             else
                 assignment.IsDepManager = false;
 
-            assignment.BranchId = BranchName !=null ? (int?)BranchName.id: null;
-            assignment.SectorId = Sector != null ? (int?)Sector.id : null;
-            assignment.CreatedUser = BranchName != null ? BranchName.name : null ;
-
             return Json(assignment, JsonRequestBehavior.AllowGet);
         }
         public void MapEligibilityCriteria(AssignmentFormViewModel model, OptionsViewModel moreInfo)
         {
-            model.Locations = model.ILocations == null ? null : string.Join(",", model.ILocations.ToArray());
+            model.Branches = model.IBranches == null ? null : string.Join(",", model.IBranches.ToArray());
             model.Jobs = model.IJobs == null ? null : string.Join(",", model.IJobs.ToArray());
             model.Employments = model.IEmployments == null ? null : string.Join(",", model.IEmployments.ToArray());
             model.PeopleGroups = model.IPeopleGroups == null ? null : string.Join(",", model.IPeopleGroups.ToArray());
@@ -938,7 +983,7 @@ namespace WebApp.Controllers
             model.PayrollGrades = model.IPayrollGrades == null ? null : string.Join(",", model.IPayrollGrades.ToArray());
             model.CompanyStuctures = model.ICompanyStuctures == null ? null : string.Join(",", model.ICompanyStuctures.ToArray());
             model.Positions = model.IPositions == null ? null : string.Join(",", model.IPositions.ToArray());
-            moreInfo.VisibleColumns.Add("Locations");
+            moreInfo.VisibleColumns.Add("Branches");
             moreInfo.VisibleColumns.Add("Jobs");
             moreInfo.VisibleColumns.Add("Employments");
             moreInfo.VisibleColumns.Add("PeopleGroups");
@@ -951,10 +996,10 @@ namespace WebApp.Controllers
         {
             return Json(_hrUnitOfWork.EmployeeRepository.EmployeeMangers(CompanyId, Language, PostionId), JsonRequestBehavior.AllowGet);
         }
-        public ActionResult GetPositions(int JobId,int DeptId, int EmpId, string tableName)
+        public ActionResult GetPositions(int JobId, int DeptId, int EmpId, string tableName)
         {
             bool hasDocs = _hrUnitOfWork.EmployeeRepository.CheckDocs(CompanyId, JobId, EmpId);
-            var Positions = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Where(j => (j.JobId == JobId && j.DeptId == DeptId) && (j.HiringStatus == 2)).Select(a => new { id = a.Id, name = a.Name, HeadCount = a.Headcount, ErrorMes = a.SysResponse}).ToList();
+            var Positions = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Where(j => (j.JobId == JobId && j.DeptId == DeptId) && (j.HiringStatus == 2)).Select(a => new { id = a.Id, name = a.Name, HeadCount = a.Headcount, ErrorMes = a.SysResponse }).ToList();
             var Result = _hrUnitOfWork.EmployeeRepository.GetFlexDataCheck(tableName, JobId, EmpId);
 
             var PsotionsObj = new { Positions = Positions, Result = Result != "" ? MsgUtils.Instance.Trls("reuqiredskills") + Result : "", Check = hasDocs };
@@ -969,20 +1014,20 @@ namespace WebApp.Controllers
                 return Json("", JsonRequestBehavior.AllowGet);
 
         }
-        public ActionResult AssignFlexPos(string tableName, int SourceId, int EmpId,int? HeadCount)
+        public ActionResult AssignFlexPos(string tableName, int SourceId, int EmpId, int? HeadCount)
         {
             var Result = _hrUnitOfWork.EmployeeRepository.GetFlexDataCheck(tableName, SourceId, EmpId);
             bool AssiGrt = false;
             if (HeadCount != null)
             {
-                var AssigCount = _hrUnitOfWork.EmployeeRepository.GetAssignments(Language).Where(a =>a.CompanyId == CompanyId && a.PositionId == SourceId).Count();
+                var AssigCount = _hrUnitOfWork.EmployeeRepository.GetAssignments(Language).Where(a => a.CompanyId == CompanyId && a.PositionId == SourceId).Count();
                 if (AssigCount < HeadCount)
                     AssiGrt = true;
             }
             var Obj = new { AssResult = (Result != "" ? MsgUtils.Instance.Trls("reuqiredskills") + Result : ""), Grt = AssiGrt };
             return Json(Obj, JsonRequestBehavior.AllowGet);
         }
-        public ActionResult PosError(int SourceId,int? HeadCount)
+        public ActionResult PosError(int SourceId, int? HeadCount)
         {
             bool AssiGrt = false;
             if (HeadCount != null)
@@ -991,7 +1036,7 @@ namespace WebApp.Controllers
                 if (AssigCount < HeadCount)
                     AssiGrt = true;
             }
-            return Json(AssiGrt,JsonRequestBehavior.AllowGet);
+            return Json(AssiGrt, JsonRequestBehavior.AllowGet);
         }
         public ActionResult DeleteAssignmentHistory(int id)
         {
@@ -1004,7 +1049,6 @@ namespace WebApp.Controllers
                 {
                     Source = assignment,
                     ObjectName = "AssignmentHistory",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 
@@ -1014,7 +1058,7 @@ namespace WebApp.Controllers
                 _hrUnitOfWork.PeopleRepository.Remove(assignment);
 
                 var PreviousAssignment = _hrUnitOfWork.Repository<Assignment>().Where(a => a.EmpId == empId && a.EndDate == Enddate).FirstOrDefault();
-                if(PreviousAssignment != null)
+                if (PreviousAssignment != null)
                 {
                     PreviousAssignment.EndDate = new DateTime(2099, 1, 1);
                     _hrUnitOfWork.EmployeeRepository.Attach(PreviousAssignment);

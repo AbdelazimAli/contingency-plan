@@ -63,7 +63,7 @@ namespace Model.Domain
         public string PayrollGrades { get; set; } // comma seperated Payroll Grades
 
         [MaxLength(50)]
-        public string Locations { get; set; } // comma seperated Payroll Grades
+        public string Branches { get; set; } // comma seperated Payroll Grades
 
         public short BenefitClass { get; set; } // look up user code
         public int? CalenderId { get; set; }

@@ -9,13 +9,19 @@ namespace WebApp
         {
             //BundleTable.EnableOptimizations = true;
 
+          
+
             bundles.Add(new ScriptBundle("~/bundles/Kgrid").Include(
                        "~/Scripts/Kgrid.min.js"
                        ));
 
             bundles.Add(new ScriptBundle("~/bundles/jqueryval").Include(
-                        "~/Scripts/jquery.validate.js",
-                        "~/Scripts/jquery.validate.unobtrusive.min.js"
+                          //"~/Scripts/jquery.validate.js",
+                          //"~/Scripts/jquery.validate.unobtrusive.min.js"
+                          "~/Scripts/jquery.validate.js",
+                         "~/Scripts/jquery.validate.unobtrusive.js",
+                       "~/Scripts/jquery.unobtrusive-ajax.js"
+                        //"~/Scripts/jquery.validate.unobtrusive.dynamic.js"
 
                         ));
 
@@ -28,7 +34,8 @@ namespace WebApp
 
             bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
                       "~/Scripts/jquery-2.2.4.js",
-                       "~/Scripts/jszip.min.js",
+                       "~/Scripts/jszip.min.js", // used in export to excel
+                       "~/Scripts/pako_deflate.min.js", // used to compress pdf
                       "~/Scripts/kendo.all.min.js",
                       "~/Scripts/bootbox.js",
                        "~/Scripts/app/grids.js",
@@ -37,7 +44,6 @@ namespace WebApp
                       "~/Scripts/toastr.js",
                       "~/Scripts/typeahead.bundle.min.js",
                       "~/Scripts/bloodhound.min.js"
-
                      ));
 
             bundles.Add(new ScriptBundle("~/bundles/bootstrap").Include(
@@ -58,7 +64,7 @@ namespace WebApp
             bundles.Add(new StyleBundle("~/Content/cssmin").Include(
                       "~/Content/css/bootstrap.min.css",
                       "~/Content/css/jquery.mCustomScrollbar.min.css",
-                   //   "~/Content/components.css",
+                      //   "~/Content/components.css",
                       "~/Content/bootstrap-select.min.css",
                       "~/Content/uniform.default.css",
                       "~/Content/bootstrap-switch.min.css",
@@ -71,7 +77,7 @@ namespace WebApp
                       "~/Content/typeahead.css",
                       "~/Content/Site.css",
                       "~/Content/forms.css"
-                      //"~/Content/css/style.css"
+                     //"~/Content/css/style.css"
                      ));
 
 

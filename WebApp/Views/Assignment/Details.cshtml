@@ -4,7 +4,7 @@
 @model AssignmentFormViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -28,7 +28,7 @@
             $("[name='PayrollGrades']").css("display","none");
         }
     }
-    var Assignmentmodel;
+    var assignModel;
     var Position=[];
     $(function () {
         var alreadytaken = "@MsgUtils.Instance.Trls("Already Taken before")";
@@ -43,7 +43,7 @@
                     type: 'get',
                     dataType: 'json',
                     url: '/Assignment/CheckManager',
-                    data:{assid:Assignmentmodel.Id,DepId:val},
+                    data:{assid:assignModel.Id,DepId:val},
                     success: function (res) {
                         if(checked== true){
                             if(res.IsDepManager!=true){
@@ -60,7 +60,6 @@
                         var valueEmp =  $("#BranchName").text().split("-")[0];
                         var BranchName = res.CreatedUser != null ? valueEmp +" - "+ res.CreatedUser : valueEmp;
                         $("#BranchName").text(BranchName);
-                        $("#SectorId").val(res.SectorId);
                         $("#BranchId").val(res.BranchId);
                     },
                     error: function () {
@@ -146,7 +145,7 @@
                 type: 'get',
                 dataType: 'json',
                 url: '/Assignment/GetPositions',
-                data:{JobId:elem.val(),DeptId:DeptId,EmpId:Assignmentmodel.EmpId,tableName:TableName},
+                data:{JobId:elem.val(),DeptId:DeptId,EmpId:assignModel.EmpId,tableName:TableName},
                 success: function (res) {
                     Position = res.Positions;
 
@@ -201,7 +200,7 @@
                                 elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='JobId' style='"+(jobDocRe==1?'background-color:orange':'background-color:red')+"' role='alert'>"+msg+"</span>");
                             }
                         }
-                     
+
                     },
                     error: function () {
                     }
@@ -229,10 +228,10 @@
         }
 
         function EmptyMangersList(){
-          var mangers =  $("#ManagerId").data("kendoDropDownList");
-          mangers.dataSource.data([]);
+            var mangers =  $("#ManagerId").data("kendoDropDownList");
+            mangers.dataSource.data([]);
         }
-   
+
         function GetManagers(positionId){
             $.getJSON('/Assignment/GetManagers',{PostionId:positionId},function(res){
                 var mangers =  $("#ManagerId").data("kendoDropDownList");
@@ -243,21 +242,11 @@
         }
 
         var formId = "AssignmentForm";
-        var Loc =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.LocationId));
-        var job =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.job));
-        var Dept=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Dept));
-        var Payroll =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Payroll));
-        Position=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Position));
-        var PeopleGroup=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeopleGroup));
-        var PayrollGrad=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PayrollGrad));
-        var AssignStatus=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignStatus));
 
-        var CareerPath =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CareerPath));
-        var manager =@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.ManagerId));
         var JobDocReq = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.JobDoc));
         var AssignFlex = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignFlex));
-        Assignmentmodel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
-        var CompanyId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CompanyId));
+        assignModel = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
+        var CompanyId = @Html.Raw(ViewBag.CompanyId);
 
         var EmpTasks= [{id:1,name:"@MsgUtils.Instance.Trls("Employee whose direct managed")"}, {id:2,name:"@MsgUtils.Instance.Trls("Use eligibility criteria")"}];
 
@@ -282,94 +271,112 @@
                     data.mode = 'show';
 
                 data.rtl = @rtl.ToString().ToLower();
-
-                $("#FormAssignmentDiv").Forms(data, Assignmentmodel);
-                changeEmpTask(Assignmentmodel.EmpTasks);
-
-                FormJs.fillOptionsDynamic($("#" + formId), "LocationId",Loc,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "JobId",job,Assignmentmodel,{objectName:"Job"});
-                FormJs.fillOptionsDynamic($("#" + formId), "DepartmentId",Dept,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "PayrollId",Payroll,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "PositionId",Position,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "GroupId",PeopleGroup,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "PayGradeId",PayrollGrad,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "CareerId",CareerPath,Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "ManagerId",manager, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "EmpTasks",EmpTasks, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "AssignStatus",AssignStatus, Assignmentmodel);
-
-                FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", Payroll, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", job, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", PeopleGroup, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", Dept, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "IPositions", Position, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", PayrollGrad, Assignmentmodel);
-                FormJs.fillOptionsDynamic($("#" + formId), "ILocations", Loc, Assignmentmodel);
+                $("#FormAssignmentDiv").Forms(data, assignModel);
 
 
-                $("#" + formId).find('#Correct').val('@MsgUtils.Instance.Trls("Correct")');
-                $("#" + formId).find('#Update').val('@MsgUtils.Instance.Trls("Update")');
+                var JobID='@Model.JobId';
+                var DepartmentId='@Model.DepartmentId';
+                var PositionId='@Model.PositionId';
+                do_AjaxCall_WithMethod('@Url.Action("FillDropdownlists", "Assignment", new { area = "" })?PositionId='+PositionId,'','GET',function(data){
+                    FormJs.fillOptionsDynamic($("#" + formId), "AssignStatus",data.AssignStatus, assignModel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "CareerId",data.CareerPath,assignModel, {remoteTableName: "CareerPaths"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "ManagerId",data.manager, assignModel);
+                });
+                var url='@Url.Action("GetEligibiltyDropdownlists", "Pages",new {area="" })?JobID='+JobID+'&DepartmentId='+DepartmentId+'&PositionId='+PositionId;
+                do_AjaxCall_WithMethod(url,'','GET',function(data){
+                    FormJs.fillOptionsDynamic($("#" + formId), "BranchId",data.Branch,assignModel, {remoteTableName: "Branches"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "IBranches", data.Branch, assignModel);
 
-                var hiddenFields = "<input type='hidden' name='EmpId' id='EmpId' value="+Assignmentmodel.EmpId+">";
-                //hiddenFields +="<input type='hidden' id='CompanyId' name='CompanyId' value='"+CompanyId+"'>";
-                hiddenFields +="<input type='hidden' id='BranchId' name='BranchId' value='"+(Assignmentmodel.BranchId != null ? Assignmentmodel.BranchId : "")+"'>";
-                hiddenFields +="<input type='hidden' id='SectorId' name='SectorId' value='"+(Assignmentmodel.SectorId != null ? Assignmentmodel.SectorId : "")+"'>";
+                    FormJs.fillOptionsDynamic($("#" + formId), "DepartmentId",data.Dept,assignModel, {remoteTableName: "CompanyStructures"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "ICompanyStuctures", data.Dept, assignModel);
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "JobId",data.job,assignModel,{objectName:"Job", remoteTableName: "Jobs"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "IJobs", data.job, assignModel);
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "PayrollId",data.Payroll,assignModel, {remoteTableName: "Payrolls"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPayrolls", data.Payroll, assignModel);
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "PositionId",data.Position,assignModel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPositions", data.Position, assignModel);
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "PayGradeId",data.PayrollGrad,assignModel);
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPayrollGrades", data.PayrollGrad, assignModel);
+
+                    FormJs.fillOptionsDynamic($("#" + formId), "GroupId",data.PeopleGroup,assignModel, {remoteTableName: "PayrollGroups"});
+                    FormJs.fillOptionsDynamic($("#" + formId), "IPeopleGroups", data.PeopleGroup, assignModel);
+
+                });
+
+
+                changeEmpTask(assignModel.EmpTasks);
+
+                FormJs.fillOptionsDynamic($("#" + formId), "EmpTasks",EmpTasks, assignModel);
+
+                var hiddenFields = "<input type='hidden' name='EmpId' id='EmpId' value="+assignModel.EmpId+">";
                 $("#" + formId).append(hiddenFields);
 
-                $("#"+formId).on('click','#Correct',function (e) {
+                $("#b4").off('click').on('click',function (e) {
                     if($("#"+formId).find(".k-invalid").length > 0) return ;
-                    $("#"+formId).attr("action","/Assignment/CorrectDetails/"+Assignmentmodel.Id);
+                    $("#"+formId).attr("action","/Assignment/CorrectDetails/"+assignModel.Id);
                     FormJs.saveForm($("#" + formId), $(this), function (res) {
-                        Assignmentmodel = res;
+                        assignModel = res;
                         toastr.success(saveComplete);
                         updateEmpProgress(false);
                         updateDocProgress();
+                      
                     });
-
                 });
 
-                if(Assignmentmodel.Id==0)
-                    $("#" + formId).find('#Correct').css("display","none").removeAttr("accesskey");
+                if(assignModel.Id==0)
+                    $("#b4").css("display","none").removeAttr("accesskey");
                 else
-                    $("#" + formId).find('#Correct').css("display","").attr("accesskey","s");
+                    $("#b4").css("display","").attr("accesskey","s");
 
-                $("#"+formId).on('click','#Update',function (e) {
+                $("#b5").off('click').on('click',function (e) {
                     if($("#"+formId).find(".k-invalid").length > 0) return ;
-
-                    $("#"+formId).attr("action","/Assignment/UpdateDetails/"+Assignmentmodel.Id);
+                    $("#"+formId).attr("action","/Assignment/UpdateDetails/"+assignModel.Id);
                     FormJs.saveForm($("#" + formId), $(this), function (res) {
-                        $("#Update").css("disabled",true);
-                        Assignmentmodel = res;
+                        $("#b5").css("disabled",true);
+                        if(assignModel.Id==0){
+                            $('div.tab-group > div > ul > li:nth-child(4)').removeClass('current').addClass('done');
+                            $('div.tab-group > div > ul > li:nth-child(5)').removeClass('disabled').addClass('active').addClass('current');
+                            $("#t_EmpUserProfile").click();
+                        }
+                        assignModel = res;
                         toastr.success(saveComplete);
                         updateEmpProgress(false);
                         updateDocProgress();
+                      
                     });
 
                 });
+
+                $('div[name=btnSec]').hide();
+                InitiatNotifyButton();
             }
         });
 
         $('#DepartmentId').change(function(){
             var elem=$(this);
-            if(AssignFlex==1){
+            if (AssignFlex==1) {
                 elem.removeClass("k-invalid").prop("aria-invalid", false);
                 elem.next("span.k-tooltip-validation").remove();
-                AssignData("CompanyStructures",elem,Assignmentmodel.EmpId,1);
+                AssignData("CompanyStructures",elem,assignModel.EmpId,1);
             }
-            GetJobPositions($("#JobId"),Assignmentmodel.EmpId,"Jobs");
-            var ch=$("#IsDepManager").prop("checked");
-            check(elem.val(),elem.getKendoDropDownList().text(),ch);
 
+            GetJobPositions($("#JobId"),assignModel.EmpId,"Jobs");
+            var ch=$("#IsDepManager").prop("checked");
+            //check(elem.val(),elem.getKendoDropDownList().text(),ch);
         });
 
         $('#DepartmentId').blur(function(){
             var elem=$(this);
-           
+
 
             if(AssignFlex==2){
                 elem.removeClass("k-invalid").prop("aria-invalid", false);
                 elem.next("span.k-tooltip-validation").remove();
-                AssignData("CompanyStructures",$(this),Assignmentmodel.EmpId,2);
+                AssignData("CompanyStructures",$(this),assignModel.EmpId,2);
             }
         });
 
@@ -381,24 +388,26 @@
                 check(Deptvalue,name,ch);
 
         });
+
         $('#IsDepManager').change(function(){
             $(this).blur();
         });
+
         $('#JobId').blur(function(){
             var elem =$(this);
             elem.removeClass("k-invalid").prop("aria-invalid", false);
             elem.next("span.k-tooltip-validation").remove();
             if(JobDocReq ==2 && AssignFlex == 2)
-                JobDocWarningsAndFlex("Jobs",elem,Assignmentmodel.EmpId,2);
+                JobDocWarningsAndFlex("Jobs",elem,assignModel.EmpId,2);
             else{
                 if(JobDocReq==2)
-                    JobDocWarnings(elem,2,"Jobs",Assignmentmodel.EmpId);
+                    JobDocWarnings(elem,2,"Jobs",assignModel.EmpId);
 
                 if(AssignFlex==2)
-                    AssignData("Jobs",elem,Assignmentmodel.EmpId,2);
+                    AssignData("Jobs",elem,assignModel.EmpId,2);
 
                 if(JobDocReq ==0 && AssignFlex == 0)
-                    GetJobPositions(elem,Assignmentmodel.EmpId,"Jobs");
+                    GetJobPositions(elem,assignModel.EmpId,"Jobs");
             }
         });
 
@@ -407,73 +416,113 @@
             elem.removeClass("k-invalid").prop("aria-invalid", false);
             elem.next("span.k-tooltip-validation").remove();
             if(JobDocReq ==1 && AssignFlex == 1)
-                JobDocWarningsAndFlex("Jobs",elem,Assignmentmodel.EmpId,1);
+                JobDocWarningsAndFlex("Jobs",elem,assignModel.EmpId,1);
             else{
                 if(JobDocReq==1)
-                    JobDocWarnings(elem,1,"Jobs",Assignmentmodel.EmpId);
+                    JobDocWarnings(elem,1,"Jobs",assignModel.EmpId);
 
                 if(AssignFlex==1)
-                    AssignData("Jobs",elem,Assignmentmodel.EmpId,1);
+                    AssignData("Jobs",elem,assignModel.EmpId,1);
             }
 
         });
 
-        $("#LocationId").change(function(){
+        $("#BranchId").change(function(){
             var elem = $(this);
             elem.removeClass("k-invalid").prop("aria-invalid", false);
             elem.next("span.k-tooltip-validation").remove();
             if(AssignFlex==1)
-                AssignData("Locations",elem,Assignmentmodel.EmpId,1);
+                AssignData("Branches",elem,assignModel.EmpId,1);
         });
 
-        $("#LocationId").blur(function(){
+        $("#BranchId").blur(function(){
             var elem = $(this);
             elem.removeClass("k-invalid").prop("aria-invalid", false);
             elem.next("span.k-tooltip-validation").remove();
             if(AssignFlex==2)
-                AssignData("Locations",elem,Assignmentmodel.EmpId,2);
+                AssignData("Branches",elem,assignModel.EmpId,2);
         });
 
         $('[name="EmpTasks"]').change(function(e){
-             e.stopPropagation();
-             var elem = $(this).val();
-             changeEmpTask(elem);
+            e.stopPropagation();
+            var elem = $(this).val();
+            changeEmpTask(elem);
         });
 
-        $('#PositionId').blur(function(){
+        $('#PositionId').change(function(){
             var elem = $(this);
             elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").prop("aria-invalid", false);
             elem.next("span.k-tooltip-validation").remove();
             if(elem.val()!=""){
-                var Pos = $.grep(Position,function(el){return el.id ==elem.val()});     
+                debugger;
+                if (Position.length == 0) Position = $("#PositionId").data("kendoDropDownList").dataSource.data();
+                var Pos = $.grep(Position,function(el){return el.id ==elem.val()});
                 if(Pos[0] != null && Pos[0].ErrorMes == 2 && AssignFlex==2){
-                    AssignFlexPosError("Positions",elem,Assignmentmodel.EmpId,Pos[0].HeadCount,2);
-                }else if(AssignFlex==2)
-                    AssignData("Positions",elem,Assignmentmodel.EmpId,2);
+                    AssignFlexPosError("Positions",elem,assignModel.EmpId,Pos[0].HeadCount,2);
+                } else if(AssignFlex==2)
+                        AssignData("Positions",elem,assignModel.EmpId,2);
                 else if(Pos[0] != null && Pos[0].ErrorMes == 2)
                     PosError(elem,Pos[0].HeadCount,2);
             }
-
-        });
-
-        $('#PositionId').change(function(){
-            var elem=$(this);
-            elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").prop("aria-invalid", false);
-            elem.next("span.k-tooltip-validation").remove();
-            if(elem.val()!=""){
-                var Pos = $.grep(Position,function(el){return el.id ==elem.val()});
-                GetManagers(elem.val());
-                if(Pos[0] != null && Pos[0].ErrorMes == 1 && AssignFlex==1){
-                    AssignFlexPosError("Positions",elem,Assignmentmodel.EmpId,Pos[0].HeadCount,1);
-                }else if(AssignFlex==1)
-                    AssignData("Positions",elem,Assignmentmodel.EmpId,1);
-                else if(Pos[0] != null && Pos[0].ErrorMes ==1)
-                    PosError(elem,Pos[0].HeadCount,1);
-            }
             else EmptyMangersList();
-
         });
+
+        //$('#PositionId').on("change blur", function() {
+        //    var elem=$(this);
+        //    elem.closest(".form-group").find(".k-invalid").removeClass("k-invalid").prop("aria-invalid", false);
+        //    elem.next("span.k-tooltip-validation").remove();
+        //    if(elem.val()!=""){
+        //        debugger;
+        //        if (Position.length == 0) Position = $("#PositionId").data("kendoDropDownList").dataSource.data();
+        //        var Pos = $.grep(Position,function(el){return el.id ==elem.val()});
+        //        GetManagers(elem.val());
+        //        if(Pos[0] != null && Pos[0].ErrorMes == 1 && AssignFlex==1){
+        //            AssignFlexPosError("Positions",elem,assignModel.EmpId,Pos[0].HeadCount,1);
+        //        } else if(AssignFlex==1)
+        //             AssignData("Positions",elem,assignModel.EmpId,1);
+        //        else if(Pos[0] != null && Pos[0].ErrorMes ==1)
+        //            PosError(elem,Pos[0].HeadCount,1);
+        //    }
+        //    else EmptyMangersList();
+        //});
     });
+
+
+    function InitiatNotifyButton()
+    {
+       
+        var ID='@Model.Id';
+
+        if(parseInt(ID)>0 )
+        {
+            $('#NotifyButton').show();
+        }
+        else
+        {
+            $('#NotifyButton').hide();
+        }
+      
+
+        var btn=$('#NotifyButton');
+        $('#NotifyButton').val('@Model.NotifyButtonLabel');
+        $('#NotifyButton').off('click').on('click',function(){
+            if(parseInt(ID)>0 )
+            {
+                var url='@Url.Action("SendNotifyLetter", "Assignment",new {area="" })';
+                var data='{"ID":'+ID+'}';
+
+                do_AjaxCall(url,data,function(data){
+            
+                    if(data.Result)
+                        toastr.success(data.Message);
+                    else
+                        toastr.error(data.Message);
+                });
+            }
+           
+        });
+    }
+
 </script>
 
 

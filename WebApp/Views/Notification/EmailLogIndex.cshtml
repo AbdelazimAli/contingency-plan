@@ -10,7 +10,7 @@
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     string[] function = ViewData["Functions"] as string[];
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
 
 }
 <br />

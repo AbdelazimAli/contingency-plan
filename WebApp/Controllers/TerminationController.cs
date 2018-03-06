@@ -36,10 +36,6 @@ namespace WebApp.Controllers
         // GET: Termination
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetRequests(int MenuId)
@@ -65,18 +61,16 @@ namespace WebApp.Controllers
         public ActionResult Details(int Id=0, byte Version=0)
         {
             var term = _hrUnitOfWork.TerminationRepository.ReadTermination(Id, Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("TermRequestForm", CompanyId, Version);
-            if (columns.FirstOrDefault(fc => fc == "EmpId") == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetTermActiveEmployees(Language, term.EmpId, CompanyId).Distinct().Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("TermRequestForm", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetTermActiveEmployees(Language, term.EmpId, CompanyId).Distinct().Select(a => new { id = a.Id, name = a.Name, PicUrl = a.PicUrl, Icon = a.Icon, Gender = a.Gender });
+            
 
             var Emp = _hrUnitOfWork.PeopleRepository.GetEmployment(term.EmpId);
             int[] arr = new int[] { 1, 2, 4 };
-            ViewBag.Employment = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Where(a => a.SysCodeId == (arr.Contains(Emp.PersonType) ? 3 : 6)).Select(b => new { id = b.CodeId, name = b.Title }).ToList();
-            ViewBag.AssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Language).Where(a => a.SysCodeId == 3 ).Select(b => new { id = b.CodeId, name = b.Title }).ToList();
+            ViewBag.Employment = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("PersonType", Language).Where(a => a.SysCodeId == (arr.Contains(Emp.PersonType) ? 3 : 6)).Select(b => new { id = b.CodeId, name = b.Title });
+            ViewBag.AssignStatus = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", Language).Where(a => a.SysCodeId == 3 ).Select(b => new { id = b.CodeId, name = b.Title });
+
             return View(term);
         }
         public ActionResult GetJoined(int Id, int? LeveId)
@@ -159,7 +153,6 @@ namespace WebApp.Controllers
                     Destination = Term,
                     Source = model,
                     ObjectName = "TermRequestForm",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 });
@@ -177,7 +170,6 @@ namespace WebApp.Controllers
                     Destination = Term,
                     Source = model,
                     ObjectName = "TermRequestForm",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });
@@ -238,10 +230,6 @@ namespace WebApp.Controllers
         }
         public ActionResult ApproveIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetRequestsApprove(int MenuId)
@@ -320,7 +308,6 @@ namespace WebApp.Controllers
                     Destination = Term,
                     Source = model,
                     ObjectName = "EmpTermForm",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });
@@ -441,7 +428,6 @@ namespace WebApp.Controllers
                             Destination = NewAssign,
                             Source = Assignment,
                             ObjectName = "AssignmentsForm",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = null,
                             Transtype = TransType.Insert
                         });
@@ -467,12 +453,6 @@ namespace WebApp.Controllers
         public ActionResult TermFollowUpIndex()
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("CancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
-
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
             return View();
         }
         public ActionResult GetFollows(int MenuId)
@@ -498,8 +478,8 @@ namespace WebApp.Controllers
         public ActionResult TermFollowUpDetails(int Id,byte Version=0)
         {
             var termFollow = _hrUnitOfWork.TerminationRepository.ReadTermination(Id, Language);
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("EmpTermFollowUp", CompanyId, Version);
-            if (columns.FirstOrDefault(fc => fc == "EmpId") == null)
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("EmpTermFollowUp", CompanyId, Version, "EmpId"))
                 ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language,termFollow.EmpId, CompanyId).Distinct().Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus });
 
             return View(termFollow);
@@ -558,7 +538,6 @@ namespace WebApp.Controllers
                     Destination = Term,
                     Source = model,
                     ObjectName = "EmpTermFollowUp",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype=TransType.Update
                 });
@@ -595,13 +574,13 @@ namespace WebApp.Controllers
             string error = "";
             if (Send == 3)
             {
-                _hrUnitOfWork.TrainingRepository.AddTrail(new AddTrailViewModel() { ColumnName = "ApprovalStatus", CompanyId = CompanyId, ObjectName = "EmpTermFollowUp", SourceId = Id.ToString(), UserName=UserName, Version = Convert.ToByte(Request.Form["Version"]), ValueAfter= MsgUtils.Instance.Trls("EmployeeReview") ,ValueBefore = MsgUtils.Instance.Trls("Submit") });
+                _hrUnitOfWork.TrainingRepository.AddTrail(new AddTrailViewModel() { ColumnName = "ApprovalStatus", CompanyId = CompanyId, ObjectName = "EmpTermFollowUp", SourceId = Id.ToString(), UserName=UserName,  ValueAfter= MsgUtils.Instance.Trls("EmployeeReview") ,ValueBefore = MsgUtils.Instance.Trls("Submit") });
                 Term.ApprovalStatus = 3;
                 error = AddWFTrans(Term, null, true); 
             }
             else
             {
-                _hrUnitOfWork.TrainingRepository.AddTrail(new AddTrailViewModel() { ColumnName = "ApprovalStatus", CompanyId = CompanyId, ObjectName = "EmpTermFollowUp", SourceId = Id.ToString(), UserName = UserName, Version = Convert.ToByte(Request.Form["Version"]), ValueAfter = MsgUtils.Instance.Trls("ManagerReview"), ValueBefore = MsgUtils.Instance.Trls("Submit") });
+                _hrUnitOfWork.TrainingRepository.AddTrail(new AddTrailViewModel() { ColumnName = "ApprovalStatus", CompanyId = CompanyId, ObjectName = "EmpTermFollowUp", SourceId = Id.ToString(), UserName = UserName,  ValueAfter = MsgUtils.Instance.Trls("ManagerReview"), ValueBefore = MsgUtils.Instance.Trls("Submit") });
                 Term.ApprovalStatus = 4;
                 error = AddWFTrans(Term, null , null);
             }

@@ -5,7 +5,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -62,11 +62,9 @@
          { id: 9, name: '@MsgUtils.Instance.Trls("Rejected")' }
         ];
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
-
-        ///---#Region Location Form
 
         //serialize The model to JavaScript to send to form.js
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
@@ -74,7 +72,8 @@
         @*//var TermCause =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.TermCause));*@
         var PersonType = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employment));
         var AssignStatus = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.AssignStatus));
-        var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+        @*var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+        var funs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
 
 
 
@@ -136,14 +135,14 @@
             $('#TermReqFormDiv').on("click","#Submit",null,function (e) {
                 FormJs.saveForm($("#"+formId), $(this),function () {
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
             });
             $('#TermReqFormDiv').on("click","#saveChanges",null,function (e) {
                 $('#ApprovalStatus').val('1');
                 FormJs.saveForm($("#"+formId), $(this),function () {
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
             });
 

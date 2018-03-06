@@ -1,0 +1,1169 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SautinSoft.ExcelToPdf</name>
+    </assembly>
+    <members>
+        <member name="T:SautinSoft.Resource1">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:SautinSoft.Resource1.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:SautinSoft.Resource1.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:SautinSoft.Resource1._Content_Types_">
+             <summary>
+               Looks up a localized string similar to &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; standalone=&quot;yes&quot;?&gt;
+            &lt;Types xmlns=&quot;http://schemas.openxmlformats.org/package/2006/content-types&quot;&gt;
+              &lt;Override PartName=&quot;/xl/theme/theme1.xml&quot; ContentType=&quot;application/vnd.openxmlformats-officedocument.theme+xml&quot;/&gt;
+              &lt;Override PartName=&quot;/xl/styles.xml&quot; ContentType=&quot;application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml&quot;/&gt;
+              &lt;Default Extension=&quot;rels&quot; ContentType=&quot;application/vnd.openxmlformats-package.relationships+xml&quot;/&gt;
+              &lt;Default Extension=&quot;xml&quot; Conte [rest of string was truncated]&quot;;.
+             </summary>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf">
+            <summary>
+            Main class to export Excel spreadsheets in to PDF, Word. Allows to create an instance of converter object and call converting methods.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.class.png" />
+            </remarks>     
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\ASP.Net - Export Excel to PDF\Default.aspx.cs" title="ASP.Net - Export Excel to PDF in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\ASP.Net - Export Excel to PDF\Default.aspx.vb" title="ASP.Net - Export Excel to PDF in VB.Net"></code>
+            </example>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.eOutputFormat">
+            <summary>
+            Enumerator with types of produced documents: PDF, Word, RTF
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.outputformat.property.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel file to DOCX file\Sample.cs" title="Convert Excel file to DOCX file in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel file to DOCX file\Sample.vb" title="Convert Excel file to DOCX file in VB.Net"></code>
+            </example>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.eOutputFormat.Pdf">
+            <summary>
+            Set PDF as output document, *.pdf
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.eOutputFormat.Word">
+            <summary>
+            Set Word (*.doc) as output document, *.doc
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.eOutputFormat.Rtf">
+            <summary>
+            Set RTF as output document, *.rtf
+            </summary>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel to RTF in memory\Sample.cs" title="Convert Excel to RTF in memory using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel to RTF in memory\Sample.vb" title="Convert Excel to RTF in memory using VB.Net"></code>
+            </example>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.eOutputFormat.Docx">
+            <summary>
+            Set DOCX as output document, *.docx
+            </summary>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel to DOCX in memory\Sample.cs" title="Convert Excel to DOCX in memory using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel to DOCX in memory\Sample.vb" title="Convert Excel to DOCX in memory using VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:SautinSoft.ExcelToPdf" /> class
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.class.png" />
+            </remarks>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.Sheets">
+            <summary>
+            Set custom sheets for converting. By default all sheets from workbook will be converted
+            </summary>
+            <remarks>You may specify: all, even, odd and custom sheets. For example:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.csheet.custom.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify sheets for converting\Sample.cs" title="Convert custom Excel sheets to PDF using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify sheets for converting\Sample.vb" title="Convert custom Excel sheets to PDF using VB.Net"></code>
+            </example>        
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.COptions">
+            <summary>
+            Set up the info block properties for resulting documents, such as file version and document producer
+            </summary>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.COptions.ePdfVersion">
+            <summary>
+            Allows to specify PDF version
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_A">
+            <summary>
+            PDF/A - <a href="http://en.wikipedia.org/wiki/PDF/A" target="_blank">http://en.wikipedia.org/wiki/PDF/A</a>
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_13">
+            <summary>
+            PDF 1.3 version
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_14">
+            <summary>
+            PDF 1.4 version
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_15">
+            <summary>
+            PDF 1.5 version
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_16">
+            <summary>
+            PDF 1.6 version
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.COptions.ePdfVersion.PDF_17">
+            <summary>
+            PDF 1.7 version
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.COptions.PdfVersion">
+            <summary>
+            Set version for produced PDF document (by default: PDF/A - 1.4)
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.COptions.Producer">
+            <summary>
+            Set producer in an output document.
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.Options">
+            <summary>
+            Set up the info block properties for resulting documents, such as file version and a document producer.
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.PageStyle">
+            <summary>
+            Contains page properties for output PDF document: page size, orientation, page margins and put page numbers.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.pagestyle.property.png" />
+            </remarks>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.Serial">
+            <summary>
+            A string which contains a serial number to activate your copy after purchasing. Use it when you got own serial number and registered version.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.serial.property.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\How to activate the product\Sample.cs" title="Activate the component after purchasing in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\How to activate the product\Sample.vb" title="Activate the component after purchasing in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.Password">
+            <summary>
+            A string which contains password for Excel workbook. It is necessary when you are converting password-protected Excel document.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.password.property.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert a password protected workbook\Sample.cs" title="Convert a password protected workbook in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert a password protected workbook\Sample.vb" title="Convert a password protected workbook in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.TraceFilePath">
+            <summary>
+            Path to create a tracing file. Allows to track issues and exceptions which appeared during the conversion cycle.
+            </summary>        
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CreateTraceFile">
+            <summary>
+            Gets or sets whether to create a trace file. Default value: false. 
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.OutputFormat">
+            <summary>
+            Specify format for output file: PDF, Word, RTF etc
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.outputformat.property.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel file to RTF file\Sample.cs" title="Convert Excel file to RTF file in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel file to RTF file\Sample.vb" title="Convert Excel file to RTF file in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.UnicodeOptions">
+            <summary>
+            Allows to specify options to properly convert Unicode, such as "Fonts" directory etc
+            </summary>
+            <remarks>
+            <b>Advice for developers who creates ASP.Net or Silverlight projects:</b><br /><br />
+            Some hosting providers disables any access to windows directories. For example, GoDaddy doesn't allow to read directory "Windows\Fonts". <br />
+            We recommend to create own "Fonts" directory in your project and copy *.ttf files to it from "Windows\Fonts". You may copy only several fonts, but we recommend to put the font "Arial Unicode MS" - ARIALUNI.TTF anyway.<br /><br />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cunicodeoptions.detectfontsdirectory.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.GetSheetsNumber(System.String)">
+            <summary>
+            Returns numbers of sheets from Excel workbook
+            </summary>
+            <param name="excelPath">Path to Excel file</param>
+            <returns>Number of sheets<br />
+            -1 - unable to read workbook 
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Get sheets number\Sample.cs" title="Get number of sheets in Excel workbook in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Get sheets number\Sample.vb" title="Get number of sheets in Excel workbook in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.GetSheetsNumber(System.Byte[])">
+            <summary>
+            Returns numbers of sheets from Excel workbook
+            </summary>
+            <param name="excelBytes">Array of bytes containing Excel document</param>
+            <returns>Number of sheets<br />
+            -1 - unable to read workbook 
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Get sheets number\Sample.cs" title="Get number of sheets in Excel workbook in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Get sheets number\Sample.vb" title="Get number of sheets in Excel workbook in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.ConvertFile(System.String,System.String)">
+            <summary>
+            Convert Excel file to PDF, Word file. PDF file will be created by component or overwritten if already exist
+            </summary>
+            <param name="excelPath">Path to Excel file</param>
+            <param name="outPath">Path to output document</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.convertfile.png" />
+            </remarks>
+            <returns>
+            0 - converting succesfully<br />
+            1 - can't open input Excel file, check the input path<br />
+            2 - can't create output file, check the output path<br />
+            3 - converting failed
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel file to PDF file\Sample.cs" title="How to convert Excel file to PDF file in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel file to PDF file\Sample.vb" title="How to convert Excel file to PDF file in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.ConvertByteToFile(System.Byte[],System.String)">
+            <summary>
+            Convert Excel bytes array to PDF, Word, RTF file. Output file will be created by component or overwritten if already exist
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.convertbytetofile.png" />
+            </remarks>
+            <param name="excelBytes">Array of bytes containing Excel document</param>
+            <param name="outPath">Path to output file</param>
+            <returns>
+            0 - converting succesfully<br />        
+            2 - can't create output file, check the output path<br />
+            3 - converting failed
+            </returns>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.ConvertFiletoBytes(System.String)">
+            <summary>
+            Convert Excel file to PDF, Word bytes array
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.convertfiletobytes.png" />
+            </remarks>
+            <param name="excelPath">Path to Excel file</param>
+            <returns>
+            Array of bytes with the output document.
+            </returns>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.ConvertBytes(System.Byte[])">
+            <summary>
+            Convert Excel bytes array to PDF, Word, RTF bytes array
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.convertbytes.method.png" />
+            </remarks>
+            <param name="excelByte">Array of bytes containing Excel document</param>        
+            <returns>
+            Bytes array where output document will be saved after converting. You don't have to allocate memory for this array.        
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Convert Excel to PDF in memory\Sample.cs" title="Convert Excel to PDF in memory using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Convert Excel to PDF in memory\Sample.vb" title="Convert Excel to PDF in memory using VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.SplitPDFFileToPDFFolder(System.String,System.String)">
+            <summary>
+            Splits PDF document by pages
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.splitpdffiletopdffolder.method.png" />
+            </remarks>
+            <param name="SourceFile">Path to PDF file which you want to split by pages</param>
+            <param name="OutputPath">Path to directory where to store each PDF page as single file after splitting</param>
+            <returns>0 - split successfully<br />
+            2 - error, output directory doesn't exist<br />
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Split PDF by pages\Sample.cs" title="Split PDF by pages using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Split PDF by pages\Sample.vb" title="Split PDF by pages using VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.MergePDFFileArrayToPDFFile(System.String[],System.String)">
+            <summary>
+            Merges different PDF files into single PDF file
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.mergepdffilearraytopdffile.png" />
+            </remarks>
+            <param name="Files">Array with paths to PDF documents</param>
+            <param name="DestFile">Path to a new single PDF, it will be created by the component or overwritten in case of PDF is already exist</param>
+            <returns>0 - merged successfully<br />
+            1 - error, can't merge PDF documents<br />
+            2 - error, can't create output file, probably it used by another application
+            </returns>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Merge two PDF files\Sample.cs"  title="Merge two PDF files using C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Merge two PDF files\Sample.vb" title="Merge two PDF files using VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.MergePDFFileToPDFFile(System.String,System.String)">
+            <summary>
+            Merges two PDF files. Merges File1Path and DestFile file into single DestFile.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.mergepdffiletopdffile.method.png" />
+            </remarks>
+            <param name="File1Path">Path to an existing PDF file</param>
+            <param name="DestFile">Path to a second PDF file to merge the first file into</param>
+            <remarks>If the second file does not already exist the component just copies the first file to a new name</remarks>
+            <returns>0 - merged successfully<br />
+            1 - error, can't merge PDF documents<br />
+            2 - error, can't create output file, probably it used by another application
+            </returns>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.MergePDFFileArrayToPDFStream(System.String[])">
+            <summary>
+            Merges different PDF files into single PDF
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.mergepdffilearraytopdfstream.png" />
+            </remarks>
+            <param name="Files">Array with paths to PDF documents</param>
+            <returns>Single PDF document as byte array</returns>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.MergePDFStreamArrayToPDFStream(System.Collections.ArrayList)">
+            <summary>
+            Merges different PDF documents into single PDF in memory
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.mergepdfstreamarraytopdfstream.method.png" />
+            </remarks>
+            <param name="pdfBytes">ArrayList which contains PDF documents as array of bytes</param>
+            <returns>Single PDF document as byte array</returns>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CSheet">
+            <summary>
+            Class which allows to set custom sheets from workbook for converting
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.custom.method.png" />
+            </remarks>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.CSheet.PrintArea">
+            <summary>
+            Set custom sheets and cells which will be exported into PDF or Word
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.custom.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            int[] arJ = { 1 };
+            x.Sheets.PrintArea.Custom(arJ, "B20", "D25");
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            Dim arJ() As Integer = { 1 }
+            x.Sheets.PrintArea.Custom(arJ, "B20", "D25")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.#ctor">
+            <summary>
+            Creates object of class CSheet. By default all sheets from workbook will be converted
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.custom.method.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.All">
+            <summary>
+            Convert all sheets from workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedareaall.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.Sheets.All();
+            x.ConvertFile(@"d:\Workbook.xls", @"d:\Hardcopy.pdf");
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.Sheets.All()
+            x.ConvertFile("d:\Workbook.xls", "d:\Hardcopy.pdf")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.Odd">
+            <summary>
+            Convert odd sheets from workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.odd.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.Sheets.Odd();
+            x.ConvertFile(@"d:\Workbook.xls", @"d:\Hardcopy.pdf");
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.Sheets.Odd()
+            x.ConvertFile("d:\Workbook.xls", "d:\Hardcopy.pdf")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.Even">
+            <summary>
+            Convert even sheets from workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.even.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.Sheets.Even();
+            x.ConvertFile(@"d:\Workbook.xls", @"d:\Hardcopy.pdf");
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.Sheets.Even()
+            x.ConvertFile("d:\Workbook.xls", "d:\Hardcopy.pdf")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.Custom(System.Int32[])">
+            <summary>
+            Convert custom sheets from workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.custom.method.png" />
+            </remarks>
+            <param name="sheets">Array of sheets</param>
+            <example>
+            <code lang="cs" title="Specify custom sheets of workbook for converting">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.Sheets.Custom(new int[] { 1, 3 });
+            x.ConvertFile(@"d:\Workbook.xls", @"d:\Hardcopy.pdf");
+            </code>
+            <code lang="vbnet"  title="Specify custom sheets of workbook for converting">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.Sheets.Custom(New Integer() { 1, 3 })
+            x.ConvertFile("d:\Workbook.xls", "d:\Hardcopy.pdf")
+            </code>
+            </example>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CSheet.PrintedArea">
+            <summary>
+            Allows to specify which custom sheets and cells will be exported into PDF, Word
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedarea.all.method.string.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify sheets and cells for converting\Sample.cs" title="Export to PDF only custom area from sheet in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify sheets and cells for converting\Sample.vb" title="Export to PDF only custom area from sheet in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.SheetOptions.#ctor">
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedarea.all.method.string.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:SautinSoft.ExcelToPdf.CSheet.PrintedArea" /> class
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedarea.all.method.string.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.CheckSheetNum(System.Int32)">
+            <summary>
+            Check sheet on existence in workbook by sheet's number 
+            </summary>
+            <param name="snum">Sheet number</param>
+            <returns>True - if sheet with such number is exist in the workbook.<br />False - in case of sheet is missing.</returns>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.Custom(System.Int32[],System.String,System.String)">
+            <summary>
+            Adds custom area to export in PDF, Word
+            </summary>
+            <param name="_sheetnums">Array with sheets numbers</param>
+            <param name="cord1">Top-Left cell of area, for example "A1"</param>
+            <param name="cord2">Right-Bottom cell of area, for example "E12"</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedarea.all.method.string.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            int[] arJ = { 1 };
+            x.Sheets.PrintArea.Custom(arJ, "B20", "D25");
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            Dim arJ() As Integer = { 1 }
+            x.Sheets.PrintArea.Custom(arJ, "B20", "D25")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.Custom(System.Int32[],System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Adds custom area to export in PDF, Word by row/column numbers
+            </summary>
+            <param name="_sheetnums">Array with sheets numbers</param>
+            <param name="Row1">Top row number</param>
+            <param name="Col1">Top cell number</param>
+            <param name="Row2">Bottom row number</param>
+            <param name="Col2">Bottom cell number</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedarea.all.method.int.png" />
+            </remarks>
+            <example>
+            <code lang="cs">
+            SautinSoft.ExcelToPdf x = new SautinSoft.ExcelToPdf();
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            int[] arJ = { 1 };
+            x.Sheets.PrintArea.Custom(arJ, 20, 1, 25, 4);
+            </code>
+            <code lang="vbnet">
+            Dim x As New SautinSoft.ExcelToPdf()
+            x.OutputFormat = SautinSoft.ExcelToPdf.eOutputFormat.Pdf;
+            Dim arJ() As Integer = { 1 }
+            x.Sheets.PrintArea.Custom(arJ, 20, 1, 25, 4)
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.All">
+            <summary>
+            Mark all sheets and cells in workbook to export into PDF, Word
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedareaall.method.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.All(System.Int32,System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Set single area to export in PDF, Word for all sheets in workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedareaall.method.png" />
+            </remarks>
+            <param name="Row1">Top row number</param>
+            <param name="Col1">Top cell number</param>
+            <param name="Row2">Bottom row number</param>
+            <param name="Col2">Bottom cell number</param>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CSheet.PrintedArea.All(System.String,System.String)">
+            <summary>
+            Set single area to export in PDF, Word for all sheets in workbook
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.csheet.printedareaall.method.png" />
+            </remarks>
+            <param name="cord1">Top-Left cell of area, for example "A1"</param>
+            <param name="cord2">Right-Bottom cell of area, for example "E12"</param>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CPageStyle">
+            <summary>
+            Allows to specify page properties for output PDF document: page size, orientation, page margins and page numbers
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.pagestyle.property.png" />
+            </remarks>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CPageStyle.CPageScale">
+            <summary>
+            Allows to set scale produced document. Default value: FitByWidth().
+            </summary>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Fit each sheet to a single page fixed size\Sample.cs" title="Fit each sheet to a single PDF page fixed size in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Fit each sheet to a single page fixed size\Sample.vb" title="Fit each sheet to single a PDF page fixed size in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.Percent(System.Int32)">
+            <summary>
+            Allows to specify page scale in percentages: from 1...10000.
+            </summary>
+            <param name="percents">The scale value in percentages</param>
+            <remarks>
+            Please notice that page margins will not be scaled. So, to get the proportional scale, please set all page margins to 0.
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.Auto">
+            <summary>
+            Convert without any scalling.
+            </summary>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.FitByWidth">
+            <summary>
+            Fit each Excel sheet to a one PDF page depending of the page width. Thus, either to decrease the scale or leave as is if sheet could be fitted by page width.
+            </summary>
+            <remarks>
+            This is the default option.
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.ScaleByWidth">
+            <summary>
+            Make the scale the same as PDF page width. Thus, either to decrease or to increase scale.
+            </summary>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.FitByHeight">
+            <summary>
+            Fit each Excel sheet to a one PDF page depending of the page height. Thus, either to decrease the scale or leave as is if sheet could be fitted by page height.
+            </summary>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.ScaleByHeight">
+            <summary>
+            Make the scale the same as PDF page height. Thus, either to decrease or to increase scale.
+            </summary>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageScale.ScaleToOnePage">
+            <summary>
+            Make the scale close as possible to page size to fit the sheet into a single page. Simultaneously takes care of page width and height.
+            </summary>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CPageStyle.CPageSize">
+            <summary>
+            Allows to set page size for output PDF document
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.#ctor">
+            <summary>
+            Creates an instance of <see cref="T:SautinSoft.ExcelToPdf.CPageStyle.CPageSize"/>
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Widthmm(System.Single)">
+            <summary>
+            Set page width in mm
+            </summary>
+            <param name="valuePageWidth">page width in mm</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.cpagesize.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.WidthInch(System.Single)">
+            <summary>
+            Set page width in inches
+            </summary>
+            <param name="valuePageWidth">width in inches</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.cpagesize.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Heightmm(System.Single)">
+            <summary>
+            Set page height in mm
+            </summary>
+            <param name="valuePageHeight">page height in mm</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.cpagesize.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.HeightInch(System.Single)">
+            <summary>
+            Set page height in inches
+            </summary>
+            <param name="valuePageHeight">height in inches</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.cpagesize.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Auto">
+            <summary>
+            Auto-detect page size from work-area of Excel worksheet
+            </summary>
+            <remarks>The page will have size that all cells from sheet could be placed into page completely<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.cpagesize.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.A3">
+            <summary>
+            Set A3 page size, 297 x 420 mm, 11.69 x 16.54 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.A4">
+            <summary>
+            Set A4 page size, 210 x 297 mm, 8.26 x 11.69 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.A5">
+            <summary>
+            Set A5 page size, 148 x 210 mm, 5.82 x 8.26 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.A6">
+            <summary>
+            Set A6 page size, 105 x 148 mm, 4.13 x 5.82 In 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.B5Jis">
+            <summary>
+            Set B5Jis page size, 182 x 257 mm, 7.16 x 10.11 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.B5Iso">
+            <summary>
+            Set B5Iso page size, 176 x 250 mm, 6.93 x 9.83 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.B6">
+            <summary>
+            Set B6 page size, 128 x 182 mm, 5.04 x 7.16 In 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Folio">
+            <summary>
+            Set Folio page size, 210 x 330 mm, 8.26 x 12.99 In 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Letter">
+            <summary>
+            Set Letter size, 216 x 279 mm, 8.5 x 11 In. This is default value.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Legal">
+            <summary>
+            Set Legal page size, 216 x 356 mm, 8.5 x 14 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Statement">
+            <summary>
+            Set Statement page size, 140 x 216 mm, 5.5 x 8.5 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Executive">
+            <summary>
+            Set Executive page size, 184 x 267 mm, 7.25 x 10.5 In 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Oficio2">
+            <summary>
+            Set Oficio2 page size, 216 x 330 mm, 8.5 x 13 In
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin">
+            <summary>
+            Allows to set page margins in mm and inches
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpage.style.cpage.margin.mm.method.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin" /> class 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpage.style.cpage.margin.mm.method.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin.Inch(System.Single)">
+            <summary>
+            Set value of page margin in inches
+            </summary>
+            <param name="valueInchMargin">value in inches</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpage.style.cpage.margin.mm.method.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin.mm(System.Single)">
+            <summary>
+            Set value of page margin in mm
+            </summary>
+            <param name="valueMmMarning">value in mm</param>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpage.style.cpage.margin.mm.method.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageMargin.Auto">
+            <summary>
+            Set default page margin
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpage.style.cpage.margin.mm.method.png" />
+            </remarks>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation">
+            <summary>
+            Allows to set page orientation for PDF document
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation" /> class 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation.Portrait">
+            <summary>
+            Set portrait page orientation
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation.Landscape">
+            <summary>
+            Set landscape page orientation
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.CPageOrientation.Auto">
+            <summary>
+            Set default page orientation, portrait
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageSize">
+            <summary>
+            Set page size. Default value: <see cref="M:SautinSoft.ExcelToPdf.CPageStyle.CPageSize.Auto"/>.
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.size.property.png" />
+            </remarks>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageScale">
+            <summary>
+            Set page scale
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageOrientation">
+            <summary>
+            Set page orientation
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.page.orientation.property.png" />
+            </remarks>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageMarginLeft">
+            <summary>
+            Set left page margin
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.pagemarginleft.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageMarginRight">
+            <summary>
+            Set right page margin
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.pagemarginright.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageMarginTop">
+            <summary>
+            Set top page margin
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.pagemargintop.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageMarginBottom">
+            <summary>
+            Set bottom page margin
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.cpagestyle.pagemarginbottom.png" />
+            </remarks>
+            <example>
+            <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Specify page size and margins\Sample.cs" title="Specify page size and margins for the output PDF document in C#"></code>
+            <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Specify page size and margins\Sample.vb" title="Specify page size and margins for the output PDF document in VB.Net"></code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CPageStyle.PageNumFormat">
+             <summary>
+             Allows to set custom page numbers in produced document. 
+             </summary>
+             <remarks>Using this property you may set custom page numbers as you wish.<br /><br />            
+             <img src="../Overview/pictures/exceltopdf.cpagestyle.page.num.format.property.png" /><br /><br />
+             These are special keywords to custom page numbers:<br /><br />
+             <b>{page}</b> - current page number<br />
+             <b>{numpages}</b> - total pages<br />
+             <b>{fontface=N}</b> - Font face for whole page numbers string. Where N is font name.<br /><br />
+             For example:<br />x.PageStyle.PageNumFormat="Page {page}{fontface=Times New Roman}";<br /><br />
+             <b>{fontsize=N}</b> - Font size for whole page numbers string. Where N is font size.<br /><br />
+             For example:<br />x.PageStyle.PageNumFormat="Page {page}{fontsize=7.5} of {numpages}";<br /><br />
+             <b>{posxmm=N}</b> - Position of page numbers by horizontal from left corner of page. Where N - is value in mm.<br />
+             <b>{posxinch=N}</b> - Position of page numbers by horizontal from left corner of page. Where N - is value in inches.<br />
+             <b>{posymm=N}</b> - Position of page numbers by vertical from bottom corner of page. Where N - is value in mm.<br />
+             <b>{posyinch=N}</b> - Position of page numbers by vertical from bottom corner of page. Where N - is value in inches.<br /><br />
+             By default: Page numbers located at the bottom-right of page and font face is "Helvetica" and font size is "10".<br /><br />
+             These are samples of using this property:<br /><br />
+             x.PageStyle.PageNumFormat="Page {page} of {numpages}";<br /><br />
+             <img src="../Overview/pictures/pagenumformat_1.png" /><br /><br />
+             x.PageStyle.PageNumFormat="This is page number {page}";<br /><br />
+             <img src="../Overview/pictures/pagenumformat_2.png" /><br /><br />
+             x.PageStyle.PageNumFormat="{FontName=Algerian}{fontSize=14}{posXmm=100}{posYinch=0.5}Page {page} of {numPages}";<br /><br />
+             <img src="../Overview/pictures/pagenumformat_3.png" /><br /><br />
+             x.PageStyle.PageNumFormat="Seite {page} von {numpages}";<br /><br />
+             <img src="../Overview/pictures/pagenumformat_4.png" /><br /><br />
+             x.PageStyle.PageNumFormat="{FontName=Mistral}{fontSize=22.5}{posXmm=30}{posYinch=0.5}PAGE {page} OF {numPages}";<br /><br />
+             <img src="../Overview/pictures/pagenumformat_5.png" /><br /><br />
+            </remarks>
+             <example>
+             <code lang="cs" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\CSharp\Add page numbers in the resulting PDF\Sample.cs" title="Add page numbers in the resulting PDF using C#"></code>
+             <code lang="vbnet" source="D:\C and C++\Excel to PDF .Net\Packages\Excel to PDF .Net\Code samples\VB.Net\Add page numbers in the resulting PDF\Sample.vb" title="Add page numbers in the resulting PDF using VB.Net"></code>
+             </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CPageStyle.#ctor">
+            <summary>
+            Creates a new instance of <see cref="T:SautinSoft.ExcelToPdf.CPageStyle" /> class 
+            </summary>
+            <remarks>
+            <img src="../Overview/pictures/exceltopdf.pagestyle.property.png" />
+            </remarks>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CUnicodeOptions">
+            <summary>
+            Class with properties which allows to specify Unicode options, such as "Fonts" directory etc
+            </summary>
+            <remarks>Use properties from this class only through the property <see cref="P:SautinSoft.ExcelToPdf.UnicodeOptions" />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cunicodeoptions.detectfontsdirectory.property.png" />
+            </remarks>
+            <example>
+            <code>
+            SautinSoft.ExcelToPdf p = new SautinSoft.ExcelToPdf();
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Auto;
+            //p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), @"Fonts\");
+            </code>
+            <code lang="vbnet">
+            Dim p As New SautinSoft.ExcelToPdf()
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Auto
+            'p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), "Fonts\")
+            </code>
+            </example>
+        </member>
+        <member name="T:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory">
+            <summary>
+            Allows to specify type of finding *.tff files. This is necessary to insert Unicode inside PDF.
+            </summary>
+            <remarks>
+            <b>Advice for developers who creates ASP.Net or Silverlight projects:</b><br /><br />
+            Some hosting providers disables any access to windows directories. For example, GoDaddy doesn't allow to read directory "Windows\Fonts". <br />
+            We recommend to create own "Fonts" directory in your project and copy *.ttf files to it from "Windows\Fonts". You may copy only several fonts, but we recommend to put the font "Arial Unicode MS" - ARIALUNI.TTF anyway.<br /><br />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cunicodeoptions.detectfontsdirectory.property.png" />
+            </remarks>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Auto">
+            <summary>
+            First tries to find the "Windows\Fonts" directory and in case of failure uses the directory from <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" /> property
+            <remarks>In case of success finding directory "Windows\Fonts" the component will not search *.tff in Custom directory specified in <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" />. Therefore some *.ttf files located in custom directory can be missed.</remarks>
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.NotDetect">
+            <summary>
+            Unicode is disabled. Doesn't make any tries of reading HDD to find *.ttf files.
+            </summary>
+        </member>
+        <member name="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom">
+            <summary>
+            Doesn't try to find the "Windows\Fonts" directory and uses only the directory from <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" /> property to find all .ttf files
+            </summary>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CUnicodeOptions.DetectFontsDirectory">
+            <summary>
+            Allows to specify type of finding *.tff files. This is necessary to insert Unicode inside PDF.
+            </summary>
+            <remarks>Possible values: <br /><br />
+            <see cref="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Auto" /> - First tries to find the "Windows\Fonts" directory and in case of failure uses the directory from <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" /> property.
+            In case of success finding directory "Windows\Fonts" the component will not search *.tff in Custom directory specified in <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" />. Therefore some *.ttf files located in custom directory can be missed.
+            <br /><br />
+            <see cref="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.NotDetect" /> - Unicode is disabled. Doesn't make any tries of reading HDD to find *.ttf files.
+            <br /><br />
+            <see cref="F:SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom" /> - Doesn't try to find the "Windows\Fonts" directory and uses only the directory from <see cref="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory" /> property to find all .ttf files.
+            <br /><br />
+            <b>Advice for developers who creates ASP.Net or Silverlight projects:</b><br /><br />
+            Some hosting providers disables any access to windows directories. For example, GoDaddy doesn't allow to read directory "Windows\Fonts". <br />
+            We recommend to create own "Fonts" directory in your project and copy *.ttf files to it from "Windows\Fonts". You may copy only several fonts, but we recommend to put the font "Arial Unicode MS" - ARIALUNI.TTF anyway.<br /><br />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cunicodeoptions.detectfontsdirectory.property.png" />
+            </remarks>
+            <example>
+            <code>
+            SautinSoft.ExcelToPdf p = new SautinSoft.ExcelToPdf();
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom;
+            //p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), @"Fonts\");
+            </code>
+            <code lang="vbnet">
+            Dim p As New SautinSoft.ExcelToPdf()
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom
+            'p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), "Fonts\")
+            </code>
+            </example>
+        </member>
+        <member name="P:SautinSoft.ExcelToPdf.CUnicodeOptions.FontsDirectory">
+            <summary>
+            Full local path to fonts directory (any folder with  *.ttf files)
+            </summary>
+            <remarks>By default it's set to "c:\windows\fonts\"<br /><br />
+            <b>Advice for developers who creates ASP.Net or Silverlight projects:</b><br /><br />
+            Some hosting providers disables any access to windows directories. For example, GoDaddy doesn't allow to read directory "Windows\Fonts". <br />
+            We recommend to create own "Fonts" directory in your project and copy *.ttf files to it from "Windows\Fonts". You may copy only several fonts, but we recommend to put the font "Arial Unicode MS" - ARIALUNI.TTF anyway.<br /><br />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/exceltopdf.cunicodeoptions.fontsdirectory.property.png" />
+            </remarks>
+            <example>
+            <code>
+            SautinSoft.ExcelToPdf p = new SautinSoft.ExcelToPdf();
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom;
+            //p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), @"Fonts\");
+            </code>
+            <code lang="vbnet">
+            Dim p As New SautinSoft.ExcelToPdf()
+            p.UnicodeOptions.DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom
+            'p.UnicodeOptions.FontsDirectory = @"c:\windows\fonts\";
+            p.UnicodeOptions.FontsDirectory = Path.Combine(Server.MapPath(""), "Fonts\")
+            </code>
+            </example>
+        </member>
+        <member name="M:SautinSoft.ExcelToPdf.CUnicodeOptions.#ctor">
+            <summary>
+            Creates an instance of class <see cref="T:SautinSoft.ExcelToPdf.CUnicodeOptions" />.
+            </summary>
+            <remarks>Default values:<br /><br />
+            FontsDirectory = @"c:\windows\fonts\";<br />
+            DetectFontsDirectory = SautinSoft.ExcelToPdf.CUnicodeOptions.eUnicodeDetectFontsDirectory.Custom;
+            <br /><br />
+            <b>Advice for developers who creates ASP.Net or Silverlight projects:</b><br /><br />
+            Some hosting providers disables any access to windows directories. For example, GoDaddy doesn't allow to read directory "Windows\Fonts". <br />
+            We recommend to create own "Fonts" directory in your project and copy *.ttf files to it from "Windows\Fonts". You may copy only several fonts, but we recommend to put the font "Arial Unicode MS" - ARIALUNI.TTF anyway.<br /><br />
+            See picture:<br /><br />
+            <img src="../Overview/pictures/unicode_own_fonts_directory.png" />
+            </remarks>
+        </member>
+    </members>
+</doc>

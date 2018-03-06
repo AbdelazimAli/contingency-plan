@@ -9,9 +9,9 @@ namespace Model.ViewModel.Personnel
     public class AssignmentVM
     {
         public int EmpId { get; set; }
-        public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
+        public int BranchId { get; set; } // Branch = 2
         public int DepartmentId { get; set; } // Department
+        public bool IsDepManager { get; set; }
         public int CompanyId { get; set; } // hidden employee company
         public int JobId { get; set; } // filter local jobs for login company or globals jobs 
         public int? PositionId { get; set; } // Position

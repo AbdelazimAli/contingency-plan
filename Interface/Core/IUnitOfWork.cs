@@ -1,11 +1,16 @@
-﻿using System;
+﻿using Model.ViewModel;
+using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Linq;
 
 namespace Interface.Core
 {
     public interface IUnitOfWork : IDisposable
     {
-        IEnumerable<T> Repository<T>() where T : class;
+        IQueryable<T> Repository<T>() where T : class;
+        bool Save_CheckError_Rollback(DbContextTransaction Trans, out List<Error> errors);
+        IEnumerable<T> SqlQuery<T>(string sql) where T : class;
 
         /// <summary>
         /// Regenerates the context.

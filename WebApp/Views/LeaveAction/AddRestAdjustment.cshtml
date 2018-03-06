@@ -5,12 +5,12 @@
 @model LeaveRestFormViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
 }
-<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" type="font/woff">
 <style>
     #DeptsTree {
         min-height: 150px;
@@ -168,9 +168,10 @@
                 $("#" + formId).find('#cancelChanges').val('@MsgUtils.Instance.Trls("Cancel")');
                 $("#"+formId).on('click','#cancelChanges',function()
                 {
-                    var oldPage = localStorage.getItem("menuhigh").split(",");
-                    oldulr = $("#"+ oldPage[2] + " a").attr("href");
-                    $("#renderbody").load(oldulr);
+                    //var oldPage = localStorage.getItem("menuhigh").split(",");
+                    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
+                    //$("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
                 $("#" + formId).find('#SaveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
                 $("#" + formId).on('click','#SaveChanges', function (e) {

@@ -1,0 +1,134 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@{
+    Layout = null;
+    bool ssMenue = false;
+    var admin = User.Identity.CanCustomize();
+    var compantId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+    var version = Request.QueryString["Version"];
+    string[] function = ViewData["Functions"] as string[];
+    bool.TryParse(Request.QueryString["SSMenu"], out ssMenue);
+    bool mangRole = ViewBag.MangRole;
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "missionDiv" }, { "HasDepts", "false" }, { "TableName", "ErrandRequests" } })
+
+<div id="missionDiv"></div>
+<script src="~/Scripts/jquery.form.js"></script>
+<script>
+
+    function GetStatus(data) {
+        var iconClass = "ace-icon fa fa-circle stat";
+
+        if (data.ApprovalStatus < 6) //Pending
+            iconClass += "12"; //gold
+        else if (data.ApprovalStatus == 6) //Approved
+            iconClass += "1";
+        else if (data.ApprovalStatus == 9) //Rejected
+            iconClass += "3";
+        else if (data.ApprovalStatus == 7 || data.ApprovalStatus == 8) //Cancel
+            iconClass = "k-icon k-i-cancel";
+        return iconClass;
+    }
+    var hiddenCols = { 4: ["AuthEmpName", "AuthDeptName", "AuthPosName", "WorkflowTime"] };
+    var leaveTabs = [{ Id: 1, Name: "Pending", Class: "ace-icon fa fa-circle stat12", Title: "@MsgUtils.Instance.Trls("Pending Missions")" },
+                     { Id: 2, Name: "Approved", Class: "ace-icon fa fa-circle stat1", Title: "@MsgUtils.Instance.Trls("Approved Missions")" },
+                     { Id: 3, Name: "Rejected", Class: "ace-icon fa fa-circle stat3", Title: "@MsgUtils.Instance.Trls("Rejected Missions")" },
+                     { Id: 4, Name: "Archived", Class: "ace-icon fa fa-circle stat2", Title: "@MsgUtils.Instance.Trls("Archived Missions")" }];
+    var UserleaveTabs = [{ Id: 2, Name: "Approved", Class: "ace-icon fa fa-circle stat1", Title: "@MsgUtils.Instance.Trls("Approved Missions")" }];
+    var readUrl = "@Url.Action("GetMission", "MissionRequest")?MenuId=@Request.QueryString["MenuId"]";
+
+    var addUrl = "@Url.Action("MissionDetails", "MissionRequest")";
+    if ("@ssMenue" == "True" && "@mangRole" == "False") {
+        //Employee
+        RequestFilters.applyAllFilters(UserleaveTabs, hiddenCols, "missionDiv", readUrl, '@Url.Action("MissionDetails", "MissionRequest")');
+        RequestFilters.setTab(2);
+    }
+    else if ("@mangRole" == "True") {
+        //Manager
+        RequestFilters.applyAllFilters(leaveTabs, hiddenCols, "missionDiv", readUrl, '@Url.Action("MissionDetails", "MissionRequest")?Manager=' + "@mangRole");
+        RequestFilters.setTab(1);
+    }
+    else
+    {
+        //HR
+        RequestFilters.applyAllFilters(leaveTabs, hiddenCols, "missionDiv", readUrl, '@Url.Action("MissionDetails", "MissionRequest")');
+        RequestFilters.setTab(1);
+    }
+    $(function () {
+        var approvalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' }]
+
+        Grids.indexGrid({
+            read: RequestFilters.getReadUrl(),
+            show: "@Url.Action("MissionDetails", "MissionRequest")",
+            edit: "@Url.Action("MissionDetails", "MissionRequest")",
+            objectName: "EmpMission",  // name of the page or table name used to create local db key
+            gridName: "missionDiv",
+            admin: "@admin",
+            lang: "@User.Identity.GetCulture()",
+            columns: [
+                {
+                    field: "MultiDays",
+                    template: '<input  type="checkbox" disabled #:MultiDays == true ? "checked" : ""#/>',
+                },
+                {
+                    field: "ApprovalStatus", values: approvalStatus
+                },
+                {
+                    field: "Status", template: "<i class='#:GetStatus(data)#' ></i>"
+                }
+            ],
+            select: { "ApprovalStatus": approvalStatus },
+
+            //select: { "FromEmpId": Emp },
+            serverPaging: true,
+            serverFiltering: true,
+            serverSorting: true,
+            pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100, 125, 150, 175] },
+            dataBound: function (e) {
+                var gridName = this.gridName;
+                $("#" + gridName).find(".k-grid-Delete, .k-grid-edit").each(function (e) {
+                    var row = $(this).closest("tr");
+                    var model = $("#" + gridName).getKendoGrid().dataItem(row);
+                    if ($(this).hasClass("k-grid-Delete") && model.ApprovalStatus != 1) $(this).toggle(); //hide delete btn
+                    else if ($(this).hasClass("k-grid-edit") && (model.ApprovalStatus != 1 && model.ApprovalStatus != 3)) $(this).toggle(); //hide edit btn
+                });
+                var name = $("#" + this.gridName);
+                var gridd = name.data("kendoGrid");
+                name.find(".k-grid-CloseMission").each(function (e) {
+                    var model = name.getKendoGrid().dataItem($(this).closest("tr"));
+                    $(this).prop("innerHTML", "<span class='k-icon k-i-Cancel'></span> @MsgUtils.Instance.Trls("Close Mission")");
+                    $(this).click(ClickCloseMission);
+                    $(this).attr("modelid", model.Id)
+                });
+            }
+        });
+    });
+    function ClickCloseMission(e) {
+        console.log("hh");
+        e.stopPropagation();
+        e.preventDefault();
+        var modelId = $(this).attr("modelid");
+        var url = "@Url.Action("CloseMission", "MissionRequest")";
+        $.get(url, { Id: modelId}, function (data) {
+            $('#MissionBody').html(data);
+            $('#MissionModal').modal('show');
+        });
+    }
+</script>
+<div id='MissionModal' class='modal fade in' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"></h4>
+            </div>
+            <div id="MissionBody" class="modal-body" tabindex="0"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">@MsgUtils.Instance.Trls("Close")</button>
+            </div>
+        </div>
+    </div>
+</div>

@@ -39,11 +39,19 @@ namespace WebApp
         public ApplicationUserManager(IUserStore<ApplicationUser> store)
             : base(store)
         {
+
+        }
+
+        private class MyConfig
+        {
+            public byte MaxPassTrials { get; set; } = 5;
+            public int WaitingInMinutes { get; set; } = 5;
         }
 
         public static ApplicationUserManager Create(IdentityFactoryOptions<ApplicationUserManager> options, IOwinContext context) 
         {
             var manager = new ApplicationUserManager(new UserStore<ApplicationUser>(context.Get<UserContext>()));
+ 
             // Configure validation logic for usernames
             manager.UserValidator = new UserValidator<ApplicationUser>(manager)
             {
@@ -63,8 +71,8 @@ namespace WebApp
 
             // Configure user lockout defaults
             manager.UserLockoutEnabledByDefault = true;
-            manager.DefaultAccountLockoutTimeSpan = TimeSpan.FromMinutes(5);
-            manager.MaxFailedAccessAttemptsBeforeLockout = 5;
+            manager.DefaultAccountLockoutTimeSpan = TimeSpan.FromMinutes(Utils.WaitingInMinutes);
+            manager.MaxFailedAccessAttemptsBeforeLockout = Utils.MaxPassTrials + 2;
             // Register two factor authentication providers. This application uses Phone and Emails as a step of receiving a code for verifying the user
             // You can write your own provider and plug it in here.
             manager.RegisterTwoFactorProvider("Phone Code", new PhoneNumberTokenProvider<ApplicationUser>
@@ -76,6 +84,7 @@ namespace WebApp
                 Subject = "Security Code",
                 BodyFormat = "Your security code is {0}"
             });
+
             manager.EmailService = new EmailService();
             manager.SmsService = new SmsService();
             var dataProtectionProvider = options.DataProtectionProvider;

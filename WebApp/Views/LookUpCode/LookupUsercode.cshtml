@@ -3,7 +3,7 @@
 @{ 
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -66,4 +66,4 @@
         });
     }
 </script>
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Codes" }, { "ObjectName", "LookUpCode" }, { "Functions", ViewBag.Functions } })
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Codes" }, { "ObjectName", "LookUpCode" } })

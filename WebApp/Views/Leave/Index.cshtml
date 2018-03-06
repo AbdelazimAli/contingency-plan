@@ -4,7 +4,7 @@
     Layout = null;
     var rtl = User.Identity.RTL();
     string culture = User.Identity.GetCulture();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
@@ -43,7 +43,7 @@
                      { Id: 3, Name: "Rejected", Class: "ace-icon fa fa-circle stat3", Title: "@MsgUtils.Instance.Trls("Rejected Requests")" },
                      { Id: 4, Name: "Archived", Class: "ace-icon fa fa-circle stat2", Title: "@MsgUtils.Instance.Trls("Archived Requests")" }];
     var readUrl = "@Url.Action("GetLeaves", "Leave")?MenuId=@Request.QueryString["MenuId"]";
-    RequestFilters.ApplayAllFilters(leaveTabs, hiddenCols, "LeaveDiv", readUrl, '@Url.Action("Details", "Leave")');
+    RequestFilters.applyAllFilters(leaveTabs, hiddenCols, "LeaveDiv", readUrl, '@Url.Action("Details", "Leave")');
 
     $(function () {
         var approvalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' }, { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
@@ -54,7 +54,7 @@
 
         var grid = "'LeaveDiv'";
         Grids.indexGrid({
-            read: RequestFilters.GetReadUrl(),
+            read: RequestFilters.getReadUrl(),
             show: "@Url.Action("Details", "Leave")",
             edit: "@Url.Action("Details", "Leave")",
             del: "@Url.Action("DeleteLeaves", "Leave")",
@@ -88,7 +88,4 @@
         });
     });
 </script>
-@*@Html.Partial("_IndexGrid", new ViewDataDictionary {
-    { "AddRecord", Url.Action("Details", "Leave") },
-    { "Admin", admin}, { "GridName", "LeaveDiv" }, {"Functions",ViewBag.Functions} })*@
-     
+

@@ -22,7 +22,7 @@ namespace Model.Domain
 
         [MaxLength(500)]
         public string Description { get; set; }
-        public int? EmpId { get; set; } // Owner
+        public int? EmpId { get; set; } 
 
         [ForeignKey("EmpId")]
         public Person Speaker { get; set; }

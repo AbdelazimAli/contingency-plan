@@ -6,7 +6,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -21,8 +21,8 @@
 
 <script>
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var model;
 
 
@@ -30,7 +30,9 @@
         var EmpId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
         var MangerId= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
         var EmpIdGrid= @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpIdGrid));
-        var functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+        @*var functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+        var functions = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+
         var listType = [
         { id: 1, name: '@MsgUtils.Instance.Trls("Employment Checklist")' },
         { id: 2, name: '@MsgUtils.Instance.Trls("New Employee Orientation")' },
@@ -128,6 +130,7 @@
                     else if($.inArray("CancelTask",functions)==-1)
                         $("#" + formId).find('#CancelStatus').closest("div.form-group").remove();
                 }
+
                 var gridname = "'EmplistTaskDiv'";
                 Grids.batchGrid({
                     read: "@Url.Action("ReadEmpListTask", "CheckList")?ListId=" +model.Id,
@@ -217,7 +220,7 @@
                     if($("#"+formId).find(".errorCell").length>0) return;
                     FormJs.saveForm($("#"+formId), $(this), function () {
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        $("#renderbody").load(oldulr);
+                        //$("#renderbody").load(oldulr);
                     },Grids.sendData("EmplistTaskDiv"));
                 });
                 $("#EmpCheckListDiv").on('click',"#UpdateStatus",null, function (e) {
@@ -258,7 +261,7 @@
 
                                  FormJs.saveForm($("#"+formId), $(this), function () {
                                  toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                 $("#renderbody").load(oldulr);
+                                     updateHistory(oldUlr);
                              },Grids.sendData("EmplistTaskDiv"));
                          }
                      });
@@ -267,7 +270,7 @@
 
 
                 $('#EmpCheckListDiv').on('click',"#backToIndex",null, function(){
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 });
 
             },

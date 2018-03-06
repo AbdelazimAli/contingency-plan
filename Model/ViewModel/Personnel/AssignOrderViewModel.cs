@@ -50,7 +50,6 @@ namespace Model.ViewModel.Personnel
         public int? AuthEmp { get; set; }
         public int CompanyId { get; set; }
         public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
         public string RoleId { get; set; }
         public int? PositionId { get; set; }
         public int? DeptId { get; set; }

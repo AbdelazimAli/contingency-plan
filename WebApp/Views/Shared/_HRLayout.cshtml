@@ -17,8 +17,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta content="width=device-width, initial-scale=1" name="viewport" />
     @Styles.Render("~/Content/cssmin")
+    
     <link href="/assets/global/plugins/font-awesome/css/font-awesome.min.css" rel="stylesheet" type="text/css" />
-    <link href="~/assets/global/plugins/simple-line-icons/simple-line-icons.min.css" rel="stylesheet" type="text/css" />
+    <link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" type="font/woff">
+    
     @if (identity.RTL())
     {
         <link href="~/Content/kendo.rtl.min.css" rel="stylesheet" />
@@ -31,14 +33,14 @@
             display: none;
         }
     </style>
-    <link href="~/Content/css/style.css" rel="stylesheet" />
+
+    <link id="main-style" href="~/Content/css/style.css" rel="stylesheet" />
+    <link id="main-style" href="~/Content/css/megaMenu.css" rel="stylesheet" />
 </head>
 <body class='@(identity.RTL() ? "k-rtl" : "") page-header-fixed page-quick-sidebar-over-content page-sidebar-closed-hide-logo page-container-bg-solid page-footer-fixed' onload="StartTimers();">
     @*///////////  onload="StartTimers();" onmousemove="ResetTimers();" *@
 
     <!-- BEGIN HEADER -->
-
-
     <header class="navbar navbar-fixed-top">
         <!-- BEGIN HEADER INNER left -->
         <!-- BEGIN LOGO -->
@@ -53,14 +55,11 @@
         <ul class="nav navbar-nav">
             <li class="dropdown mega sibling-item">
                 <a></a>
-                
             </li>
-            <li class="dropdown mega sibling-menu">
+            <li class="dropdown sibling-menu">
                 <a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown"></a>
                 <ul class="dropdown-menu">
-                    <li class="sub-scroll">
-                        
-                    </li>
+                    
                 </ul>
             </li>
             <li class="dropdown mega" id="mega">
@@ -180,7 +179,7 @@
                     @if (identity.Name != "")
                     {
                         <li>
-                            <a onclick="updateHistory('/Users/ViewProfile')">
+                            <a onclick="updateHistory('/UserProfile/ViewProfile')">
                                 <span>&nbsp; @identity.Name</span>
                             </a>
                         </li>
@@ -242,29 +241,38 @@
         <!-- END SIDEBAR -->
         <!-- BEGIN CONTENT -->
         <div class="page-content-wrapper">
+            @*<div class="loader-overlay">
+                <div class='loader'>
+                    <div class='circle'></div>
+                    <div class='circle'></div>
+                    <div class='circle'></div>
+                    <div class='circle'></div>
+                    <div class='circle'></div>
+                </div>
+            </div>*@<!-- /.loader-overlay -->
             <div class="page-content">
-                <img id="loadingImg" src="~/img/ajax-loader.gif" />
-                <img id="LoadingDeleteImg" class="hide" src="~/img/loading-image.gif" />
-                <div id="renderbody" class="page-content-body">
-                    @RenderBody()
-                </div>
-                <div class="col-md-12 col-sm-12">
-                    <div id="timeout" style="@(identity.RTL()?"text-align: right;":"")">
-                        <h4 style="color: navy;">
-                            "@MsgUtils.Instance.Trls("Sessiontime")"
-                        </h4>
-                        <p>
-                            "@MsgUtils.Instance.Trls("youlogafter30sec")"
-                            <br />
-                            "@MsgUtils.Instance.Trls("toremainwork")"
-                        </p>
+                <div class="main-view">
+                    <img id="loadingImg" src="~/img/ajax-loader.gif" />
+                    <img id="LoadingDeleteImg" class="hide" src="~/img/loading-image.gif" />
+                    <div id="renderbody" class="page-content-body">
+                        @RenderBody()
                     </div>
-                    <div id="NotificationsMsgs">
+                        <div id="timeout" style="@(identity.RTL()?"text-align: right;":"")">
+                            <h4 style="color: navy;">
+                                "@MsgUtils.Instance.Trls("Sessiontime")"
+                            </h4>
+                            <p>
+                                "@MsgUtils.Instance.Trls("youlogafter30sec")"
+                                <br />
+                                "@MsgUtils.Instance.Trls("toremainwork")"
+                            </p>
+                        </div>
+                        <div id="NotificationsMsgs">
 
-                    </div>
-                    <!-- BEGIN PORTLET-->
-                    <!-- END PORTLET-->
-                </div>
+                        </div>
+                        <!-- BEGIN PORTLET-->
+                        <!-- END PORTLET-->
+                </div><!-- /.main-view -->
             </div>
         </div>
 
@@ -276,18 +284,21 @@
     <!-- END PAGE LEVEL SCRIPTS -->
     <!-- END PAGE LEVEL SCRIPTS -->
     @Scripts.Render("~/bundles/jquery")
+    @*@Scripts.Render("~/bundles/jqueryval")*@
     @Scripts.Render("~/bundles/bootstrap")
-    @RenderSection("scripts", false)
+    <script src="~/Scripts/app/jquery.isloading.min.js"></script>
+    <script src="~/Scripts/app/CommonScripts.js"></script>
 
+    @RenderSection("scripts", false)
+   
     <script src="@string.Concat("/Scripts/cultures/kendo.culture.", identity.GetCulture(), ".min.js")"></script>
     <script src="@string.Concat("/Scripts/messages/kendo.messages.", identity.GetMessages(), ".min.js")"></script>
 
+   
     <script type="text/javascript">
-        $.get("@Url.Action("GetImage", "Pages")", { id: @identity.GetEmpId(), source: "EmployeePic" }, function (res) {
-
-
+        @*$.get("@Url.Action("GetImage", "Pages")", { id: @identity.GetEmpId(), source: "EmployeePic" }, function (res) {
             document.getElementById("nav-user-img").src = (res ? 'data:image/jpg;base64,' + res : "/Content/Photos/systemnoimage.jpg");
-        });
+        });*@
         // Prevent Back
         //history.pushState(null, null, location.href);
         //window.onpopstate = function () { history.go(1); }
@@ -296,7 +307,8 @@
         var warningTimer = 0;
         var timeoutTimer = 0;
         var closeBrowser = false;
-        var ulr=null;
+        var ulr= localStorage.getItem("ulr") == null ? null :localStorage.getItem("ulr");
+        var oldUlr=null;
         var userShutDown = "@identity.GetShutdownInMin()";
 
         // Start timers.
@@ -350,7 +362,6 @@
 
         // Remove timers
         function RemoveTimers() {
-
             clearTimeout(timeoutTimer);
             clearTimeout(warningTimer);
             StartTimers();
@@ -412,14 +423,14 @@
                     async: false,
                     url: '/Account/LogOff',
                     success: function () {
-                        localStorage.setItem("ulr", null);
+                        localStorage.setItem("ulr", ulr);
                         localStorage.removeItem("NewMenu");
 
                     },
                     error: function () {
                     }
                 });
-                window.onbeforeunload = LogOffUser;
+                //window.onbeforeunload = LogOffUser;
             }
 
             $('#loginLink').click(function () {
@@ -468,18 +479,19 @@
                     elements.find(".external h3").html("@MsgUtils.Instance.Trls("You have") <span class='bold'>" + d.length + " " + nameLbl + "</span>");
                     if (allUrl && d.length > 1) elements.find(".external h3").append("<a class='ajaxify' href='" + allUrl + "'>@MsgUtils.Instance.Trls("viewall")</a>");
 
-
                     elementList.empty();
                     var markup = "";
                     var ReadCount = 0;
                     for (var i = 0; i < d.length; i++) {
-                        if (!d[i].Read) ReadCount++;
-                        var elementUrl = (url ? url + '?id=' + d[i].Id + '&Version=0&Read=' + (d[i].Read !== undefined ? d[i].Read : "") + '' : '#');
-                        markup += "<li class=" + ((name == 'notification' && !d[i].Read) ? 'active' : '') + " id='" + d[i].Id + "'><a class= " + (name == 'notification' ? 'window' : 'ajaxify') + "  " + (url ? " href='" + elementUrl + "'" : "") + "><div class='cont-img'><img src='" + (d[i].PicUrl == 'noimage.jpg' ? "/SpecialData/Photos/" + d[i].PicUrl : "/SpecialData/Photos/" +@User.Identity.GetDefaultCompany().ToString() +"/" + d[i].PicUrl + "?dummy=" + (new Date().getTime())) + "'></div>"
-                        + "<div class='cont-txt'><span class='from'>" + (d[i].From ? d[i].From : "") + "</span>"
-                        + "</span><span class='message'>" + (d[i].Message ? EncodeHtml(d[i].Message) : "") + "</span>"
-                        + (d[i].MoreInfo ? "<span class='message'>" + d[i].MoreInfo + "</span>" : "")
-                        + "</div></a></li>";
+                        if (d[i]) {
+                            if (!d[i].Read) ReadCount++;
+                            var elementUrl = (url ? url + '?id=' + d[i].Id + '&Version=0&Read=' + (d[i].Read !== undefined ? d[i].Read : "") + '' : '#');
+                            markup += "<li class=" + ((name == 'notification' && !d[i].Read) ? 'active' : '') + " id='" + d[i].Id + "'><a class= " + (name == 'notification' ? 'window' : 'ajaxify') + "  " + (url ? " href='" + elementUrl + "'" : "") + "><div class='cont-img'><img src='" + d[i].PicUrl + "'></div>"
+                            + "<div class='cont-txt'><span class='from'>" + (d[i].From ? d[i].From : "") + "</span>"
+                            + "</span><span class='message'>" + (d[i].Message ? EncodeHtml(d[i].Message) : "") + "</span>"
+                            + (d[i].MoreInfo ? "<span class='message'>" + d[i].MoreInfo + "</span>" : "")
+                            + "</div></a></li>";
+                        }
                     }
 
                     if (name == "notification") {
@@ -507,18 +519,15 @@
                 }
 
                 $.get("@Url.Action("EmployeeNavBar", "Home")", null, function (result) {
-                    //$(".dropdown-user img").prop("src", "SpecialData/Photos/" + (result.empImage == "noimage.jpg" ? 'noimage.jpg' : @identity.GetDefaultCompany() + "/" + result.empImage) + "?dummy=" + (new Date().getTime()))
+                    document.getElementById("nav-user-img").src = result.empImage;
                     drawItems('task', result.tasks, '@Url.Action("EmployeeTasksDetails", "Tasks")');
                     drawItems('msg', result.msgs, '@Url.Action("EmployeeMessagesDetails", "Message")');
                     drawItems('notification', result.Notify, '@Url.Action("GetNotify","Notification")', '@Url.Action("GetAllNotifications", "Notification")?Version=0');
-
-
                 });
             }
 
             getNavBar();
             drawMenu();
-
         });
 
 
@@ -532,7 +541,7 @@
                 $(".active").removeClass("active");
                 $(el).closest("li").addClass("active");
                 localStorage.setItem("openedMenu", $(el).closest("li").attr("id"));
-                localStorage.setItem("menuhigh", $(el).closest(".menuHeads").attr("id") + "," + $(el).closest(".menuChild").attr("id") + "," + $(el).closest("li").attr("id"));
+                //localStorage.setItem("menuhigh", $(el).closest(".menuHeads").attr("id") + "," + $(el).closest(".menuChild").attr("id") + "," + $(el).closest("li").attr("id"));
 
             }
             
@@ -563,7 +572,7 @@
                     markup += '<li class="panel" id="m_' + menuHeads[i].Id + '" onclick="change(this,event)">' +
                     '<div class="panel-heading" role="tab" id="heading-' + menuHeads[i].Id + '">' +
                         '<h4 class="panel-title">' +
-                            '<a class="collapsed menuHeads single-link" onclick="' + click + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i>' + menuHeads[i].Title + '</a>' +
+                            '<a class="collapsed menuHeads single-link" onclick="' + click + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i><span>' + menuHeads[i].Title + '</span></a>' +
                         '</h4>' +
                     '</div>';
                 }
@@ -571,7 +580,7 @@
                     markup += '<li class="panel" id="m_' + menuHeads[i].Id + '" onclick="change(this,event)">' +
                     '<div class="panel-heading" role="tab" id="heading-' + menuHeads[i].Id + '">' +
                         '<h4 class="panel-title">' +
-                            '<a class="collapsed menuHeads" id="menuHeads-' + menuHeads[i].Id + '"  role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-' + menuHeads[i].Id + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i>' + menuHeads[i].Title + '</a>' +
+                            '<a class="collapsed menuHeads" id="menuHeads-' + menuHeads[i].Id + '"  role="button" data-toggle="collapse" data-parent="#accordion" href="#collapse-' + menuHeads[i].Id + '" aria-expanded="false" aria-controls="collapse-' + menuHeads[i].Id + '"><i class="' + menus[i].Icon + '"></i><span>' + menuHeads[i].Title + '</span></a>' +
                         '</h4>' +
                     '</div>';
                 }
@@ -857,16 +866,22 @@
         var menus = [];
         var megaModuleIds = [];
         var megaMenuItems = [];
+        
         function updateHistory(path, parm) {
+            oldUlr = ulr;
             ulr = path;
             history.pushState("waleed", null, null);
             stack.push(ulr);
+           
             $("#renderbody").load(ulr, parm);
             localStorage.setItem("ulr", ulr);
-            if (localStorage.getItem("menuhigh")) {
-                menus.push(localStorage.getItem("menuhigh").split(',')[2]);
-            }
+        }
 
+        function Exist(g,a){
+            if (a != null) // Attachement
+                return 'data:image/jpg;base64,' + a;
+            if(g==2) return "/SpecialData/Photos/Fnoimage.jpg"; // gender
+            else return "/SpecialData/Photos/noimage.jpg";
         }
 
         window.addEventListener("popstate", function (event) {
@@ -881,8 +896,11 @@
                 if (stack.length>1) {
                     stack.pop();
                 }
+
+                oldUlr = ulr;
                 ulr = stack[stack.length - 1];
                 history.pushState("waleed", null, null); // disable forword button
+                
                 $("#renderbody").load(ulr);
                 localStorage.setItem("ulr", ulr);
 
@@ -908,7 +926,8 @@
 
         <script type="text/javascript" src="~/Content/js/jquery.mousewheel.min.js"></script>
         <script type="text/javascript" src="~/Content/js/jquery.mCustomScrollbar.min.js"></script>
-        <script type="text/javascript" src="~/Content/js/style.js"></script>
+        <script id="main-script" type="text/javascript" src="~/Content/js/style.js"></script>
+
     </footer>
 
 

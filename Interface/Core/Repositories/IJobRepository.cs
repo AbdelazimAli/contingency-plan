@@ -15,10 +15,10 @@ namespace Interface.Core.Repositories
    public interface IJobRepository : IRepository<Job>
     {
         IQueryable<FormList> GetJobClass(int companyId);
-        IQueryable GetPayrollGrade();
+        IQueryable GetPayrollGrade(int companyId);
         // IQueryable<JobGridViewModel> ReadJobs(int company);
         IEnumerable<ExcelJobViewModel> ReadExcelJobs(int company, string culture);
-        IEnumerable<JobGridViewModel> ReadJobs(int company, string culture,int Id);
+        IQueryable<JobGridViewModel> GetAllJobs(int company, string culture,int Id);
         JobViewModel ReadJob(int id, string culture);
         //List<JobClass> AddJobClass(IEnumerable<int> JobClassesIds);
         Job JobObject(int id);

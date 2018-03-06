@@ -218,7 +218,7 @@ namespace Db.Persistence.Repositories
 
             if (EmpTasks == 2) //2-Use eligibility criteria
             {
-                string sql = "SELECT P.Id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName +' ' + P.Familyname , '" + culture + "') Name , (CASE WHEN P.HasImage = 1 THEN CAST(P.Id as nvarchar(10)) + '.jpeg' ELSE 'noimage.jpg' END) PicUrl, dbo.fn_GetEmpStatus(P.Id) Icon FROM Assignments M, Assignments A, Employements E, People P WHERE M.EmpId = " + managerId + " AND M.CompanyId = " + companyId + " And (GETDATE() Between M.AssignDate And M.EndDate) And A.EmpId = E.EmpId And A.EmpId = P.Id AND A.CompanyId = " + companyId + " AND (GETDATE() Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (CASE WHEN LEN(M.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(M.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(M.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(M.Locations) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Locations, ',') WHERE VALUE = ISNULL(A.LocationId, 0)), -1) ELSE ISNULL(A.LocationId, 0) END) = ISNULL(A.LocationId, 0) AND (CASE WHEN LEN(M.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(M.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(M.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(M.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
+                string sql = "SELECT P.Id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName +' ' + P.Familyname , '" + culture + "') Name , [dbo].[fn_GetDoc]('EmployeePic', P.Id) PicUrl, P.Gender, dbo.fn_GetEmpStatus(P.Id) Icon FROM Assignments M, Assignments A, Employements E, People P WHERE M.EmpId = " + managerId + " AND M.CompanyId = " + companyId + " And (GETDATE() Between M.AssignDate And M.EndDate) And A.EmpId = E.EmpId And A.EmpId = P.Id AND A.CompanyId = " + companyId + " AND (GETDATE() Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (CASE WHEN LEN(M.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(M.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(M.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(M.Branches) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Branches, ',') WHERE VALUE = ISNULL(A.BranchId, 0)), -1) ELSE ISNULL(A.BranchId, 0) END) = ISNULL(A.BranchId, 0) AND (CASE WHEN LEN(M.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(M.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(M.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(M.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(M.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
                 return context.Database.SqlQuery<DropDownList>(sql).Select(a => new { id = a.Id, name = a.Name, a.PicUrl, a.Icon }).ToList();
             }
             else //1-Employee whose direct managed
@@ -229,7 +229,7 @@ namespace Db.Persistence.Repositories
                 .Union(context.Assignments
                     .Where(a => a.CompanyId == companyId && (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today)
                                 && positionId != null && a.Position.Supervisor == positionId))
-                    .Select(a => new { id = a.EmpId, name = HrContext.TrlsName(a.Employee.Title + " " + a.Employee.FirstName + " " + a.Employee.Familyname, culture), PicUrl = (a.Employee.HasImage ? a.Employee.Id + ".jpeg" : "noimage.jpg"), Icon = HrContext.GetEmpStatus(a.Employee.Id) });
+                    .Select(a => new { id = a.EmpId, name = HrContext.TrlsName(a.Employee.Title + " " + a.Employee.FirstName + " " + a.Employee.Familyname, culture), PicUrl = HrContext.GetDoc("EmployeePic", a.EmpId), Gender = a.Employee.Gender, Icon = HrContext.GetEmpStatus(a.EmpId) });
 
                 return emps;
             }
@@ -295,16 +295,17 @@ namespace Db.Persistence.Repositories
 
         public IEnumerable ReadEmployeeTasks(int CompanyId,int empId, string culture)
         {
-            var tasks = context.EmpTasks.Where(t => t.EmpId == empId && t.Status == 1 && t.CompanyId == CompanyId).OrderBy(t => t.Priority).Select(t => new NavBarItemVM
+            var tasks = context.EmpTasks.Where(t => t.EmpId == empId && t.CompanyId == CompanyId && t.Status == 1).OrderBy(t => t.Priority).Select(t => new NavBarItemVM
             {
                 Id = t.Id,
                 From = HrContext.GetLookUpCode("EmpTaskCat", t.TaskCat.Value, culture),
                 Message = t.Description,
                 MoreInfo = HrContext.TrlsName(t.EmpChklist.Employee.Title + " " + t.EmpChklist.Employee.FirstName + " " + t.EmpChklist.Employee.Familyname, culture),
-                PicUrl = (t.Manager.HasImage ? t.ManagerId + ".jpeg" : "noimage.jpg"),
-            }).ToList();
+                PicUrl = HrContext.GetDoc("EmployeePic", t.Manager.Id),
+                Gender = t.Manager.Gender
+            }).Take(5).ToList();
 
-            return tasks.Take(tasks.Count > 5 ? 5 : tasks.Count);
+            return tasks;
         }
 
         public IQueryable<EmpTasksViewModel> ReadEmployeeTasksGrid(int empId, string culture)
@@ -549,17 +550,18 @@ namespace Db.Persistence.Repositories
             var EmpList = from el in context.EmpChkLists
                           where el.CompanyId == companyId
                           join p in context.People on el.EmpId equals p.Id into g
-                          from Ecl in g.DefaultIfEmpty()
+                          from p in g.DefaultIfEmpty()
                           select new EmpChkListViewModel
                           {
                               Id = el.Id,
                               EmpId = el.EmpId,
                               ListEndDate = el.ListEndDate,
                               ListStartDate = el.ListStartDate,
-                              PicUrl = (Ecl.HasImage ? "/SpecialData/Photos/"+companyId+"/" +el.EmpId.Value + ".jpeg" : "/SpecialData/Photos/noimage.jpg"),
+                              PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                              Gender = p.Gender,
                               ListType = el.ListType,
                               Name = el.Name,
-                              Employee = HrContext.TrlsName(Ecl.Title + " " + Ecl.FirstName + " " + Ecl.Familyname, culture),
+                              Employee = p!=null ? HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture) : "",
                               Status = el.Status,
                               CreatedUser = el.CreatedUser,
                               ManagerId=el.ManagerId,
@@ -581,7 +583,7 @@ namespace Db.Persistence.Repositories
         {
 
             var result = from l in context.CheckLists
-                         where ((l.IsLocal && l.CompanyId == company) || l.IsLocal == false) && (l.StartDate <= DateTime.Today && (l.EndDate == null || l.EndDate >= DateTime.Today))
+                         where (l.CompanyId == company || l.IsLocal == false) && (l.StartDate <= DateTime.Today && (l.EndDate == null || l.EndDate >= DateTime.Today))
                          select new CheckListViewModel
                          {
                              Id = l.Id,

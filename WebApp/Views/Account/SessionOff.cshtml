@@ -1,5 +1,5 @@
-﻿@*@using WebApp.Models
-@model SessionOffViewModel*@
+﻿@using WebApp.Models
+@model LoginViewModel
 @{
     Layout = "~/Views/Account/Hrlogin.cshtml";
     var compantId = User.Identity.GetDefaultCompany();
@@ -13,8 +13,14 @@
         <div class="logo">
             <img id="empImge" src="" alt="" />
         </div>
-        <h1><span id="welcomeMsg"></span> <span id="localname"></span></h1>
-        <h2><span>Last Login:</span> <span id="lastLogin"></span></h2>
+        <h1>
+            <span id="welcomeMsg"></span>
+            <span id="localname"></span>
+        </h1>
+        <h2>
+            <span>@MsgUtils.Instance.Trls("lastLogin", Model.Culture):</span>
+            <span id="lastLogin"></span>
+        </h2>
 
     </div>
     <div class="login-right">
@@ -25,26 +31,26 @@
                         <div class="login-top">
 
 
-                            @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "lock-form pull-left", role = "form" }))
+                            @using (Html.BeginForm("Login", "Account", FormMethod.Post, new { @class = "lock-form", role = "form" }))
                             {
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="__RequestVerificationToken" value="" />
-                                
+                                @Html.HiddenFor(c => c.Culture);
                                 <div class="form-group">
                                     <input class="text-input  email" type="text" name="UserName" id="UserName" value="@User.Identity.Name" readonly />
-                                   <span></span>
+                                    <span></span>
                                 </div>
 
                                 <div class="form-group">
-                                    <input class="text-input password" type="password" autocomplete="off" placeholder="Password" name="Password" id="Password" required />
+                                    <input class="text-input password" type="password" autocomplete="off" placeholder="@MsgUtils.Instance.Trls("passwordPlaceholder", Model.Culture)" name="Password" id="Password" required />
                                     <span></span>
-                               </div>
+                                </div>
 
 
                                 <input type="text" hidden id="returnUrl" name="returnUrl" />
                                 <div class="login-bottom login-bottom1">
                                     <div class="submit">
-                                        <input type="submit" id="Login" class="btn-submit" value="LOGIN" />
+                                        <input type="submit" id="Login" class="btn-submit" value="@MsgUtils.Instance.Trls("loginTxt", Model.Culture)" />
                                     </div>
 
                                 </div>
@@ -61,35 +67,96 @@
     <div class="clear"> </div>
 </div>
 @section Lscripts{
- <script>
+    <script>
 
-     $(function () {
+        $(function () {
 
-         $(document).ready(function () {
+            $(document).ready(function () {
 
-             var anti = localStorage.getItem("Antiforgery");
-             $("input[name='__RequestVerificationToken']").val(anti);
-            
-             $.ajax({
-                 dataType: 'json',
-                 cache: false,
-                 async: false,
-                 url: '/Account/LogOff',
-                 success: function () {
-                 },
-                 error: function () {
-                 }
-             });
-             document.addEventListener("keyup", function (e) {
-                 if (e.keyCode == 13)
-                     $('#Login').click();
-             });
-         });
+                var anti = localStorage.getItem("Antiforgery");
+                $("input[name='__RequestVerificationToken']").val(anti);
 
-     });
+                $.ajax({
+                    dataType: 'json',
+                    cache: false,
+                    async: false,
+                    url: '/Account/LogOff',
+                    success: function () {
+                    },
+                    error: function () {
+                    }
+                });
+                document.addEventListener("keyup", function (e) {
+                    if (e.keyCode == 13)
+                        $('#Login').click();
+                });
 
-        
- </script>
-   
-       
+                var localName = Cookies.get('localName');
+                var lastLogin = Cookies.get('lastLogin');
+                var empImg = Cookies.get('empImg');
+                var companyLogo = Cookies.get('companyLogo');
+                var culture = Cookies.get('culture');
+                var welcomeMsg = Cookies.get('welcomeMsg');
+                var userName = Cookies.get("userName");
+                var password = Cookies.get("password");
+                var userEmpId = Cookies.get("userEmpId");
+                var sourceId = parseInt(userEmpId);
+                var userCompanyId = parseInt(Cookies.get("userCompanyId"));
+                //console.log("sourceId", sourceId);
+
+                if (userEmpId) {
+                    $.get("@Url.Action("GetImage", "Pages")", { id: sourceId, source: "EmployeePic" }, function (res) {
+
+
+                        document.getElementById("empImge").src = (res ? 'data:image/jpg;base64,' + res : "/Content/Photos/systemnoimage.jpg");
+                    });
+                }
+                else {
+                    document.getElementById("empImge").src = "/Content/Photos/systemnoimage.jpg";
+                }
+
+
+
+                if (password) {
+                    $("#Password").val(password);
+
+                }
+
+                if (localName) {
+                    $("#localname").html(localName);
+                }
+                else {
+                    $("#localname").html("Dear. User");
+                }
+                if (welcomeMsg) {
+                    $("#welcomeMsg").html(welcomeMsg);
+                }
+                else {
+                    $("#welcomeMsg").html("Welcome");
+                }
+                if (lastLogin) {
+                    $("#lastLogin").html(new Date(lastLogin).toLocaleString());
+                }
+                else {
+                    $("#lastLogin").html("Not Yet");
+                }
+
+                var userEmpId = Cookies.get("userEmpId");
+                if (!userEmpId) {
+                    $(".login-left").hide();
+                    $(".login-right").addClass("login-right-no-user");
+                    $(".submit").addClass("submit-no-user");
+
+                }
+
+
+
+            });
+
+        });
+
+
+    </script>
+
+
 }

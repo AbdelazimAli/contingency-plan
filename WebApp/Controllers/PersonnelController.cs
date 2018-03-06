@@ -62,7 +62,7 @@ namespace WebApp.Controllers
             ViewBag.TermSysCode = _hrUnitOfWork.LookUpRepository.GetsyscodeForm("Termination", Language);
             ViewBag.Role = _hrUnitOfWork.LeaveRepository.GetOrgChartRoles(Language).Select(a => new { text = a.text, value = a.value }).ToList();
             ViewBag.CurrencyCode = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
-            ViewBag.calender = _hrUnitOfWork.Repository<PeriodName>().Where(J=>((J.IsLocal && J.CompanyId == User.Identity.GetDefaultCompany()) || J.IsLocal == false) && (J.StartDate <= DateTime.Today && (J.EndDate == null || J.EndDate >= DateTime.Today))).Select(a => new { id = a.Id, name = a.Name }).ToList();
+            ViewBag.calender = _hrUnitOfWork.Repository<PeriodName>().Where(J=>((J.IsLocal && J.CompanyId == CompanyId) || J.IsLocal == false) && (J.StartDate <= DateTime.Today && (J.EndDate == null || J.EndDate >= DateTime.Today))).Select(a => new { id = a.Id, name = a.Name }).ToList();
             //ViewBag.QualGroups = _hrUnitOfWork.QualificationRepository.GetQualGroups().Select(q => new FormList() { id = q.Id, name = q.Name }).ToList();
         }
         private List<Error> SaveGrid2(WorkFlowRangVM grid1, IEnumerable<KeyValuePair<string, ModelState>> state, PersonSetup workflow)
@@ -115,6 +115,20 @@ namespace WebApp.Controllers
                     }
                 }
             }
+            else
+            {
+                //new Inserted record
+                if (grid1.inserted != null)
+                {
+                    foreach (WorkFlowObjectsViewModel model in grid1.inserted)
+                    {
+                        var newworkflow = new Workflow();
+                        AutoMapper(new Models.AutoMapperParm { Destination = newworkflow, Source = model, Transtype = TransType.Insert });
+                        _hrUnitOfWork.LeaveRepository.Add(newworkflow);
+                    }
+                }
+            }
+            
             return errors;
         }
         public ActionResult CreatePersonnel(PersonnelViewModel model, OptionsViewModel moreInfo, WorkFlowRangVM grid1)
@@ -134,7 +148,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "PersonnelSetting",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype= TransType.Insert
                     });
@@ -152,7 +165,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "PersonnelSetting",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Id = "CompanyId",
                         Transtype = TransType.Update
@@ -212,6 +224,8 @@ namespace WebApp.Controllers
                 if (Errors.Count > 0)
                     message = Errors.First().errors.First().message;
 
+                Utils.MaxPassTrials = record.MaxPassTrials;
+                Utils.WaitingInMinutes = record.WaitingInMinutes;
                 return Json(message);
             }
             return Json(Utils.ParseFormErrors(ModelState));
@@ -223,14 +237,14 @@ namespace WebApp.Controllers
         public ActionResult WorkFlowIndex(int TerminateId, string Source)
         {
 
-            ViewBag.RoleCode = _hrUnitOfWork.LeaveRepository.GetOrgChartRoles(Language).Select(a => new { text = a.text, value = a.value }).ToList();
-            ViewBag.Role = db.Roles.Select(r => new { value = r.Id, text = r.Name });
-            ViewBag.Hierarchy = _hrUnitOfWork.Repository<Diagram>().Select(a => new { id = a.Id, name = a.Name });
-            // string source = "Termination";
-            ViewBag.sourceId = TerminateId;
-            ViewBag.sourceTxt = Source;
+            //ViewBag.RoleCode = _hrUnitOfWork.LeaveRepository.GetOrgChartRoles(Language).Select(a => new { text = a.text, value = a.value }).ToList();
+            //ViewBag.Role = db.Roles.Select(r => new { value = r.Id, text = r.Name });
+            //ViewBag.Hierarchy = _hrUnitOfWork.Repository<Diagram>().Select(a => new { id = a.Id, name = a.Name });
+            //// string source = "Termination";
+            //ViewBag.sourceId = TerminateId;
+            //ViewBag.sourceTxt = Source;
 
-            var reqestwf = _hrUnitOfWork.LeaveRepository.ReadLeaveRequest(TerminateId, Source);
+            var reqestwf = _hrUnitOfWork.LeaveRepository.ReadRequestWF(TerminateId, Source, Language);
             if (reqestwf == null)
                 return View(new RequestWfFormViewModel());
             else
@@ -348,7 +362,7 @@ namespace WebApp.Controllers
                 foreach (HolidayViewModel model in grid1.updated)
                 {
                     var holiday = AllHolidays.Where(h => h.Id == model.Id).FirstOrDefault();
-                    AutoMapper(new Models.AutoMapperParm { ObjectName = objectName, Version = Convert.ToByte(Request.Form["Version"]), Destination = holiday, Source = model, Transtype = TransType.Update });
+                    AutoMapper(new Models.AutoMapperParm { ObjectName = objectName, Destination = holiday, Source = model, Transtype = TransType.Update });
                     holiday.CompanyId = model.IsLocal ? (model.CompanyId == null ? CompanyId : model.CompanyId) : (int?)null;
                     holiday.ModifiedTime = DateTime.Now;
                     holiday.ModifiedUser = UserName;
@@ -365,7 +379,7 @@ namespace WebApp.Controllers
                 foreach (HolidayViewModel model in grid1.inserted)
                 {
                     var holiday = new Holiday();
-                    AutoMapper(new Models.AutoMapperParm { ObjectName = objectName, Version = Convert.ToByte(Request.Form["Version"]), Destination = holiday, Source = model, Transtype = TransType.Insert });
+                    AutoMapper(new Models.AutoMapperParm { ObjectName = objectName, Destination = holiday, Source = model, Transtype = TransType.Insert });
                     holiday.CreatedTime = DateTime.Now;
                     holiday.CreatedUser = UserName;
                     holiday.Standard = isStanderd;
@@ -444,14 +458,15 @@ namespace WebApp.Controllers
 
                 if (models != null)
                 {
-                    var oldDeptPlans = _hrUnitOfWork.Repository<DeptJobLeavePlan>().Where(p => p.CompanyId == CompanyId && p.ToDate >= DateTime.Today && p.DeptId == models.FirstOrDefault().DeptId).ToList();
+                    var deptId = models.FirstOrDefault().DeptId;
+                    var oldDeptPlans = _hrUnitOfWork.Repository<DeptJobLeavePlan>().Where(p => p.CompanyId == CompanyId && p.ToDate >= DateTime.Today.Date && p.DeptId == deptId).ToList();
 
                     foreach (DeptLeavePlanViewModel model in models)
                     {
                         if (model.Id == 0) //Add
                         {
                             DeptJobLeavePlan record = new DeptJobLeavePlan();
-                            AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = record, Source = model, Version = Convert.ToByte(Request.Form["Version"]), Transtype = TransType.Insert });
+                            AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = record, Source = model, Transtype = TransType.Insert });
                             record.CompanyId = CompanyId;
                             record.CreatedUser = UserName;
                             record.CreatedTime = DateTime.Now;
@@ -463,7 +478,7 @@ namespace WebApp.Controllers
                             if (updatedRec == null) //Add
                             {
                                 updatedRec = new DeptJobLeavePlan();
-                                AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = updatedRec, Source = model, Version = Convert.ToByte(Request.Form["Version"]), Transtype = TransType.Insert });
+                                AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = updatedRec, Source = model,  Transtype = TransType.Insert });
                                 updatedRec.CompanyId = CompanyId;
                                 updatedRec.CreatedUser = UserName;
                                 updatedRec.CreatedTime = DateTime.Now;
@@ -471,7 +486,7 @@ namespace WebApp.Controllers
                             }
                             else //update
                             {
-                                AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = updatedRec, Source = model, Version = Convert.ToByte(Request.Form["Version"]), Transtype = TransType.Update });
+                                AutoMapper(new AutoMapperParm() { ObjectName = "LeavePlanDept", Destination = updatedRec, Source = model,  Transtype = TransType.Update });
                                 updatedRec.ModifiedUser = UserName;
                                 updatedRec.ModifiedTime = DateTime.Now;
                                 _hrUnitOfWork.CompanyStructureRepository.Attach(updatedRec);
@@ -506,7 +521,7 @@ namespace WebApp.Controllers
 
             foreach (var dept in deptJobs)
             {
-                AutoMapper(new Models.AutoMapperParm { Source = dept, ObjectName = "LeavePlanDept", Version = Convert.ToByte(Request.Form["Version"]), Transtype = TransType.Delete });
+                AutoMapper(new Models.AutoMapperParm { Source = dept, ObjectName = "LeavePlanDept",  Transtype = TransType.Delete });
 
                 if (dept != null) _hrUnitOfWork.CompanyStructureRepository.Remove(dept);
             }
@@ -567,7 +582,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "TermDurations",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
                     record.CreatedUser = UserName;
@@ -642,7 +656,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Job",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Update
                     });
                     record.ModifiedUser = UserName;
@@ -679,7 +692,6 @@ namespace WebApp.Controllers
                 {
                     Source = record,
                     ObjectName = "TermDurations",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 
@@ -776,7 +788,6 @@ namespace WebApp.Controllers
                             Destination = record,
                             Source = model,
                             ObjectName = "PayrollSetup",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Id = "CompanyId",
                             Transtype=TransType.Insert
@@ -792,7 +803,6 @@ namespace WebApp.Controllers
                             Destination = record,
                             Source = model,
                             ObjectName = "PayrollSetup",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Id = "CompanyId",
                             Transtype = TransType.Update
@@ -992,7 +1002,6 @@ namespace WebApp.Controllers
                         Destination = account,
                         Source = model,
                         ObjectName = "AccountSetup",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
 
@@ -1113,7 +1122,6 @@ namespace WebApp.Controllers
                 {
                     Source = record,
                     ObjectName = "AccountSetup",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.PayrollRepository.Remove(record);

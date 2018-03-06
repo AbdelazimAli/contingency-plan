@@ -38,11 +38,7 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
             var empId = User.Identity.GetEmpId();
-            ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { value = a.Id, text = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).Distinct().ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { value = a.Id, text = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).Distinct();
             return View();
         }
         public ActionResult EmployeeMessagesIndex()
@@ -136,7 +132,7 @@ namespace WebApp.Controllers
         public ActionResult Details(int id = 0)
         {
             var empId = User.Identity.GetEmpId();
-            ViewBag.Jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
             ViewBag.PeopleGroups = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
             ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).Distinct().ToList();
             ViewBag.Depts = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, Language);
@@ -211,7 +207,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpMessageForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -239,7 +234,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "EmpMessageForm",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -284,7 +278,6 @@ namespace WebApp.Controllers
                 {
                     Source = Mess,
                     ObjectName = "EmpMessages",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.MessageRepository.Remove(Mess);

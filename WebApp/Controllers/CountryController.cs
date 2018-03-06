@@ -37,10 +37,6 @@ namespace WebApp.Controllers
         }
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //Kendo: read ==>  All Countries
@@ -113,7 +109,6 @@ namespace WebApp.Controllers
                         Destination = country,
                         Source = model,
                         ObjectName = "Countries",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = options.ElementAtOrDefault(i),
                         Transtype = TransType.Insert
                     });
@@ -212,7 +207,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "Countries",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete,
             });
 
@@ -263,7 +257,6 @@ namespace WebApp.Controllers
                         Destination = city,
                         Source = c,
                         ObjectName = "Cities",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -351,7 +344,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "Cities",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete,
             });
             _hrUnitOfWork.LookUpRepository.Remove(obj);
@@ -400,7 +392,6 @@ namespace WebApp.Controllers
                         Destination = district,
                         Source = c,
                         ObjectName = "Countries",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
 
@@ -489,7 +480,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "Districts",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete,
             });
             _hrUnitOfWork.LookUpRepository.Remove(obj);
@@ -507,10 +497,6 @@ namespace WebApp.Controllers
         #region Currency Grid by Mamdouh
         public ActionResult CurrencyIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //Kend:read ==>Currency
@@ -571,7 +557,6 @@ namespace WebApp.Controllers
                         Destination = currency,
                         Source = model,
                         ObjectName = "Currencies",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Id = "Code",
                         Transtype = TransType.Insert,
                         Options = options 
@@ -671,7 +656,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "Currencies",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete,
                 Id = "Code"
             });

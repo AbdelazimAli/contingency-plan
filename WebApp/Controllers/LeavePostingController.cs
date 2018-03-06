@@ -38,12 +38,7 @@ namespace WebApp.Controllers
         // GET: Leave Posting
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
-            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAcuralLeaveTypes(CompanyId, Language);
+            ViewBag.LeaveTypes = _hrUnitOfWork.LeaveRepository.GetAccrualLeaveTypes(CompanyId, Language);
             ViewBag.Periods = _hrUnitOfWork.LeaveRepository.GetOpenedLeavePeriods();
             return View(new LeavePostingViewModel());
         }
@@ -117,7 +112,8 @@ namespace WebApp.Controllers
         private void AddTrans(IEnumerable<LeaveBalanceGridViewModel> models, ref bool closePeriod )
         {
             List<int> EmpIds = models.Select(m => m.EmpId).ToList();
-            var leavePostingLst = _hrUnitOfWork.Repository<LeavePosting>().Where(lp => EmpIds.Contains(lp.EmpId) && !lp.Posted && lp.PeriodId == models.FirstOrDefault().PeriodId);
+            var periodId = models.FirstOrDefault().PeriodId;
+            var leavePostingLst = _hrUnitOfWork.Repository<LeavePosting>().Where(lp => EmpIds.Contains(lp.EmpId) && !lp.Posted && lp.PeriodId == periodId);
             ////2.Accrual Balance استحقاق الرصيد
             //var oldOpenTrans = _hrUnitOfWork.Repository<LeaveTrans>().Where(t => t.CompanyId == CompanyId && EmpIds.Contains(t.EmpId) && t.TransType == 2 && t.TransFlag == 1 && t.TypeId == models.FirstOrDefault().TypeId && t.PeriodId == models.FirstOrDefault().NewPeriodId);
 
@@ -351,13 +347,9 @@ namespace WebApp.Controllers
             ViewBag.TransType = _hrUnitOfWork.LookUpRepository.GetGridLookUpCode(Language, "TransType");
             DateTime Today = DateTime.Today;
             var Years = _hrUnitOfWork.BudgetRepository.ReadFiscal().OrderBy(y => y.StartDate);
-            ViewBag.Years = Years.Select(y => new FormList { id = y.Id, name = y.Name }).ToList();
+            ViewBag.Years = Years.Select(y => new FormList { id = y.Id, name = y.Name });
             ViewBag.currentYear = Years.Where(y => y.StartDate <= Today && y.EndDate >= Today).Select(y => y.Id).FirstOrDefault();
 
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         #endregion
@@ -392,12 +384,6 @@ namespace WebApp.Controllers
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("LeaveCancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
             ViewBag.Mangers = _hrUnitOfWork.EmployeeRepository.GetManagers(CompanyId,Language).Select(m => new { id = m.Id, name = m.Name });
-
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
             return View();
         }
 
@@ -426,15 +412,12 @@ namespace WebApp.Controllers
         {
             LeaveReqViewModel request = _hrUnitOfWork.LeaveRepository.GetRequest(Id, Language);
 
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("LeaveReqFollowUpForm", CompanyId, Version);
-            //if (columns.FirstOrDefault(fc => fc == "ReplaceEmpId") == null)
             ViewBag.Employees = _hrUnitOfWork.LeaveRepository.GetReplaceEmpList(request.EmpId, Language);
-
             ViewBag.CalcOptions = _hrUnitOfWork.LeaveRepository.GetLeaveType(request.TypeId); //for Calender
             ViewBag.Calender = _hrUnitOfWork.LeaveRepository.GetHolidays(CompanyId); //for Calender
 
             int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            ViewBag.isSSMenu = _hrUnitOfWork.MenuRepository.Get(MenuId)?.SSMenu ?? false;
+            ViewBag.isSSMenu = _hrUnitOfWork.Repository<Model.Domain.Menu>().Where(a => a.Id == MenuId).Select(a => a.SSMenu).FirstOrDefault();
 
             return View(request);
         }
@@ -481,7 +464,6 @@ namespace WebApp.Controllers
                 Destination = request,
                 Source = model,
                 ObjectName = "LeaveRequest",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo,
                 Transtype = TransType.Update
             });
@@ -741,10 +723,6 @@ namespace WebApp.Controllers
         #region Accepted Leaves
         public ActionResult AcceptedLeaves()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
 
@@ -792,12 +770,10 @@ namespace WebApp.Controllers
         public ActionResult AcceptedLeaveDetails(int Id, byte Version)
         {
             LeaveReqViewModel request = _hrUnitOfWork.LeaveRepository.GetRequest(Id, Language);
-
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("LeaveRequest", CompanyId, Version);
-            //if (columns.FirstOrDefault(fc => fc == "ReplaceEmpId") == null)
+            
             ViewBag.Employees = _hrUnitOfWork.LeaveRepository.GetReplaceEmpList(request.EmpId, Language);
-
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("LeaveCancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
+
             return View(request);
         }
 

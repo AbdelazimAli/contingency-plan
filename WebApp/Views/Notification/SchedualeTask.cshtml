@@ -2,7 +2,7 @@
 <br>
 
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     Layout = null;
     string[] function = ViewData["Functions"] as string[];
@@ -39,9 +39,10 @@
                 }, {
                     field: "RunNow",
                     command: {
-                        text: '@MsgUtils.Instance.Trls("RunNow")', click: function (e) {
+                        text: '@MsgUtils.Instance.Trls("RunNow")',
+                        click: function (e) {
                             var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
-
+                          
                             $.getJSON("/Notification/RunNow", { id: dataItem.Id, period: dataItem.PeriodInMinutes, EvenUrl: dataItem.EventUrl, Enabled: dataItem.Enabled, OnError: dataItem.StopOnError }, function (res) {
                                 if (res != "Disabled")
                                     toastr.success('@MsgUtils.Instance.Trls("TheTaskRunningnow")');

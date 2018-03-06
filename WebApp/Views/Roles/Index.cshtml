@@ -2,15 +2,13 @@
 
 @{
     ViewBag.Title = "Index";
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     Layout = null;
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    string[] function = ViewBag.Functions as string[];
-
 }
 <style>
     .k-hierarchy-cell {
@@ -28,9 +26,9 @@
     var dataLevel = [{ value: 1, text: re }, { value: 2, text: insert }, { value: 3, text: inupdate }, { value: 4, text: inupdel }];
     var objectName = "AspNetRole";
     Grids.batchGrid({
-        read: "@Url.Action("ReadRoles", "Roles")?MenuName=@ViewBag.IsSSRole",
+        read: "@Url.Action("ReadRoles", "Roles")?MenuName=false",
         update: "@Url.Action("UpdateRole", "Roles")",
-        create: "@Url.Action("CreateRole", "Roles")?SSRole=@ViewBag.IsSSRole",
+        create: "@Url.Action("CreateRole", "Roles")",
         destroy: "@Url.Action("DeleteRole", "Roles")",
         admin: "@User.IsInRole("Admin")",
         lang: "@User.Identity.GetCulture()",
@@ -163,7 +161,7 @@
         $("<div id='child" + e.data.Id + "'/>").appendTo(e.detailCell);
         GridNameAll = 'child' + e.data.Id;
         Grids.batchGrid({
-            read: "@Url.Action("ReadRoleMenu", "Roles")?RoleId=" + e.data.Id + "&SSRole=" + e.data.SSRole,
+            read: "@Url.Action("ReadRoleMenu", "Roles")?RoleId=" + e.data.Id,
             update: "@Url.Action("UpdateRoleMenu", "Roles")",
             admin: "@User.IsInRole("Admin")",
             lang: "@User.Identity.GetCulture()",
@@ -176,7 +174,7 @@
             pageable: false,
             fields: { IsChecked: { editable: false, nullable: true }, CreatedUser: { editable: false }, CreatedTime: { editable: false }, ModifiedUser: { editable: false }, ModifiedTime: { editable: false } },
             toolbar: '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="Grids.saveClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname1 + ')" style="@(dataLevel < 2 || read == 1 ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname1 + ')" style="@(admin == false ? "display: none" : "")"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>'+
-                     '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
+                     '<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li><li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>' +
                      '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname1 + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',
             select: { "DataLevelId": dataLevel },
             columns: columns,
@@ -328,5 +326,5 @@
     }
 </script>
 
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "gridName", "Roles" }, { "ObjectName", "AspNetRoles" }, { "Functions", function } })
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "gridName", "Roles" }, { "ObjectName", "AspNetRoles" } })
 

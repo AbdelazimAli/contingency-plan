@@ -11,7 +11,6 @@ using System.Net;
 using System.Web;
 using System.Web.Http;
 using System.Web.Http.Cors;
-using WebApp.Controllers.Api;
 using WebApp.Models;
 
 namespace WebApp.Controllers.NewApi
@@ -22,9 +21,9 @@ namespace WebApp.Controllers.NewApi
         public string Culture { get; set; }
         public int EmpId { get; set; }
     }
-    public class GetLeaveTypesData
+    public class LeaveTypesData
     {
-        public GetLeaveTypesData()
+        public LeaveTypesData()
         {
             LeaveTypeList = new List<DropDownList>();
             ChartData = new List<LeaveTransCounts>();
@@ -85,7 +84,7 @@ namespace WebApp.Controllers.NewApi
     }
 
 
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class LeavesController : BaseApiController
     {
         protected IHrUnitOfWork hrUnitOfWork { get; private set; }
@@ -104,7 +103,10 @@ namespace WebApp.Controllers.NewApi
             }
             else
             {
-                var list = hrUnitOfWork.LeaveRepository.ReadLeaveRequests(model.CompanyId, model.Culture).Where(l => l.EmpId == model.EmpId).ToList();
+                var list = hrUnitOfWork.LeaveRepository.ReadLeaveRequests(model.CompanyId, model.Culture)
+                    .Where(l => l.EmpId == model.EmpId && (l.ReturnDate >= DateTime.Now) && l.ApprovalStatus != 8)
+                    .OrderBy(l => l.StartDate)
+                    .ThenBy(l => l.RequestDate).ToList();
                 if (list == null)
                 {
                     return NotFound();
@@ -126,7 +128,7 @@ namespace WebApp.Controllers.NewApi
             var Replacements = hrUnitOfWork.LeaveRepository.GetReplaceEmpList(model.EmpId, model.Culture).ToList();
             var LeaveReasons = hrUnitOfWork.LookUpRepository.GetLookUpCodes("LeaveReason", model.Culture).ToList();
 
-            var res = new GetLeaveTypesData() { ChartData = ChartData, LeaveTypeList = LeaveTypeList, LeaveReasonList = LeaveReasons, Replacements = Replacements };
+            var res = new LeaveTypesData() { ChartData = ChartData, LeaveTypeList = LeaveTypeList, LeaveReasonList = LeaveReasons, Replacements = Replacements };
             if (LeaveTypeList == null)
             {
                 return NotFound();
@@ -150,11 +152,11 @@ namespace WebApp.Controllers.NewApi
             return Ok(Konafa);
 
         }
+
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("newApi/Leaves/PostLeave")]
         public IHttpActionResult PostLeave(LeaveReqVM model)
         {
-
             if (!ModelState.IsValid)
             {
                 return BadRequest();
@@ -192,7 +194,7 @@ namespace WebApp.Controllers.NewApi
 
             request.CompanyId = model.CompanyId;
             request.PeriodId = hrUnitOfWork.LeaveRepository.GetLeaveRequestPeriod(type.CalendarId, request.StartDate, model.Culture);
-            request.ApprovalStatus = (byte)(model.submit ? (type.AbsenceType == 8 ? 6 : 2) : 1); //ApprovalStatus 1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
+            request.ApprovalStatus = (byte)(model.submit ? (type.ExWorkflow ? 6 : 2) : 1); //ApprovalStatus 1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
             model.ApprovalStatus = request.ApprovalStatus;
             request.CreatedUser = UserName;
             request.CreatedTime = DateTime.Now;
@@ -201,7 +203,8 @@ namespace WebApp.Controllers.NewApi
             request.ReturnDate = model.ReturnDate;
             request.NofDays = (float)model.NofDays;
             request.DayFraction = (byte)model.DayFraction;
-            if (type.AbsenceType == 8 && model.submit)
+
+            if (type.ExWorkflow && model.submit)
             {
                 request.ActualStartDate = model.StartDate;
                 request.ActualEndDate = model.EndDate;
@@ -209,17 +212,21 @@ namespace WebApp.Controllers.NewApi
             }
 
             hrUnitOfWork.LeaveRepository.Add(request);
-            if (model.submit && type.AbsenceType == 8)
+            if (model.submit && type.ExWorkflow)
                 hrUnitOfWork.LeaveRepository.AddAcceptLeaveTrans(request, UserName);
 
 
+            var trans = hrUnitOfWork.BeginTransaction();
             var Errors = SaveChanges(model.Culture);
             if (Errors.Count > 0)
             {
+                trans.Rollback();
+                trans.Dispose();
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            if (model.submit && type.AbsenceType != 8) //Casual
+
+            if (model.submit && !type.ExWorkflow) //Casual
             {
                 WfViewModel wf = new WfViewModel()
                 {
@@ -234,23 +241,27 @@ namespace WebApp.Controllers.NewApi
                 if (wfTrans == null && wf.WorkFlowStatus != "Success")
                 {
                     request.ApprovalStatus = 1;
-
                     hrUnitOfWork.LeaveRepository.Attach(request);
                     hrUnitOfWork.LeaveRepository.Entry(request).State = EntityState.Modified;
                 }
                 else if (wfTrans != null)
                     hrUnitOfWork.LeaveRepository.Add(wfTrans);
-                Errors = SaveChanges(model.Culture);
+                Errors = Save(model.Culture);
                 if (Errors.Count > 0)
                 {
+                    trans.Rollback();
+                    trans.Dispose();
                     return StatusCode(HttpStatusCode.NotModified);
                 }
             }
+
+            trans.Commit();
+            trans.Dispose();
+
             model.Id = request.Id;
             return Created(new Uri(Request.RequestUri + "/" + model.Id), model);
-
-
         }
+
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("newApi/Leaves/PutLeave")]
         public IHttpActionResult PutLeave(LeaveReqVM model)
@@ -301,32 +312,37 @@ namespace WebApp.Controllers.NewApi
                     ValueBefore = MsgUtils.Instance.Trls("Darft")
                 });
 
-            request.ApprovalStatus = (byte)(model.submit ? (type.AbsenceType == 8 ? 6 : 2) : model.ApprovalStatus); //1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
+            request.ApprovalStatus = (byte)(model.submit ? (type.ExWorkflow ? 6 : 2) : model.ApprovalStatus); //1- New, 2- Submit 6- Approved //AbsenceType 8- Casual
             model.ApprovalStatus = request.ApprovalStatus;
             request.ModifiedUser = UserName;
             request.ModifiedTime = DateTime.Now;
             request.ReasonDesc = model.ReasonDesc;
             request.NofDays = (float)model.NofDays;
             request.DayFraction = (byte)model.DayFraction;
-            if (type.AbsenceType == 8 && model.submit)
+            if (type.ExWorkflow && model.submit)
             {
                 request.ActualStartDate = request.StartDate;
                 request.ActualEndDate = request.EndDate;
                 request.ActualNofDays = request.NofDays;
+                
             }
 
             hrUnitOfWork.LeaveRepository.Attach(request);
             hrUnitOfWork.LeaveRepository.Entry(request).State = EntityState.Modified;
+
             if (model.submit && type.AbsenceType == 8)
                 hrUnitOfWork.LeaveRepository.AddAcceptLeaveTrans(request, UserName);
 
+            var trans = hrUnitOfWork.BeginTransaction();
             var Errors = SaveChanges(model.Culture);
             if (Errors.Count > 0)
             {
+                trans.Rollback();
+                trans.Dispose();
                 return StatusCode(HttpStatusCode.Forbidden);
             }
 
-            if (model.submit && type.AbsenceType != 8) //Casual
+            if (model.submit && !type.ExWorkflow) //Casual
             {
                 WfViewModel wf = new WfViewModel()
                 {
@@ -347,14 +363,21 @@ namespace WebApp.Controllers.NewApi
                 }
                 else if (wfTrans != null)
                     hrUnitOfWork.LeaveRepository.Add(wfTrans);
-                Errors = SaveChanges(model.Culture);
+                Errors = Save(model.Culture);
                 if (Errors.Count > 0)
                 {
+                    trans.Rollback();
+                    trans.Dispose();
                     return StatusCode(HttpStatusCode.NotModified);
                 }
             }
+
+            trans.Commit();
+            trans.Dispose();
+
             return Ok(model);
         }
+
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("newApi/Leaves/DeleteLeave")]
         public IHttpActionResult DeleteLeave(DeleteRequest model)
@@ -381,7 +404,7 @@ namespace WebApp.Controllers.NewApi
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("newApi/Leaves/ValidateLeaveRequest")]
         public IHttpActionResult ValidateLeaveRequest(ValidateVM model)
-        {
+       {
             if (!ModelState.IsValid)
             {
                 return BadRequest();
@@ -391,9 +414,10 @@ namespace WebApp.Controllers.NewApi
                 return NotFound();
             }
 
-            var validate = hrUnitOfWork.LeaveRepository.CheckLeaveRequestApi(model.TypeId, model.EmpId, model.StartDate, model.EndDate, model.Culture, model.Id, true, model.CompanyId, model.ReplaceEmpId);
+            var validate = hrUnitOfWork.LeaveRepository.CheckLeaveRequestApi(model.TypeId, model.EmpId, model.StartDate, model.EndDate,model.NofDays, model.Culture, model.Id, true, model.CompanyId, model.ReplaceEmpId);
             return Ok(validate);
         }
+
         [System.Web.Http.HttpPost]
         [System.Web.Http.Route("newApi/Leaves/CancelLeave")]
         public IHttpActionResult CancelLeave(CancelVM model)
@@ -505,7 +529,7 @@ namespace WebApp.Controllers.NewApi
             request.NofDays = (float)model.BreakNofDays;
           //  if (type.AbsenceType == 8)
           //  {
-                request.EndDate = (DateTime)request.ActualEndDate;           
+                //request.EndDate = (DateTime)request.ActualEndDate;           
            // }
             ///Brake Leave LeaveTrans
             hrUnitOfWork.LeaveRepository.AddBreakLeaveTrans(request, DiffDays, UserName);
@@ -575,6 +599,8 @@ namespace WebApp.Controllers.NewApi
             request.ReturnDate = model.EditedReturnDate;
             request.ModifiedUser = UserName;
             request.ModifiedTime = DateTime.Now;
+            DateTime oldStartDate = request.ActualStartDate.GetValueOrDefault(); // remmber to check startdate
+            hrUnitOfWork.LeaveRepository.AddEditLeaveTrans(request, oldStartDate);
             hrUnitOfWork.LeaveRepository.Attach(request);
             hrUnitOfWork.LeaveRepository.Entry(request).State = EntityState.Modified;
 
@@ -671,6 +697,7 @@ namespace WebApp.Controllers.NewApi
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public string Culture { get; set; }
+        public float NofDays { get; set; } = 0;
         public int? ReplaceEmpId { get; set; }
 
     }

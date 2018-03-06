@@ -14,22 +14,26 @@ namespace Interface.Core.Repositories
 {
     public interface IEmployeeRepository : IRepository<Assignment>
     {
+        void GetAssignment(int EmpID, out int JobID, out int Gender, out int NationalityID);
         Dictionary<string, string> ReadMailEmpNewContract(string Language, int Id);
         Dictionary<string, string> ReadMailEmpContractFinish(string Language, int Id);
         IEnumerable<ExtendOrFinishContractViewModel> SendMailEmployees();
         string[] GetEmpMergeData(int EmpId, int CompanyId, string Culture);
-        IQueryable<AssignmentGridViewModel> GetTermActiveEmployees(string culture, int Id, int CompanyId);
+        IQueryable<DropDownList> GetTermActiveEmployees(string culture, int Id, int CompanyId);
         IEnumerable CountGenderByEmployment(int companyId, string culture);
         string GetFlexDataCheck(string tableName, int SourceId, int EmpId);
         IQueryable<ManagerEmployeeDiagram> EmployeesDiagram(int CompanyId, string Culture);
-        IQueryable<AssignmentGridViewModel> GetAssignments(string culture);
+        IQueryable<PeopleGridViewModel> GetAssignments(string culture);
+        IQueryable<PeopleGridViewModel> GetCurrentEmployee(int company, string culture);
+        IQueryable<PeopleGridViewModel> GetWaitingEmployee(int company, string culture);
+        IQueryable<PeopleGridViewModel> GetTerminatedEmployee(int company, string culture);
         EmployementViewModel GetPersonTypeAndEmployee(int EmpId);
         IList<DropDownList> GetEmpBenefit(int empId, string culture, int CompanyId);
         AssignmentFormViewModel GetAssignment(int EmpId,string culture);
         IQueryable<SysCodeViewModel> BranchName(int DepId, string culture);
         IQueryable<SysCodeViewModel> Sector(int DepId, string culture);
         IQueryable<ManagerEmployeeDiagram> GetManagers(int CompanyId, string Culture);
-        IQueryable<AssignmentGridViewModel> GetActiveEmployees(string culture, int Id, int CompanuId);
+        IQueryable<PeopleGridViewModel> GetActiveEmployees(string culture, int Id, int CompanuId);
         //Assignment GetDomainAssignment(int? Id);
         IQueryable<AssignHistoryViewModel> GetHistoryAssignments(int CompanyId, string culture, int Id);
         IQueryable<FormList> EmployeeMangers(int CompanyId, string Culture, int? Position);
@@ -59,14 +63,14 @@ namespace Interface.Core.Repositories
         IEnumerable<PeoplesViewModel> GetPeopleGenderPersonType(int genderId, int personType, int companyId, string culture);
         IEnumerable<PeoplesViewModel> GetPeopleWithNational(int NationaltyId, string culture, int companyId);
         IEnumerable CountEmpsByDepts(int[] depts, int compantyId, string cultuer);
-        IEnumerable CountEmpsByLocations(int compantyId, string cultuer);
-        IEnumerable<PeoplesViewModel> GetPeopleWithLoc(int LocId, int companyId, string culture);
-        IEnumerable LocationsByDepts(int[] depts, int compantyId, string cultuer);
+        IEnumerable CountEmpsByBranches(int compantyId, string cultuer);
+        IEnumerable<PeoplesViewModel> GetPeopleInBranch(int LocId, int companyId, string culture);
+        IEnumerable BranchesByDepts(int[] depts, int compantyId, string cultuer);
         //IEnumerable HeadCountByJob(int CompanyId, string culture);
         //IEnumerable<ChartViewModel> CountLenghtofService(int companyId, string culture);
         IEnumerable EmployeesAges(int companyId, string cultuer);
         IEnumerable AgesByDepts(int[] depts, int companyId, string culture);
-        IQueryable<AssignmentGridViewModel> GetAllEmployees(string culture);
+        IQueryable<PeopleGridViewModel> GetAllEmployees(string culture);
         IEnumerable<ChartViewModel> EmployeesStatus(int[] depts, int CompanyId, string culture);
         IEnumerable GenderByDepts(int[] depts, int companyId, string culture);
         IEnumerable<EmpsInYearViewModel> GetActiveByMonth(int CompanyId);

@@ -36,10 +36,6 @@ namespace WebApp.Controllers
         }
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadBenefits(int MenuId)
@@ -83,13 +79,13 @@ namespace WebApp.Controllers
         }
         public void fillViewBag()
         {
-            ViewBag.Jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.Locations = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Branches = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName });
             ViewBag.CompanyStuctures = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, Language);
             ViewBag.Payrolls = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name });
             ViewBag.Positions = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.PeopleGroups = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade();
+            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade(CompanyId);
             ViewBag.calender = _hrUnitOfWork.Repository<PeriodName>().Select(a => new { id = a.Id, name = a.Name }).ToList();
         }
         [HttpPost]
@@ -100,7 +96,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "Benefit",
@@ -137,7 +133,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Benefit",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -163,7 +158,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "Benefit",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -201,7 +195,7 @@ namespace WebApp.Controllers
 
         private void MapBenefit(Benefit Benefitobject, BenefitFormViewModel model, OptionsViewModel moreInfo)
         {
-            model.Locations = model.ILocations == null ? null : string.Join(",", model.ILocations.ToArray());
+            model.Branches = model.IBranches == null ? null : string.Join(",", model.IBranches.ToArray());
             model.Jobs = model.IJobs == null ? null : string.Join(",", model.IJobs.ToArray());
             model.Employments = model.IEmployments == null ? null : string.Join(",", model.IEmployments.ToArray());
             model.PeopleGroups = model.IPeopleGroups == null ? null : string.Join(",", model.IPeopleGroups.ToArray());
@@ -209,7 +203,7 @@ namespace WebApp.Controllers
             model.PayrollGrades = model.IPayrollGrades == null ? null : string.Join(",", model.IPayrollGrades.ToArray());
             model.CompanyStuctures = model.ICompanyStuctures == null ? null : string.Join(",", model.ICompanyStuctures.ToArray());
             model.Positions = model.IPositions == null ? null : string.Join(",", model.IPositions.ToArray());
-            moreInfo.VisibleColumns.Add("Locations");
+            moreInfo.VisibleColumns.Add("Branches");
             moreInfo.VisibleColumns.Add("Jobs");
             moreInfo.VisibleColumns.Add("Employments");
             moreInfo.VisibleColumns.Add("PeopleGroups");
@@ -224,7 +218,6 @@ namespace WebApp.Controllers
                 Destination = Benefitobject,
                 Source = model,
                 ObjectName = "Benefit",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo
             });
 
@@ -247,7 +240,6 @@ namespace WebApp.Controllers
                     {
                         Source = benefitplan,
                         ObjectName = "Benefit",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Delete
                     });
 
@@ -324,7 +316,6 @@ namespace WebApp.Controllers
                 {
                     Source = benfobj,
                     ObjectName = "Benefit",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 

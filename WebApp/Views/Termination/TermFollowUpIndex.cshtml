@@ -2,7 +2,7 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
@@ -46,19 +46,12 @@
          { value: 9, text: '@MsgUtils.Instance.Trls("Rejected")' }
     ];
 
-    function Exist(data) {
-        if (data.HasImage)
-            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
+    
 
     var columns = [
                     {
                         field: "Employee",
-                        template: "<div class='k-people-photo' " +
-                                        "style='background-image: #:Exist(data)# '></div>" +
-                                        "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>",
+                        template: "<div><img class='k-people-photo' src=#:Exist(data.Gender,data.Image)# />&nbsp;<span class='k-people-name'>#: Employee #</span></div>",
                         locked:true
 
                     },

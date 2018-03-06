@@ -1,4 +1,5 @@
 ﻿using Model.Domain;
+using Model.ViewModel;
 using Model.ViewModel.Personnel;
 using System;
 using System.Collections.Generic;
@@ -8,7 +9,7 @@ using System.Linq;
 namespace Interface.Core.Repositories
 {
    public interface ICompanyStructureRepository:IRepository<CompanyStructure>
-    {
+   {
         IQueryable<FormList> GetAllDepartments(int CompanyId, int? DeptId, string Culture);
         IQueryable<FormList> GetAllActiveCompanyStructure(int companyId, string Culture);
         CompanyStructureViewModel GetStructure(int? Id,string Culture);

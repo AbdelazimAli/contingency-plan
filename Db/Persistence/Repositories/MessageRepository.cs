@@ -148,6 +148,7 @@ namespace Db.Persistence.Repositories
             }
             context.MsgEmployees.Remove(msEmp);
         }
+
         //for navbar
         public IEnumerable ReadEmpMessages(int CompanyId,int empId, string culture)
         {
@@ -157,13 +158,13 @@ namespace Db.Persistence.Repositories
                          select new NavBarItemVM
                          {
                              Id = m.Id,
-                             PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
+                             PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                             Gender = p.Gender,
                              From = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                             Message = m.Message.Title,
-                             //MoreInfo = m.Message.Body
-                         }).ToList();
+                             Message = m.Message.Title
+                         }).Take(5).ToList();
 
-            return query.Take(query.Count > 5 ? 5 : query.Count);
+            return query;
         }
 
     }

@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -12,12 +12,12 @@
 
 }
 
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "Location" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Messages" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "messageDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Messages" } })
 <div id="messageDiv"></div>
 
 <script>
     var addUrl = "@Url.Action("Details", "Message")";
-    RequestFilters.ApplayAllFilters([], {}, "Location", "@Url.Action("GetMessage", "Message")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "messageDiv", "@Url.Action("GetMessage", "Message")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var Emp = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
     var grid = "'EmpMessages'";
     Grids.indexGrid({

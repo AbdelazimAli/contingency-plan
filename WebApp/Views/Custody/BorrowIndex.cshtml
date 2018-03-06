@@ -18,13 +18,13 @@
 <br />
 <div id="divChange"> <div id="BorrowDiv"></div> </div>
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
 }
 
 <script>
 
     var addUrl = "@Url.Action("DetailsDocBorrow", "Custody")";
-    RequestFilters.ApplayAllFilters([], {}, "BorrowDiv", "@Url.Action("ReadDocBorrow", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "BorrowDiv", "@Url.Action("ReadDocBorrow", "Custody")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var columns = [{ field: "Employee", locked: true },
         {
             field: "Attachment",

@@ -82,15 +82,19 @@ namespace WebApp.Models
             if (Parm.Transtype == Model.Domain.TransType.Insert) ResolveId++;
 
             var commonproperties = Parm.Options == null || Parm.Options.VisibleColumns == null ? (from sp in SourceProperties
-                                                                                                  join dp in DestionationProperties on new { sp.Name, sp.PropertyType } equals
-                                                                                                      new { dp.Name, dp.PropertyType }
+                                                                                                  join dp in DestionationProperties on new { p1 = sp.Name, p2 = sp.PropertyType.ToString() } equals
+                                                                                                      new { p1 = dp.Name, p2 = dp.PropertyType.ToString() }
                                                                                                   select new { sp, dp }) :
                                (from sp in SourceProperties
                                 where Parm.Options.VisibleColumns.Contains(sp.Name)
-                                join dp in DestionationProperties on new { sp.Name, sp.PropertyType } equals
-                                    new { dp.Name, dp.PropertyType }
+                                join dp in DestionationProperties on new { p1 = sp.Name, p2 = sp.PropertyType.ToString() } equals
+                                    new { p1 = dp.Name, p2 = dp.PropertyType.ToString() }
                                 select new { sp, dp });
 
+            commonproperties = commonproperties.Union(from sp in SourceProperties.Where(a => a.PropertyType.ToString() == "System.Collections.Generic.IList`1[System.Int32]")
+                                                      where Parm.Options.VisibleColumns.Contains(sp.Name)
+                                                      join dp in DestionationProperties.Where(a => a.PropertyType.ToString() == "System.String") on sp.Name equals dp.Name
+                                                      select new { sp, dp });
 
             foreach (var match in commonproperties)
             {
@@ -127,7 +131,12 @@ namespace WebApp.Models
                     });
                 }
 
-                match.dp.SetValue(Parm.Destination, soureValue, null);
+                if (soureValue != null && match.sp.PropertyType.ToString() == "System.Collections.Generic.IList`1[System.Int32]" && match.dp.PropertyType.ToString() == "System.String")
+                    match.dp.SetValue(Parm.Destination, string.Join(",", ((IList<int>)soureValue).ToArray()), null);
+                else
+                    match.dp.SetValue(Parm.Destination, soureValue, null);
+
+
                 if (Parm.Transtype == Model.Domain.TransType.Insert)
                 {
                     var p = DestionationProperties.Where(d => d.Name == "ModifiedUser").FirstOrDefault();
@@ -334,7 +343,7 @@ namespace WebApp.Models
             HrUnitOfWork.NotificationRepository.Add(notification);
 
             // Send it now
-            //HangFireJobs.SendNotication(notification, condition, HrUnitOfWork.NotificationRepository);
+            HangFireJobs.SendNotication(notification, condition, HrUnitOfWork.NotificationRepository);
 
             return notification;
         }

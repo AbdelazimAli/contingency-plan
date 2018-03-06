@@ -2,16 +2,12 @@
 using Model.Domain;
 using Model.ViewModel.Personnel;
 using System;
-using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Http;
 using System.Web.Http.Cors;
-using System.Web.Mvc;
-using System.Web.Script.Serialization;
-using WebApp.Controllers.Api;
 using WebApp.Models;
 
 namespace WebApp.Controllers.NewApi
@@ -58,7 +54,7 @@ namespace WebApp.Controllers.NewApi
 
         public string AuthEmpName { get; set; }
     }
-    //[EnableCors(origins: "*", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class AssignOrderController : BaseApiController
     {
         protected IHrUnitOfWork hrUnitOfWork { get; private set; }
@@ -75,7 +71,8 @@ namespace WebApp.Controllers.NewApi
             {
                 return BadRequest();
             }
-            var list = hrUnitOfWork.LeaveRepository.ReadAssignOrders(model.CompanyId, model.Culture).Where(ord => ord.EmpId == model.EmpId && ord.ApprovalStatus == 6).ToList();
+            var date = DateTime.Now.Date;
+            var list = hrUnitOfWork.LeaveRepository.ReadAssignOrders(model.CompanyId, model.Culture).Where(ord => ord.EmpId == model.EmpId && ord.ApprovalStatus == 6 && ord.AssignDate >= date).ToList();
             if (list == null)
             {
                 return NotFound();
@@ -91,7 +88,8 @@ namespace WebApp.Controllers.NewApi
             {
                 return BadRequest();
             }
-            var list = hrUnitOfWork.LeaveRepository.ReadAssignOrders(model.CompanyId, model.Culture).Where(ord => ord.ManagerId == model.EmpId).ToList();
+            var date = DateTime.Now.Date;
+            var list = hrUnitOfWork.LeaveRepository.ReadAssignOrders(model.CompanyId, model.Culture).Where(ord => ord.ManagerId == model.EmpId && ord.AssignDate >= date).ToList();
             if (list == null)
             {
                 return NotFound();
@@ -146,6 +144,7 @@ namespace WebApp.Controllers.NewApi
             var UserName = HttpContext.Current.User.Identity.Name;
             AssignOrder request;
             //= hrUnitOfWork.LeaveRepository.GetAssignOrderByiD(model.Id);
+            var isRequired = hrUnitOfWork.Repository<Workflow>().Where(w => w.Source == "AssignOrder" + model.CalcMethod && w.CompanyId == model.CompanyId).Select(a => a.IsRequired).FirstOrDefault();
 
             request = new AssignOrder();
             AutoMapperParm parms = new Models.AutoMapperParm() { Source = model, Destination = request, Version = 0, ObjectName = "AssignOrders", Options = null, Transtype = TransType.Insert };
@@ -154,7 +153,7 @@ namespace WebApp.Controllers.NewApi
             request.CompanyId = model.CompanyId;
             request.CreatedUser = UserName;
             request.CreatedTime = DateTime.Now;
-            request.ApprovalStatus = 6;
+            request.ApprovalStatus = (byte)(isRequired ? 1 : 6);
             request.EmpId = model.EmpId;
             request.Duration = model.Duration;
             request.AssignDate = model.AssignDate;
@@ -170,51 +169,61 @@ namespace WebApp.Controllers.NewApi
             {
                 return StatusCode(HttpStatusCode.Forbidden);
             }
-
-            if (request.CalcMethod == 1) //monetary
+            if (!isRequired && model.CalcMethod == 2 && model.Id == 0)
             {
-                WfViewModel wf = new WfViewModel()
-                {
-                    Source = "AssignOrder1",
-                    SourceId = request.CompanyId,
-                    DocumentId = request.Id,
-                    RequesterEmpId = request.EmpId,
-                    ApprovalStatus = 6,
-                    CreatedUser = UserName,
-                };
-                var wfTrans = hrUnitOfWork.LeaveRepository.AddWorkFlow(wf, model.language);
-                if (wfTrans == null && wf.WorkFlowStatus != "Success")
-                {
-                    request.ApprovalStatus = 1;
+                var error =hrUnitOfWork.LeaveRepository.AddAssignOrdersLeaveTrans(request, UserName, model.language);
+                
+            }
 
-                    hrUnitOfWork.LeaveRepository.AttachAssignOrder(request);
-                    hrUnitOfWork.LeaveRepository.EntryAssignOrder(request).State = EntityState.Modified;
-                }
-                else if (wfTrans != null)
-                    hrUnitOfWork.LeaveRepository.Add(wfTrans);
-            
-            }
-            else if (request.CalcMethod == 2) //time compensation
+            if (isRequired)
             {
-                WfViewModel wf = new WfViewModel()
+                if (request.CalcMethod == 1) //monetary
                 {
-                    Source = "AssignOrder2",
-                    SourceId = request.CompanyId,
-                    DocumentId = request.Id,
-                    RequesterEmpId = request.EmpId,
-                    ApprovalStatus = 6,
-                    CreatedUser = UserName,
-                };
-                var wfTrans = hrUnitOfWork.LeaveRepository.AddWorkFlow(wf, model.language);
-                if (wfTrans == null && wf.WorkFlowStatus != "Success")
-                {
-                    request.ApprovalStatus = 1;
-                    hrUnitOfWork.LeaveRepository.AttachAssignOrder(request);
-                    hrUnitOfWork.LeaveRepository.EntryAssignOrder(request).State = EntityState.Modified;
+                    WfViewModel wf = new WfViewModel()
+                    {
+                        Source = "AssignOrder1",
+                        SourceId = request.CompanyId,
+                        DocumentId = request.Id,
+                        RequesterEmpId = request.EmpId,
+                        ApprovalStatus = 6,
+                        CreatedUser = UserName,
+                    };
+                    var wfTrans = hrUnitOfWork.LeaveRepository.AddWorkFlow(wf, model.language);
+                    if (wfTrans == null && wf.WorkFlowStatus != "Success")
+                    {
+                        request.ApprovalStatus = 1;
+
+                        hrUnitOfWork.LeaveRepository.AttachAssignOrder(request);
+                        hrUnitOfWork.LeaveRepository.EntryAssignOrder(request).State = EntityState.Modified;
+                    }
+                    else if (wfTrans != null)
+                        hrUnitOfWork.LeaveRepository.Add(wfTrans);
+
                 }
-                else if (wfTrans != null)
-                    hrUnitOfWork.LeaveRepository.Add(wfTrans);
+                else if (request.CalcMethod == 2) //time compensation
+                {
+                    WfViewModel wf = new WfViewModel()
+                    {
+                        Source = "AssignOrder2",
+                        SourceId = request.CompanyId,
+                        DocumentId = request.Id,
+                        RequesterEmpId = request.EmpId,
+                        ApprovalStatus = 6,
+                        CreatedUser = UserName,
+                    };
+                    var wfTrans = hrUnitOfWork.LeaveRepository.AddWorkFlow(wf, model.language);
+                    if (wfTrans == null && wf.WorkFlowStatus != "Success")
+                    {
+                        request.ApprovalStatus = 1;
+                        hrUnitOfWork.LeaveRepository.AttachAssignOrder(request);
+                        hrUnitOfWork.LeaveRepository.EntryAssignOrder(request).State = EntityState.Modified;
+                    }
+                    else if (wfTrans != null)
+                        hrUnitOfWork.LeaveRepository.Add(wfTrans);
+                }
+
             }
+
             Errors = SaveChanges(model.language);
             if (Errors.Count > 0)
             {

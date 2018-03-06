@@ -36,15 +36,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
-      <HintPath>..\packages\EntityFramework.6.1.3\lib\net45\EntityFramework.SqlServer.dll</HintPath>
+      <HintPath>..\packages\EntityFramework.6.2.0\lib\net45\EntityFramework.SqlServer.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="EPPlus, Version=4.1.0.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
-      <HintPath>..\packages\EPPlus.4.1.0\lib\net40\EPPlus.dll</HintPath>
+    <Reference Include="EPPlus, Version=4.1.1.0, Culture=neutral, PublicKeyToken=ea159fdaa78159a1, processorArchitecture=MSIL">
+      <HintPath>..\packages\EPPlus.4.1.1\lib\net40\EPPlus.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -68,9 +68,19 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
     <Reference Include="System.Runtime.Caching" />
+    <Reference Include="System.Runtime.InteropServices.RuntimeInformation, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.InteropServices.RuntimeInformation.4.0.0\lib\net45\System.Runtime.InteropServices.RuntimeInformation.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Web" />
     <Reference Include="System.Web.Helpers, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.Helpers.dll</HintPath>
       <Private>True</Private>
@@ -95,6 +105,8 @@
       <HintPath>..\packages\Microsoft.AspNet.WebPages.3.2.3\lib\net45\System.Web.WebPages.Razor.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Migrations\201612050809354_SetCompyIdToNullInLocation.cs" />
@@ -921,13 +933,154 @@
     <Compile Include="Migrations\201712251422276_RemoveCompanyCode.Designer.cs">
       <DependentUpon>201712251422276_RemoveCompanyCode.cs</DependentUpon>
     </Compile>
+    <Compile Include="Migrations\201712310831301_AlterMeetingStatus.cs" />
+    <Compile Include="Migrations\201712310831301_AlterMeetingStatus.Designer.cs">
+      <DependentUpon>201712310831301_AlterMeetingStatus.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201712312037479_AlterPersonSetup.cs" />
+    <Compile Include="Migrations\201712312037479_AlterPersonSetup.Designer.cs">
+      <DependentUpon>201712312037479_AlterPersonSetup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201801131145513_AddErrandRequest.cs" />
+    <Compile Include="Migrations\201801131145513_AddErrandRequest.Designer.cs">
+      <DependentUpon>201801131145513_AddErrandRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201801131214226_AlterErrandRequest.cs" />
+    <Compile Include="Migrations\201801131214226_AlterErrandRequest.Designer.cs">
+      <DependentUpon>201801131214226_AlterErrandRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201801131241316_AlterErrandRequest1.cs" />
+    <Compile Include="Migrations\201801131241316_AlterErrandRequest1.Designer.cs">
+      <DependentUpon>201801131241316_AlterErrandRequest1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802031155266_AddMeetingViewer.cs" />
+    <Compile Include="Migrations\201802031155266_AddMeetingViewer.Designer.cs">
+      <DependentUpon>201802031155266_AddMeetingViewer.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802100934453_AddEmployeeLocations.cs" />
+    <Compile Include="Migrations\201802100934453_AddEmployeeLocations.Designer.cs">
+      <DependentUpon>201802100934453_AddEmployeeLocations.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802120745019_SmarterAsp001.cs" />
+    <Compile Include="Migrations\201802120745019_SmarterAsp001.Designer.cs">
+      <DependentUpon>201802120745019_SmarterAsp001.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802120746239_AlterErrandRequest2.cs" />
+    <Compile Include="Migrations\201802120746239_AlterErrandRequest2.Designer.cs">
+      <DependentUpon>201802120746239_AlterErrandRequest2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802120950399_AlterErrandRequest3.cs" />
+    <Compile Include="Migrations\201802120950399_AlterErrandRequest3.Designer.cs">
+      <DependentUpon>201802120950399_AlterErrandRequest3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802130839505_test89.cs" />
+    <Compile Include="Migrations\201802130839505_test89.Designer.cs">
+      <DependentUpon>201802130839505_test89.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802131749286_AddStatusToPerson.cs" />
+    <Compile Include="Migrations\201802131749286_AddStatusToPerson.Designer.cs">
+      <DependentUpon>201802131749286_AddStatusToPerson.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802131950412_AddNotifyDaysDoc.cs" />
+    <Compile Include="Migrations\201802131950412_AddNotifyDaysDoc.Designer.cs">
+      <DependentUpon>201802131950412_AddNotifyDaysDoc.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802140652112_AddUniqueLocationcode.cs" />
+    <Compile Include="Migrations\201802140652112_AddUniqueLocationcode.Designer.cs">
+      <DependentUpon>201802140652112_AddUniqueLocationcode.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802140934297_AddUniqueLocationcode2.cs" />
+    <Compile Include="Migrations\201802140934297_AddUniqueLocationcode2.Designer.cs">
+      <DependentUpon>201802140934297_AddUniqueLocationcode2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802140958160_AddUniqueLocationcode3.cs" />
+    <Compile Include="Migrations\201802140958160_AddUniqueLocationcode3.Designer.cs">
+      <DependentUpon>201802140958160_AddUniqueLocationcode3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802141502084_AlterDocTypeNofDays.cs" />
+    <Compile Include="Migrations\201802141502084_AlterDocTypeNofDays.Designer.cs">
+      <DependentUpon>201802141502084_AlterDocTypeNofDays.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802171217083_AddPersonForm.cs" />
+    <Compile Include="Migrations\201802171217083_AddPersonForm.Designer.cs">
+      <DependentUpon>201802171217083_AddPersonForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802171234592_AddSendForm.cs" />
+    <Compile Include="Migrations\201802171234592_AddSendForm.Designer.cs">
+      <DependentUpon>201802171234592_AddSendForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802171258041_AlterSendForm.cs" />
+    <Compile Include="Migrations\201802171258041_AlterSendForm.Designer.cs">
+      <DependentUpon>201802171258041_AlterSendForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802171648476_AlterNotifyLetter1.cs" />
+    <Compile Include="Migrations\201802171648476_AlterNotifyLetter1.Designer.cs">
+      <DependentUpon>201802171648476_AlterNotifyLetter1.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802190924050_AlterErrendRequest.cs" />
+    <Compile Include="Migrations\201802190924050_AlterErrendRequest.Designer.cs">
+      <DependentUpon>201802190924050_AlterErrendRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802201420176_AlterPersonAddress.cs" />
+    <Compile Include="Migrations\201802201420176_AlterPersonAddress.Designer.cs">
+      <DependentUpon>201802201420176_AlterPersonAddress.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802201453531_AlterPersonAddress2.cs" />
+    <Compile Include="Migrations\201802201453531_AlterPersonAddress2.Designer.cs">
+      <DependentUpon>201802201453531_AlterPersonAddress2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802252044583_MajorChanges.cs" />
+    <Compile Include="Migrations\201802252044583_MajorChanges.Designer.cs">
+      <DependentUpon>201802252044583_MajorChanges.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802260710355_RemoveSectorId.cs" />
+    <Compile Include="Migrations\201802260710355_RemoveSectorId.Designer.cs">
+      <DependentUpon>201802260710355_RemoveSectorId.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802260816284_AlterPersonForm.cs" />
+    <Compile Include="Migrations\201802260816284_AlterPersonForm.Designer.cs">
+      <DependentUpon>201802260816284_AlterPersonForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201802271423471_AlterDocTypeAttr.cs" />
+    <Compile Include="Migrations\201802271423471_AlterDocTypeAttr.Designer.cs">
+      <DependentUpon>201802271423471_AlterDocTypeAttr.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201803030744321_AddLoanType.cs" />
+    <Compile Include="Migrations\201803030744321_AddLoanType.Designer.cs">
+      <DependentUpon>201803030744321_AddLoanType.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201803031451558_AddLoanRequest.cs" />
+    <Compile Include="Migrations\201803031451558_AddLoanRequest.Designer.cs">
+      <DependentUpon>201803031451558_AddLoanRequest.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Migrations\201803061553339_AlterCompanyDocType.cs" />
+    <Compile Include="Migrations\201803061553339_AlterCompanyDocType.Designer.cs">
+      <DependentUpon>201803061553339_AlterCompanyDocType.cs</DependentUpon>
+    </Compile>
     <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="Persistence\BLL\AddNotifyLetters.cs" />
+    <Compile Include="Persistence\BLL\EmploymentPapers.cs" />
+    <Compile Include="Persistence\BLL\MissionRequestB.cs" />
+    <Compile Include="Persistence\BLL\PersonFormBL.cs" />
+    <Compile Include="Persistence\BLL\SendFormBL.cs" />
+    <Compile Include="Persistence\BLL\UserBL.cs" />
+    <Compile Include="Persistence\Constants.cs" />
+    <Compile Include="Persistence\Extensions\LambdaComparer.cs" />
     <Compile Include="Persistence\HrContext.cs" />
     <Compile Include="Persistence\HrContextFactory.cs" />
     <Compile Include="Persistence\HrUnitOfWork.cs" />
+    <Compile Include="Persistence\ImageProcesses.cs" />
     <Compile Include="Persistence\MsgUtils.cs" />
     <Compile Include="Persistence\Repositories\CheckListRepository.cs" />
+    <Compile Include="Persistence\Repositories\Loans\LoanTypeRepository.cs" />
+    <Compile Include="Persistence\Repositories\PersonFormRepository.cs" />
+    <Compile Include="Persistence\Repositories\BranchRepository.cs" />
+    <Compile Include="Persistence\Repositories\MeetingRepository.cs" />
+    <Compile Include="Persistence\Repositories\SendFormRepository.cs" />
+    <Compile Include="Persistence\Repositories\CompanyDocAttrRepository.cs" />
+    <Compile Include="Persistence\Repositories\CompanyDocsViewsRepository.cs" />
     <Compile Include="Persistence\Repositories\ComplaintRepository.cs" />
+    <Compile Include="Persistence\Repositories\DocTypesRepository.cs" />
     <Compile Include="Persistence\Repositories\EmployeeRepository.cs" />
     <Compile Include="Persistence\Repositories\AudiTrialRepository.cs" />
     <Compile Include="Persistence\Repositories\BenefitsRepository.cs" />
@@ -939,11 +1092,13 @@
     <Compile Include="Persistence\Repositories\HRLettersRepository.cs" />
     <Compile Include="Persistence\Repositories\JobRepository.cs" />
     <Compile Include="Persistence\Repositories\LeaveRepository.cs" />
-    <Compile Include="Persistence\Repositories\LocationRepository.cs" />
+    <Compile Include="Persistence\Repositories\SiteRepository.cs" />
     <Compile Include="Persistence\Repositories\LookUpRepository.cs" />
     <Compile Include="Persistence\Repositories\MedicalRepository.cs" />
     <Compile Include="Persistence\Repositories\MessageRepository.cs" />
+    <Compile Include="Persistence\Repositories\MissionRepository.cs" />
     <Compile Include="Persistence\Repositories\NotificationRepository.cs" />
+    <Compile Include="Persistence\Repositories\NotifyLetterRepository.cs" />
     <Compile Include="Persistence\Repositories\PageEditorRepository.cs" />
     <Compile Include="Persistence\Repositories\PagesRepository.cs" />
     <Compile Include="Persistence\Repositories\MenuRepository.cs" />
@@ -956,6 +1111,7 @@
     <Compile Include="Persistence\Repositories\TerminationRepository.cs" />
     <Compile Include="Persistence\Repositories\TrainingRepository.cs" />
     <Compile Include="Persistence\Services\CacheManager.cs" />
+    <Compile Include="Persistence\Services\DateTimeServices.cs" />
     <Compile Include="Persistence\Services\EmailService.cs" />
     <Compile Include="Persistence\UnitOfWork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -1594,6 +1750,99 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Migrations\201712251422276_RemoveCompanyCode.resx">
       <DependentUpon>201712251422276_RemoveCompanyCode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712310831301_AlterMeetingStatus.resx">
+      <DependentUpon>201712310831301_AlterMeetingStatus.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201712312037479_AlterPersonSetup.resx">
+      <DependentUpon>201712312037479_AlterPersonSetup.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201801131145513_AddErrandRequest.resx">
+      <DependentUpon>201801131145513_AddErrandRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201801131214226_AlterErrandRequest.resx">
+      <DependentUpon>201801131214226_AlterErrandRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201801131241316_AlterErrandRequest1.resx">
+      <DependentUpon>201801131241316_AlterErrandRequest1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802031155266_AddMeetingViewer.resx">
+      <DependentUpon>201802031155266_AddMeetingViewer.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802100934453_AddEmployeeLocations.resx">
+      <DependentUpon>201802100934453_AddEmployeeLocations.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802120745019_SmarterAsp001.resx">
+      <DependentUpon>201802120745019_SmarterAsp001.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802120746239_AlterErrandRequest2.resx">
+      <DependentUpon>201802120746239_AlterErrandRequest2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802120950399_AlterErrandRequest3.resx">
+      <DependentUpon>201802120950399_AlterErrandRequest3.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802130839505_test89.resx">
+      <DependentUpon>201802130839505_test89.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802131749286_AddStatusToPerson.resx">
+      <DependentUpon>201802131749286_AddStatusToPerson.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802131950412_AddNotifyDaysDoc.resx">
+      <DependentUpon>201802131950412_AddNotifyDaysDoc.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802140652112_AddUniqueLocationcode.resx">
+      <DependentUpon>201802140652112_AddUniqueLocationcode.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802140934297_AddUniqueLocationcode2.resx">
+      <DependentUpon>201802140934297_AddUniqueLocationcode2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802140958160_AddUniqueLocationcode3.resx">
+      <DependentUpon>201802140958160_AddUniqueLocationcode3.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802141502084_AlterDocTypeNofDays.resx">
+      <DependentUpon>201802141502084_AlterDocTypeNofDays.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802171217083_AddPersonForm.resx">
+      <DependentUpon>201802171217083_AddPersonForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802171234592_AddSendForm.resx">
+      <DependentUpon>201802171234592_AddSendForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802171258041_AlterSendForm.resx">
+      <DependentUpon>201802171258041_AlterSendForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802171648476_AlterNotifyLetter1.resx">
+      <DependentUpon>201802171648476_AlterNotifyLetter1.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802190924050_AlterErrendRequest.resx">
+      <DependentUpon>201802190924050_AlterErrendRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802201420176_AlterPersonAddress.resx">
+      <DependentUpon>201802201420176_AlterPersonAddress.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802201453531_AlterPersonAddress2.resx">
+      <DependentUpon>201802201453531_AlterPersonAddress2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802252044583_MajorChanges.resx">
+      <DependentUpon>201802252044583_MajorChanges.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802260710355_RemoveSectorId.resx">
+      <DependentUpon>201802260710355_RemoveSectorId.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802260816284_AlterPersonForm.resx">
+      <DependentUpon>201802260816284_AlterPersonForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201802271423471_AlterDocTypeAttr.resx">
+      <DependentUpon>201802271423471_AlterDocTypeAttr.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201803030744321_AddLoanType.resx">
+      <DependentUpon>201803030744321_AddLoanType.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201803031451558_AddLoanRequest.resx">
+      <DependentUpon>201803031451558_AddLoanRequest.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Migrations\201803061553339_AlterCompanyDocType.resx">
+      <DependentUpon>201803061553339_AlterCompanyDocType.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

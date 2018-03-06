@@ -15,8 +15,8 @@ namespace Model.ViewModel.Personnel
         public int TransType { get; set; } // 1-Open Balance  2-Post Balance 3-Vacation Compensation  4-Time Compensation  12-Balance Replacement  13-Balance Deduction
         public float NofDays { get; set; }
         public int EmpStatus { get; set; }
-        public bool HasImage { get; set; }
-        public int PhotoId { get; set; }
+        public string Image { get; set; }
+        public short Gender { get; set; }
         public int empId { get; set; }
 
     }

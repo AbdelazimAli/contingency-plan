@@ -37,10 +37,6 @@ namespace WebApp.Controllers
         // GET: Position
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetPositions(int MenuId)
@@ -69,12 +65,12 @@ namespace WebApp.Controllers
             if (id != 0)
             {
                 ViewBag.related = _hrUnitOfWork.EmployeeRepository.GetAssignments(Language).Where(a => a.PositionId == Position.Id).Count() > 0;
-                ViewBag.job = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,Position.JobId).Select(a => new { id = a.Id, name = a.LocalName });
+                ViewBag.job = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,Position.JobId).Select(a => new { id = a.Id, name = a.LocalName });
                 ViewBag.Dept = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, Position.DeptId, Language);
             }
             else
             {
-                ViewBag.job = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
+                ViewBag.job = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
                 ViewBag.Dept = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId,null, Language);
             }
             var Array = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Where(a => a.HiringStatus == 2).Select(a => a).ToList();
@@ -147,7 +143,6 @@ namespace WebApp.Controllers
                     Destination = Pos,
                     Source = model,
                     ObjectName = "PositionForm",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Insert
                 });
@@ -187,7 +182,6 @@ namespace WebApp.Controllers
                     Destination = Pos,
                     Source = model,
                     ObjectName = "PositionForm",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Options = moreInfo,
                     Transtype = TransType.Update
                 });
@@ -284,7 +278,6 @@ namespace WebApp.Controllers
                 {
                     Source = assignments,
                     ObjectName = "Positions",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 
@@ -483,7 +476,8 @@ namespace WebApp.Controllers
                 ParentId = a.ParentId,
                 colorSchema = a.colorSchema,
                 PositionName = a.PositionName,
-                HasImage = a.HasImage,
+                Image = a.Image,
+                Gender = a.Gender,
                 Children = AddNodes(all, a.Id)
             }).ToList();
         }
@@ -501,7 +495,8 @@ namespace WebApp.Controllers
                     Name = node.Name,
                     ParentId = node.ParentId,
                     colorSchema = node.colorSchema,
-                    HasImage = node.HasImage,
+                    Image = node.Image,
+                    Gender = node.Gender,
                     PositionName = node.PositionName,
                     Children = AddNodes(all, node.Id)
                 });

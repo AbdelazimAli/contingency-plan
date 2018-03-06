@@ -69,8 +69,6 @@ namespace Model.ViewModel.Administration
         public string BloodClass { get; set; } 
         public string Recommend { get; set; }
         public string RecommenReson { get; set; }
-        public string LocationId { get; set; }
-        public string RoomNo { get; set; }
         public bool HasImage { get; set; } = false;
         public string SubscripDate { get; set; }
         public string BasicSubAmt { get; set; }
@@ -121,7 +119,7 @@ namespace Model.ViewModel.Administration
         public string PayGradeId { get; set; }
         public string Performance { get; set; } 
         public string CareerId { get; set; }
-        public string AssignLocation { get; set; }
+        public string AssignBranch { get; set; }
         public string ManagerId { get; set; }
         public string ProbationPrd { get; set; }
         public string NoticePrd { get; set; } 
@@ -133,6 +131,6 @@ namespace Model.ViewModel.Administration
         public string CompanyStuctures { get; set; }
         public string Positions { get; set; } 
         public string PayrollGrades { get; set; } 
-        public string Locations { get; set; } 
+        public string Branches { get; set; } 
     }
 }

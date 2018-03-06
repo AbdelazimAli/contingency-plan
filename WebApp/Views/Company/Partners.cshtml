@@ -1,7 +1,7 @@
 ﻿
 @{
     ViewBag.Title = "Index";
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     Layout = null;
@@ -92,7 +92,7 @@
 
 
 
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "partners" }, { "ObjectName", "CompanyPartners" }, { "Functions", ViewBag.Functions } })
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "partners" }, { "ObjectName", "CompanyPartners" } })
 
 <div class="modal fade" id="DetailsPopup" data-url='@Url.Action("GetAddress", "Company")' tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">

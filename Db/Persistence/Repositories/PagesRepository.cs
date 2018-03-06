@@ -193,7 +193,7 @@ namespace Db.Persistence.Repositories
 
         public ChartViewModel GetPageData(int companyId, string objectName, byte version)
         {
-            return context.PageDiv.Where(frm => frm.Id == HrContext.GetPageId(companyId, objectName, version)).Select(c => new ChartViewModel
+            return context.PageDiv.Where(frm => frm.CompanyId == companyId && frm.ObjectName == objectName && frm.Version == version).Select(c => new ChartViewModel
             {
                 Id = c.Id,
                 EmpId = c.CompanyId
@@ -209,7 +209,7 @@ namespace Db.Persistence.Repositories
             List<string> disabledColumns = columnRoles.Where(c => !c.isEnabled).Select(c => c.ColumnName).ToList();
 
             var form = context.PageDiv
-                .Where(frm => frm.Id == HrContext.GetPageId(companyId, objectName, version))
+                .Where(frm => frm.CompanyId == companyId && frm.ObjectName == objectName && frm.Version == version)
                 .Select(frm => new FormViewModel
                 {
                     Id = frm.Id,
@@ -279,7 +279,14 @@ namespace Db.Persistence.Repositories
                    }).ToList()
                 });
 
-            return form.FirstOrDefault();
+            var result = form.FirstOrDefault();
+            if (result == null)
+            {
+                result = GetFormInfo(companyId, objectName, 0, culture, roleId);
+                if (result == null) GetFormInfo(0, objectName, 0, culture, roleId);
+            }
+
+            return result;
         }
 
         public void ApplyFormDesignChanges(int companyId, FormDesginViewModel form)
@@ -741,7 +748,7 @@ namespace Db.Persistence.Repositories
 
         public PageDiv GetPageType(int companyId, string objectName, byte version)
         {
-            return context.PageDiv.Where(p => p.Id == HrContext.GetPageId(companyId, objectName, version)).FirstOrDefault();
+            return context.PageDiv.Where(p => p.CompanyId == companyId && p.ObjectName == objectName && p.Version == version).FirstOrDefault();
         }
         public int GetMenuId(int companyId, string objectName, byte version)
         {
@@ -798,6 +805,47 @@ namespace Db.Persistence.Repositories
 
                         };
             return query;
+        }
+
+        public FormColumnViewModel GetFormColumn(int companyId, string objectName, byte version, string culture, string columnname)
+        {
+            // left outer join use group join or link query
+            var result = (from column in context.FormsColumns
+                        where column.Section.FieldSet.Page.CompanyId == companyId && column.Section.FieldSet.Page.ObjectName == objectName && column.Section.FieldSet.Page.Version == version && column.ColumnName == columnname
+                        select new FormColumnViewModel
+                        {
+                            Id = column.Id,
+                            SectionId = column.SectionId,
+                            CompanyId = companyId,
+                            order = column.ColumnOrder,
+                            type = column.InputType,
+                            name = column.ColumnName,
+                            label = HrContext.GetColumnTitle(companyId, culture, objectName, version, column.ColumnName),
+                            placeholder = column.PlaceHolder,
+                            minLength = column.MinLength,
+                            maxLength = column.MaxLength,
+                            min = column.Min,
+                            max = column.Max,
+                            isunique = column.IsUnique,
+                            UniqueColumns = column.UniqueColumns,
+                            isVisible = column.isVisible,
+                            required = column.Required,
+                            pattern = column.Pattern,
+                            HtmlAttribute = column.HtmlAttribute,
+                            ColumnType = column.ColumnType,
+                            CodeName = column.CodeName,
+                            TableName = column.Section.FieldSet.Page.TableName,
+                            DefaultValue = column.DefaultValue,
+                            Formula = column.Formula,
+                            PageId = column.Section.FieldSet.PageId,
+                            OrgMaxLength = 0
+                        }).FirstOrDefault();
+
+            return result;
+        }
+        public IList<StringDropDown> GetCodeNamesList(string culture)
+        {
+            return context.Database.SqlQuery<StringDropDown>("select t.CodeName id, IsNULL(MsgTbl.Meaning, t.CodeName) name from (select distinct s.CodeName from SystemCodes s union select distinct c.CodeName from lookupcode c) t left outer join MsgTbl on (t.CodeName = MsgTbl.Name and MsgTbl.Culture = '" + culture + "')").ToList();
         }
 
         public IQueryable<FormColumnViewModel> GetExcelColumnInfo(int companyId, string objectName, byte version, string culture)
@@ -914,97 +962,118 @@ namespace Db.Persistence.Repositories
             return res;
         }
 
-        public IQueryable<DropDownList> GetRemoteList(string tableName, string query, string formTableName, int companyId, string culture)
-        {
+        public IEnumerable<DropDownList> GetRemoteList(string tableName, string query, string formTableName, int companyId, string culture, string id)
+         {
             StringBuilder sql = new StringBuilder();
             switch (tableName)
             {
                 case "People":
-                    sql.Append("SELECT P.Id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') Name, (CASE WHEN P.HasImage = 1 THEN CAST(P.Id as nvarchar(10)) + '.jpeg' ELSE 'noimage.jpg' END) PicUrl, dbo.fn_GetEmpStatus(P.Id) Icon FROM People P");
+                    if (id == "")
+                    {
+                        sql.Append("select top 7 Id,Name,PicUrl,Gender,Icon from (SELECT P.Id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') Name, dbo.fn_GetDoc('EmployeePic', P.Id) PicUrl, P.Gender, dbo.fn_GetEmpStatus(P.Id) Icon FROM People P");
 
-                    if (formTableName == "Terminations") //join with Employments
-                    {
-                        sql.Append(", Employements AS E WHERE P.Id = E.EmpId AND E.Status = 1 AND E.CompanyId = " + companyId);
+                        if (formTableName == "Terminations") //join with Employments
+                        {
+                            sql.Append(", Employements AS E WHERE E.CompanyId = " + companyId + " AND E.EmpId = P.Id AND E.Status = 1");
+                        }
+                        else //join with assignments
+                        {
+                            sql.Append(",Assignments A WHERE A.CompanyId = " + companyId + " And A.EmpId = P.Id AND (Convert(date, GETDATE()) Between A.AssignDate And A.EndDate) AND A.SysAssignStatus = 1");
+                            //if (formTableName == "LeaveRequests")
+                            //    sql.Append(" AND A.SysAssignStatus = 1");
+                        }
+
+                        sql.Append(") t where Name like '" + query + "'");
                     }
-                    else //join with assignments
-                    {
-                        sql.Append(", Assignments A WHERE A.CompanyId = " + companyId + " And A.EmpId = P.Id AND (Convert(date, GETDATE()) Between A.AssignDate And A.EndDate)");
-                        if (formTableName == "LeaveRequests")
-                            sql.Append(" AND A.SysAssignStatus = 1");
-                    }
-                    sql.Append("AND dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') like '%" + query + "%' ");
+                    else
+                        sql.Append("SELECT P.Id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') Name, dbo.fn_GetDoc('EmployeePic', P.Id) PicUrl, P.Gender, dbo.fn_GetEmpStatus(P.Id) Icon FROM People P WHERE Id = " + id);
+
                     break;
                 case "Jobs":
-                    sql.Append("SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM " + tableName + " WHERE ((CompanyId = " + companyId + " AND IsLocal = 1) OR IsLocal = 0) AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01')) AND Name like '%" + query + "%'");
+                    if (id == "")
+                        sql.Append("select top 7 Id,Name from (SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM Jobs WHERE (CompanyId = " + companyId + " OR IsLocal = 0) AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01'))) t where Name like '" + query + "'");
+                    else
+                        sql.Append("SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM Jobs WHERE Id = " + id);
                     break;
                 case "CompanyStructures":
-                    sql.Append("SELECT Id, Name FROM " + tableName + " WHERE (CompanyId = " + companyId + ") AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01')) AND Name like '%" + query + "%'");
+                    if (id == "")
+                        sql.Append("select top 7 Id,Name from (SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM CompanyStructures WHERE (CompanyId = " + companyId + ") AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01'))) t where Name like '" + query + "'");
+                    else
+                        sql.Append("SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM CompanyStructures WHERE Id = " + id);
+
                     break;
                 case "Positions":
-                    sql.Append("SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM " + tableName + " WHERE CompanyId = " + companyId + " AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01')) AND Name like '%" + query + "%'");
+                    sql.Append("select top 7 Id,Name from (SELECT Id, dbo.fn_TrlsName(Name, '" + culture + "') Name FROM Positions WHERE (CompanyId = " + companyId + ") AND (Convert(date, GETDATE()) Between StartDate AND ISNULL(EndDate, '2099/01/01'))) t where Name like '" + query + "'");
                     break;
                 case "Countries":
-                    string lang = culture.Substring(0, 2);
-                    sql.Append("SELECT Id, (CASE WHEN ('" + lang + "' = 'ar') THEN NameAr ELSE Name END) Name FROM " + tableName + " WHERE (CASE WHEN ('" + lang + "' = 'ar') THEN NameA ELSE Name END) like '%" + query + "%'");
+                    string lang = culture.Substring(0, 2) == "ar" ? "Ar" : "";
+                    if (id == "")
+                        sql.Append("SELECT top 7 Id, Name" + lang + " Name FROM Countries where Name" + lang + " like '" + query + "'");
+                    else
+                        sql.Append("SELECT top 7 Id, Name" + lang + " Name FROM Countries where Id = " + id);
                     break;
             }
 
             if (sql.Length == 0)
-                return (new List<DropDownList>()).AsQueryable();
+                return new List<DropDownList>();
             else
             {
-                var list = context.Database.SqlQuery<DropDownList>(sql.ToString()).AsQueryable();
+                var list = context.Database.SqlQuery<DropDownList>(sql.ToString()).ToList();
                 return list;
             }
         }
 
-
         public FormFlexColumnsVM GetFormFlexData(int companyId, string objectName, byte version, string culture, int SourceId)
         {
-            var page = context.PageDiv.Where(p => p.Id == HrContext.GetPageId(companyId, objectName, version))
+            var page = context.PageDiv.Where(p => p.CompanyId == companyId && p.ObjectName == objectName && p.Version == version)
                 .Select(p => new
                 {
                     p.Id, p.TableName,
-                    legendTitle = HrContext.GetColumnTitle(companyId, culture, objectName, version, "AdditinalColumns") ?? "AdditinalColumns",
+                    legendTitle = HrContext.GetColumnTitle(companyId, culture, objectName, version, "AdditionalColumns"),
                 });
 
-            var flexData = (from p in page
-                            join fc in context.FlexColumns on p.Id equals fc.PageId
-                            where fc.isVisible
-                            join fd in context.FlexData on new { fc.PageId, fc.ColumnName } equals new { fd.PageId, fd.ColumnName } into g1
-                            from fd in g1.Where(b => b.SourceId == SourceId).DefaultIfEmpty()
-                            orderby fc.ColumnOrder
-                            select new FormFlexColumnsViewModel
-                            {
-                                name = fc.ColumnName,
-                                label = HrContext.GetColumnTitle(companyId, culture, objectName, version, fc.ColumnName) ?? fc.ColumnName,
-                                PageId = fc.PageId,
-                                //SourceId = SourceId,
-                                flexId = fd == null ? 0 : fd.Id,
-                                Value = fd == null ? null : fd.Value,
-                                ValueId = fd == null ? null : fd.ValueId,
-                                //ValueText = (fc.InputType == 3 && code != null ? (t == null ? code.Name : t.Title) : fd.Value),
-                                CodeName = fc.CodeName,
-                                InputType = fc.InputType,
-                                isunique = fc.IsUnique,
-                                max = fc.Max,
-                                min = fc.Min,
-                                pattern = fc.Pattern,
-                                placeholder = fc.PlaceHolder,
-                                required = fc.Required,
-                                UniqueColumns = fc.UniqueColumns,
-                                //ObjectName = objectName,
-                                TableName = p.TableName,
-                                //Version = version
-                            }).ToList();
-
-            FormFlexColumnsVM result = new FormFlexColumnsVM
+            if (page != null)
             {
-                FlexData = flexData,
-                Legend = page.FirstOrDefault().legendTitle
-            };
+                var flexData = (from p in page
+                                join fc in context.FlexColumns on p.Id equals fc.PageId
+                                where fc.isVisible
+                                join fd in context.FlexData on new { fc.PageId, fc.ColumnName } equals new { fd.PageId, fd.ColumnName } into g1
+                                from fd in g1.Where(b => b.SourceId == SourceId).DefaultIfEmpty()
+                                orderby fc.ColumnOrder
+                                select new FormFlexColumnsViewModel
+                                {
+                                    name = fc.ColumnName,
+                                    label = HrContext.GetColumnTitle(companyId, culture, objectName, version, fc.ColumnName) ?? fc.ColumnName,
+                                    PageId = fc.PageId,
+                                    //SourceId = SourceId,
+                                    flexId = fd == null ? 0 : fd.Id,
+                                    Value = fd == null ? null : fd.Value,
+                                    ValueId = fd == null ? null : fd.ValueId,
+                                    //ValueText = (fc.InputType == 3 && code != null ? (t == null ? code.Name : t.Title) : fd.Value),
+                                    CodeName = fc.CodeName,
+                                    InputType = fc.InputType,
+                                    isunique = fc.IsUnique,
+                                    max = fc.Max,
+                                    min = fc.Min,
+                                    pattern = fc.Pattern,
+                                    placeholder = fc.PlaceHolder,
+                                    required = fc.Required,
+                                    UniqueColumns = fc.UniqueColumns,
+                                    //ObjectName = objectName,
+                                    TableName = p.TableName,
+                                    //Version = version
+                                }).ToList();
 
-            return result;
+                FormFlexColumnsVM result = new FormFlexColumnsVM
+                {
+                    FlexData = flexData,
+                    Legend = page.FirstOrDefault().legendTitle
+                };
+
+                return result;
+            }
+
+            return new FormFlexColumnsVM();
         }
 
         #endregion
@@ -1494,6 +1563,7 @@ namespace Db.Persistence.Repositories
             }
         }
 
+      
         string GetColumnTitles(int companyId, string objectName, byte version, string culture)
         {
 
@@ -1630,9 +1700,17 @@ namespace Db.Persistence.Repositories
             // ["", "", ...]      
             // Get Grid from user company
             var list = context.GridColumns
-                .Where(t => t.GridId == HrContext.GetPageId(companyId, objectName, version))
+                .Where(t => t.Grid.CompanyId == companyId && t.Grid.ObjectName == objectName && t.Grid.Version == version)
                 .OrderBy(t => t.ColumnOrder)
                 .ToList();
+
+            if (list == null)
+            {
+                list = context.GridColumns
+                .Where(t => t.Grid.CompanyId == companyId && t.Grid.ObjectName == objectName && t.Grid.Version == 0)
+                .OrderBy(t => t.ColumnOrder)
+                .ToList();
+            }
 
 
             StringBuilder result = new StringBuilder("[");
@@ -1651,7 +1729,6 @@ namespace Db.Persistence.Repositories
                     item.PlaceHolder + "\", \"pattern\": \"" + item.Pattern + "\", \"custom\": \"" + item.Custom + "\", \"codeName\": \"" + item.CodeName +
                     "\", \"input\": \"" + item.InputType + "\", \"isUnique\": \"" + item.IsUnique + "\", \"uniqueColumns\": \"" + item.UniqueColumns +
                     "\", \"defaultValue\": \"" + item.DefaultValue + "\"}");
-
             }
 
             if (result.Length == 1)

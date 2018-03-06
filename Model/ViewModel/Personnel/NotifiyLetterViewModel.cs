@@ -18,7 +18,7 @@ namespace Model.ViewModel.Personnel
         public int EmpId { get; set; }
         public bool Sent { get; set; }
         public bool read { get; set; }
-        public DateTime? ReadTime { get; set; }
+        public DateTime? Readdatetime { get; set; }
         public DateTime EventDate { get; set; }
 
         public string Description { get; set; }

@@ -35,10 +35,13 @@ namespace Model.Domain
         [ForeignKey("EmpId")]
         public Person Owner { get; set; }
         public byte Status { get; set; } // 1-Created  2-Modified  3-Canceled
+        public bool IsActivate { get; set; }
         public bool IsUploaded { get; set; }
         public byte LocationType { get; set; }
-        public int? LocationId { get; set; }
-        public Location Location { get; set; }
+        public int? BranchId { get; set; }
+        public Branch Branch { get; set; }
+        public int? SiteId { get; set; }
+        public Site Site { get; set; }
 
         [MaxLength(20)]
         public string CreatedUser { get; set; }
@@ -59,5 +62,18 @@ namespace Model.Domain
 
         [ForeignKey("EmpId")]
         public Person Attendee { get; set; }
+    }
+
+    public class MeetViewer
+    {
+        [Key, Column(Order = 1)]
+        public int MeetingId { get; set; }
+        public Meeting Meeting { get; set; }
+
+        [Key, Column(Order = 2)]
+        public int EmpId { get; set; } // Attendee
+
+        [ForeignKey("EmpId")]
+        public Person Viewer { get; set; }
     }
 }

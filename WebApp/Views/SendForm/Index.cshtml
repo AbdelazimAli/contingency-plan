@@ -1,0 +1,25 @@
+﻿@using System.Web.Script.Serialization;
+
+@{
+    Layout = null;
+}
+
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "SendFormDiv" }, { "hasDepts", false }, { "hasRange", false }, { "AddUrl", Url.Action("Detail", "SendForm") } })
+<div id="SendFormDiv"></div>
+
+<script>
+    Grids.indexGrid({
+        read: "@Url.Action("GetForms", "SendForm")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "SendForm")",
+        edit: "@Url.Action("Details", "SendForm")",
+        objectName: "SendForm",
+        gridName: "SendFormDiv",
+        admin: "@User.Identity.CanCustomize()",
+        lang: "@User.Identity.GetCulture()",
+        columns: [{ field: "TargetText", sortable: false }, { field: "FormId", values: @Html.Raw(ViewBag.FormNameList)}],
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true,
+        pageable: { pageSize: 25, pageSizes: [25, 50, 75, 100, 125, 150, 175] }
+    });
+</script>

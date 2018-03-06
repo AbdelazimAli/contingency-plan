@@ -6,7 +6,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -43,10 +43,10 @@
     <button id="backToIndex" name="backToIndex" onclick="return false;" class="btn btn-sm btn-warning back button " accesskey="b">@MsgUtils.Instance.Trls("backToIndex")</button>
 </div>
 <script>
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
     $("#MyDiv").on('click',"#backToIndex",null,function(){
-        $("#renderbody").load(oldulr);
+        updateHistory(oldUlr);
     });
 </script>

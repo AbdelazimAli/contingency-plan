@@ -3,22 +3,22 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
     var version = Request.QueryString["Version"];
 }
 <link href="~/Content/forms.css" rel="stylesheet" />
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script src="~/Scripts/cultures/lang.js"></script>
 <div id="PayrollDiv"></div>
 <script>
 
     $(function () {
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var Language =lang.getList("@culture");
             var GradeName =[{id:1,name:"@MsgUtils.Instance.Trls("One segment")"}, {id:2,name:"@MsgUtils.Instance.Trls("Multiple segments")"}];
             var Spiltter =[{id:".",name:"."}, {id:"/",name:"/"},{id:"-",name:"-"},{id:"\\",name:"\\"}];
@@ -106,7 +106,7 @@
             $("#" + formId + " #submit").val(submit);
             FormJs.saveForm($("#"+formId), $(this), function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
         });
         $("#" + formId).find('#generateGrades').on('click', function (e) {

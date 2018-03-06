@@ -1,0 +1,94 @@
+﻿@using WebApp.Extensions
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    string culture = User.Identity.GetCulture();
+    var admin = User.Identity.CanCustomize();
+    int dataLevel = 4;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    bool hasDepts = ViewData["HasDepts"] == null || ViewData["HasDepts"] as string == "true";
+    bool hasRange = ViewData["HasRange"] == null || ViewData["HasRange"] as string == "true";
+    bool hasPdfExcel = ViewData["HasPdfExcel"] == null || ViewData["HasPdfExcel"] as string == "true";
+    string objectName = ViewData["ObjectName"]?.ToString();
+    string OldObjectName = ViewData["OldObjectName"]?.ToString();
+    string TableName = ViewData["TableName"]?.ToString();
+    string GridName = ViewData["GridName"]?.ToString();
+}
+
+<div id="board" class="col-md-4 col-xs-12">
+    <div class="board">
+        <div class="title">
+            <h2>موافقات الطلب</h2>
+        </div><!-- /.title -->
+        <ul class="requests-progress">
+            <li>
+                <a href="#">
+                    <span class="name">المهندس أحمد البدويهي</span>
+                    <span class="state">موافقة</span>
+                    <span class="date">25 يناير - 28 يناير</span>
+                </a>
+            </li>
+            <li>
+                <a href="#">
+                    <span class="name">الأستاذ أسامة وجيه</span>
+                    <span class="state">موافقة</span>
+                    <span class="date">25 يناير - 28 يناير</span>
+                </a>
+            </li>
+            <li class="reject">
+                <a href="#">
+                    <span class="name">المهندس وليد هاشم</span>
+                    <span class="state">رفض</span>
+                    <span class="date">25 يناير - 28 يناير</span>
+                </a>
+            </li>
+            <li class="wait">
+                <a href="#">
+                    <span class="name">المهندس ممدوح الطويل</span>
+                    <span class="state">معلق</span>
+                    <span class="date">25 يناير - 28 يناير</span>
+                </a>
+            </li>
+        </ul><!-- /.requests-progress -->
+    </div><!-- /.board -->
+</div><!-- /.col-md-3 col-xs-12 -->
+
+
+@*<div class="row">
+    <div class="col-md-9 col-xs-12">
+        <div class="board">
+            <div class="title">
+                <h2>موافقات الطلب</h2>
+            </div><!-- /.title -->
+
+            <div class="steps">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs" role="tablist">
+                    <li role="presentation" class="active"><a href="#home" aria-controls="home" role="tab" data-toggle="tab">Home</a></li>
+                    <li role="presentation"><a href="#profile" aria-controls="profile" role="tab" data-toggle="tab">Profile</a></li>
+                    <li role="presentation"><a href="#messages" aria-controls="messages" role="tab" data-toggle="tab">Messages</a></li>
+                    <li role="presentation"><a href="#settings" aria-controls="settings" role="tab" data-toggle="tab">Settings</a></li>
+                </ul>
+
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div role="tabpanel" class="tab-pane active" id="home">...</div>
+                    <div role="tabpanel" class="tab-pane" id="profile">...</div>
+                    <div role="tabpanel" class="tab-pane" id="messages">...</div>
+                    <div role="tabpanel" class="tab-pane" id="settings">...</div>
+                </div>
+
+            </div>
+        </div><!-- /.board -->
+    </div><!-- /.col-md-3 col-xs-12 -->
+</div><!-- /.row -->*@
+
+<script type="text/javascript">
+    $(document).ready(function(){
+        var width= 100/$('.steps .nav-tabs li').length;
+        $('.steps .nav-tabs li').css('width',width +'%');
+        var boardMarkUp = $('#board');
+        $('.main-view').addClass('col-md-8 col-xs-12').parent().prepend(boardMarkUp)
+    });
+</script>

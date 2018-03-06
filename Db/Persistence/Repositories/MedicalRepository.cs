@@ -64,7 +64,6 @@ namespace Db.Persistence.Repositories
                              AuthPosition = wft.AuthPosition,
                              AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                              BranchId = wft.BranchId,
-                             SectorId = wft.SectorId,                         
                              Service = n.Name,
                              Provider = prov.Name                             
                          };
@@ -262,7 +261,8 @@ namespace Db.Persistence.Repositories
                             Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
                             CompanyId = c.CompanyId,
                             ApprovalStatus = c.ApprovalStatus,
-                            HasImage = p.HasImage,
+                            Attachment = HrContext.GetDoc("EmployeePic", p.Id),
+                            Gender = p.Gender,
                             RoleId = wft.RoleId.ToString(),
                             DeptId = wft.DeptId,
                             PositionId = wft.PositionId,
@@ -274,7 +274,6 @@ namespace Db.Persistence.Repositories
                             AuthPosition = wft.AuthPosition,
                             AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                             BranchId = wft.BranchId,
-                            SectorId = wft.SectorId,
                             Service = n.Name,
                             Provider = prov.Name
                         };
@@ -334,14 +333,6 @@ namespace Db.Persistence.Repositories
                    join p in context.People on l.EmpId equals p.Id
                    join wft in context.WF_TRANS on new { p1 = "Medical", p2 = l.CompanyId, p3 = l.Id } equals new { p1 = wft.Source, p2 = wft.SourceId, p3 = wft.DocumentId } into g
                    from wft in g.DefaultIfEmpty()
-                   join ap in context.People on wft.AuthEmp equals ap.Id into g1
-                   from ap in g1.DefaultIfEmpty()
-                   join apos in context.Positions on wft.AuthPosition equals apos.Id into g2
-                   from apos in g2.DefaultIfEmpty()
-                   join dep in context.CompanyStructures on wft.AuthDept equals dep.Id into g3
-                   from dep in g3.DefaultIfEmpty()
-                   join role in context.Roles on wft.RoleId equals role.Id into g4
-                   from role in g4.DefaultIfEmpty()
                    select new MedicalIndexViewModel
                    {
                        Id = l.Id,
@@ -358,8 +349,8 @@ namespace Db.Persistence.Repositories
                        AuthEmp = wft.AuthEmp,
                        AuthPosition = wft.AuthPosition,
                        BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
-                       HasImage = p.HasImage,
+                       Attachment = HrContext.GetDoc("EmployeePic", p.Id),
+                       Gender = p.Gender,
                        Service = n.Name,
                        Provider = prov.Name
                    };
@@ -441,10 +432,7 @@ namespace Db.Persistence.Repositories
                              ServStartDate = m.ServStartDate
                          }).ToList();
                 return Ben;
-
             }
-
-          
         }
 
     }

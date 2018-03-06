@@ -20,7 +20,7 @@ namespace Model.ViewModel.Payroll
         public string SubGrade { get; set; }
         public string Point { get; set; }
         public int? PayDueId { get; set; }
-        public int? LocationId { get; set; }
+        public int? BranchId { get; set; }
         public short? PersonType { get; set; } // lookup user code
         public short? Performance { get; set; } // lookup code
         public int? YesNoForm { get; set; } // Formula              Formula.Result is 3 or 4

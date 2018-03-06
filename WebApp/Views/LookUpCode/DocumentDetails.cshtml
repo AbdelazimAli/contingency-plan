@@ -3,7 +3,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -11,42 +11,46 @@
     var read = 1;
 }
 
-
-
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
-<script src="~/Scripts/cultures/lang.js"></script>
-
+@Html.Partial("_FormButtons")
 <div id="DocTypeDiv"></div>
 
 
 <script>
 
     $(function () {
-        function changeRequiredOpt(record,formId){
-            if(record==1){
+        showToolbar([2,3,11]);
+
+        function changeRequiredOpt(record,formId){         
+            if(record == 1)
+            {
                 $("#" + formId).find('[name="NationalitiesSec"]').css("display","");
                 $("#" + formId).find('[name="JobsSec"]').css("display","none");
 
             }
             else if(record==2)
             {
+
                 $("#" + formId).find('[name="JobsSec"]').css("display","");
                 $("#" + formId).find('[name="NationalitiesSec"]').css("display","");
             }
-            else{
+            else
+            {
                 $("#" + formId).find('[name="JobsSec"]').css("display","none");
                 $("#" + formId).find('[name="NationalitiesSec"]').css("display","none");
             }
         }
+        
+       
+
         // Back to index
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var model;
         //serialize The model to JavaScript to send to form.js
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         var Nationality = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Nationality));
         var Jobs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Jobs));
-        var AccessLevel = [{id:0,name:"@MsgUtils.Instance.Trls("Not Shared")"}, {id:1,name:"@MsgUtils.Instance.Trls("Shared only")"},{id:2,name: "@MsgUtils.Instance.Trls("Shared and can be downloaded")"}];
+        var AccessLevel = [{id:0,name:"@MsgUtils.Instance.Trls("Not Shared")"},{id:2,name: "@MsgUtils.Instance.Trls("Shared and can be downloaded")"}];
         var RequiredOpt = [{id:0,name:"@MsgUtils.Instance.Trls("Not Required")"}, {id:1,name: "@MsgUtils.Instance.Trls("Required for all jobs")"},{id:2,name: "@MsgUtils.Instance.Trls("Required for some jobs")"}];
         var inputTypes= @Html.Raw((new JavaScriptSerializer().Serialize(ViewBag.InputTypes)));
         var CodeName = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CodeName));
@@ -77,129 +81,180 @@
                 data.companyId = "@User.Identity.GetDefaultCompany()";
                 data.admin = "@admin";
                 $("#DocTypeDiv").Forms(data, model);
-                //  FormJs.fillOptionsDynamic($("#" + formId), "DocumenType", DocumenType, model);
-                //FormJs.fillOptionsDynamic($("#" + formId), "AccessLevel", AccessLevel, model);
-                //FormJs.fillOptionsDynamic($("#" + formId), "RequiredOpt", RequiredOpt, model);
-                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs, model);
-                FormJs.fillOptionsDynamic($("#" + formId), "INationalities", Nationality, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "AccessLevel", AccessLevel, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "IJobs", Jobs,null, model);
+                FormJs.fillOptionsDynamic($("#" + formId), "INationalities", Nationality,null, model);
 
-                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
-                $("#" + formId).find('#backToIndex').val('@MsgUtils.Instance.Trls("backToIndex")');
-                $("#" + formId).find('#GenerateBtn').val('@MsgUtils.Instance.Trls("GenerateBtn")');
-              
-                $("#" + formId).on('click','#saveChanges', function (e) {
-                    //ToDo: if saveChanges not close the page -> change required validation
-                    if($("#RequiredOpt").val() != 2 ) { //2. Required for some jobs
-                        $("#" + formId).find("#IJobs").remove();
-                    }
 
-                    if($("#" + formId).find(".k-invalid").length > 0) return ;
+                $("#NotifyDays").removeAttr("formreq");
+                $("input[name='HasExpiryDate']").removeAttr("formreq");
+                $("#RequiredOpt").removeAttr("formreq");
 
-                    FormJs.saveForm($("#" + formId), $(this), function (res) {
-                        model = res;
-                        toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                        $("#renderbody").load(oldulr);
-                    },Grids.sendData("DocTypeAttrDiv"));
-                });
-                changeRequiredOpt(model.RequiredOpt,formId)
+                changeRequiredOpt(model.RequiredOpt,formId);
+                ShowDocumenType(model.DocumenType,model.RequiredOpt);      
+                changeExpiryDate(model.HasExpiryDate);
 
-                $("#" + formId).on('blur', "#EndDate",function(){
+
+                $("#" + formId).on('blur change','#StartDate', function(){
+                    FormJs.removeFormError(formId,"StartDate");
+                    FormJs.removeFormError(formId,"EndDate");
                     var elem = $(this);
-                    if($('#StartDate').val() != ""){
-                        $('#StartDate').removeClass("k-invalid").prop("aria-invalid", false);
-                        $('#StartDate').next("span.k-tooltip-validation").remove();
+                    if($('#EndDate').val() != "" && elem.val() > $('#EndDate').val())
+                    {
+                        FormJs.addFormError(formId,"StartDate","@MsgUtils.Instance.Trls("StartDateLThanEndDate")");
                     }
-                    elem.removeClass("k-invalid").prop("aria-invalid", false);
-                    elem.next("span.k-tooltip-validation").remove();
+                    else
+                    {
+                        FormJs.removeFormError(formId,"StartDate");
 
+                    }
+
+                });
+                $("#NotifyDays").after('<label>@MsgUtils.Instance.Trls("Day")</label>');
+                $("#"+formId).on('blur change','#EndDate',function(){
+                    FormJs.removeFormError(formId,"StartDate");
+                    FormJs.removeFormError(formId,"EndDate");
+                    var elem = $(this);
                     if(elem.val()!=""){
-                        var valueinDays=($("#StartDate").data("kendoDatePicker").value()-elem.data("kendoDatePicker").value())/(1000*3600*24);
-                        if(valueinDays > 0){
-                            if (elem && !elem.hasClass("k-invalid")) {
-                                elem.addClass("k-invalid").prop("aria-invalid", true);
-                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='EndDate' role='alert'>@MsgUtils.Instance.Trls("EndDateGthanStartDate")</span>");
-                            }
+                        
+                        if($('#StartDate').val() != "" && elem.val() < $('#StartDate').val())
+                        {
+                            FormJs.addFormError(formId,"EndDate","@MsgUtils.Instance.Trls("EndDateGthanStartDate")");
                         }
-                    }
-                });
-                $("#" + formId).on('blur','#StartDate', function(){
-                    var elem = $(this);
-                    if(elem.val() != ""){
-                        var valueinDays=(elem.data("kendoDatePicker").value()-$("#EndDate").data("kendoDatePicker").value())/(1000*3600*24);
-                        if(valueinDays > 0 && $('#EndDate').val() != ""){
-                            if (elem && !elem.hasClass("k-invalid")) {
-                                elem.addClass("k-invalid").prop("aria-invalid", true);
-                                elem.after("<span class='k-widget k-tooltip k-tooltip-validation k-invalid-msg' data-for='StartDate' role='alert'>@MsgUtils.Instance.Trls("StartDateLThanEndDate")</span>");
-                            }
-                        }
-                        else{
+                        else
+                        {
+                            FormJs.removeFormError(formId,"EndDate");
 
-                            $('#EndDate').removeClass("k-invalid").prop("aria-invalid", false);
-                            $('#EndDate').next("span.k-tooltip-validation").remove();
-                            elem.removeClass("k-invalid").prop("aria-invalid", false);
-                            elem.next("span.k-tooltip-validation").remove();
                         }
+
                     }
                 });
 
-                // Find Button BackToindex and bind for Click
-                $('#DocTypeDiv').on('click',"#backToIndex",null, function(){
-                    $("#renderbody").load(oldulr);
+                $('#HasExpiryDate').on('change', function(e) {
+                    changeExpiryDate($(this).prop("checked"));
                 });
+
             }
         });
+
+        function changeExpiryDate(checked) {            if (checked == true)                              $("#NotifyDays").closest('.form-group').children().fadeIn()            else                             $("#NotifyDays").closest('.form-group').children().fadeOut()              } 
+
         $("#"+formId).on('change','#RequiredOpt',function(){
             var chk= $(this).val();
             changeRequiredOpt(chk,formId)
         });
 
-        $("div[name=DocTypeAttrGridSec]").prepend('<div id="DocTypeAttrDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
-        var gridname = "'DocTypeAttrDiv'";
-        Grids.batchGrid({
-            read: "@Url.Action("ReadDocAttr", "LookUpCode")?Id="+ model.Id,
-            lang: "@User.Identity.GetCulture()",
-            objectName: "DocTypeAttrs",
-            admin: "@admin", // Admin role
-            lang: "@User.Identity.GetCulture()",
-            toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
-            recordName: "Attribute",
-            gridName: "DocTypeAttrDiv",
-            height:500,
-            columns: [
-                {field: "InputType", values: inputTypes},
-                {
-                    field: "CodeName", editor: function (container, options) {
-                        if (options.model.InputType !=3) {
-                            $('#DocTypeAttrDiv').data("kendoGrid").closeCell();
+       
+        $("#"+formId).on('change','#DocumenType',function()
+        {
+            var id = $('#DocumenType').val();
+            var requiredId = $("#RequiredOpt").data("kendoDropDownList").value();
+            ShowDocumenType(id,requiredId);
+        });
 
-                            
-                        }else
-                        {
-                            var input = '<input name="CodeName"/>';
-                            $(input).appendTo(container).kendoDropDownList({
-                                valuePrimitive:true,
-                                dataTextField: "text",
-                                dataValueField: "value",
-                                dataSource:CodeName
-                            });
-                            //var input = "<select name='CodeName' style='width: 80%; margin-bottom: 0;'>";
-                            //for (var i = 0; i < CodeName.length; i++) {
-                            //    console.log(CodeName);
-                            //    input += "<option value='" + CodeName[i].value + "'>" + CodeName[i].text + "</option>";
-                            //}
-                            //input += "</select>";
-                            //$(input).appendTo(container);
-                        }
+        if(model.Id > 0)
+        {
+            $("#" + formId).find("#IJobs").getKendoMultiSelect().value(model.IJobs);
+            $("#" + formId).find("#INationalities").getKendoMultiSelect().value(model.INationalities);
+        }
+
+
+        function ShowDocumenType(id,requiredId)
+        {
+
+            $("#" + formId).find('[name="RequiredSec"]').css("display","none");
+            if (id > 0)
+            {
+                debugger;
+                var datasource = $("#DocumenType").data("kendoDropDownList").dataSource.data();
+                var val = datasource.find(c => c.id == id);
+                if(val.SysCode == 3)
+                {
+
+                    $("#" + formId).find('[name="RequiredSec"]').css("display","");
+                    $("#" + formId).find('[name="NationalitiesSec"]').css("display","");                    
+                    if(requiredId == 2)
+                    {
+                        $("#" + formId).find('[name="JobsSec"]').css("display","");                   
+                    }
+                    else if(requiredId == 0)
+                    {
+                        $("#" + formId).find('[name="NationalitiesSec"]').css("display","none");
 
                     }
                 }
-            ],
-            save:function(e){
-                if(e.values.InputType &&e.values.InputType !=e.model.InputType )
-                   e.model.CodeName=null;
-                
+                else
+                {
+                    $("#" + formId).find('[name="JobsSec"]').css("display","none");
+                    $("#" + formId).find('[name="RequiredSec"]').css("display","none");
+                    $("#" + formId).find('[name="NationalitiesSec"]').css("display","none");
+                }
             }
+        }
+            $("div[name=DocTypeAttrGridSec]").prepend('<div id="DocTypeAttrDiv" class="form-group col-lg-12 col-md-12 col-sm-12"></div>');
+            var gridname = "'DocTypeAttrDiv'";
+            Grids.batchGrid({
+                read: "@Url.Action("ReadDocAttr", "LookUpCode")?Id="+ model.Id,
+                lang: "@User.Identity.GetCulture()",
+                objectName: "DocTypeAttrs",
+                admin: "@admin", // Admin role
+                lang: "@User.Identity.GetCulture()",
+                toolbar:read==1? '<div></div>': '<div><div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("AddNewRecord")</span></a><a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;&nbsp;<div class="btn-group" style="@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div></div>',
+                recordName: "Attribute",
+                gridName: "DocTypeAttrDiv",
+                height:500,
+                columns: [
+                    {field: "InputType", values: inputTypes},
+                    {
+                        field: "IsRequired",
+                        template: '<input  type="checkbox" #:IsRequired == true ? "checked" : ""#  onchange="Grids.CheckBoxChanged(this,\'IsRequired\',' + gridname + ')"/>'
+                    },
+                    {
+                        field: "CodeName", editor: function (container, options) {
+                            if (options.model.InputType !=3) {
+                                $('#DocTypeAttrDiv').data("kendoGrid").closeCell();
+
+                            
+                            }else
+                            {
+                                var input = '<input name="CodeName"/>';
+                                $(input).appendTo(container).kendoDropDownList({
+                                    valuePrimitive:true,
+                                    dataTextField: "text",
+                                    dataValueField: "value",
+                                    dataSource:CodeName
+                                });
+                           
+                            }
+
+                        }
+                    }
+                ],
+                save:function(e){
+                    if(e.values.InputType &&e.values.InputType !=e.model.InputType )
+                        e.model.CodeName=null;          
+                }
            
+            });
+        
+        $("#b1,#b2,#b3").off('click').on('click', function (e) {
+                               
+            if($("#" + formId).find(".k-invalid").length > 0) return ;
+            var buttId = $(this).attr("id");
+            FormJs.saveForm($("#"+formId), $(this), function (data) {
+                debugger;
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                model = data;
+                console.log(model);
+                if (buttId == "b3") updateHistory(oldUlr);
+                if($("#RequiredOpt").val() != 2 ) { //2. Required for some jobs                       
+                    $("#" + formId).find("#IJobs").getKendoMultiSelect().value([]);
+                } 
+                if(buttId == "b2")
+                {
+                    $("#DocTypeAttrDiv").data("kendoGrid").dataSource.data([]);
+                }
+            }, Grids.sendData("DocTypeAttrDiv"), buttId == "b2");
         });
 
     });

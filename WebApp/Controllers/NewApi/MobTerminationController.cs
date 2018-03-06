@@ -2,17 +2,16 @@
 using Model.Domain;
 using Model.ViewModel.Personnel;
 using System;
-using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
 using System.Net;
 using System.Web;
 using System.Web.Http;
-using System.Web.Mvc;
-using WebApp.Controllers.Api;
+using System.Web.Http.Cors;
 
 namespace WebApp.Controllers.NewApi
 {
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class MobTerminationController : BaseApiController
     {
         // GET: Termination

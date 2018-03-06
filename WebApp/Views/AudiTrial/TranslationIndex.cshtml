@@ -4,7 +4,7 @@
 <br>
 
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     Layout = null;
 
@@ -13,7 +13,7 @@
 
 <div style="@(rtl?"float:right":"float:left")">
     <label style="font-size:medium">@MsgUtils.Instance.Trls("Language")</label>&emsp;<input id="LangDiv" />&emsp;
-    <button id="btnRefresh" style="font-size:medium"  onclick="getTrls()">@MsgUtils.Instance.Trls("Refresh")</button>&emsp;
+    <button id="btnRefresh" style="@(HttpContext.Current.Request.ServerVariables["SERVER_NAME"] != "localhost" ? "display: none" : "")" onclick="getTrls()">@MsgUtils.Instance.Trls("Refresh")</button>&emsp;
     <button style="font-size:medium" onclick="destroySingleToneObj()">@MsgUtils.Instance.Trls("RefreshMsgs")</button>
 
 </div>
@@ -121,12 +121,12 @@
             template: '<input  type="checkbox" #:JavaScript == true ? "checked" : ""# onchange="Grids.CheckBoxChanged(this,\'JavaScript\',' + gridname + ')"/>'
         }],
     });
-    if ("@User.IsInRole("Developer")" == "False")
+    if ("@User.Identity.Developer()" == "False")
         $("#btnRefresh").remove();
 
 </script>
 
-@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Lang" }, { "ObjectName", "MsgTbl" }, { "Functions", ViewBag.Functions }})
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", "True" }, { "GridName", "Lang" }, { "ObjectName", "MsgTbl" }})
 
 
 

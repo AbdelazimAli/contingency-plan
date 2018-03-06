@@ -9,17 +9,17 @@
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     string[] function = ViewData["Functions"] as string[];
 }
 
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Disciplines" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "DisciplinDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Disciplines" } })
 
 <div id="DisciplinDiv"></div>
 
 <script>
     var addUrl = "@Url.Action("DisciplineDetails", "Discipline")";
-    RequestFilters.ApplayAllFilters([], {}, "DisciplinDiv", "@Url.Action("ReadDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "DisciplinDiv", "@Url.Action("ReadDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
 
     var DisciplineClass = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DisciplineClass));
     var PeriodId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.PeriodId));

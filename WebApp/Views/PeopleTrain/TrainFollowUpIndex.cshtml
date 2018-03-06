@@ -2,13 +2,12 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    string[] function = ViewData["Functions"] as string[];
 }
 
 
@@ -18,7 +17,6 @@
 <script>
     var CancelReasons = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CanselReasons));
     var Mangers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Mangers));
-    var Functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
 
     var approvalStatus = [
          { value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
@@ -64,7 +62,7 @@
         columns: columns,
         lang: "@User.Identity.GetCulture()",
         select: { "ApprovalStatus": approvalStatus},
-        toolbar: kendo.template($("#Newtemplate").html())
+        //toolbar: kendo.template($("#Newtemplate").html())
     });
 
 
@@ -144,7 +142,7 @@
         });
     });
 </script>
-<script type="text/x-kendo-template" id="Newtemplate">
+@*<script type="text/x-kendo-template" id="Newtemplate">
     <div style="@(rtl ? "float: right" : "float: left")">
         <a class="btn btn-default btn-sm fa fa-eye" onclick="showRequest()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length>0)?!Array.Exists(function,f => f == "ShowRecord") :true)? "display:none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Show Record")</span></a>
         <a class="btn btn-default btn-sm fa fa-thumbs-o-up" onclick="AcceptRefuFun()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "AcceptAndReject") : true) ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Accept/Reject")</span></a>
@@ -176,7 +174,7 @@
              </ul>
         </div>
     </div>
-</script>
+</script>*@
 
 <div class="modal fade" id="LeaveCancel" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="true" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">

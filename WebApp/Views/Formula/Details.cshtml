@@ -3,7 +3,7 @@
 @model Model.ViewModel.Payroll.FormulaViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -23,7 +23,7 @@
         InfoIds = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.InfoIds)),
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
 
-    var oldPage = localStorage.getItem("menuhigh").split(","), oldulr = $("#" + oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(","), oldulr = $("#" + oldPage[2] + " a").attr("href");
 
     $.getJSON(url, { objectname: 'Formula', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
         data.FormAction = "@Url.Action("Details", "Formula")";
@@ -74,17 +74,17 @@
 
         var salaryItem = "@Request.QueryString["SalaryItem"]";
         if(salaryItem)
-            oldulr = "@Url.Action("Details", "SalaryItem")?id=" + salaryItem+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]";
+            oldUlr = "@Url.Action("Details", "SalaryItem")?id=" + salaryItem+"&RoleId=@Request.QueryString["RoleId"]&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]";
 
         myForm.on('click', '#saveChanges', function() {
             FormJs.saveForm(myForm, $(this), function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                $("#renderbody").load(oldulr);
+                updateHistory(oldUlr);
             });
         });
 
         myForm.on('click', '#backToIndex', function() {
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
 
     });

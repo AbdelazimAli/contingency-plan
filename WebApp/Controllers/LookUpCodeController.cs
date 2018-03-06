@@ -9,6 +9,7 @@ using System.Linq;
 using System.Linq.Dynamic;
 using System.Web.Mvc;
 using System.Web.Routing;
+using System.Web.Script.Serialization;
 using WebApp.Extensions;
 using WebApp.Models;
 
@@ -41,43 +42,23 @@ namespace WebApp.Controllers
         }
         public ActionResult JobClass()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult CodesIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult Lookupcode()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult LookupUsercode()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult DocumentIndex()
         {
             ViewBag.DocInputType = _hrUnitOfWork.Repository<LookUpCode>().Where(d => d.CodeName == "DocInputType").Select(d => new { text = d.Name, value = d.CodeId });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetLookUpCode()
@@ -216,7 +197,6 @@ namespace WebApp.Controllers
                         Destination = job,
                         Source = model,
                         ObjectName = "JobClasses",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert,
                         Options = moreInfo
                     });
@@ -287,7 +267,6 @@ namespace WebApp.Controllers
                         Destination = doc,
                         Source = model,
                         ObjectName = "DocTypes",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert
                     });
                     result.Add(doc);
@@ -326,7 +305,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "JobClasses",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.LookUpRepository.Remove(Obj);
@@ -346,7 +324,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "DocTypes",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -674,7 +651,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "LookupCodes",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Update,
                         Options = options.ElementAtOrDefault(i)
                     });
@@ -736,7 +712,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "LookupCodes",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 
@@ -884,7 +859,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "LookUpUserCodes",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = options.ElementAtOrDefault(i),
                         Transtype = TransType.Update
                     });
@@ -949,7 +923,6 @@ namespace WebApp.Controllers
             {
                 Source = obj,
                 ObjectName = "LookUpUserCodes",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             foreach (LookUpTitles title in _hrUnitOfWork.Repository<LookUpTitles>().Where(t => t.CodeName == obj.CodeName && t.CodeId == obj.CodeId && t.Culture == culture).ToList())
@@ -1001,7 +974,7 @@ namespace WebApp.Controllers
         {
             byte[] ids = { 1, 2, 4, 5 ,6};
             ViewBag.DocumenType = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("DocType", Language).Select(a => new { id = a.CodeId, name = a.Name }).ToList(); ;
-            ViewBag.Jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId,Language,0).Select(a=> new {id=a.Id,name=a.LocalName});
+            ViewBag.Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId,Language,0).Select(a=> new {id=a.Id,name=a.LocalName});
             ViewBag.InputTypes = _hrUnitOfWork.PageEditorRepository.GetInputType(Language, "DocInputType");
             if (Language.Substring(0, 2) == "ar")
             {
@@ -1018,7 +991,7 @@ namespace WebApp.Controllers
             return DocType == null ? (ActionResult)HttpNotFound() : View(DocType);
         }       
         //Save Doc Attr
-        public ActionResult SaveDocType(DocTypeFormViewModel model, OptionsViewModel moreInfo, RequestDocTypeAttrGrid grid1)
+        public ActionResult SaveDocType(DocTypeFormViewModel model, OptionsViewModel moreInfo, RequestDocTypeAttrGrid grid1, bool clear)
         {
             List<Error> errors = new List<Error>();
 
@@ -1031,7 +1004,7 @@ namespace WebApp.Controllers
                         CompanyId = CompanyId,
                         ObjectName = "DocType",
                         TableName = "DocTypes",
-                        Columns = Models.Utils.GetColumnViews(ModelState),
+                        Columns = Models.Utils.GetColumnViews(ModelState).Where(a=>a.Name != "RequiredOpt").ToList(),
                         ParentColumn = "CompanyId",
                         Culture = Language
                     });
@@ -1049,6 +1022,17 @@ namespace WebApp.Controllers
                         return Json(Models.Utils.ParseFormErrors(ModelState));
                     }
                 }
+                if(model.RequiredOpt == 2 && model.IJobs == null)
+                {
+                    ModelState.AddModelError("", MsgUtils.Instance.Trls("Jobs Required"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+
+                }
+                if(model.HasExpiryDate && model.NotifyDays == null)
+                {
+                    ModelState.AddModelError("", MsgUtils.Instance.Trls("Send Notify renew"));
+                    return Json(Models.Utils.ParseFormErrors(ModelState));
+                }
                 List<Job> JobList = new List<Job>();
                 List<Country> CountryLst = new List<Country>();
 
@@ -1056,10 +1040,18 @@ namespace WebApp.Controllers
                 var record = _hrUnitOfWork.LookUpRepository.DocTypeObject(model.Id);
                 if (model.RequiredOpt != 2)
                    model.IJobs = null;
-                if (model.RequiredOpt == 0)
+                if (model.RequiredOpt == 0 || model.RequiredOpt == null)
                 {
+                    model.RequiredOpt = 0;
                     model.INationalities = null;
                     model.Gender = null;
+                }
+                if(model.DocumenType != 2)
+                {
+                    model.RequiredOpt = 0;
+                    model.INationalities = null;
+                    model.Gender = null;
+                    model.IJobs = null;
                 }
                 if (model.IJobs != null && model.IJobs.Count() >= 0)
                 {
@@ -1081,6 +1073,7 @@ namespace WebApp.Controllers
                 }
                 moreInfo.VisibleColumns.Add("Jobs");
                 moreInfo.VisibleColumns.Add("Nationalities");
+
                 if (record == null) //Add
                 {
                     record = new DocType();
@@ -1089,7 +1082,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "DocType",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -1104,6 +1096,7 @@ namespace WebApp.Controllers
                     record.Jobs = JobList;
                     record.Nationalities = CountryLst;
                     record.CompanyId = model.IsLocal ? CompanyId : (int?)null;
+                    record.RequiredOpt = Convert.ToByte(model.RequiredOpt);
                     _hrUnitOfWork.LookUpRepository.Add(record);
 
                 }
@@ -1114,7 +1107,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "DocType",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype=TransType.Update
                     });
@@ -1135,6 +1127,7 @@ namespace WebApp.Controllers
                                 record.Nationalities.Remove(item);
                         }
                     }
+
                     //Multi Select Jop
                     if (record.Jobs == null)
                         record.Jobs = JobList;
@@ -1160,19 +1153,30 @@ namespace WebApp.Controllers
                      _hrUnitOfWork.CustodyRepository.AddLName(Language,record.Name, model.Name, model.LocalName);
                     record.ModifiedTime = DateTime.Now;
                     record.ModifiedUser = UserName;
+                    record.RequiredOpt =Convert.ToByte(model.RequiredOpt);
                     record.CompanyId = model.IsLocal ? CompanyId : (int?)null;
                     _hrUnitOfWork.LookUpRepository.Attach(record);
                     _hrUnitOfWork.LookUpRepository.Entry(record).State = EntityState.Modified;
 
                 }
+
+                if (!record.HasExpiryDate)
+                    record.NotifyDays = null;
+
                 // Save grid1
                 errors = SaveGrid1(grid1, ModelState.Where(a => a.Key.Contains("grid1")), record);
                 if (errors.Count > 0) return Json(errors.First().errors.First().message);
                 var Errors = SaveChanges(Language);
-                string message = "OK";
+
+                model.Id = record.Id;
+                string message;
                 if (Errors.Count > 0)
                     message = Errors.First().errors.First().message;
-
+                else
+                {
+                    if (clear) model = new DocTypeFormViewModel();
+                    message = "OK," + ((new JavaScriptSerializer()).Serialize(model));
+                }
                 return Json(message);
             }
             else
@@ -1197,7 +1201,6 @@ namespace WebApp.Controllers
                     {
                         Source = RequestDocTypeAttr,
                         ObjectName = "DocTypeAttrs",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Delete
                     });
                     _hrUnitOfWork.LookUpRepository.Remove(RequestDocTypeAttr);
@@ -1247,6 +1250,7 @@ namespace WebApp.Controllers
 
             return errors;
         }
+       
     }
     #endregion
 }

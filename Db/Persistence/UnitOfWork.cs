@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Validation;
 using System.Data.SqlClient;
+using System.Linq;
 
 namespace Db.Persistence
 {
@@ -68,7 +69,32 @@ namespace Db.Persistence
             return changes;
         }
 
-       
+        public DbContextTransaction GetTransaction()
+        {
+            return Context.Database.BeginTransaction();
+        }
+
+        public bool Save_CheckError_Rollback(DbContextTransaction Trans,out List<Error> errors)
+        {
+             errors = new List<Error>();
+            try
+            {
+                errors = SaveChanges();
+                if (errors.Count > 0)
+                {
+                    Trans.Rollback();
+                    Trans.Dispose();
+                    return false;
+                }
+
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
 
         /// <summary>
         /// Saves Context changes.
@@ -136,9 +162,14 @@ namespace Db.Persistence
             }
         }
 
-        public IEnumerable<T> Repository<T>() where T : class
+        public IQueryable<T> Repository<T>() where T : class
         {
             return _context.Set<T>();
+        }
+
+        public IEnumerable<T> SqlQuery<T>(string sql) where T : class
+        {
+            return _context.Database.SqlQuery<T>(sql);
         }
 
         #region " Dispose "

@@ -1,0 +1,30 @@
+﻿
+@using WebApp.Extensions
+
+@{
+    ViewBag.Title = "Index";
+    Layout = null;
+    var rtl = User.Identity.RTL();
+    var admin = User.Identity.CanCustomize();
+    int dataLevel = 4, read = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    int.TryParse(Request.QueryString["Read"], out read);
+    string[] function = ViewData["Functions"] as string[];
+}
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "Branches" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "TableName", "Branches" }, { "AddUrl", Url.Action("Details", "Branch") } })
+<div id="Branches"></div>
+
+<script>
+    var grid = "'Branches'";
+    Grids.indexGrid({
+        read: "@Url.Action("GetBranches", "Branch")?MenuId=@Request.QueryString["MenuId"]",
+        show: "@Url.Action("Details", "Branch")",
+        edit: "@Url.Action("Details", "Branch")",
+        del: "@Url.Action("DeleteBranch", "Branch")",
+        objectName: "Branches",  // name of the page or table name used to create local db key
+        gridName: "Branches",
+        recordName: "Name",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()"
+    });
+</script>  

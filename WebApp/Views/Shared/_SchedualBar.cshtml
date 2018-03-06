@@ -1,0 +1,383 @@
+﻿@model IEnumerable<Model.ViewModel.Personnel.Schedual>
+<script id="js" type="text/javascript" src="~/Content/js/bootstrap-slider.min.js"></script>
+<link id="css" href="~/Content/css/bootstrap-slider.min.css" rel="stylesheet" />
+
+<!-- <div id="schedualBtn" class="btn btn-info"> Reload</div> -->
+<!-- <div class="slider-container">
+    <input type="text" id="slider" class="slider" />
+</div>
+ -->
+
+
+
+
+<div class="task-chart">
+    <ul class="view" data-start=@ViewBag.StartTime data-end=@ViewBag.EndTime>
+        <li class="employee tools">
+            <h2></h2>
+            <div class="tasks">
+                <div id="time-range">
+                    <div class="sliders_step">
+                        <div id="slider-zoom"></div>
+                    </div>
+                </div>
+            </div><!-- /.tasks -->
+        </li><!-- /.employee -->
+        <li class="employee tools">
+            <h2></h2>
+            <div class="tasks time-range">
+                <div id="time-range" class="area-zoom">
+                    <div class="slider-range">
+                        <div id="slider-range"></div>
+                    </div>
+                </div>
+            </div><!-- /.tasks -->
+        </li><!-- /.employee -->
+        @foreach (var schedual in Model)
+        {
+            <li class="employee">
+                <h2><span>@schedual.EmpName</span></h2>
+                <div class="tasks">
+                    <ul class="area-zoom">
+                        @foreach (var item in schedual.Tasks)
+                        {
+
+                            if (item.Source != null)
+                            {
+                                <li class="hour @item.Source.ToLower()" data-start="@item.StartTime" data-end="@item.EndTime" data-toggle="popover">
+                                    <div class="cont task">
+                                        <span class="task-name">@MsgUtils.Instance.Trls(@item.Source)</span>
+                                        <span class="start-time">@item.StartTime</span>
+                                        <span class="end-time">@item.EndTime</span>
+                                        @if (item.Source == "Meeting" || item.Source == "Errand")
+                                        {
+                                            <span class="locate-name hide">@MsgUtils.Instance.Trls("Site") : @item.LocatName</span>
+                                        }
+                                        <span class="source-name hide">@item.SourceName</span>
+                                        <span class="source-type hide">@item.SourceType</span>
+                                    </div><!-- /.cont -->
+                                </li><!-- /.task -->
+                            }
+                        }
+                    </ul>
+                </div><!-- /.tasks -->
+            </li><!-- /.employee -->
+        }
+    </ul><!-- /.view -->
+</div><!-- /.task-chart -->
+
+<script type="text/javascript">
+    function drowChart() {
+
+        /*-------Start day-------*/
+
+        var meetingStartHur = $('.view').attr('data-start').substring(0, 2);
+        var meetingStartMin = $('.view').attr('data-start').substring(3, 5);
+        var meeting_start = (parseInt(meetingStartHur) * 60) + parseInt(meetingStartMin);
+
+        console.log(meeting_start)
+
+        /*-------End day-------*/
+
+        var meetingEndHur = $('.view').attr('data-end').substring(0, 2);
+        var meetingEndMin = $('.view').attr('data-end').substring(3, 5);
+        var meeting_end = (parseInt(meetingEndHur) * 60) + parseInt(meetingEndMin);
+
+        console.log(meeting_end)
+
+        var startTitle = $('.view').attr('data-start');
+        var endTitle = $('.view').attr('data-end');
+
+        $('.employee:first-of-type li[class*="day-"]').tooltip({
+            'placement': 'top',
+            'container': '.view',
+            'animation': ''
+        });
+
+        $("#slider-zoom").slider({
+            range: true,
+            min: 0,
+            max: 1440,
+            step: 5,
+            values: [0, 1440],
+            slide: function (e, ui){
+                var left_val = (ui.values[0]/1440)*100;
+                var right_val = (ui.values[1]/1440)*100;
+                console.log(left_val +","+ right_val);
+                $('.task-chart .area-zoom').css({
+                    'right': (right_val-100)*2 +'%',
+                    'left': -(left_val)*2 +'%'
+                })
+            }
+        });
+
+        var drawVals = function (e, ui){
+            var hoursStart = Math.floor(ui.values[0] / 60);
+            var minutesStart = ui.values[0] - (hoursStart * 60);
+
+            var hoursStart24 = Math.floor(ui.values[0] / 60);
+            var minutesStart24 = ui.values[0] - (hoursStart * 60);
+
+            var inputStart = hoursStart + ':' + minutesStart;
+
+            $("#StartTime").data("kendoTimePicker").value(inputStart);
+            $("#StartTime").change();
+
+
+
+            if (hoursStart.length == 1) hoursStart = '0' + hoursStart;
+            if (minutesStart.length == 1) minutesStart = '0' + minutesStart;
+            if (minutesStart == 0) minutesStart = '00';
+            if (hoursStart >= 12) {
+                if (hoursStart == 12) {
+                    hoursStart = hoursStart;
+                    minutesStart = minutesStart + " @MsgUtils.Instance.Trls("PM")";
+                } else {
+                    hoursStart = hoursStart - 12;
+                    minutesStart = minutesStart + " @MsgUtils.Instance.Trls("PM")";
+                }
+            } else {
+                hoursStart = hoursStart;
+                minutesStart = minutesStart + " @MsgUtils.Instance.Trls("AM")";
+            }
+            if (hoursStart == 0) {
+                hoursStart = 12;
+                minutesStart = minutesStart;
+            }
+
+            var startTimeVal = hoursStart + ':' + minutesStart;
+
+            $('#time-range .tooltips').first().html(startTimeVal);
+
+
+
+            var hoursEnd = Math.floor(ui.values[1] / 60);
+            var minutesEnd = ui.values[1] - (hoursEnd * 60);
+
+            var hoursEnd24 = Math.floor(ui.values[1] / 60);
+            var minutesEnd24 = ui.values[1] - (hoursEnd * 60);
+
+            var inputEnd = hoursEnd + ':' + minutesEnd;
+
+            $("#EndTime").data("kendoTimePicker").value(inputEnd);
+            $("#EndTime").change();
+
+            if (hoursEnd.length == 1) hoursEnd = '0' + hoursEnd;
+            if (minutesEnd.length == 1) minutesEnd = '0' + minutesEnd;
+            if (minutesEnd == 0) minutesEnd = '00';
+            if (hoursEnd >= 12) {
+                if (hoursEnd == 12) {
+                    hoursEnd = hoursEnd;
+                    minutesEnd = minutesEnd + " @MsgUtils.Instance.Trls("PM")";
+                } else if (hoursEnd == 24) {
+                    hoursEnd = 11;
+                    minutesEnd = "59 PM";
+                } else {
+                    hoursEnd = hoursEnd - 12;
+                    minutesEnd = minutesEnd + " @MsgUtils.Instance.Trls("PM")";
+                }
+            } else {
+                hoursEnd = hoursEnd;
+                minutesEnd = minutesEnd + " @MsgUtils.Instance.Trls("AM")";
+            }
+
+            var endTimeVal = hoursEnd + ':' + minutesEnd;
+
+
+            $('#time-range .tooltips').last().html(endTimeVal);
+
+            // $("#EndTime").data("kendoTimePicker").value(endTimeVal);
+
+            var calcTimeHur= hoursEnd24-hoursStart24;
+            var calcTimeMin= minutesEnd24-minutesStart24;
+            if (calcTimeMin<0) {
+                calcTimeHur=calcTimeHur-1;
+                calcTimeMin=calcTimeMin+60;
+            }
+            if(calcTimeMin==0){
+                calcTimeMin= "00";
+            }
+            if(calcTimeMin<10 && calcTimeMin!=0){
+                calcTimeMin= "0"+calcTimeMin;
+            }
+
+            $('#Time').val(calcTimeHur+":" +calcTimeMin);
+        }
+
+        $("#slider-range").slider({
+            range: true,
+            min: 0,
+            max: 1440,
+            step: 5,
+            values: [meeting_start, meeting_end],
+            slide: drawVals
+        });
+
+        $('#time-range .ui-slider-handle').append('<span class="marker"></span>');
+        $('#time-range #slider-range .ui-slider-handle').append('<span class="tooltips"></span>');
+
+        if (meetingStartHur.length == 1) meetingStartHur = '0' + meetingStartHur;
+        if (meetingStartMin.length == 1) meetingStartMin = '0' + meetingStartMin;
+        if (meetingStartMin == 0) meetingStartMin = '00';
+        if (meetingStartHur >= 12) {
+            if (meetingStartHur == 12) {
+                meetingStartHur = meetingStartHur;
+                meetingStartMin = meetingStartMin + " @MsgUtils.Instance.Trls("PM")";
+            } else {
+                meetingStartHur = meetingStartHur - 12;
+                meetingStartMin = meetingStartMin + " @MsgUtils.Instance.Trls("PM")";
+            }
+        } else {
+            meetingStartHur = meetingStartHur;
+            meetingStartMin = meetingStartMin + " @MsgUtils.Instance.Trls("AM")";
+        }
+        if (meetingStartHur == 0) {
+            meetingStartHur = 12;
+            meetingStartMin = meetingStartMin;
+        }
+
+        if (meetingEndHur.length == 1) meetingEndHur = '0' + meetingEndHur;
+        if (meetingEndMin.length == 1) meetingEndMin = '0' + meetingEndMin;
+        if (meetingEndMin == 0) meetingEndMin = '00';
+        if (meetingEndHur >= 12) {
+            if (meetingEndHur == 12) {
+                meetingEndHur = meetingEndHur;
+                meetingEndMin = meetingEndMin + " @MsgUtils.Instance.Trls("PM")";
+            } else {
+                meetingEndHur = meetingEndHur - 12;
+                meetingEndMin = meetingEndMin + " @MsgUtils.Instance.Trls("PM")";
+            }
+        } else {
+            meetingEndHur = meetingEndHur;
+            meetingEndMin = meetingEndMin + " @MsgUtils.Instance.Trls("AM")";
+        }
+        if (meetingEndHur == 0) {
+            meetingEndHur = 12;
+            meetingEndMin = meetingEndMin;
+        }
+
+        $('#time-range .tooltips').first().html(meetingStartHur +':'+ meetingStartMin);
+
+        $('#time-range .tooltips').last().html(meetingEndHur +':'+ meetingEndMin);
+
+        var markerH= 60 * ($('.tasks').length - 2);
+
+        $('#slider-range .ui-slider-handle .marker').css('height' , markerH)
+
+        /*-------Slider-------*/
+
+        $('.task-chart .hour').each(function () {
+
+            /*-------Start task-------*/
+            var start_hours = $(this).attr('data-start').substring(0, 2);
+
+            var start_minutes = $(this).attr('data-start').substring(3, 5);
+
+            var time_start = (parseInt(start_hours) * 60) + parseInt(start_minutes);
+
+            var position = ((time_start) / 1440) * 100;
+
+
+            /*-------End task-------*/
+            var end_hours = $(this).attr('data-end').substring(0, 2);
+
+            var end_minutes = $(this).attr('data-end').substring(3, 5);
+
+            var time_end = (parseInt(end_hours) * 60) + parseInt(end_minutes);
+
+            var width = ((time_end - time_start) / 1440) * 100;
+
+            if (time_start == 0 && time_end == 0) {
+                width= 100;
+            }
+
+            $(this).css({
+                'left': position + '%',
+                'width': parseInt(width) + '%'
+            });
+
+
+
+            if (start_hours.length == 1) start_hours = '0' + start_hours;
+            if (start_minutes.length == 1) start_minutes = '0' + start_minutes;
+            if (start_minutes == 0) start_minutes = '00';
+            if (start_hours >= 12) {
+                if (start_hours == 12) {
+                    start_hours = start_hours;
+                    start_minutes = start_minutes + " @MsgUtils.Instance.Trls("AM")";
+                } else {
+                    start_hours = start_hours - 12;
+                    start_minutes = start_minutes + " @MsgUtils.Instance.Trls("AM")";
+                }
+            } else {
+                start_hours = start_hours;
+
+                start_minutes = start_minutes + " @MsgUtils.Instance.Trls("PM")";
+            }
+            if (start_hours == 0) {
+                start_hours = 12;
+                start_minutes = start_minutes;
+            }
+
+            if (end_hours.length == 1) end_hours = '0' + end_hours;
+            if (end_minutes.length == 1) end_minutes = '0' + end_minutes;
+            if (end_minutes == 0) end_minutes = '00';
+            if (end_hours >= 12) {
+                if (end_hours == 12) {
+                    end_hours = end_hours;
+                    end_minutes = end_minutes + " @MsgUtils.Instance.Trls("AM")";
+                } else {
+                    end_hours = end_hours - 12;
+                    end_minutes = end_minutes + " @MsgUtils.Instance.Trls("AM")";
+                }
+            } else {
+                end_hours = end_hours;
+                end_minutes = end_minutes + " @MsgUtils.Instance.Trls("PM")";
+            }
+            if (end_hours == 0) {
+                end_hours = 12;
+                end_minutes = end_minutes;
+            }
+            $('.task-chart .employee .hour span.start-time').empty().html(start_hours +':'+ start_minutes);
+
+            $('.task-chart .employee .hour span.end-time').empty().html(end_hours +':'+ end_minutes);
+            var titleName = $(this).find('.task-name').text();
+
+            $(this).attr('title', titleName);
+
+            var contentStartTime= $(this).find('.start-time').text();
+            var contentEndTime= $(this).find('.end-time').text();
+            var contentLocation= $(this).find('.locate-name').text();
+            var contentSourceName= $(this).find('.source-name').text();
+            var contentSourceType= $(this).find('.source-type').text();
+
+
+
+            $(this).attr('data-content', "<div class='pop-cont'><span>"+contentStartTime+" : "+contentEndTime +"</span><span>"+contentLocation+"</span><span>"+contentSourceName+"</span><span>"+contentSourceType+"</span></div>");
+
+            $(this).on('hover click',function(){
+                var container= $('.task-chart').parent();
+                container.css('position','relative')
+                $(this).popover({
+                    container: container,
+                    placement: 'top',
+                    html: true,
+
+                }).popover('show')
+            });
+            $(this).on('mouseleave',function(){
+                $(this).popover('hide');
+            });
+        });
+
+    }
+
+    $(document).ready(function () {
+        var url_style = $('#css').attr('href');
+        var markup_style = '<link href="' + url_style + '" rel="stylesheet" />'
+        $('#css').remove();
+        $(markup_style).insertBefore('#main-style');
+        drowChart();
+    });
+
+</script>

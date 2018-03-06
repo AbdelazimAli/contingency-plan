@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         #region BudgetItem
         public ActionResult BudgetItemIndex()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadBudgetItems(int MenuId)
@@ -101,7 +97,6 @@ namespace WebApp.Controllers
                         Destination = Budget,
                         Source = model,
                         ObjectName = "BudgetItems",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Transtype = TransType.Insert,
                         Options = options
 
@@ -194,7 +189,6 @@ namespace WebApp.Controllers
             {
                 Source = Obj,
                 ObjectName = "BudgetItems",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
             _hrUnitOfWork.BudgetRepository.Remove(Obj);
@@ -213,11 +207,7 @@ namespace WebApp.Controllers
         #region Budget
         public ActionResult Index()
         {
-            ViewBag.PeriodNames = _hrUnitOfWork.BudgetRepository.GetCalender(CompanyId).Select(a=> new {id = a.Id , name = a.Name }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.PeriodNames = _hrUnitOfWork.BudgetRepository.GetCalender(CompanyId).Select(a=> new {id = a.Id , name = a.Name });
             return View();
         }
 

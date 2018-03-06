@@ -7,14 +7,14 @@
 @model Model.Domain.Employement
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
 }
 
 
-<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" type="font/woff">
 <style>
     .k-window-content {
         min-height: 350px;

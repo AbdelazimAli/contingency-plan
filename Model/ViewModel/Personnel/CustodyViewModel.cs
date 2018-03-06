@@ -34,7 +34,7 @@ namespace Model.ViewModel.Personnel
         public DateTime? RecvDate { get; set; }
 
         public string  Employee { get; set; }
-        public string Location { get; set; }
+        public string Branch { get; set; }
         public int EmpId { get; set; }
         public float Qty { get; set; } = 0;
         public float? RestQty { get; set; } = 0;

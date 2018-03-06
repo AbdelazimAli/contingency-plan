@@ -16,7 +16,7 @@ namespace Interface.Core.Repositories
         string[] GetUserFunctions(string Role, int Menu);
         IQueryable<FormList> Functions();
         IQueryable<MenuViewModel> ReadMenu(int companyId, string culture);
-        IEnumerable<RoleMenuViewModel> ReadRoleMenu(int companyId, string culture ,string RoleId,bool SSRole);
+        IEnumerable<RoleMenuViewModel> ReadRoleMenu(int companyId, string culture ,string RoleId);
         void UpdateRoleMenu(IEnumerable<RoleMenuViewModel> models, string userName);
         IEnumerable GetParentMenus(int companyId, string culture);
         MenuViewModel GetMenu(int Id, string culture);

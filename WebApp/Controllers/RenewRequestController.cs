@@ -54,24 +54,9 @@ namespace WebApp.Controllers
         // GET: RenewRequest
         public ActionResult Index()
         {
-            var ids = _hrUnitOfWork.PeopleRepository.GetIdsList(CompanyId, EmpId);
-            GetFileList("RenewRequest", ids);
-            _hrUnitOfWork.PeopleRepository.ReadRenewRequestAtt();
-            
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
-            //for date range (sun - sat)
-            //string[] weekDays = { MsgUtils.Instance.Trls("Sunday"), MsgUtils.Instance.Trls("Monday"), MsgUtils.Instance.Trls("Tuesday"), MsgUtils.Instance.Trls("Wednesday"), MsgUtils.Instance.Trls("Thursday"), MsgUtils.Instance.Trls("Friday"), MsgUtils.Instance.Trls("Saturday") };
-            //byte? weekend = _PersonSetup.Weekend2 ?? _PersonSetup.Weekend1;
-            //if (weekend != null)
-            //{
-            //    byte firstDate = (byte)(weekend == 6 ? 0 : (weekend + 1));
-            //    ViewBag.week = "(" + weekDays[firstDate] + " - " + weekDays[weekend.Value] + ")";
-            //}
-
+            //var ids = _hrUnitOfWork.PeopleRepository.GetIdsList(CompanyId, EmpId);
+            //GetFileList("RenewRequest", ids);
+            //_hrUnitOfWork.PeopleRepository.ReadRenewRequestAtt();
             return View();
         }
         public ActionResult GetAllRenew(int MenuId, byte Tab, int pageSize, int skip, byte? Range, DateTime? Start, DateTime? End)

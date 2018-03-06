@@ -51,11 +51,11 @@ namespace WebApp.Controllers
         #region Index View
         public ActionResult Index()
         {
-            return View();
+            return View(); 
         }
         public ActionResult ImportEmployees()
         {
-            ViewBag.ArrData = new List<FormList>() { new FormList() { text = MsgUtils.Instance.Trls("People"), name = "People" }, new FormList() { text = MsgUtils.Instance.Trls("Job"), name = "Job" }, new FormList() { text = MsgUtils.Instance.Trls("Locations"), name = "FormLocation" } };
+            ViewBag.ArrData = new List<FormList>() { new FormList() { text = MsgUtils.Instance.Trls("People"), name = "People" }, new FormList() { text = MsgUtils.Instance.Trls("Job"), name = "Job" }, new FormList() { text = MsgUtils.Instance.Trls("Branches"), name = "FormBranch" } };
             return View();
         }
         public ActionResult ImportDataView(ExcelFileImports File)
@@ -138,7 +138,7 @@ namespace WebApp.Controllers
             GridValues.Nationality = NationCountry.Where(a => a.Nationality != null).Select(a => new FormList { text = Ar == "ar" ? a.NationalityAr : a.Nationality, value = a.Id }).ToList();
             GridValues.BirthLocation = _hrUnitOfWork.Repository<World>().Select(a => new FormList { text = Ar == "ar" ?(a.NameAr!= null? a.NameAr.Replace("\r", "").Replace("\n", ""):"") :(a.Name!= null ? a.Name.Replace("\r", "").Replace("\n", ""):""), value = a.CountryId, id = a.CityId, Icon = a.DistrictId }).ToList();
             GridValues.ToCountry = NationCountry.Select(a => new FormList { text = Ar == "ar" ? a.NameAr : a.Name, value = a.Id }).ToList();
-            GridValues.JobId = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language, 0).Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
+            GridValues.JobId = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language, 0).Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
             GridValues.DepartmentId = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, Language).ToList();
             GridValues.PayrollId = _hrUnitOfWork.Repository<Payrolls>().Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
             GridValues.PositionId = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Where(p => p.HiringStatus == 2).Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
@@ -148,10 +148,9 @@ namespace WebApp.Controllers
             GridValues.ManagerId = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, 0, CompanyId).Distinct().Select(a => new FormList { text = a.Employee, value = a.Id }).ToList();
             GridValues.QualificationId = _hrUnitOfWork.QualificationRepository.GetAll().Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
             GridValues.ProviderId = _hrUnitOfWork.Repository<Provider>().Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
-            var Loctions = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Where(a => a.IsInternal);
-            GridValues.LocationId = Loctions.Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
-            GridValues.AssignLocation = Loctions.Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
-            GridValues.KafeelId = _hrUnitOfWork.LookUpRepository.GetAllKafeels().Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
+            var branches = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId);
+            GridValues.BranchId = branches.Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
+            GridValues.AssignBranch = branches.Select(a => new FormList { text = a.LocalName, value = a.Id }).ToList();
             GridValues.Curr = _hrUnitOfWork.LookUpRepository.GetCurrency().Select(a => new FormList { text = a.Name, name= a.Code }).ToList();
             GridValues.CareerId = _hrUnitOfWork.JobRepository.ReadCareerPaths(CompanyId).Select(a => new FormList { text = a.Name, value = a.Id }).ToList();
             GridValues.DefaultGradeId = GridValues.PayGradeId;
@@ -251,7 +250,7 @@ namespace WebApp.Controllers
             }
 
             PeopleExportViewModel GridValues = AddCodes(GeneralPPlCodes, EmployCodes, AssignCodes);
-            if (!String.IsNullOrEmpty(File.TimeZone) && File.OldObjectName == "FormLocation")
+            if (!String.IsNullOrEmpty(File.TimeZone) && File.OldObjectName == "FormBranch")
                 GridValues.TimeZone = JsonConvert.DeserializeObject<List<FormList>>(File.TimeZone);
             AddExcelList(GridValues);
             
@@ -267,8 +266,8 @@ namespace WebApp.Controllers
                     return _hrUnitOfWork.EmployeeRepository.GetPeopleExcel(Language, CompanyId).ToList();
                 case "Job":
                     return _hrUnitOfWork.JobRepository.ReadExcelJobs(CompanyId, Language).ToList();
-                case "FormLocation":
-                    return _hrUnitOfWork.LocationRepository.ReadExcelLocations(CompanyId, Language).ToList();
+                case "FormBranch":
+                    return _hrUnitOfWork.SiteRepository.ReadExcelSites(CompanyId, Language).ToList();
                 case "LeaveRanges":
                     return _hrUnitOfWork.LeaveRepository.GetLeaveRange(Id.Value).ToList();
                 case "Custody":
@@ -356,9 +355,9 @@ namespace WebApp.Controllers
                         if (Name != SecondSheet && Colprop != null)
                             workSheet.Cells[j + 2, GeneralCol.Count + 1].Value = Colprop.GetValue(ActiveEmps[j]);
 
-                        if (GeneralCol[i].name == "LocationId" && Name == SecondSheet)
+                        if (GeneralCol[i].name == "BranchId" && Name == SecondSheet)
                         {
-                            Colprop = ActiveEmps[j].GetType().GetProperty("AssignLocation");
+                            Colprop = ActiveEmps[j].GetType().GetProperty("AssignBranch");
                             if (Colprop != null)
                                 workSheet.Cells[j + 2, Index].Value = Colprop.GetValue(ActiveEmps[j]);
                         }
@@ -424,10 +423,10 @@ namespace WebApp.Controllers
                     return GridValues.MilitaryStat.Select(a => a.text).ToList();
                 case "ProviderId":
                     return GridValues.ProviderId.Select(a => a.text).ToList();
-                case "LocationId":
-                    return GridValues.LocationId.Select(a => a.text).ToList();
+                case "BranchId":
+                    return GridValues.BranchId.Select(a => a.text).ToList();
                 case "KafeelId":
-                    return GridValues.KafeelId.Select(a => a.text).ToList();
+                    return GridValues.BranchId.Select(a => a.text).ToList();
                 case "Curr":
                     return GridValues.Curr.Cast<FormList>().Select(a => a.text).ToList();
                 case "ToCountry":
@@ -469,7 +468,7 @@ namespace WebApp.Controllers
             }
 
         }
-        public void ImportToExcelGrid(ExcelWorksheet workSheet, List<FormColumnViewModel> GeneralCold, IEnumerable<FormLookUpCodeVM> GeneralCol, PeopleExportViewModel GridValues, List<FormList> Addresses, int i, object model)
+        public void ImportToExcelGrid(ExcelWorksheet workSheet, List<FormColumnViewModel> GeneralCold, IEnumerable<FormLookUpCodeVM> GeneralCol, PeopleExportViewModel GridValues, int i, object model)
         {
             int tocol = workSheet.Dimension.End.Column;
             var GridValuesProp = GridValues.GetType().GetProperties();
@@ -489,8 +488,8 @@ namespace WebApp.Controllers
                     string ExactValue = Column.name;
                     if (ExactValue == "Profession" && Column.HtmlAttribute != null && Column.HtmlAttribute.Contains("data-emp"))
                         ExactValue = "EmpProfession";
-                    else if (ExactValue == "LocationId" && Column.HtmlAttribute != null && Column.HtmlAttribute.Contains("data-emp"))
-                        ExactValue = "AssignLocation";
+                    else if (ExactValue == "BranchId" && Column.HtmlAttribute != null && Column.HtmlAttribute.Contains("data-emp"))
+                        ExactValue = "AssignBranch";
 
                     string ColumnType = Column.type;
                     Nul = false;
@@ -505,7 +504,7 @@ namespace WebApp.Controllers
                         if (ColumnType == "date" || ColumnType == "time")
                             model.GetType().GetProperty(ExactValue).SetValue(model, BackDateTime(workSheet.Cells[i, z].Value));
                         else if (ExactValue.ToLower().Contains("address") || ExactValue == "BirthLocation" || ExactValue == "TimeZone" || ExactValue =="Curr")
-                            model.GetType().GetProperty(ExactValue).SetValue(model, BackAddress(workSheet.Cells[i, z].Value, model, ExactValue, Addresses,GridValues.Curr));
+                            model.GetType().GetProperty(ExactValue).SetValue(model, BackAddress(workSheet.Cells[i, z].Value, model, ExactValue, null,GridValues.Curr));
                         else if (Column.CodeName != null && (ColumnType == "select" || ColumnType == "radioset"))
                         {
                             on = LookupValue(Column.CodeName, workSheet.Cells[i, z].Value, GeneralCol);
@@ -701,13 +700,10 @@ namespace WebApp.Controllers
 
             PeopleExportViewModel GridValues = AddCodes(GeneralCol, EmployCol, AssignCol);
             AddExcelList(GridValues);
-            
-            var Addresses = _hrUnitOfWork.Repository<Address>().Select(a => new FormList { text = a.Address1 + " " + a.Address2 + " " + a.Address3, value = a.Id }).ToList();
-            Addresses.AddRange(GridValues.BirthLocation);
-            if (!String.IsNullOrEmpty(File.TimeZone) && File.OldObjectName == "FormLocation")
+           
+            if (!String.IsNullOrEmpty(File.TimeZone) && File.OldObjectName == "FormBranch")
             {
                 GridValues.TimeZone = JsonConvert.DeserializeObject<List<FormList>>(File.TimeZone);
-                Addresses.AddRange(GridValues.TimeZone);
             }
             ///////////////////////////
             Obj.Selected = GridValues;
@@ -741,7 +737,7 @@ namespace WebApp.Controllers
                 {
                     var mymodel = Activator.CreateInstance(ViewModelType);
                     workSheet = pak.Workbook.Worksheets.FirstOrDefault(a => a.Name == FirstSheet);
-                    ImportToExcelGrid(workSheet, GeneralCold, GeneralCol, GridValues, Addresses, i + 1, mymodel);
+                    ImportToExcelGrid(workSheet, GeneralCold, GeneralCol, GridValues, i + 1, mymodel);
                     data.Add(mymodel);
                 }
                 if (File.OldObjectName == "People")
@@ -783,7 +779,7 @@ namespace WebApp.Controllers
                                 if (CompareCode != null && CompareCode.Equals(Code))
                                 {
                                     data[z].GetType().GetProperty("AssignError").SetValue(data[z], true);
-                                    ImportToExcelGrid(workSheet, AssignCold, GeneralCol, GridValues, Addresses, i, data[z]);
+                                    ImportToExcelGrid(workSheet, AssignCold, GeneralCol, GridValues, i, data[z]);
                                     break;
                                 }
                             }
@@ -1093,7 +1089,8 @@ namespace WebApp.Controllers
         }
         private void RefreshFormColumns(List<FormColumn> FormColumns, List<GridColumn> GridCoulmns)
         {
-            var obj = _hrUnitOfWork.Repository<PageDiv>().Where(p => p.Id == GridCoulmns.FirstOrDefault().GridId).Select(p => new { p.ObjectName, p.Version }).FirstOrDefault();
+            var GridId = GridCoulmns.FirstOrDefault().GridId;
+            var obj = _hrUnitOfWork.Repository<PageDiv>().Where(p => p.Id == GridId).Select(p => new { p.ObjectName, p.Version }).FirstOrDefault();
             string key = CompanyId + obj.ObjectName + obj.Version + Language;
             var exist = _hrUnitOfWork.PagesRepository.CacheManager.IsSet(key);
             if (exist)
@@ -1159,16 +1156,6 @@ namespace WebApp.Controllers
             if (System.IO.File.Exists(Path))
                 Exist = true;
             return Json(Exist, JsonRequestBehavior.AllowGet);
-        }
-        public Address AddPersonAddress(string AddressValue)
-        {
-            Address Addres = _hrUnitOfWork.Repository<Address>().FirstOrDefault(a => a.Address1 == AddressValue);
-            if (Addres == null)
-            {
-                Addres = new Address() { Address1 = AddressValue };
-                _hrUnitOfWork.CompanyRepository.Add(Addres);
-            }
-            return Addres;
         }
         #endregion
 
@@ -1261,12 +1248,12 @@ namespace WebApp.Controllers
             else
                 errors.Add(new Error { errors = new List<ErrorMessage> { new ErrorMessage { field = "PersonType", message = MsgUtils.Instance.Trls("required") } }, row = short.Parse(i.ToString()) });
         }
-        private void AssignValidation(ExcelGridPeopleViewModel model, int i, IList<Error> errors, List<AssignmentGridViewModel> assignments)
+        private void AssignValidation(ExcelGridPeopleViewModel model, int i, IList<Error> errors, List<PeopleGridViewModel> assignments)
         {
             var ExistAssign = assignments.Where(a => a.EmpId == model.Id).FirstOrDefault();
 
             if (model.Id == 0 || ExistAssign == null)
-                assignments.Add(new AssignmentGridViewModel() { IsDeptManger = model.IsDepManager, PositionId = model.PositionId, DepartmentId = model.DepartmentId });
+                assignments.Add(new PeopleGridViewModel() { IsDeptManger = model.IsDepManager, PositionId = model.PositionId, DepartmentId = model.DepartmentId });
             else
             {
                 ExistAssign.IsDeptManger = model.IsDepManager;
@@ -1308,17 +1295,17 @@ namespace WebApp.Controllers
             });
             per.BirthDate = Item.BirthDate.Value;
             per.Gender = Item.Gender.Value;
-            if (Item.Address != null && Item.HostAddress != null && Item.Address.Equals(Item.HostAddress))
-            {
-                per.Address = AddPersonAddress(Item.Address);
-                per.HoAddress = per.Address;
-            }else {
-                if (Item.Address != null && Item.AddressId == null)
-                    per.Address = AddPersonAddress(Item.Address);
+            //if (Item.Address != null && Item.HostAddress != null && Item.Address.Equals(Item.HostAddress))
+            //{
+            //    per.Address = AddPersonAddress(Item.Address);
+            //    per.HoAddress = per.Address;
+            //}else {
+            //    if (Item.Address != null && Item.AddressId == null)
+            //        per.Address = AddPersonAddress(Item.Address);
 
-                if (Item.HostAddress != null && Item.HoAddressId == null)
-                    per.HoAddress = AddPersonAddress(Item.HostAddress);
-            }
+            //    if (Item.HostAddress != null && Item.HoAddressId == null)
+            //        per.HoAddress = AddPersonAddress(Item.HostAddress);
+            //}
 
             if (per.Id != 0)
             {
@@ -1394,7 +1381,7 @@ namespace WebApp.Controllers
                     });
 
                     item.Id = Assign.EmpId;
-                    Assign.LocationId = item.AssignLocation;
+                    Assign.BranchId = item.AssignBranch;
                     Assign.Employee = per;
                     Assign.EndDate = EndDate;
                     Assign.CompanyId = CompanyId;
@@ -1464,16 +1451,16 @@ namespace WebApp.Controllers
                 Emperrors.Add(new Error { errors = new List<ErrorMessage> { new ErrorMessage { field = "AssignDate", message = message } }, row = short.Parse(i.ToString()) });
 
         }
-        [HttpPost]
-        public async System.Threading.Tasks.Task<ActionResult> SaveImportPeople(IEnumerable<ExcelGridPeopleViewModel> models, OptionsViewModel options)
-        {
 
+        [HttpPost]
+        public ActionResult SaveImportPeople(IEnumerable<ExcelGridPeopleViewModel> models, OptionsViewModel options)
+        {
             DataSource<ExcelGridPeopleViewModel> dataSource = new DataSource<ExcelGridPeopleViewModel>();
             dataSource.Errors = new List<Error>();
             List<Error> Emperrors;
             List<ExcelGridPeopleViewModel> data = new List<ExcelGridPeopleViewModel>();
             List<Error> Servererrors = new List<Error>();
-            IdentityResult result;
+            //IdentityResult result;
 
             if (ModelState.IsValid)
             {
@@ -1495,7 +1482,6 @@ namespace WebApp.Controllers
                 {
                     Error RecordError = Servererrors.FirstOrDefault(a => a.row == i);
                     ExcelGridPeopleViewModel Item = models.ElementAtOrDefault(i);
-
                     if (RecordError == null)
                     {
                         Emperrors = new List<Error>();
@@ -1630,18 +1616,18 @@ namespace WebApp.Controllers
 
                         if (Emperrors.Count > 0)
                             data.Add(Item);
-                        else
-                        {
-                            var users = db.Users.Where(a => a.EmpId == Item.Id).ToList();
-                            foreach (var item in users)
-                            {
-                                item.Email = Item.WorkEmail;
-                                item.PhoneNumber = Item.WorkTel;
-                                result = await _userManager.UpdateAsync(item);
-                                if (result.Errors.Count() > 0)
-                                    Emperrors.Add(new Error() { errors = new List<ErrorMessage>(new List<ErrorMessage>() { new ErrorMessage() { message = result.Errors.FirstOrDefault() } }) });
-                            }
-                        }
+                        //else
+                        //{
+                        //    var users = db.Users.Where(a => a.EmpId == Item.Id).ToList();
+                        //    foreach (var item in users)
+                        //    {
+                        //        item.Email = Item.WorkEmail;
+                        //        item.PhoneNumber = Item.WorkTel;
+                        //        result = await _userManager.UpdateAsync(item);
+                        //        if (result.Errors.Count() > 0)
+                        //            Emperrors.Add(new Error() { errors = new List<ErrorMessage>(new List<ErrorMessage>() { new ErrorMessage() { message = result.Errors.FirstOrDefault() } }) });
+                        //    }
+                        //}
 
                         for (int j = 0; j < Emperrors.Count; j++)
                         {
@@ -1663,6 +1649,7 @@ namespace WebApp.Controllers
                     else
                     {
                         data.Add(Item);
+                        RecordError.id = 0; // waleed force to use row no when select error row
                         RecordError.row = (short)(data.Count - 1);
                         dataSource.Errors.Add(RecordError);
                     }
@@ -1674,8 +1661,10 @@ namespace WebApp.Controllers
                 dataSource.Data = models;
                 return Json(dataSource);
             }
+
             dataSource.Data = data;
             dataSource.Total = data.Count();
+
             return Json(dataSource);
         }
         #endregion
@@ -1735,7 +1724,6 @@ namespace WebApp.Controllers
                                 Destination = record,
                                 Source = Item,
                                 ObjectName = "Job",
-                                Version = Convert.ToByte(Request.Form["Version"]),
                                 Transtype = TransType.Insert,
                                 Options = options
                             });
@@ -1755,7 +1743,6 @@ namespace WebApp.Controllers
                                 Destination = record,
                                 Source = Item,
                                 ObjectName = "Job",
-                                Version = Convert.ToByte(Request.Form["Version"]),
                                 Transtype = TransType.Update,
                                 Options = options
                             });
@@ -1804,9 +1791,9 @@ namespace WebApp.Controllers
         }
         #endregion
 
-        #region Locations
+        #region Branches
         [HttpPost]
-        public ActionResult SaveFormLocationFile(ExcelFileImports File, IEnumerable<ExcelFormLocationViewModel> models)
+        public ActionResult SaveFormBranchFile(ExcelFileImports File, IEnumerable<ExcelFormSiteViewModel> models)
         {
             var GeneralCol = _hrUnitOfWork.PagesRepository.GetFormColumnInfo(CompanyId, File.OldObjectName, 0, Language).Where(a => a.type != "hidden" && a.type != "file" && a.type != "multiselect" && a.type != "label" && a.type != "button" && a.isVisible && (string.IsNullOrEmpty(a.HtmlAttribute) || !a.HtmlAttribute.Contains("readonly"))).ToList();
             var GeneralPPlCodes = _hrUnitOfWork.PagesRepository.GetFormLookUpCodes(GeneralCol.FirstOrDefault().PageId, Language);
@@ -1818,12 +1805,12 @@ namespace WebApp.Controllers
             return Json(SaveToExcelPublic(File, ReturnListData(models, File, GridValues, GeneralCol, null, ModelProps), GeneralCol, null, GridValues, Path), JsonRequestBehavior.AllowGet);
         }
         [HttpPost]
-        public ActionResult SaveImportFormLocation(IEnumerable<ExcelGridFormLocationViewModel> models, OptionsViewModel options)
+        public ActionResult SaveImportFormBranch(IEnumerable<ExcelGridFormSiteViewModel> models, OptionsViewModel options)
         {
-            DataSource<ExcelGridFormLocationViewModel> dataSource = new DataSource<ExcelGridFormLocationViewModel>();
+            DataSource<ExcelGridFormSiteViewModel> dataSource = new DataSource<ExcelGridFormSiteViewModel>();
             dataSource.Errors = new List<Error>();
             List<Error> Joberrors;
-            List<ExcelGridFormLocationViewModel> data = new List<ExcelGridFormLocationViewModel>();
+            List<ExcelGridFormSiteViewModel> data = new List<ExcelGridFormSiteViewModel>();
             List<Error> Servererrors = new List<Error>();
 
             if (ModelState.IsValid)
@@ -1833,8 +1820,8 @@ namespace WebApp.Controllers
                     Servererrors = _hrUnitOfWork.LookUpRepository.Check(new CheckParm
                     {
                         CompanyId = CompanyId,
-                        ObjectName = "ImportFormLocation",
-                        TableName = "Locations",
+                        ObjectName = "ImportFormBranch",
+                        TableName = "Branches",
                         Columns = Utils.GetModifiedRows(ModelState.Where(a => a.Key.Contains("models"))),
                         Culture = Language
                     });
@@ -1844,50 +1831,48 @@ namespace WebApp.Controllers
                 for (var i = 0; i < models.Count(); i++)
                 {
 
-                    ExcelGridFormLocationViewModel Item = models.ElementAtOrDefault(i);
+                    ExcelGridFormSiteViewModel Item = models.ElementAtOrDefault(i);
                     Error RecordError = Servererrors.FirstOrDefault(a => a.row == i);
                     if (RecordError == null)
                     {
                         Joberrors = new List<Error>();
-                        var loc = _hrUnitOfWork.Repository<Location>().Where(a => a.CompanyId == CompanyId && a.Code == Item.Code).FirstOrDefault();
-                        if (loc == null) // New
+                        var site = _hrUnitOfWork.Repository<Site>().Where(a => a.Code == Item.Code).FirstOrDefault();
+                        if (site == null) // New
                         {
-                            loc = new Location();
+                            site = new Site();
                             Item.Id = 0;
-                            _hrUnitOfWork.LocationRepository.AddLName(Language, loc.Name, Item.Name, Item.LName);
+                            _hrUnitOfWork.SiteRepository.AddLName(Language, site.Name, Item.Name, Item.LName);
 
                             AutoMapper(new Models.AutoMapperParm
                             {
-                                Destination = loc,
+                                Destination = site,
                                 Source = Item,
-                                ObjectName = "FormLocation",
-                                Version = Convert.ToByte(Request.Form["Version"]),
+                                ObjectName = "FormBranch",
                                 Options = options,
                                 Transtype = TransType.Insert
                             });
-                            loc.CreatedTime = DateTime.Now;
-                            loc.CreatedUser = UserName;
-                            _hrUnitOfWork.LocationRepository.Add(loc);
+                            site.CreatedTime = DateTime.Now;
+                            site.CreatedUser = UserName;
+                            _hrUnitOfWork.SiteRepository.Add(site);
 
                         }
                         else // Edit
                         {
-                            Item.Id = loc.Id;
+                            Item.Id = site.Id;
                             AutoMapper(new Models.AutoMapperParm
                             {
-                                Destination = loc,
+                                Destination = site,
                                 Source = Item,
-                                ObjectName = "FormLocation",
-                                Version = Convert.ToByte(Request.Form["Version"]),
+                                ObjectName = "FormBranch",
                                 Options = options,
                                 Transtype = TransType.Update
                             });
 
-                            loc.ModifiedTime = DateTime.Now;
-                            loc.ModifiedUser = UserName;
-                            _hrUnitOfWork.LocationRepository.Attach(loc);
-                            _hrUnitOfWork.LocationRepository.Entry(loc).State = EntityState.Modified;
-                            _hrUnitOfWork.LocationRepository.AddLName(Language, loc.Name, Item.Name, Item.LName);
+                            site.ModifiedTime = DateTime.Now;
+                            site.ModifiedUser = UserName;
+                            _hrUnitOfWork.SiteRepository.Attach(site);
+                            _hrUnitOfWork.SiteRepository.Entry(site).State = EntityState.Modified;
+                            _hrUnitOfWork.SiteRepository.AddLName(Language, site.Name, Item.Name, Item.LName);
 
                         }
                         var error = SaveChanges(Language);
@@ -1990,7 +1975,6 @@ namespace WebApp.Controllers
                                     Destination = custody,
                                     Source = Item,
                                     ObjectName = "Custody",
-                                    Version = Convert.ToByte(Request.Form["Version"]),
                                     Options = options,
                                     Transtype = TransType.Insert
                                 });
@@ -2026,7 +2010,6 @@ namespace WebApp.Controllers
                                     Destination = custody,
                                     Source = Item,
                                     ObjectName = "Custody",
-                                    Version = Convert.ToByte(Request.Form["Version"]),
                                     Options = options,
                                     Transtype = TransType.Update
                                 });

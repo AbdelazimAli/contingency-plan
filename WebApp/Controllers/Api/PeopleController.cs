@@ -70,7 +70,7 @@ namespace WebApp.Controllers.Api
             var Payroll = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name });
             var Position = _hrUnitOfWork.PositionRepository.GetPositions(culture, EmpCompany).Where(p => (p.HiringStatus == 2) || (p.Id == (assignment.PositionId != null ? assignment.PositionId.Value : 0))).Select(a => new { id = a.Id, name = a.Name, HeadCount = a.Headcount, ErrorMes = a.SysResponse }).ToList();
             var PeopleGroup = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
-            var PayrollGrad = _hrUnitOfWork.JobRepository.GetPayrollGrade();
+            var PayrollGrad = _hrUnitOfWork.JobRepository.GetPayrollGrade(EmpCompany);
             var CareerPath = _hrUnitOfWork.JobRepository.ReadCareerPaths(EmpCompany).Select(a => new { id = a.Id, name = a.Name });
             var ManagerId = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(culture, 0, EmpCompany).Where(a => a.Id != assignment.EmpId).Distinct().Select(m => new { name = m.Employee, id = m.Id }).ToList();
             var AssignmentLst = _hrUnitOfWork.LookUpRepository.GetLookUpUserCodes("Assignment", culture).Select(b => new { id = b.CodeId, name = b.Title }).ToList();

@@ -10,6 +10,8 @@ using WebApp.Providers;
 using Microsoft.Owin.Security.OAuth;
 using System.Web.Http;
 using Microsoft.Owin.Cors;
+using System.Web.Mvc;
+using System.Web.Http.Cors;
 //using Hangfire;
 
 namespace WebApp
@@ -23,6 +25,9 @@ namespace WebApp
             app.CreatePerOwinContext(UserContext.Create);
             app.CreatePerOwinContext<ApplicationUserManager>(ApplicationUserManager.Create);
             app.CreatePerOwinContext<ApplicationSignInManager>(ApplicationSignInManager.Create);
+            
+            ViewEngines.Engines.Clear();
+            ViewEngines.Engines.Add(new RazorViewEngine());
 
             app.UseCors(CorsOptions.AllowAll);
 
@@ -54,10 +59,9 @@ namespace WebApp
 
             //Database.SetInitializer(new MigrateDatabaseToLatestVersion<Context, Configuration>());
 
-            Hangfire.GlobalConfiguration.Configuration.UseSqlServerStorage("HrContext");
-
-            app.UseHangfireDashboard();
-            app.UseHangfireServer();
+            //Hangfire.GlobalConfiguration.Configuration.UseSqlServerStorage("HrContext");
+            //app.UseHangfireDashboard();
+            //app.UseHangfireServer();
 
 
 
@@ -67,13 +71,16 @@ namespace WebApp
             {
                 AllowInsecureHttp = true,
                 TokenEndpointPath = new PathString("/token"),
-                AccessTokenExpireTimeSpan = TimeSpan.FromDays(1),
-                Provider = myProvider
+                AccessTokenExpireTimeSpan = TimeSpan.FromDays(7),
+                Provider = myProvider,
+                
             };
             app.UseOAuthAuthorizationServer(options);
             app.UseOAuthBearerAuthentication(new OAuthBearerAuthenticationOptions());
 
             HttpConfiguration config = new HttpConfiguration();
+            var cors = new EnableCorsAttribute("*", "*", "*");
+            config.EnableCors(cors);
             WebApiConfig.Register(config);
 
             MsgUtils.Instance.Refresh();

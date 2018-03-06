@@ -1,0 +1,312 @@
+﻿
+@using System.Web.Script.Serialization
+@using WebApp.Extensions
+@using Model.ViewModel.MissionRequest
+@model ErrandFormRequestViewModel
+@{
+    Layout = null;
+    var admin = User.Identity.CanCustomize();
+    var companyId = User.Identity.GetDefaultCompany();
+    var culture = User.Identity.GetCulture();
+    var rtl = User.Identity.RTL();
+}
+
+<div id="pageTabs"></div>
+
+<br />
+<script type="text/javascript" src="http://maps.googleapis.com/maps/api/js?key=AIzaSyA-qaMK41mhavSk0ng-vJ7x7vjq_toASNs"></script>
+<script src="~/Scripts/app/MyGoogleMaps.js"></script>
+@Html.Partial("_FormButtons")
+<div class="alert alert-danger">
+    <a href="#" class="close" data-dismiss="alert" aria-label="close">×</a>
+    <div id="errorbox" style="display:none"></div>
+</div>
+
+<script>
+        LoadGoogleMapsScripts();
+</script>
+<div id="MissionDiv"></div>
+
+<script>
+    $(".alert").css("display","none");
+    var model;
+    var formId;
+    $(function () {
+        showToolbar([1,2,3,8,11]);
+        FormJs.DrawTabs("pageTabs");
+        model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
+        formId = "FormName";
+        var Emp=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Employees));
+        var Mangers=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Mangers));
+        var Sites =  @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Sites));
+
+        var ErrandType = [{id:1, name: "@MsgUtils.Instance.Trls("direct")"}, {id: 2, name: "@MsgUtils.Instance.Trls("indirect")"}]
+        var read = "@Request.QueryString["Read"]";
+        var isShow = read == 1;
+        var url = "@Url.Action("ReadFormInfo", "Pages")";
+        var read = "@Request.QueryString["Read"]";
+        $.getJSON(url, { objectname: 'ErrandRequest', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
+            data.FormAction = "@Url.Action("SaveMissionRequest", "MissionRequest")";
+            data.FormId = 'FormName';
+            data.Culture = '@culture';
+            data.TableName = "ErrandRequests";
+            data.admin = '@admin';
+            data.rtl = @rtl.ToString().ToLower();
+            data.companyId = "@companyId";
+            if(isShow)
+                data.mode = 'show';
+
+            $("#MissionDiv").Forms(data, model);
+
+            // start region Fill Drop Down
+            FormJs.fillOptionsDynamic($("#" + formId), "ManagerId", Mangers, model,{ remoteTableName: "People" });
+            FormJs.fillOptionsDynamic($("#" + formId), "ErrandType", ErrandType,model);
+            FormJs.fillOptionsDynamic($("#" + formId), "EmpId", Emp, model);
+            FormJs.fillOptionsDynamic($("#" + formId), "SiteId", Sites, model);
+            // End region Fill Drop Down
+
+
+            //in Add Mode
+            if(model.Id == 0){
+                //Hidden Data
+                $("#" + formId).find('[name="HiddenData"]').css("display","none")
+                $("#" + formId).find('[name="HiddenSite"]').css("display","none");
+                $("#" + formId).find('[name="DatesSec"]').css("display","none");
+                $("#StartDate").data('kendoDatePicker').min(new Date());
+                $("#EndDate").val("");
+                $("#StartDate").val("");
+                $("input[name='ErrandType'][value='1']").attr('checked', true);
+            }
+            // In Edit Mode
+
+            if(model.Id != 0  && data.mode != "show")
+            {
+
+                GetEmpInformation(model.EmpId);
+                GetLocInformation(model.SiteId,model.ErrandType,model.EmpId);
+
+                if(model.MultiDays)
+                {
+                    $("#" + formId).find('[name="DatesSec"]').css("display","");
+                    $("#" + formId).find('[name="TimesSec"]').css("display","none");
+                }
+                else
+                {
+                    $("#" + formId).find('[name="DatesSec"]').css("display","none");
+                    $("#" + formId).find('[name="TimesSec"]').css("display","");
+                }
+                $("input[name='ErrandType']").change(function(){
+                    var value = $("input[name='ErrandType']:checked").val();
+                    GetLocInformation(model.SiteId,value,model.EmpId);
+
+                })
+
+
+            }
+           // In Show Mode
+            if(data.mode == "show"){
+                GetEmpInformation(model.EmpId);
+                GetLocInformation(model.SiteId,model.ErrandType,model.EmpId);
+                ShowDateTime(model.MultiDays);
+            }
+
+          // start region Event change
+            $("#MultiDays").on("change",function(){
+                if($('#MultiDays').is(":checked"))
+                {
+                    $("#" + formId).find('[name="TimesSec"]').css("display","none");
+                    $("#" + formId).find('[name="DatesSec"]').css("display","");
+                }
+                else
+                {
+                    $("#" + formId).find('[name="TimesSec"]').css("display","");
+                    $("#" + formId).find('[name="DatesSec"]').css("display","none");
+                }
+            })
+            $("#SiteId").on("change",function(){
+                var locId = $("#SiteId").val();
+                var ErrandType = $("input[name='ErrandType']:checked").val();
+                var EmpId = getEmpId();
+                GetLocInformation(locId,ErrandType,EmpId);
+            });
+            $("#EmpId").on("change",function(){
+                var EmpId = getEmpId();
+                GetEmpInformation(EmpId);
+            })
+            $("#StartTime,#EndTime").on('blur change',function()
+            {
+                getDiffTime();
+            });
+
+            $("#" + formId).on('blur change','#StartDate', function(){
+                FormJs.removeFormError(formId,"StartDate");
+                FormJs.removeFormError(formId,"EndDate");
+                var elem = $(this);
+                if($('#EndDate').val() != "" && elem.val() > $('#EndDate').val())
+                {
+                    FormJs.addFormError(formId,"StartDate","@MsgUtils.Instance.Trls("StartDateLThanEndDate")");
+                }
+                else
+                {
+                    FormJs.removeFormError(formId,"StartDate");
+
+                }
+
+            });
+
+            $("#"+formId).on('blur change','#EndDate',function(){
+                FormJs.removeFormError(formId,"StartDate");
+                FormJs.removeFormError(formId,"EndDate");
+                var elem = $(this);
+                if(elem.val()!=""){
+
+                    if($('#StartDate').val() != "" && elem.val() < $('#StartDate').val())
+                    {
+                        FormJs.addFormError(formId,"EndDate","@MsgUtils.Instance.Trls("EndDateGthanStartDate")");
+                    }
+                    else
+                    {
+                        FormJs.removeFormError(formId,"EndDate");
+
+                    }
+
+                }
+            });
+
+
+
+
+            //End region event change
+
+            //Start Add Hidden filed
+            var hidden = "<input type='hidden' id='submit' name='submit' value='false' />";
+            $("#" + formId).append(hidden);
+            //End Hidden field
+
+
+
+            // start Function region
+            function GetEmpInformation(EmpId){
+                $.get("/AssignOrder/GetEmpInfo", {EmpId : EmpId}, function (result) {
+                    $("#" + formId).find('[name="HiddenData"]').css("display","");
+                    if(isShow) {
+                        $("#Code").text(result.Info.Code)
+                        $("#Department").text(result.Info.Department)
+                        $("#Job").text(result.Info.Job)
+                    }
+                    else {
+                        $("#Code").val(result.Info.Code)
+                        $("#Department").val(result.Info.Department)
+                        $("#Job").val(result.Info.Job)
+                    }
+                })
+            }
+
+            function GetLocInformation(locId ,ErrandType,EmpId){
+                $.get("/MissionRequest/GetSiteInfo",{SiteId:locId,ErrandType:ErrandType,EmpId:EmpId},function(result){
+                    $("#" + formId).find('[name="HiddenSite"]').css("display","");
+                    if(result.Info.dest_Longitude != null && result.Info.dest_Latitude != null && result.Info.Longitude != null && result.Info.Latitude != null)
+                        LoadMap(result.Info.Longitude,result.Info.Latitude,result.Info.dest_Longitude,result.Info.dest_Latitude);
+
+                    if(isShow) {
+                        $("#Address").text(result.Info.Address)
+                        $("#City").text(result.Info.City)
+                        $("#District").text(result.Info.District)
+                    }
+                    else
+                    {
+                        $("#Address").val(result.Info.Address)
+                        $("#City").val(result.Info.City)
+                        $("#District").val(result.Info.District)
+                    }
+
+                });
+            }
+            function ShowDateTime(MultiDays)
+            {
+                if(MultiDays == true)
+                {
+                    $("#" + formId).find('[name="TimesSec"]').css("display","none");
+                    $("#" + formId).find('[name="DatesSec"]').css("display","");
+                }
+                else
+                {
+                    $("#" + formId).find('[name="TimesSec"]').css("display","");
+                    $("#" + formId).find('[name="DatesSec"]').css("display","none");
+                }
+
+            }
+
+            function LoadMap(_Lng,_Lat,destLng,destLat) {
+                $("div[name=GoogleMapSec]").load('/GoogleMaps/ShowMapPartial?Lng='+ _Lng +'&Lat='+  _Lat +'&Height=400'+'&destLng='+destLng+'&destLat='+destLat, function(responseTxt, statusTxt, xhr)
+                    {
+                        if (statusTxt == "success") {
+
+                        }
+                        if (statusTxt == "error")
+                            alert("Error: " + xhr.status + ": " + xhr.statusText);
+                    });
+            }
+            function getEmpId() {
+                if(isShow) return model.EmpId;
+                var field = $("#"+ formId + " #EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                return (field.prop("type") == "text" ? field.prop("data-val") : field.val());
+            }
+            function getDiffTime()
+            {
+                FormJs.removeFormError(formId,"EndTime");
+                FormJs.removeFormError(formId,"StartTime");
+                if($("#StartTime").val() && $("#EndTime").val())
+                {
+                    var diffHours , diffMinutes;
+                    var startHours = $("#StartTime").data("kendoTimePicker").value().getHours();
+                    var startMinutes = $("#StartTime").data("kendoTimePicker").value().getMinutes();
+                    var endHours = $("#EndTime").data("kendoTimePicker").value().getHours();
+                    var endMinutes = $("#EndTime").data("kendoTimePicker").value().getMinutes();
+                   if(endHours < 12 && startHours < 12 && endHours < startHours )
+                    {
+                        FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMissionGthanStart")")
+                    }
+                    else if(endHours < 12 && startHours < 12 && (endHours == startHours && endMinutes < startMinutes))
+                    {
+                        FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMissionGthanStart")")
+                    }
+                    else if(endHours < 12 && startHours == 12)
+                    {
+                        FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMissionLessEnd")")
+                    }
+                    else if(endHours > 12 && startHours > 12 && Number(startMinutes) > Number(endMinutes) && startHours > endHours)
+                    {
+                        FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMissionLessEnd")")
+                    }
+                    else if(endHours == startHours && startMinutes > endMinutes)
+                    {
+                        FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMissionLessEnd")")
+                    }
+                    else if(endHours > 12 && startHours > 12 && startHours > endHours)
+                    {
+                        FormJs.addFormError(formId,"StartTime","@MsgUtils.Instance.Trls("StartMissionLessEnd")")
+                    }
+                    else if(endHours == startHours && startMinutes == endMinutes)
+                    {
+                        FormJs.addFormError(formId,"EndTime","@MsgUtils.Instance.Trls("EndMissionGthanStart")")
+                    }
+                }
+            }
+            //End function region
+        });
+        
+        $("#b1,#b2,#b3,#b8").off('click').on('click', function (e) {
+            var buttId = $(this).attr('id');
+            var send = $(this).attr("id") == "b8" ? true : false; // click send
+            $("#submit").val(send);
+            FormJs.saveForm($("#"+formId), $(this), function (res) {
+                console.log(res);
+                debugger;
+                model = res;
+                toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+                if (buttId === 'b3') updateHistory(oldUlr);
+            }, buttId === 'b2');
+        });
+    });
+</script>

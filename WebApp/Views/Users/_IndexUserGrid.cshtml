@@ -120,8 +120,8 @@
 
 <script>
     var RoleId = "@Request.QueryString["RoleId"]";
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#" + oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#" + oldPage[2] + " a").attr("href");
    
     function getRols() {
         Grids.batchGrid({
@@ -171,7 +171,7 @@
                 if ($('#ImpUsers').attr("haserrors") == "false") {
                     $('#Importuserspopup').modal('hide');
                     location.reload();
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                 }
 
             },

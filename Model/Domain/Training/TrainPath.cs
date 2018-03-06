@@ -49,7 +49,7 @@ namespace Model.Domain
         public string PayrollGrades { get; set; } // comma seperated Payroll Grades
 
         [MaxLength(50)]
-        public string Locations { get; set; } // comma seperated Payroll Grades
+        public string Branches { get; set; } // 
 
         // Special Conditions
         public int? Qualification { get; set; } // Qualification

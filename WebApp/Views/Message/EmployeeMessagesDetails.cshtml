@@ -4,7 +4,7 @@
 @model EmployeeMessagesViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -15,8 +15,8 @@
 <div id="ReadMessage"></div>
 <script>
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         $.getJSON("@Url.Action("ReadFormInfo","Pages")", { objectname: 'ReadMessage', version: "@Request.QueryString["Version"]", RoleId: "@Request.QueryString["RoleId"]" }, function (data) {
             data.FormAction = "@Url.Action("EmployeeMessagesDetails", "Message")";
@@ -39,7 +39,7 @@
 
 
         $("#ReadMessage").on('click','#backToIndex', function (e) {
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
     });
 </script>

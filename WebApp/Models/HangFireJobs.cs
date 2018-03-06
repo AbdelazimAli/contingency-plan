@@ -20,6 +20,8 @@ using WebApp.Controllers;
 using Model.ViewModel.Personnel;
 using System.Net.Mail;
 using Model.Domain;
+using Db.Persistence.BLL;
+using Interface.Core;
 
 namespace WebApp
 {
@@ -326,102 +328,161 @@ namespace WebApp
         #endregion
 
         #region ExtendContract
+
+        public static bool ExtendContractMethod(IHrUnitOfWork unitofwork, string Language, out string ErrorMessage)
+        {
+            bool Result = false;
+            ErrorMessage = "";
+            try
+            {
+                // Get All employees The will Send Email to whose contract Finish and before No of days
+                var Employments = unitofwork.EmployeeRepository.SendMailEmployees();
+
+                List<NotifyLetter> NotifyLettersList = new List<NotifyLetter>();
+                foreach (var item in Employments)
+                {
+                    string NotifySource = "", Description = "";
+                    if (item.Renew)
+                    {
+                        NotifySource = Constants.Sources.RenewContract;
+                        Description = MsgUtils.Instance.Trls("Contract has been renewed", Language);
+                    }
+                    else
+                    {
+                        NotifySource = Constants.Sources.ContractFinish;
+                        Description = MsgUtils.Instance.Trls("Contract has been finished", Language);
+                    }
+
+                    bool IsSentBefore = unitofwork.NotifyLetterRepository.IsNotificationSent(item.EmpId, DateTime.Today.Date, NotifySource);
+
+                    if (!IsSentBefore)
+                    {
+
+                        NotifyLetter NL = new NotifyLetter()
+                        {
+                            CompanyId = item.CompanyId,
+                            EmpId = item.EmpId,
+                            NotifyDate = DateTime.Today,
+                            NotifySource = NotifySource,
+                            SourceId = item.Id.ToString(),
+                            Sent = false,
+                            EventDate = item.EndDate,
+                            Description = Description
+                        };
+
+                        NotifyLettersList.Add(NL);
+                        //unitofwork.NotifyLetterRepository.Add(NL);
+                    }
+                }
+                string DefaultErrorMessage = MsgUtils.Instance.Trls("NotifyLetterNotSent",Language);
+                AddNotifyLetters AddNotifyLetters = new AddNotifyLetters(unitofwork, NotifyLettersList, Language);
+                Result = AddNotifyLetters.Run(out ErrorMessage, DefaultErrorMessage);
+            }
+            catch
+            {
+            }
+            return Result;
+        }
         public static void ExtendContract(string Language)
         {
             HrUnitOfWork unitofwork = new HrUnitOfWork(new HrContextFactory(System.Configuration.ConfigurationManager.ConnectionStrings["HrContext"].ConnectionString));
+            string ErrorMessage;
+            ExtendContractMethod(unitofwork, Language, out ErrorMessage);
+            //unitofwork.Save();
 
-            // Get First Email Account
-            EmailAccount emailAcc = unitofwork.Repository<EmailAccount>().FirstOrDefault();
 
-            // Get All employees The will Send Email to whose contract Finish and before No of days
-            var Employments = unitofwork.EmployeeRepository.SendMailEmployees();
+            //// Get First Email Account
+            //EmailAccount emailAcc = unitofwork.Repository<EmailAccount>().FirstOrDefault();
 
-            // Get an instance of Letter Controller which has the mailmerge Functin
-            LettersController LetterController = new LettersController(unitofwork);
+            //// Get All employees The will Send Email to whose contract Finish and before No of days
+            //var Employments = unitofwork.EmployeeRepository.SendMailEmployees();
 
-            // Instance of mailmergeviewmodel that will get result of function mailmerge
-            MailMergeViewmodel Temp = new MailMergeViewmodel();
-            string Send = "";
+            //// Get an instance of Letter Controller which has the mailmerge Functin
+            //LettersController LetterController = new LettersController(unitofwork);
 
-            // Translation of subject and body of mail
-            string Subject = MsgUtils.Instance.Trls("ContractFinish", Language);
-            string Body = MsgUtils.Instance.Trls("YourContractFinish", Language);
+            //// Instance of mailmergeviewmodel that will get result of function mailmerge
+            //MailMergeViewmodel Temp = new MailMergeViewmodel();
+            //string Send = "";
 
-            foreach (var item in Employments)
-            {
+            //// Translation of subject and body of mail
+            //string Subject = MsgUtils.Instance.Trls("ContractFinish", Language);
+            //string Body = MsgUtils.Instance.Trls("YourContractFinish", Language);
 
-                if (item.Email != null)
-                {
-                    if (item.Renew)  // the employees whose contract will Renewed
-                        Temp = LetterController.MergeData("RenewContract", item.Id, item.EmpId, Language);
+            //foreach (var item in Employments)
+            //{
 
-                    else    // the employees whose contract will finished
-                        Temp = LetterController.MergeData("ContractFinish", item.Id, item.EmpId, Language);
+            //    if (item.Email != null)
+            //    {
+            //        if (item.Renew)  // the employees whose contract will Renewed
+            //            Temp = LetterController.MergeData("RenewContract", item.Id, item.EmpId, Language);
 
-                    if (Temp.Exist) // if there is File or no error of mail merge
-                    {
-                        // The Attachement file that will send to employee
-                        Attachment Attach = new Attachment(Temp.ServerFilePath);
+            //        else    // the employees whose contract will finished
+            //            Temp = LetterController.MergeData("ContractFinish", item.Id, item.EmpId, Language);
 
-                        //Send email Function
-                        Send = Db.Persistence.Services.EmailService.SendEmail(emailAcc,item.Renew? MsgUtils.Instance.Trls("ContractRenew", Language):Subject,item.Renew ? MsgUtils.Instance.Trls("YourContractRenewed", Language):Body  , item.Email, "", null, Attach);
-                        try
-                        {
-                            if (Send == "Ok")
-                            {
-                                if (emailAcc.TodayCount <= emailAcc.Capacity) // if count of mails sent today less than the capacity of mailacount capacity
-                                {
-                                    emailAcc.TodayCount = emailAcc.TodayCount + 1; // increase the mails sent today +1
-                                    emailAcc.LastSentDate = DateTime.Now;
-                                    unitofwork.NotificationRepository.Attach(emailAcc);
-                                    unitofwork.NotificationRepository.Entry(emailAcc).State = System.Data.Entity.EntityState.Modified;
-                                }
-                                else  // Change the email Account
-                                    emailAcc = unitofwork.NotificationRepository.GetEmailAccount(emailAcc.SendOrder);
+            //        if (Temp.Exist) // if there is File or no error of mail merge
+            //        {
+            //            // The Attachement file that will send to employee
+            //            Attachment Attach = new Attachment(Temp.ServerFilePath);
 
-                            }
+            //            //Send email Function
+            //            Send = Db.Persistence.Services.EmailService.SendEmail(emailAcc,item.Renew? MsgUtils.Instance.Trls("ContractRenew", Language):Subject,item.Renew ? MsgUtils.Instance.Trls("YourContractRenewed", Language):Body  , item.Email, "", null, Attach);
+            //            try
+            //            {
+            //                if (Send == "Ok")
+            //                {
+            //                    if (emailAcc.TodayCount <= emailAcc.Capacity) // if count of mails sent today less than the capacity of mailacount capacity
+            //                    {
+            //                        emailAcc.TodayCount = emailAcc.TodayCount + 1; // increase the mails sent today +1
+            //                        emailAcc.LastSentDate = DateTime.Now;
+            //                        unitofwork.NotificationRepository.Attach(emailAcc);
+            //                        unitofwork.NotificationRepository.Entry(emailAcc).State = System.Data.Entity.EntityState.Modified;
+            //                    }
+            //                    else  // Change the email Account
+            //                        emailAcc = unitofwork.NotificationRepository.GetEmailAccount(emailAcc.SendOrder);
 
-                            // Create Notification if the email sent to employee or not to sent it later if not sent
-                            NotifyLetter NL = new NotifyLetter()
-                            {
-                                CompanyId = item.CompanyId,
-                                EmpId = item.EmpId,
-                                NotifyDate = DateTime.Today,
-                                NotifySource = item.Renew ? "RenewContract" : "ContractFinish",
-                                SourceId = item.Id,
-                                Sent = Send == "Ok" ? true : false,  
-                                EventDate = item.EndDate
-                            };
+            //                }
 
-                            
-                            unitofwork.NotificationRepository.AddNotifyLetter(NL);
-                            unitofwork.Save();
+            //                // Create Notification if the email sent to employee or not to sent it later if not sent
+            //                NotifyLetter NL = new NotifyLetter()
+            //                {
+            //                    CompanyId = item.CompanyId,
+            //                    EmpId = item.EmpId,
+            //                    NotifyDate = DateTime.Today,
+            //                    NotifySource = item.Renew ? "RenewContract" : "ContractFinish",
+            //                    SourceId = item.Id.ToString(),
+            //                    Sent = Send == "Ok" ? true : false,  
+            //                    EventDate = item.EndDate
+            //                };
 
-                            // Add the employee file to Documents 
-                            unitofwork.CompanyRepository.Add(new CompanyDocsViews()
-                            {
-                                CompanyId = item.CompanyId,
-                                name = Temp.Path.Substring(Temp.Path.LastIndexOf("/") + 1),
-                                Source = "NotifyLetter",
-                                SourceId = NL.Id,
-                                file_stream = System.IO.File.ReadAllBytes(Temp.ServerFilePath),
-                                thumbs = null,
 
-                            });
-                            unitofwork.Save();
-                        }
-                        catch (Exception ex)
-                        {
-                            unitofwork.HandleDbExceptions(ex);
-                        }
-                        finally
-                        {
-                            Attach.Dispose();
-                        }
-                    }
+            //                unitofwork.NotificationRepository.AddNotifyLetter(NL);
+            //                unitofwork.Save();
 
-                }
-            }
+            //                // Add the employee file to Documents 
+            //                unitofwork.CompanyRepository.Add(new CompanyDocsViews()
+            //                {
+            //                    CompanyId = item.CompanyId,
+            //                    name = Temp.Path.Substring(Temp.Path.LastIndexOf("/") + 1),
+            //                    Source = "NotifyLetter",
+            //                    SourceId = NL.Id,
+            //                    file_stream = System.IO.File.ReadAllBytes(Temp.ServerFilePath),
+            //                    thumbs = null,
+
+            //                });
+            //                unitofwork.Save();
+            //            }
+            //            catch (Exception ex)
+            //            {
+            //                unitofwork.HandleDbExceptions(ex);
+            //            }
+            //            finally
+            //            {
+            //                Attach.Dispose();
+            //            }
+            //        }
+
+            //    }
+            //}
 
         }
         #endregion
@@ -464,7 +525,7 @@ namespace WebApp
 
             int temp = 0;
             int sign = e == Events.WasDueThisAmountofTimeAgo ? -1 : 1;
-            
+
             if (!string.IsNullOrEmpty(value)) int.TryParse(value, out temp);
             NotifyDays days = (NotifyDays)temp;
 
@@ -518,7 +579,7 @@ namespace WebApp
                     SqlDataAdapter da = new SqlDataAdapter(new SqlCommand(sql, conn));
                     da.Fill(dt);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     var x = ex;
                 }

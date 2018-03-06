@@ -47,8 +47,7 @@ namespace Db.Persistence.Repositories
                             Name = k.Name,
                             Email = k.Email,
                             AddressId = k.AddressId,
-                            Tel = k.Tel,
-                            Address = k.Address.Address1 + (k.Address.Address2 == null ? "" : ", " + k.Address.Address2) + (k.Address.Address3 == null ? "" : ", " + k.Address.Address3)
+                            Tel = k.Tel
                         };
             return result ;
         }
@@ -90,7 +89,6 @@ namespace Db.Persistence.Repositories
                              Manager = h.Manager,
                              Tel = h.Tel,
                              AddressId = h.AddressId,
-                             Address = h.Address.Address1 + (h.Address.Address2 == null ? "" : ", " + h.Address.Address2) + (h.Address.Address3 == null ? "" : ", " + h.Address.Address3),
                              CreatedUser = h.CreatedUser,
                              CreatedTime = h.CreatedTime,
                              ModifiedTime = h.ModifiedTime,
@@ -206,7 +204,7 @@ namespace Db.Persistence.Repositories
         public IQueryable<LookupCodesViewModel> GetLookUpCodes(string Id, string culture)
         {
             var result = from c in context.LookUpCodes
-                         where (c.CodeName == Id) &&(c.StartDate <= DateTime.Today && (c.EndDate == null || c.EndDate >= DateTime.Today )) 
+                         where (c.CodeName == Id) &&(c.StartDate <= DateTime.Today.Date && (c.EndDate == null || c.EndDate >= DateTime.Today.Date )) 
                          join t in context.LookUpTitles on new { c.CodeName, c.CodeId } equals new { t.CodeName, t.CodeId } into g
                          from t in g.Where(gg => gg.Culture == culture).DefaultIfEmpty()
                          select new LookupCodesViewModel
@@ -222,8 +220,8 @@ namespace Db.Persistence.Repositories
                              Protected = c.Protected,
                              ModifiedTime=c.ModifiedTime,
                              ModifiedUser=c.ModifiedUser,
-                            CreatedUser=c.CreatedUser,
-                            CreatedTime=c.CreatedTime 
+                             CreatedUser=c.CreatedUser,
+                             CreatedTime=c.CreatedTime 
                          };
             return result;
         }
@@ -259,7 +257,7 @@ namespace Db.Persistence.Repositories
                             HasExpiryDate = d.HasExpiryDate,
                             CompanyId=d.CompanyId,
                             IsLocal=d.IsLocal,
-                            RequiredOpt=d.RequiredOpt,
+                            RequiredOpt= d.RequiredOpt,
                             LocalName = HrContext.TrlsName(d.Name, culture)
                             
                         };
@@ -513,9 +511,9 @@ namespace Db.Persistence.Repositories
         public IEnumerable GetCurrencyCode()
         {
             var currencies = Context.Set<Currency>()
-
                 .Select(c => new { id = c.Code, name = c.Name })
                 .ToList();
+
             return currencies;
         }
         public IEnumerable GetCurrencyCodeGrid()
@@ -552,7 +550,7 @@ namespace Db.Persistence.Repositories
         }
         public IEnumerable<DocTypeAttrViewModel> GetDocAttr(int Id ,string culture)
         {
-            var query = context.DocTypeAttrs.Where(d => d.TypeId == Id).Select(d => new DocTypeAttrViewModel { Id = d.Id, InputType = d.InputType, Attribute = d.Attribute, TypeId = d.TypeId, CodeName = d.CodeName }).ToList();
+            var query = context.DocTypeAttrs.Where(d => d.TypeId == Id).Select(d => new DocTypeAttrViewModel { Id = d.Id, InputType = d.InputType, Attribute = d.Attribute, TypeId = d.TypeId, CodeName = d.CodeName ,IsRequired = d.IsRequired}).ToList();
             foreach (var item in query)
             {
                 item.CodeName = MsgUtils.Instance.Trls(culture, item.CodeName);
@@ -579,7 +577,7 @@ namespace Db.Persistence.Repositories
         public DocTypeFormViewModel ReadDocType(int Id ,string culture)
         {
             var query =( from d in context.DocTypes
-                        where d.Id==Id
+                        where d.Id == Id
                         select new DocTypeFormViewModel
                         {
                             Id = d.Id,
@@ -598,7 +596,8 @@ namespace Db.Persistence.Repositories
                             ModifiedUser = d.ModifiedUser,
                             CreatedUser = d.CreatedUser,
                             CreatedTime = d.CreatedTime,
-                            Gender=d.Gender
+                            Gender=d.Gender,
+                            NotifyDays = d.NotifyDays
                         }).FirstOrDefault();
             return query;
         }

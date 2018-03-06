@@ -15,10 +15,10 @@ namespace Model.ViewModel.Personnel
         public string Name { get; set; }
         public string LocalName { get; set; }
         public short DocumenType { get; set; } // Look Up User Code
-        public byte AccessLevel { get; set; } // 0-Not Shared  1-Shared only   2-Shared and can be downloaded
+        public byte AccessLevel { get; set; } = 2; // 0-Not Shared  1-Shared only   2-Shared and can be downloaded
         public bool IsLocal { get; set; }
         public int? CompanyId { get; set; }
-        public byte RequiredOpt { get; set; } // 0-Not Required 1-Required for all jobs  2-Required for some jobs
+        public byte? RequiredOpt { get; set; }// 0-Not Required 1-Required for all jobs  2-Required for some jobs
         public IEnumerable<int> IJobs { get; set; }
         public ICollection<Job> Jobs{ get; set; }
         public IEnumerable<int> INationalities { get; set; }
@@ -30,7 +30,7 @@ namespace Model.ViewModel.Personnel
         [DataType(DataType.Date)]
         public DateTime? EndDate { get; set; }
         public bool HasExpiryDate { get; set; }
-        public byte? NotifyNofDays { get; set; }
+        public int? NotifyDays { get; set; }
 
         [MaxLength(20)]
         public string CreatedUser { get; set; }

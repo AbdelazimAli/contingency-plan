@@ -3,7 +3,7 @@
     text-align: left;*/
 }
 
-    .omegaform .panel-heading {
+/*    .omegaform .panel-heading {
         margin: 0px;
     }
 
@@ -12,7 +12,7 @@
         padding-bottom: 0px;
     }
 
-    .omegaform .section {
+*/    .omegaform .section {
         margin-bottom: 15px;
     }
 
@@ -38,7 +38,7 @@
         background-color: #dfdede;
     }
 
-    .omegaform .panelicon {
+/*    .omegaform .panelicon {
         font-size: 2em;
         margin-right: 5px;
     }
@@ -46,7 +46,7 @@
     .omegaform .paneltitle {
         font-size: 1.5em;
     }
-
+*/
     .omegaform .editarea {
         padding-right: 0px;
     }
@@ -120,45 +120,45 @@
     }
 
 */
-    .omedropdown-menugaform .set {
+/*    .omedropdown-menugaform .set {
         margin-bottom: 8px;
     }
-
-    .omegaform .set-title {
+*/
+    /*.omegaform .set-title {
         margin-bottom: 15px !important;
-    }
-    .omegaform .set .set-title {
+    }*/
+/*    .omegaform .set .set-title {
         text-align: left;
     }
-
-    .omegaform .set .set-title span, .omegaform .set .set-title .o-collabsebtn {
+*/
+/*    .omegaform .set .set-title span, .omegaform .set .set-title .o-collabsebtn {
         font-weight: bold;
         font-size: 18px;
     }
-
-    .omegaform .set .set-title .lblSpan {
+*/
+/*    .omegaform .set .set-title .lblSpan {
         float: inherit;
     }
-    .omegaform .set .set-title .dropdown-menu span {
+*/    /*.omegaform .set .set-title .dropdown-menu span {
         font-weight: normal;
         font-size: 14px;
         float: none;
-    }
+    }*/
     /*inline form only*/
-    .omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
+    /*.omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
         padding-left: 0px !important;
-    }
+    }*/
 
-    .omegaform .o-collabsebtn {
+/*    .omegaform .o-collabsebtn {
         text-align: left;
         margin-bottom: 5px;
         width: 100%;
     }
-
-        .omegaform .o-collabsebtn span {
+*/
+/*        .omegaform .o-collabsebtn span {
             float: right;
         }
-
+*/
 
     .omegaform .sections {
         padding: 0px 8px 0px 8px;
@@ -201,9 +201,9 @@
     }
 
     /*Start : RTL support*/
-        .omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
+        /*.omegaform .form-inline .form-group, .omegaform .form-inline .form-group label {
         padding-right: 0px !important;
-    }
+    }*/
      .omegaform.rtl input, .omegaform.rtl select, .omegaform.rtl textarea  {
         text-align: right;
         direction: rtl;
@@ -244,18 +244,18 @@
 
         .omegaform.rtl .radio , .omegaform.rtl .checkbox ,.omegaform.rtl .radio-inline{
             padding-right: 20px;
-            margin-left: 15px;
+            /*margin-left: 15px;*/
             direction:rtl;
             margin-right:0px !important;
         }
 
             .omegaform.rtl .radio input, .omegaform.rtl .checkbox input ,.omegaform.rtl .radio-inline input{
-                margin-right: 0px;
+                /*margin-right: 0px;*/
                 margin-left: 5px;
             }
 
         .omegaform.rtl .form-group label {
-            text-align: right !important;
+            /*text-align: right !important;*/
             float:right;
         }
 
@@ -264,22 +264,23 @@
             padding-left: 60px;
         }
 
-        .omegaform.rtl .o-collabsebtn{
+/*        .omegaform.rtl .o-collabsebtn{
             text-align:right;
         }
      .omegaform.rtl .o-collabsebtn  span{
          float:left;
      }
-     .omegaform.rtl .editarea{
+*/  
+   .omegaform.rtl .editarea{
          float:left;
      }
       .omegaform.rtl .editarea .switch ,.omegaform.rtl .editarea .btn{
           float:left;
       }
 
-    .omegaform.rtl .panel-title{
+    /*.omegaform.rtl .panel-title{
         float:right;
-    }
+    }*/
 
     .omegaform.rtl .form-inline .form-group,.omegaform.rtl .form-inline control-label  {
         padding-right: 0px !important;
@@ -344,11 +345,10 @@
     }
 
 .omegaform .form-inline .form-control {
-    width:88%;
+    width:100%;
 }
-/*align*/
 .omegaform .form-horizontal .form-control {
-    width:89%;
+    width:100%;
 }
 
 /*for kendo dropsown*/
@@ -379,10 +379,10 @@
     margin-right: 5px;
 }
 
-.omegaform span.lblSpan {
+/*.omegaform span.lblSpan {
     padding: 5px, 3px !important;
 }
-
+*/
 .omegaform .form-group .input-group {
     margin-bottom: 15px;
     display: inline-table !important;
@@ -461,27 +461,27 @@
 /*end Kendo DropDownList*/
 
 /* created & modified */
-.omegaform .ModifyInfo {
+/*.omegaform .ModifyInfo {
     color: gray;
     position: absolute;
     bottom: 100px;
     right: 70px;
 }
-
-.omegaform.rtl .ModifyInfo {
+*/
+/*.omegaform.rtl .ModifyInfo {
     left: 70px;
     right: inherit;
     text-align: right;
     direction: rtl;
     float: right;
-}
+}*/
 /*---*/
 
 /*Label align*/
 .omegaform .form-inline>.form-group:not(:first-of-type) .control-label {
         text-align: end !important;
 }
-.omegaform.rtl .form-inline>.form-group:not(:first-of-type) .control-label {
+.omegaform.rtl .form-inline>.form-group .control-label {
         text-align: left !important;
 }
 

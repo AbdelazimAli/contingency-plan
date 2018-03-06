@@ -22,7 +22,7 @@ namespace Model.ViewModel.Administration
         public DateTime? PurchaseDate { get; set; }
         public bool InUse { get; set; } = false;
         public byte Status { get; set; } = 100; 
-        public int? LocationId { get; set; }
+        public int? BranchId { get; set; }
         public bool Freeze { get; set; } = false;
 
     }

@@ -94,7 +94,7 @@ namespace WebApp.Controllers
             ViewBag.Calender = _hrUnitOfWork.LeaveRepository.GetHolidays(CompanyId); //for Calender
 
             int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            ViewBag.isSSMenu = _hrUnitOfWork.MenuRepository.Get(MenuId)?.SSMenu ?? false;
+            ViewBag.isSSMenu = _hrUnitOfWork.Repository<Model.Domain.Menu>().Where(a => a.Id == MenuId).Select(a => a.SSMenu).FirstOrDefault();
 
             return View(request);
         }
@@ -222,7 +222,6 @@ namespace WebApp.Controllers
                 ObjectName = "LeaveRequest",
                 CompanyId = CompanyId,
                 UserName = UserName,
-                Version = Convert.ToByte(Request.Form["version"]),
                 ColumnName = columnName,
                 SourceId = SourceId.ToString(),
                 ValueAfter = ValAfter,

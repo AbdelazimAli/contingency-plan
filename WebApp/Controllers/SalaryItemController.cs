@@ -42,10 +42,6 @@ namespace WebApp.Controllers
         #region SalaryItems
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetSalaryItem(int MenuId)
@@ -90,7 +86,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "SalaryItems",
@@ -125,7 +121,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "SalaryItems",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -144,7 +139,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "SalaryItems",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -204,7 +198,6 @@ namespace WebApp.Controllers
                 {
                     Source = record,
                     ObjectName = "SalaryItem",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
 
@@ -221,13 +214,10 @@ namespace WebApp.Controllers
         #region Salary Variables
         public ActionResult SalaryVarIndex()
         {
-            ViewBag.PayrollId = _hrUnitOfWork.Repository<Payrolls>().Where(s=>s.CompanyId==CompanyId || s.IsLocal==false).Select(a => new { value = a.Id, text = a.Name }).ToList();
-            ViewBag.SalItemId = _hrUnitOfWork.Repository<SalaryItem>().Where(s => s.CompanyId == CompanyId || s.IsLocal == false).Select(a => new { value = a.Id, text = a.Name }).ToList();
-            ViewBag.PayPeriodId = _hrUnitOfWork.Repository<SubPeriod>().Select(a => new { value = a.Id, text = a.Name }).ToList();
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+            ViewBag.PayrollId = _hrUnitOfWork.Repository<Payrolls>().Where(s=>s.CompanyId==CompanyId || s.IsLocal==false).Select(a => new { value = a.Id, text = a.Name });
+            ViewBag.SalItemId = _hrUnitOfWork.Repository<SalaryItem>().Where(s => s.CompanyId == CompanyId || s.IsLocal == false).Select(a => new { value = a.Id, text = a.Name });
+            ViewBag.PayPeriodId = _hrUnitOfWork.Repository<SubPeriod>().Select(a => new { value = a.Id, text = a.Name });
+   
             return View();
         }
         public ActionResult GetSalaryVar()
@@ -434,7 +424,6 @@ namespace WebApp.Controllers
                         Destination = SalaryVarRecord,
                         Source = model,
                         ObjectName = "SalaryVar",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo
                     });
                     _hrUnitOfWork.PayrollRepository.Add(SalaryVarRecord);
@@ -453,7 +442,6 @@ namespace WebApp.Controllers
                             Destination = salary,
                             Source = model,
                             ObjectName = "SalaryVar",
-                            Version = Convert.ToByte(Request.Form["Version"]),
                             Options = moreInfo,
                             Transtype = TransType.Update
                         });
@@ -564,13 +552,13 @@ namespace WebApp.Controllers
         //SaveCriteria
         public ActionResult SaveCriteria()
         {
-            ViewBag.Jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.Locations = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Branches = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName });
             ViewBag.CompanyStuctures = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, Language);
             ViewBag.Payrolls = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name });
             ViewBag.Positions = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.PeopleGroups = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade();
+            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade(CompanyId);
             return View(new SalaryVarFormViewModel());
         }
         [HttpPost]
@@ -591,9 +579,9 @@ namespace WebApp.Controllers
             //4-Add EmpId belongs to specified Employment
             if (Model.IEmployments != null)
                 EmpIds.AddRange(assign.Where(a => Model.IEmployments.Contains(a.PersonType != null ? a.PersonType.Value : 0)).Select(c => c.EmpId).ToList());
-            //5-Add EmpId belongs to specified Locations
-            if (Model.ILocations != null)
-                EmpIds.AddRange(assign.Where(a => Model.ILocations.Contains(a.LocationId != null ? a.LocationId.Value : 0)).Select(c => c.EmpId).ToList());
+            //5-Add EmpId belongs to specified
+            if (Model.IBranches != null)
+                EmpIds.AddRange(assign.Where(a => Model.IBranches.Contains(a.BranchId)).Select(c => c.EmpId).ToList());
             //6-Add EmpId belongs to specified PayrollGrades
             if (Model.IPayrollGrades != null)
                 EmpIds.AddRange(assign.Where(a => Model.IPayrollGrades.Contains(a.PayGradeId != null ? a.PayGradeId.Value : 0)).Select(c => c.EmpId).ToList());

@@ -19,7 +19,7 @@ namespace Model.ViewModel
         public int? CompanyId { get; set; }
         public bool IsLocal { get; set; }
 
-        public int RequiredOpt { get; set; }
+        public int? RequiredOpt { get; set; }
         public string LocalName { get; set; }
     }
 }

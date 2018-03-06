@@ -2,7 +2,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
@@ -11,19 +11,14 @@
     string[] function = ViewData["Functions"] as string[];
 }
 
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Terminations" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "TerminationRequestGrid" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Terminations" } })
 
 <div id="TerminationRequestGrid"></div>
 
 <script>
     var addUrl = "@Url.Action("Details", "Termination")";
-    RequestFilters.ApplayAllFilters([], {}, "TerminationRequestGrid", "@Url.Action("GetRequests", "Termination")?MenuId=@Request.QueryString["MenuId"]", addUrl);
-    function Exist(data) {
-        if (data.HasImage)
-            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.EmpId+".jpeg?dummy="+(new Date().getTime())+")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
+    RequestFilters.applyAllFilters([], {}, "TerminationRequestGrid", "@Url.Action("GetRequests", "Termination")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    
     var ApprovalStatus = [{ value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
          { value: 2, text: '@MsgUtils.Instance.Trls("Submit")' },
          { value: 3, text: '@MsgUtils.Instance.Trls("AprovalEmployeeReview")' },
@@ -40,9 +35,7 @@
                     },
                     {
                         field: "Employee",
-                        template: "<div class='k-people-photo' " +
-                                        "style='background-image: #:Exist(data)# '></div>" +
-                                        "&nbsp;&nbsp;&nbsp;<div class='k-people-name'>#:Employee#</div>",
+                        template: "<div><img class='k-people-photo' src=#:Exist(data.Gender,data.Image)# />&nbsp;<span class='k-people-name'>#: Employee #</span></div>",
                         locked:true
                     }, { field: "ApprovalStatus", values: ApprovalStatus }];
 

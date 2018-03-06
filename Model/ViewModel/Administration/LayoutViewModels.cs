@@ -11,6 +11,7 @@ namespace Model.ViewModel
         public IEnumerable<LayOutMenuViewModel> Menus { get; set; }
         public IEnumerable<LayOutMenuViewModel> Tabs { get; set; }
         public IEnumerable<LayOutCompanyViewModel> Companies { get; set; }
+        public IEnumerable<LayOutFunctionViewModel> Functions { get; set; }
     }
 
     public class LayOutMenuViewModel
@@ -31,6 +32,12 @@ namespace Model.ViewModel
     public class LayOutCompanyViewModel
     {
         public int Id { get; set; }
+        public string Name { get; set; }
+    }
+
+    public class LayOutFunctionViewModel
+    {
+        public int MenuId { get; set; }
         public string Name { get; set; }
     }
 

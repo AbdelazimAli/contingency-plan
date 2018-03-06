@@ -4,7 +4,7 @@
 @using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     }
@@ -14,8 +14,8 @@
 
 <script>
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#" + oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#" + oldPage[2] + " a").attr("href");
 
         var url = "@Url.Action("ReadFormInfo", "Pages")";
 

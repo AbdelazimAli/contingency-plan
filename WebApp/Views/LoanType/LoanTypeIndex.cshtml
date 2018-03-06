@@ -1,0 +1,71 @@
+﻿
+@using WebApp.Extensions
+<br>
+
+@{
+    var admin = User.Identity.CanCustomize();
+    var rtl = User.Identity.RTL();
+    var grid = ViewData["GridName"];
+    Layout = null;
+}
+
+
+<div id="LoanType"></div>
+
+<script>
+
+    var objectName = "LoanTypes";
+    var gridname = "LoanType"
+    Grids.batchGrid({
+        read: "@Url.Action("ReadLoanType", "LoanType")?MenuId=@Request.QueryString["MenuId"]",
+        update: "@Url.Action("UpdateLoanType", "LoanType")",
+        create: "@Url.Action("CreateLoanType", "LoanType")",
+        destroy: "@Url.Action("DeleteLoanType", "LoanType")",
+        admin: "@admin", // Admin role
+        lang: "@User.Identity.GetCulture()",
+        objectName: objectName,
+        recordName: "Name", // custom delete message
+        gridName: "LoanType",
+        fields: {
+            StartDate: {
+                validation: {
+                    customStartDate: function (input) {
+                        var dataItem = $("#LoanType").data("kendoGrid").dataItem($(input).closest("tr"));
+                        var startDate = $(input).data("kendoDatePicker").value();
+                        var endDate = dataItem.EndDate;
+                        if (endDate < startDate) {
+                            @*toastr.error("@MsgUtils.Instance.Trls("EndDateGthanStartDate")");*@
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("EndDateGthanStartDate")");
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+            },
+            EndDate: {
+                validation: {
+                    customStartDate: function (input) {
+                        var dataItem = $("#LoanType").data("kendoGrid").dataItem($(input).closest("tr"));
+                        var startDate = dataItem.StartDate;
+                        var endDate = $(input).data("kendoDatePicker").value();
+                       console.log(endDate);
+                        if (endDate < startDate) {
+                            @*toastr.error("@MsgUtils.Instance.Trls("EndDateGthanStartDate")");*@
+                            $(input).attr("validationMessage", "@MsgUtils.Instance.Trls("EndDateGthanStartDate")");
+                            return false;
+                        }
+                        return true;
+                    }
+                }
+            }
+        }
+
+
+    });
+
+</script>
+
+@Html.Partial("_BatchGrid", new ViewDataDictionary { { "Admin", admin }, { "GridName", "LoanType" }, { "ObjectName", "LoanTypes" } })
+
+
+

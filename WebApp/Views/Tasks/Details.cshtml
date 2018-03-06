@@ -3,7 +3,7 @@
 @model Model.ViewModel.Personnel.EmpTasksViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -26,8 +26,8 @@
         EmpTaskForm();
     });
 
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
     function EmpTaskForm() {
 

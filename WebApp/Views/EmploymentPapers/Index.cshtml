@@ -1,0 +1,73 @@
+﻿@model  EmploymentPapersIndexViewModel
+@{
+    Layout = null;
+}
+
+<div class="btns-attach">
+@foreach (var m in Model.EmpDocsTypes)
+{
+  
+    <button id="btn_@m.Paper.Id" class="btn_Papers submit @(m.UploadedText.ToLower()) @(m.RequiredColor.ToLower())" data-doctypeid="@m.Paper.Id" data-doctypename="@m.Paper.Name" data-empid="@Model.EmpID" type="button" value="" data-PartialUrl="@(Model.GeneralUrl+"&DocTypeID="+ m.Paper.Id+"&HasExpiryDate="+m.Paper.HasExpiryDate+m.Uploaded_StreamID_QueryString+"&IsEmpPaper="+m.IsEmpPaper )">@(m.Paper.Name)</button>
+}
+
+<button id="btn_0" class="btn_Papers submit add" data-doctypeid="0" data-doctypename="Others" data-empid="@Model.EmpID"  type="button" value="+" data-PartialUrl="@(Model.GeneralUrl)"></button>
+
+</div><!-- /.attach-btns -->
+
+@*<script src="~/Scripts/app/scanner.Full.js"></script>
+<script src="~/Scripts/app/ScannerCustom.js"></script>*@
+<script src="~/Scripts/app/ScannWebApp.js"></script>
+
+<script>
+    $('.btn_Papers').off('click').on('click', function (e) {
+        e.preventDefault();
+        
+        $('#myModalLabel').text($(this).data('doctypename'));
+
+        var ActionUrl = $(this).data('partialurl');
+        $("#editDoc").load(ActionUrl, function (responseTxt, statusTxt, xhr) {
+            if (statusTxt == "success")
+            {
+                ShowModal('myModal');
+            }
+            if (statusTxt == "error")
+                alert("Error: " + xhr.status + ": " + xhr.statusText);
+        });
+    });
+
+    
+   
+</script>
+
+
+
+<div id='myModal' class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" data-keyboard="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title" id="myModalLabel"></h4>
+        </div>
+        <div id="editDoc" class="modal-body"  tabindex="0"></div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+    $('#myModal').each(function(){
+        $(this).on('show.bs.modal',function(){
+            $('.modal-footer').empty();
+        });
+    })
+    $('.modal').on('shown.bs.modal',function(){
+        $('.form-group.horisontal-form').each(function(){
+            if ($(this).children().length<1 || $(this).children('input[type="hidden"]').length>0){$(this).hide();}
+        });
+            $('.modal-body').mCustomScrollbar({
+                theme: "minimal-dark"
+            });
+    });
+    $('.modal').on('hidden.bs.modal',function(){
+            $('.modal-body').mCustomScrollbar("destroy");
+    });
+</script>

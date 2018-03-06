@@ -38,10 +38,6 @@ namespace WebApp.Controllers
         #region PeopleTraining
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetPeopleTrain(int MenuId)
@@ -90,7 +86,7 @@ namespace WebApp.Controllers
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "PeopleTrains",
@@ -123,7 +119,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "PeopleTrains",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo, 
                         Transtype = TransType.Insert
                     });
@@ -146,7 +141,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "PeopleTrains",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Update
                     });
@@ -196,7 +190,6 @@ namespace WebApp.Controllers
                 {
                     Source = PeopleTrain,
                     ObjectName = "PeopleTrains ",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.TrainingRepository.Remove(PeopleTrain);
@@ -234,10 +227,7 @@ namespace WebApp.Controllers
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("CancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
             ViewBag.Mangers = _hrUnitOfWork.EmployeeRepository.GetManagers(CompanyId, Language).Select(m => new { id = m.Id, name = m.Name });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
+           
             return View();
         }
         public ActionResult ReadTrainFollowUp(int MenuId)
@@ -451,7 +441,6 @@ namespace WebApp.Controllers
                 Destination = request,
                 Source = model,
                 ObjectName = "PeopleTrainFollowUpForm",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo
             });
 

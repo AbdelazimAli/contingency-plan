@@ -29,16 +29,12 @@ namespace WebApp.Controllers
         {
             _hrUnitOfWork = unitOfWork;
         }
+
+        [OutputCache(VaryByParam = "*", Duration = 3600)]
         public ActionResult Log(string Id, string ObjectName)
         {
             ViewBag.id = Id;
             ViewBag.objectName = ObjectName;
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            string Menu = Request.QueryString["MenuId"]?.ToString();
-            int MenuId = string.IsNullOrEmpty(Menu) ? 0 : int.Parse(Request.QueryString["MenuId"].ToString());
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
             return View();
         }
         // GET: Log
@@ -85,6 +81,7 @@ namespace WebApp.Controllers
             return Json(new { total = total, data = query.ToList() }, JsonRequestBehavior.AllowGet);
         }
 
+        [OutputCache(VaryByParam = "*", Duration = 3600)]
         public ActionResult WorkFlow(string Source, int SourceId, int DocumentId)
         {
             return View(new WorkFlowGridViewModel { Source = Source, SourceId = SourceId, DocumentId = DocumentId });

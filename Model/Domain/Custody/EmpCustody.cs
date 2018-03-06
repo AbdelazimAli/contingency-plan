@@ -32,8 +32,8 @@ namespace Model.Domain
         [MaxLength(250)]
         public string Notes { get; set; }
 
-        public int? LocationId { get; set; }
-        public Location Location { get; set; }
+        public int? BranchId { get; set; }
+        public Branch Branch { get; set; }
 
         [MaxLength(20)]
         public string CreatedUser { get; set; }

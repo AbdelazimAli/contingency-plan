@@ -1,68 +1,49 @@
 ﻿
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
+    bool ssMenue = false;
     int dataLevel = 4, read = 0, Menuid = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    bool.TryParse(Request.QueryString["SSMenu"], out ssMenue);
     int.TryParse(Request.QueryString["Read"], out read);
     var rtl = User.Identity.RTL();
-    string[] function = ViewData["Functions"] as string[];
     Layout = null;
     int.TryParse(Request.QueryString["MenuId"], out Menuid);
 }
-<div id="NotifyLetterGid"></div>
+@if (!ssMenue)
+{
+<div class="steps">
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#myNotify" aria-controls="myNotify" role="tab" data-toggle="tab">@MsgUtils.Instance.Trls("MyNotify")</a></li>
+        <li role="presentation"><a href="#empNotifies" aria-controls="empNotifies" role="tab" data-toggle="tab">@MsgUtils.Instance.Trls("EmployeeNotifies")</a></li>
+    </ul>
+    <!-- Tab panes -->
+    <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="myNotify">
+            @Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "NotifyLetterGid" }, { "HasDepts", "false" }, { "hasRange", "false" } })
+            @Html.Partial("MyNotifyLetters")
+        </div>
+        <div role="tabpanel" class="tab-pane" id="empNotifies">
+            @Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "NotifyGidDiv" }, { "HasDepts", "false" }, { "hasRange", "false" } })
+            @Html.Partial("EmployeesNotify")
+        </div>
+    </div>
+</div>
+}
+else
+{
+    @Html.Partial("MyNotifyLetters")
+}
 <script>
-    var gridname = "NotifyLetterGid";
-    Grids.indexGrid({
-        read: "@Url.Action("GetEmpNotificationsLetters", "Notification")?MenuId="+@Menuid,
-        objectName: "NotificationsLetter",  // name of the page or table name used to create local db key
-        gridName: "NotifyLetterGid",
-        recordName: "Subject",
-        admin: "@admin",
-        lang: "@User.Identity.GetCulture()",
-        columns: [
-            {field:"Informed",command:{
-                text:'@MsgUtils.Instance.Trls("Informed")',click:function(e){
-                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
-                    $.getJSON("/Notification/InformLetter",{id:dataItem.Id},function(res){
-                        if(res=="Ok")
-                            toastr.success('@MsgUtils.Instance.Trls("MessageRead")');
-                        else
-                            toastr.warning('@MsgUtils.Instance.Trls("MessagealreadyRead")');
-
-                    });
-                }
-            }
-            },{ field: "Download",command:{
-                text:'@MsgUtils.Instance.Trls("Download")',click:function(e){
-                    var dataItem = this.dataItem($(e.currentTarget).closest("tr"));
-                    $.getJSON("/Notification/DownloadFile",{id:dataItem.Id},function(res){
-                        if(res=="Ok"){
-                            toastr.success('@MsgUtils.Instance.Trls("MessageRead")');
-                        }else
-                            toastr.warning('@MsgUtils.Instance.Trls("MessagealreadyRead")');
-
-                    });
-                }
-            }}
-        ],
-        toolbar: kendo.template($("#template").html()),
-        serverPaging: true,
-        serverFiltering: true,
-        serverSorting: true,
-        dataBound:function(){
-            var grid = $("#" + gridname).data("kendoGrid");;
-
-            if( "@function.Count()" != "0" && "@Array.Exists(function,f=>f == "Inform")" == "True")
-                grid.showColumn("Informed");
-            else
-                grid.hideColumn("Informed");
-            
-        }
-    });
-   
+    @*@if(ssMenue == false)
+    $(".steps").remove();*@
 </script>
 
-<script type="text/x-kendo-template" id="template">
+
+
+  
+@*<script type="text/x-kendo-template" id="template">
     <div style="@(rtl ? "float: right" : "float: left")">
         
         <div class="btn-group">
@@ -90,6 +71,6 @@
         </div>
     </div>
 
-</script>
+</script>*@
 
 

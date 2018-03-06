@@ -21,7 +21,7 @@
     InitialValues = function (args) {
         //set global variables
         DATE_FUNC = ['_Today', '_FirstDayInMonth', '_FirstDayInYear'];
-        ID_ARGS = ['@User', '@Company', '(', ')', '@Date(', '@RoleId', '@EmpId', '@IsDepManager', '@JobId', '@LocationId', '@PositionId', '@SectorId', '@BranchId', '@DepartmentId'];
+        ID_ARGS = ['@User', '@Company', '(', ')', '@Date(', '@RoleId', '@EmpId', '@IsDepManager', '@JobId', '@LocationId', '@PositionId', '@BranchId', '@DepartmentId'];
         ColumnsStr = '';
         ignoreCase = true;
         if (args) {

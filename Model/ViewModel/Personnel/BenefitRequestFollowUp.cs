@@ -108,7 +108,6 @@ namespace Model.ViewModel.Personnel
         public int? DeptId { get; set; }
         public int? PositionId { get; set; }
         public int? BranchId { get; set; } // Branch = 2
-        public int? SectorId { get; set; } // Sector = 3
         public int? AuthBranch { get; set; } // Branch = 2
         public int? AuthDept { get; set; }
         public int? AuthPosition { get; set; }
@@ -116,7 +115,8 @@ namespace Model.ViewModel.Personnel
         public string AuthEmpName { get; set; }
         public string AuthPosName { get; set; }
         public string AuthDeptName { get; set; }
-        public bool HasImage { get; set; }
+        public string Attachment { get; set; }
+        public short Gender { get; set; }
         public int CompanyId { get; set; }
         public string Employee { get; set; }
     }

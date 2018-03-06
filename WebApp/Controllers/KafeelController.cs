@@ -39,10 +39,6 @@ namespace WebApp.Controllers
         #region Kafeel
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetAllKafeels(int MenuId)
@@ -168,7 +164,6 @@ namespace WebApp.Controllers
             {
                 Source = kafeel,
                 ObjectName = "Kafeel",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Transtype = TransType.Delete
             });
 

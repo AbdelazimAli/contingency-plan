@@ -13,6 +13,9 @@ using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Infrastructure.Interception;
 using System.Data.Common;
 using System.IO;
+using Interface.Core.Repositories.Loan;
+using Db.Persistence.Repositories.Loans;
+
 namespace Db.Persistence
 {
    
@@ -27,7 +30,6 @@ namespace Db.Persistence
             MenuRepository = new MenuRepository(Context);
             PageEditorRepository = new PageEditorRepository(Context);
             LookUpRepository = new LookUpRepoitory(Context);
-            LocationRepository = new LocationRepoitory(Context);
             CompanyStructureRepository = new CompanyStructureRepository(Context);
             JobRepository = new JobRepository(Context);
             PeopleRepository = new PeopleRepository(Context);
@@ -50,8 +52,10 @@ namespace Db.Persistence
             PayrollRepository = new PayrollRepository(Context);
             SalaryDesignRepository = new SalaryDesignRepository(Context);
             NotificationRepository = new NotificationRepository(Context);
+            MissionRepository = new MissionRepository(Context);
+            MeetingRepository = new MeetingRepository(Context);
         }
-
+        
         public string HandleDbExceptions(Exception ex, string culture)
         {
             var message = "";
@@ -259,6 +263,11 @@ namespace Db.Persistence
             }
         }
 
+        public DbContextTransaction BeginTransaction()
+        {
+            return Context.Database.BeginTransaction();
+        }
+
         public List<Error> SaveChanges(string culture)
         {
             string message = "";
@@ -285,13 +294,11 @@ namespace Db.Persistence
             }
         }
 
-
         public ICompanyRepository CompanyRepository { get; private set; }
         public IPagesRepository PagesRepository { get; private set; }
         public IMenuRepository MenuRepository { get; private set; }
         public IPageEditorRepository PageEditorRepository { get; private set; }
         public ILookUpRepository LookUpRepository { get; private set; }
-        public ILocationRepository LocationRepository { get; private set; }
         public ICompanyStructureRepository CompanyStructureRepository { get; private set; }
         public IJobRepository JobRepository { get; private set; }
         public IEmployeeRepository EmployeeRepository { get; private set; }
@@ -315,5 +322,104 @@ namespace Db.Persistence
         public ISalryDesignRepository SalaryDesignRepository { get; private set; }
         public ICacheManager CacheManager { get; private set; }
         public INotificationRepository NotificationRepository { get; private set; }
+        public IMissionRepository MissionRepository { get; private set; }
+        public IMeetingRepository MeetingRepository { get; private set; }
+
+
+        IBranchRepository _BranchRepoitory;
+        public IBranchRepository BranchRepository
+        {
+            get
+            {
+                if (_BranchRepoitory == null) { _BranchRepoitory = new BranchRepository(Context); }
+                return _BranchRepoitory;
+            }
+        }
+
+        ISiteRepository _SiteRepository;
+        public ISiteRepository SiteRepository
+        {
+            get
+            {
+                if (_SiteRepository == null) { _SiteRepository = new SiteRepository(Context); }
+                return _SiteRepository;
+            }
+        }
+
+
+        IDocTypesRepository _DocTypesRepository;
+        public IDocTypesRepository DocTypesRepository
+        {
+            get
+            {
+                if (_DocTypesRepository == null) { _DocTypesRepository = new DocTypesRepository(Context); }
+                return _DocTypesRepository;
+            }
+        }
+
+        ICompanyDocsViewsRepository _CompanyDocsViewsRepository;
+        public ICompanyDocsViewsRepository CompanyDocsViewsRepository
+        {
+            get
+            {
+                if (_CompanyDocsViewsRepository == null) { _CompanyDocsViewsRepository = new CompanyDocsViewsRepository(Context); }
+                return _CompanyDocsViewsRepository;
+            }
+        }
+        ICompanyDocAttrRepository _CompanyDocAttrRepository;
+        public ICompanyDocAttrRepository CompanyDocAttrRepository
+        {
+            get
+            {
+                if (_CompanyDocAttrRepository == null) { _CompanyDocAttrRepository = new CompanyDocAttrRepository(Context); }
+                return _CompanyDocAttrRepository;
+            }
+        }
+
+        ISendFormRepository _SendFormRepository;
+        public ISendFormRepository SendFormRepository
+        {
+            get
+            {
+                if (_SendFormRepository == null) { _SendFormRepository = new SendFormRepository(Context); }
+                return _SendFormRepository;
+            }
+        }
+
+        IPersonFormRepository _PersonFormRepository;
+        public IPersonFormRepository PersonFormRepository
+        {
+            get
+            {
+                if (_PersonFormRepository == null) { _PersonFormRepository = new PersonFormRepository(Context); }
+                return _PersonFormRepository;
+            }
+        }
+
+        INotifyLetterRepository _NotifyLetterRepository;
+        public INotifyLetterRepository NotifyLetterRepository
+        {
+            get
+            {
+                if (_NotifyLetterRepository == null) { _NotifyLetterRepository = new NotifyLetterRepository(Context); }
+                return _NotifyLetterRepository;
+            }
+        }
+
+        #region Loans
+
+        ILoanTypeRepository _LoanTypeRepository;
+
+        public ILoanTypeRepository LoanTypeRepository
+        {
+            get
+            {
+                if (_LoanTypeRepository == null) { _LoanTypeRepository = new LoanTypeRepository(Context); }
+                return _LoanTypeRepository;
+            }
+        }
+        #endregion
+
     }
 }
+

@@ -44,7 +44,7 @@ namespace Model.ViewModel.Personnel
         public IEnumerable<int> ICompanyStuctures { get; set; }
         public IEnumerable<int> IPositions { get; set; }
         public IEnumerable<int> IPayrollGrades { get; set; }
-        public IEnumerable<int> ILocations { get; set; }
+        public IEnumerable<int> IBranches { get; set; }
         public string PeopleGroups { get; set; } // comma seperated PeopleGroups
         public string Payrolls { get; set; } // comma seperated Payrolls
         public string Jobs { get; set; } // comma seperated Jobs   
@@ -52,7 +52,7 @@ namespace Model.ViewModel.Personnel
         public string CompanyStuctures { get; set; }
         public string Positions { get; set; }
         public string PayrollGrades { get; set; }
-        public string Locations { get; set; }
+        public string Branches { get; set; }
         public string CreatedUser { get; set; }
         public string ModifiedUser { get; set; }
         public DateTime? CreatedTime { get; set; }

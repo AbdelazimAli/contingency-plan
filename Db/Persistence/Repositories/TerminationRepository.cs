@@ -103,8 +103,8 @@ namespace Db.Persistence.Repositories
                        AuthPosition = wft.AuthPosition,
                        AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                        BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
-                       HasImage = tr.Employee.HasImage
+                       Image = HrContext.GetDoc("EmployeePic", tr.Employee.Id),
+                       Gender = tr.Employee.Gender
                    };
             return requests;
         }
@@ -142,8 +142,8 @@ namespace Db.Persistence.Repositories
                                AuthPosition = wft.AuthPosition,
                                AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                                BranchId = wft.BranchId,
-                               SectorId = wft.SectorId,
-                               HasImage = tr.Employee.HasImage
+                               Image = HrContext.GetDoc("EmployeePic", tr.Employee.Id),
+                               Gender = tr.Employee.Gender
                            };
             return followUp;
         }
@@ -251,9 +251,7 @@ namespace Db.Persistence.Repositories
                         ReasonDesc = r.ReasonDesc,
                         RejectDesc = r.RejectDesc,
                         RejectReason = r.RejectReason,
-                        RequestDate = r.RequestDate,
-
-
+                        RequestDate = r.RequestDate
                     }).FirstOrDefault();
         }
 
@@ -273,7 +271,8 @@ namespace Db.Persistence.Repositories
                                BonusInMonths = tr.BonusInMonths,
                                ServYear = tr.ServYear,
                                TermReason = HrContext.GetLookUpUserCode("Termination", tr.TermReason, culture),
-                               HasImage = tr.Employee.HasImage
+                               Image = HrContext.GetDoc("EmployeePic", tr.Employee.Id),
+                               Gender = tr.Employee.Gender
                            };
 
             return approved;

@@ -144,14 +144,14 @@
                                       $('#resetPassVal').val(data.ResetPassword);
                                       $('#errorSpan').text('');
 
-                                      if (data.user.Locked === true) {
-                                          $('#errorSpan').text(blocked);
-                                          lock = true;
-                                          $('#log').attr('disabled', true);
-                                          $('#Password').attr('disabled', true);
-                                          $('#resetpass').hide();
-                                      }
-                                      else {
+                                      //if (data.user.Locked === true) {
+                                      //    $('#errorSpan').text(blocked);
+                                      //    lock = true;
+                                      //    $('#log').attr('disabled', true);
+                                      //    $('#Password').attr('disabled', true);
+                                      //    $('#resetpass').hide();
+                                      //}
+                                      //else {
                                           if (data.user.ResetPassword === true) {
                                               $('#errorSpan').text('');
                                               $('#log').attr('disabled', true);
@@ -167,7 +167,7 @@
                                               lock = false;
                                           }
 
-                                      }
+                                      //}
 
                                   }
 

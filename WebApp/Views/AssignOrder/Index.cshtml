@@ -3,7 +3,7 @@
     Layout = null;
     var rtl = User.Identity.RTL();
     string culture = User.Identity.GetCulture();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     ViewBag.Title = "Index";
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
@@ -42,17 +42,17 @@
 
     if ("@isSSMenu" == "True" && "@mangRole" == "False") {
         //Employee
-        RequestFilters.ApplayAllFilters(UserleaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")');
+        RequestFilters.applyAllFilters(UserleaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")');
         RequestFilters.setTab(2);
     }
     else if ("@mangRole" == "True") {
         //Manager
-        RequestFilters.ApplayAllFilters(leaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")?Manager=' + "@mangRole");
+        RequestFilters.applyAllFilters(leaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")?Manager=' + "@mangRole");
         RequestFilters.setTab(1);
     }
     else {
         //HR
-        RequestFilters.ApplayAllFilters(leaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")');
+        RequestFilters.applyAllFilters(leaveTabs, hiddenCols, "AssignOrderDiv", readUrl, '@Url.Action("Details", "AssignOrder")');
         RequestFilters.setTab(1);
     }
 
@@ -66,7 +66,7 @@
         var Duration = [{ value: 1, text: '@MsgUtils.Instance.Trls("Day")' }, { value: 2, text: '@MsgUtils.Instance.Trls("0.25 day")' }, { value: 3, text: '@MsgUtils.Instance.Trls("0.5 day")' }];
         var grid = "'AssignOrderDiv'";
         Grids.indexGrid({
-            read: RequestFilters.GetReadUrl(),
+            read: RequestFilters.getReadUrl(),
             show: "@Url.Action("Details", "AssignOrder")",
             edit: "@Url.Action("Details", "AssignOrder")",
             del: "@Url.Action("DeleteOrders", "AssignOrder")",

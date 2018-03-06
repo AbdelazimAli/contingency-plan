@@ -51,6 +51,8 @@ namespace Model.ViewModel.Personnel
         public string SpecialCond { get; set; }
         public string Error { get; set; }
 
+        public int? SuggestJobId { get; set; } // Suggested Job
+
         [MaxLength(20)]
         public string CreatedUser { get; set; }
         [MaxLength(20)]
@@ -58,6 +60,7 @@ namespace Model.ViewModel.Personnel
         public DateTime? CreatedTime { get; set; }
         public DateTime? ModifiedTime { get; set; }
         public int SysCodeId { get; set; }
+        public string NotifyButtonLabel { set; get; }
 
     }
 }

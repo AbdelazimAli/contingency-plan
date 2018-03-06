@@ -4,6 +4,7 @@ using Model.ViewModel.Personnel;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,11 +14,12 @@ namespace Interface.Core.Repositories
     public interface IRepository<TEntity> where TEntity : class
     {
         TEntity Get(int? id);
-        IEnumerable<TEntity> GetAll();
+        IQueryable<TEntity> GetAll();
         void AddTrail(AddTrailViewModel trailVM);
         bool IsExist(Expression<Func<TEntity, bool>> predicate);
         IEnumerable<TEntity> Find(Expression<Func<TEntity, bool>> predicate);
 
+        void Edit(TEntity entity);
         void Add(TEntity entity);
 
         void Attach(TEntity entity);
@@ -25,7 +27,6 @@ namespace Interface.Core.Repositories
         void RemoveLName(string Culture, string Name);
         void AddLName(string culture, string oldName, string newName, string lname);
         void AddRange(IEnumerable<TEntity> entities);
-
         void Remove(int? id);
         void Remove(TEntity entity);
         void RemoveRange(IEnumerable<TEntity> entities);
@@ -57,7 +58,7 @@ namespace Interface.Core.Repositories
         IQueryable<AuditViewModel> GetLog(int companyId, string[] objects, byte version, string culture, string Id);
 
         IQueryable<FlexDataViewModel> GetFlexData(int companyId, string objectName, byte version, string culture, int SourceId);
-        List<string> GetAutoCompleteColumns(string objectName, int compnayId, byte version);
+        bool CheckAutoCompleteColumn(string objectName, int companyId, byte version, string columnname);
 
         void RequestRangeFilter(byte range, int companyId, out DateTime? Start, out DateTime? End);
     }

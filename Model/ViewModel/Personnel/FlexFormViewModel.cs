@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Model.Domain;
+using Model.ViewModel.Personnel;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -13,6 +15,8 @@ namespace Model.ViewModel
         public string Name { get; set; }
         public string Purpose { get; set; }
         public string DesignedBy { get; set; }
+        public DateTime? SendCreationDate { get; set; }     // Send Date
+        public DateTime  ExpiryDate{ get; set; }            //Send form Expiry Date
         public byte FormType { get; set; } = 1; // Hidden field use as flag  1-Questionnaire  2-Interview   3-Test
     }
 
@@ -30,6 +34,9 @@ namespace Model.ViewModel
         public int DesignedBy { get; set; }
         public byte FormType { get; set; } = 1; // Hidden field use as flag  1-Questionnaire  2-Interview   3-Test
         public List<FlexFormFSViewModel> FieldSets { get; set; }
+        public int SendFormId { get; set; } 
+        public DateTime  ExpiryDate { get; set; } //Send Form Expiry Date
+        public List<PersonFormPageVM> personForm { get; set; }
     }
 
     public class FlexFormFSViewModel
@@ -51,7 +58,7 @@ namespace Model.ViewModel
         [MaxLength(250)]
         public string Name { get; set; }
         public byte ColumnOrder { get; set; }
-        public byte InputType { get; set; } // Number, Text, Radio buttons, Checkboxes
+        public InputType InputType { get; set; } // Number, Text, Radio buttons, Checkboxes
         public bool ShowTextBox { get; set; } // show Other (for Radio buttons, Checkboxes)
 
         [MaxLength(1000)]

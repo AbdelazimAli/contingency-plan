@@ -3,7 +3,7 @@
 @using WebApp.Extensions
 <br>
 @{
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var grid = ViewData["GridName"];
     var count = ViewBag.count;

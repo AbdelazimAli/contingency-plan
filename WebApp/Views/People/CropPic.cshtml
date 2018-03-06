@@ -7,151 +7,64 @@
 @{
     Layout = null;
 }
-<style>
-    #modal {
-        z-index: 100;
-        height: 500px;
-        width: 450px;
-        background: white;
-        border: 1px solid #ccc;
-        -moz-box-shadow: 0 0 3px #ccc;
-        -webkit-box-shadow: 0 0 3px #ccc;
-        box-shadow: 0 0 3px #ccc;
-        text-align: center;
-    }
 
-    #avatar-upload-box {
-        height: inherit;
-        text-align: -webkit-center;
-    }
-
-    #xhrUploadCroppie {
-        width: -webkit-fill-available;
-    }
-
-    #xhrCancelCroppie {
-        width: -webkit-fill-available;
-    }
-
-    @@media (min-width: 1200px) {
-        .container {
-            width: 98% !important;
-        }
-    }
-
-    #croppie_form {
-        height: inherit;
-        width: 98%;
-    }
-
-    #progress {
-        width: 620px;
-        border: 1px solid #ccc;
-        display: none;
-        float: left;
-        height: 14px;
-        border-radius: 10px;
-        -moz-border-radius: 10px;
-        -ms-border-radius: 10px;
-        -o-border-radius: 10px;
-        -webkit-border-radius: 10px;
-        background: -moz-linear-gradient(#66cc00, #4b9500);
-        background: -ms-linear-gradient(#66cc00, #4b9500);
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #66cc00), color-stop(100%, #4b9500));
-        background: -webkit-linear-gradient(#66cc00, #4b9500);
-        background: -o-linear-gradient(#66cc00, #4b9500);
-        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#66cc00', endColorstr='#4b9500');
-        -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#66cc00', endColorstr='#4b9500')";
-        background: linear-gradient(#66cc00, #4b9500);
-    }
-
-    #progress_percent {
-        float: right;
-    }
-
-    #upload_response {
-       
-        margin-top: 10px;
-        padding: 20px;
-        overflow: hidden;
-        display: none;
-        border: 1px solid #ccc;
-        border-radius: 10px;
-        -moz-border-radius: 10px;
-        -ms-border-radius: 10px;
-        -o-border-radius: 10px;
-        -webkit-border-radius: 10px;
-        box-shadow: 0 0 5px #ccc;
-        background: -moz-linear-gradient(#bbb, #eee);
-        background: -ms-linear-gradient(#bbb, #eee);
-        background: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #bbb), color-stop(100%, #eee));
-        background: -webkit-linear-gradient(#bbb, #eee);
-        background: -o-linear-gradient(#bbb, #eee);
-        filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbb', endColorstr='#eee');
-        -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#bbb', endColorstr='#eee')";
-        background: linear-gradient(#bbb, #eee);
-    }
-
-    #progress_info{
-        margin-top: 60px;
-    text-align: center;
-
-    }
-</style>
 <div>
     <form id="croppie_form" enctype="multipart/form-data" method="post">
-        <div id="avatar-upload-box" class="container">
-           
-            <div id="chooseF" class="row">
-                <div>
-                    <label for="image_file">@MsgUtils.Instance.Trls("selectfile")</label>
-                </div>
-                <div>
-                    <input type="file" accept="image/*" value="Choose Image" name="image_file" id="upload" />
-                </div>
-                <div id="nofile">@MsgUtils.Instance.Trls("Noselectfile")</div>
-
+        <div id="avatar-upload-box">
+            <div class="file-input">
+                <input type="file" accept="image/*" value="Choose Image" name="image_file" id="upload" />
+                <div class="text">
+                    <dfn>@MsgUtils.Instance.Trls("selectfile")</dfn>
+                    <span>@MsgUtils.Instance.Trls("Noselectfile")</span>
+                </div><!--  /.text -->
             </div>
-
-            <div id="modal" class="row">
+            <div class="canvas">
                 <div id="main-cropper"></div>
+                <div class="text-center">
+                    <div class="btns">
+                        <span id="xhrUploadCroppie">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 449 342">
+                            <path id="Forma_1" data-name="Forma 1" d="M142.864,270.537L35.716,163.343,0,199.074,142.864,342,449,35.732,413.284,0Z"/>
+                            </svg>
+                        </span>
+                        <span id="xhrRotateCroppie" data-deg="-90">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 343.844 326">
+                            <path id="Forma_1" data-name="Forma 1" d="M333.946,28.3A12.5,12.5,0,0,0,319.1,37.9l-9.087,42.383A162.509,162.509,0,0,0,169.778,0C80.148,0,7.229,72.882,7.229,162.47a12.5,12.5,0,0,0,25.008,0C32.237,86.666,93.937,25,169.778,25a137.522,137.522,0,0,1,118.961,68.43L247.054,84.5a12.5,12.5,0,1,0-5.24,24.442l71.558,15.327a12.5,12.5,0,0,0,14.846-9.6l15.336-71.522A12.5,12.5,0,0,0,333.946,28.3ZM321.364,146.089a12.5,12.5,0,0,0-12.084,12.9A137.5,137.5,0,0,1,176.353,300.929c-1.531.05-3.053,0.075-4.577,0.075A137.537,137.537,0,0,1,54.8,235.837l43.46,11.648a12.5,12.5,0,1,0,6.477-24.144L34.056,204.4a12.506,12.506,0,0,0-15.316,8.834L-0.211,283.883a12.5,12.5,0,0,0,24.154,6.474L34.6,250.647A162.5,162.5,0,0,0,171.769,326c1.8,0,3.6-.029,5.41-0.089A162.5,162.5,0,0,0,334.273,158.165,12.49,12.49,0,0,0,321.364,146.089Z"/>
+                            </svg>
+                        </span>
+                        <span id="xhrCancelCroppie">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 357 357">
+                            <path id="Forma_1" data-name="Forma 1" d="M357,35.7L321.3,0,178.5,142.8,35.7,0,0,35.7,142.8,178.5,0,321.3,35.7,357,178.5,214.2,321.3,357,357,321.3,214.2,178.5Z"/>
+                            </svg>
+                        </span>
+                    </div>
+                </div>
 
-            </div>
+                <div id="progress_info" class="container">
+                    <div class="row">
+                        <div class="col-md-offset-1 col-md-9" id="progress"></div>
 
-            <div id="progress_info" class="container">
-                <div class="row">
-                    <div class="col-md-offset-1 col-md-9" id="progress"></div>
+                        <div class="col-md-2" id="progress_percent">&nbsp;</div>
+                        <div class="clear_both"></div>
+                    </div>
 
-                    <div class="col-md-2" id="progress_percent">&nbsp;</div>
+                    <div class="row" id="speed">&nbsp;</div>
+                    <div class="row" id="remaining">&nbsp;</div>
+                    <div class="row" id="b_transfered">&nbsp;</div>
                     <div class="clear_both"></div>
-                </div>
 
-                <div class="row" id="speed">&nbsp;</div>
-                <div class="row" id="remaining">&nbsp;</div>
-                <div class="row" id="b_transfered">&nbsp;</div>
-                <div class="clear_both"></div>
-
-                <div class="row" id="upload_response"></div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-4">
-                    <button id="xhrUploadCroppie" class="actionDone btn btn-success">Done</button>
-                </div>
-                <div class="col-md-2">
-                    <button id="xhrRotateCroppie" data-deg="-90" class="btn btn-primary">Rotate</button>
-                </div>
-                <div class="col-md-4">
-                    <button id="xhrCancelCroppie" class="actionCancel btn btn-danger">Cancel</button>
+                    <div class="row" id="upload_response"></div>
                 </div>
 
             </div>
-            <div class="row">
-                <div id="error">@MsgUtils.Instance.Trls("imageFileonly")</div>
-                <div id="error2">@MsgUtils.Instance.Trls("erroruploading")</div>
-                <div id="abort">@MsgUtils.Instance.Trls("cancelUploading")</div>
-                <div id="warnsize">@MsgUtils.Instance.Trls("fileisbig")</div>
+
+            <div class="msgs">
+                <div class="msg" id="error">@MsgUtils.Instance.Trls("imageFileonly")</div>
+                <div class="msg" id="error2">@MsgUtils.Instance.Trls("erroruploading")</div>
+                <div class="msg" id="abort">@MsgUtils.Instance.Trls("cancelUploading")</div>
+                <div class="msg" id="warnsize">@MsgUtils.Instance.Trls("fileisbig")</div>
             </div>
+            </div><!-- /.canvas -->
         </div>
     </form>
 </div>
@@ -162,13 +75,34 @@
 
     $(function () {
 
+        $('.file-input input[type="file"]').change(function (e) {
+            var fileName = e.target.files[0].name;
+            
+            // $('.file-input span').text('The file "' + fileName + '" has been selected.');
+
+            if (fileName.length >  0){
+                $('.file-input').addClass('fade-out');                
+                $('.canvas').addClass('fade-in');                
+            }
+        });
+
+        $('#xhrCancelCroppie').on('click',function(){
+                $('.file-input').removeClass('fade-out');            
+                $('.canvas').removeClass('fade-in');
+        });
+
+        $('#xhrUploadCroppie').on('click',function(){
+                $('.file-input').removeClass('fade-out');            
+                $('.canvas').removeClass('fade-in');
+                $(this).closest('.modal').modal('hide')
+        })
 
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         var Source = model.Source;
         var SourceId = model.SourceId;
-        console.log("dataTemp",model);
-        console.log("dataTemp",model.Source);
-        console.log("dataTemp",model.SourceId);
+        // console.log("dataTemp",model);
+        // console.log("dataTemp",model.Source);
+        // console.log("dataTemp",model.SourceId);
         var iBytesUploaded = 0;
         var iBytesTotal = 0;
         var iPreviousBytesLoaded = 0;
@@ -177,25 +111,25 @@
         var sResultFileSize = '';
         function HideErrorElements() {
             // hide different warnings
-            document.getElementById('upload_response').style.display = 'none';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('error2').style.display = 'none';
-            document.getElementById('abort').style.display = 'none';
-            document.getElementById('warnsize').style.display = 'none';
+            // document.getElementById('upload_response').style.display = 'none';
+            // document.getElementById('error').style.display = 'none';
+            // document.getElementById('error2').style.display = 'none';
+            // document.getElementById('abort').style.display = 'none';
+            // document.getElementById('warnsize').style.display = 'none';
             $('#xhrUploadCroppie').prop('disabled', true);
-            $('#xhrCancelCroppie').prop('disabled', true);
+            // $('#xhrCancelCroppie').prop('disabled', true);
         }
         HideErrorElements();
         function EmptyData() {
             oImage.src = "";
             pdf.src = "";
-            pdf.style.display = 'none';
-            oImage.style.display = 'none';
+            // pdf.style.display = 'none';
+            // oImage.style.display = 'none';
 
-            document.getElementById('nofile').style.display = 'block';
-            document.getElementById('image_file').value = '';
-            document.getElementById('fileinfo').style.display = 'none';
-            document.getElementById('progress_info').style.display = 'none';
+            // document.getElementById('nofile').style.display = 'block';
+            // document.getElementById('image_file').value = '';
+            // document.getElementById('fileinfo').style.display = 'none';
+            // document.getElementById('progress_info').style.display = 'none';
         }
 
         function uploadProgress(e){ // upload process in progress
@@ -295,10 +229,10 @@
             document.getElementById('remaining').innerHTML =  secondsToTime(secondsRemaining);
         }
         var basic;
-        if (Source === "ComoanyLogo" ) {
+        if (Source === "CompanyLogo" ) {
             var basic = $('#main-cropper').croppie({
                 viewport: { width: 396, height: 130 },
-                boundary: { width: 450, height: 500 },
+                boundary: { width: 450, height: 450 },
                 showZoomer: true,
                 enableZoom:true,
                 enforceBoundary:false,
@@ -309,15 +243,15 @@
         else {
             var basic = $('#main-cropper').croppie({
                 viewport: { width: 180, height: 180 },
-                boundary: { width: 450, height: 500 },
+                boundary: { width: 450, height: 450 },
                 showZoomer: true,
                 enableZoom:true,
                 enforceBoundary:false,
                 enableOrientation: true,
-
             });
         }
-        
+
+
 
         function readFile(input) {
             if (input.files && input.files[0]) {
@@ -339,21 +273,21 @@
         $('#upload').on('change', function () {
             readFile(this);
             HideErrorElements();
-            document.getElementById('nofile').style.display = 'none';
+            // document.getElementById('nofile').style.display = 'none';
             $('#xhrUploadCroppie').prop('disabled', false);
 
         });
         $('#xhrUploadCroppie').on('click', function (e) {
-            $('#xhrCancelCroppie').prop('disabled', false);
+            // $('#xhrCancelCroppie').prop('disabled', false);
             e.preventDefault();
-            console.log("Done");
+            // console.log("Done");
             iPreviousBytesLoaded = 0;
-            document.getElementById('upload_response').style.display = 'none';
-            document.getElementById('error').style.display = 'none';
-            document.getElementById('error2').style.display = 'none';
-            document.getElementById('abort').style.display = 'none';
-            document.getElementById('warnsize').style.display = 'none';
-            document.getElementById('progress_percent').innerHTML = '';
+            // document.getElementById('upload_response').style.display = 'none';
+            // document.getElementById('error').style.display = 'none';
+            // document.getElementById('error2').style.display = 'none';
+            // document.getElementById('abort').style.display = 'none';
+            // document.getElementById('warnsize').style.display = 'none';
+            // document.getElementById('progress_percent').innerHTML = '';
             var oProgress = document.getElementById('progress');
             oProgress.style.display = 'block';
             oProgress.style.width = '0px';
@@ -387,10 +321,10 @@
             })
 
         })
-        $('#xhrCancelCroppie').on('click', function (e) {
-            e.preventDefault();
-            console.log("cancel");
-        })
+        // $('#xhrCancelCroppie').on('click', function (e) {
+        //     e.preventDefault();
+        //     console.log("cancel");
+        // })
 
         $("#xhrRotateCroppie").on('click', function (e) {
             e.preventDefault();

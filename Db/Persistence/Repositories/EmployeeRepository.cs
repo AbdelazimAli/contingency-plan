@@ -26,6 +26,28 @@ namespace Db.Persistence.Repositories
             }
         }
 
+        public void GetAssignment(int EmpID,out int JobID,out int Gender, out int NationalityID)
+        {
+            JobID = 0;
+            Gender = 0;
+            NationalityID = 0;
+            try
+            {
+                var RecordValue= context.Employements.Include(p=>p.Person).Where<Employement>(e => e.EmpId == EmpID && e.Status == 1 ).Select(a=>new {JobID=a.SuggestJobId,Gendre=a.Person.Gender,NationalityID=a.Person.Nationality }).FirstOrDefault();
+
+                if (RecordValue != null)
+                {
+                    JobID = Convert.ToInt32(RecordValue.JobID);
+                    Gender = RecordValue.Gendre;
+                    NationalityID = Convert.ToInt32(RecordValue.NationalityID);
+                }
+            }
+            catch
+            {
+               
+            }
+        }
+
         #region Relative
         public IQueryable<EmpRelativeViewModel> GetEmpRelative(int id)
         {
@@ -100,7 +122,7 @@ namespace Db.Persistence.Repositories
         }
         public IList<DropDownList> GetEmpBenefit(int empId, string culture, int CompanyId)
         {
-            string sql = "SELECT B.Id, dbo.fn_TrlsName(B.Name, '" + culture + "') Name FROM Benefits B, Assignments A, Employements E WHERE A.EmpId = E.EmpId And A.EmpId =" + empId + "AND ((B.IsLocal=1 AND B.CompanyId =" + CompanyId + ") OR B.IsLocal = 0)  AND (Convert(date,GETDATE()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (DATEDIFF(m, A.AssignDate, GETDATE()) >= (CASE B.EmpAccural WHEN 3 THEN ISNULL(B.WaitMonth, 0) ELSE 0 END)) AND(Convert(date,GETDATE()) Between B.StartDate And ISNULL(B.EndDate, '2099/01/01'))  AND(CASE WHEN LEN(B.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND(CASE WHEN LEN(B.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND(CASE WHEN LEN(B.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND(CASE WHEN LEN(B.Locations) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Locations, ',') WHERE VALUE = ISNULL(A.LocationId, 0)), -1) ELSE ISNULL(A.LocationId, 0) END) = ISNULL(A.LocationId, 0) AND(CASE WHEN LEN(B.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND(CASE WHEN LEN(B.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND(CASE WHEN LEN(B.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND(CASE WHEN LEN(B.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
+            string sql = "SELECT B.Id, dbo.fn_TrlsName(B.Name, '" + culture + "') Name FROM Benefits B, Assignments A, Employements E WHERE A.EmpId = E.EmpId And A.EmpId =" + empId + "AND ((B.IsLocal=1 AND B.CompanyId =" + CompanyId + ") OR B.IsLocal = 0)  AND (Convert(date,GETDATE()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (DATEDIFF(m, A.AssignDate, GETDATE()) >= (CASE B.EmpAccural WHEN 3 THEN ISNULL(B.WaitMonth, 0) ELSE 0 END)) AND(Convert(date,GETDATE()) Between B.StartDate And ISNULL(B.EndDate, '2099/01/01'))  AND(CASE WHEN LEN(B.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND(CASE WHEN LEN(B.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND(CASE WHEN LEN(B.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND(CASE WHEN LEN(B.Branches) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Branches, ',') WHERE VALUE = ISNULL(A.BranchId, 0)), -1) ELSE ISNULL(A.BranchId, 0) END) = ISNULL(A.BranchId, 0) AND(CASE WHEN LEN(B.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND(CASE WHEN LEN(B.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND(CASE WHEN LEN(B.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND(CASE WHEN LEN(B.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(B.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
             return context.Database.SqlQuery<DropDownList>(sql).ToList();
         }
         public void Add(EmpBenefit empBenefit)
@@ -127,11 +149,10 @@ namespace Db.Persistence.Repositories
 
         public IQueryable<FormList> EmployeeMangers(int CompanyId, string Culture, int? Position)
         {
-                DateTime Today = DateTime.Today.Date;
                 return from o in context.Positions
                        where o.Id == Position
                        join a in context.Assignments on o.Supervisor equals a.PositionId
-                       where (a.AssignDate <= Today && a.EndDate >= Today && a.CompanyId == CompanyId)
+                       where (a.CompanyId == CompanyId && a.AssignDate <= DateTime.Today.Date && a.EndDate >= DateTime.Today.Date)
                        join p in context.People on a.EmpId equals p.Id
                        orderby a.AssignDate
                        select new FormList
@@ -140,7 +161,6 @@ namespace Db.Persistence.Repositories
                            name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, Culture)
                        };
            
-
         }
         public Dictionary<string,string> ReadMailEmpContractFinish(string Language,int Id)
         {
@@ -243,7 +263,7 @@ namespace Db.Persistence.Repositories
             {
                 if (item.EndDate != null && item.RemindarDays != null && item.RemindarDays.Value > 0)
                     if (item.EndDate.Date.AddDays(-item.RemindarDays.Value) == Today)
-                        SendEmps.Add(new ExtendOrFinishContractViewModel { Id = item.Id, EmpId = item.EmpId, Renew = item.Renew, Email = item.Email, CompanyId = item.CompanyId });
+                        SendEmps.Add(new ExtendOrFinishContractViewModel { Id = item.Id,EndDate= item.EndDate, EmpId = item.EmpId, Renew = item.Renew, Email = item.Email, CompanyId = item.CompanyId });
             }
 
 
@@ -301,11 +321,11 @@ namespace Db.Persistence.Repositories
                     EndDate = item.EndDate.Value.AddMonths(item.DurInMonths).AddYears(item.DurInYears),
                 });
                 item.Status = 2;
-                context.Employements.Attach(item);
-                context.Entry(item).State = EntityState.Modified;
+                //context.Employements.Attach(item);
+                //context.Entry(item).State = EntityState.Modified;
             }
 
-            context.SaveChanges();
+           // context.SaveChanges();
         }
         public void RemoveContext()
         {
@@ -364,9 +384,11 @@ namespace Db.Persistence.Repositories
                           PositionName = HrContext.TrlsName(di.Job.Name, Culture),
                           colorSchema = "#4d5f77",
                           ParentId = di.ManagerId,
-                          HasImage = di.Employee.HasImage,
+                          Image = HrContext.GetDoc("EmployeePic", di.EmpId),
+                          Gender = di.Employee.Gender,
                           Name = HrContext.TrlsName(di.Employee.Title + " " + di.Employee.FirstName + " " + di.Employee.Familyname, Culture)
                       };
+
             return res;
         }
      
@@ -383,39 +405,46 @@ namespace Db.Persistence.Repositories
                             };
             return employees;
         }
-        public IQueryable<AssignmentGridViewModel> GetTermActiveEmployees(string culture, int Id, int CompanyId)
+        public IQueryable<DropDownList> GetTermActiveEmployees(string culture, int Id, int CompanyId)
         {
             var employees = from p in context.People
                             join a in context.Employements on p.Id equals a.EmpId
-                            where (a.Status==1 && a.CompanyId == CompanyId) || a.EmpId == Id
-                            select new AssignmentGridViewModel
+                            where (a.CompanyId == CompanyId && a.Status==1) || a.EmpId == Id
+                            select new DropDownList
                             {
                                 Id = p.Id,
-                                Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                                PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
-                                EmpStatus = HrContext.GetEmpStatus(p.Id)
+                                Name = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
+                                PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                                Gender = p.Gender,
+                                Icon = HrContext.GetEmpStatus(p.Id)
                             };
             return employees;
         }
-        public IQueryable<AssignmentGridViewModel> GetActiveEmployees(string culture, int Id, int CompanuId)
+        public IQueryable<PeopleGridViewModel> GetActiveEmployees(string culture, int Id, int CompanyId)
         {
             var employees = from a in context.Assignments
-                            where (a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today && a.CompanyId == CompanuId) || a.EmpId == Id
+                            where (a.CompanyId == CompanyId && a.AssignDate <= DateTime.Today.Date && a.EndDate >= DateTime.Today.Date) || a.EmpId == Id
                             join p in context.People on a.EmpId equals p.Id
-                            select new AssignmentGridViewModel
+                            select new PeopleGridViewModel
                             {
                                 Id = p.Id,
                                 Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                                PicUrl = (p.HasImage ? p.Id + ".jpeg" : "noimage.jpg"),
-                                EmpStatus = HrContext.GetEmpStatus(p.Id)
+                                PicUrl = HrContext.GetDoc("EmployeePic", p.Id),
+                                EmpStatus = HrContext.GetEmpStatus(p.Id),
+                                Gender = p.Gender,
+                                Department = HrContext.TrlsName( a.Department.Name,culture),
+                                DepartmentId = a.DepartmentId,
+                                Job = HrContext.TrlsName(a.Job.Name,culture),
+                                JobId=a.JobId
                             };
+
             return employees;
         }
-        public IQueryable<AssignmentGridViewModel> GetAllEmployees(string culture)
+        public IQueryable<PeopleGridViewModel> GetAllEmployees(string culture)
         {
             var employees = from p in context.People
                             join a in context.Assignments on p.Id equals a.EmpId
-                            select new AssignmentGridViewModel
+                            select new PeopleGridViewModel
                             {
                                 Id = p.Id,
                                 Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture)
@@ -441,17 +470,18 @@ namespace Db.Persistence.Repositories
                           };
             return history;
         }
-        public IQueryable<AssignmentGridViewModel> GetAssignments(string culture)
+
+        public IQueryable<PeopleGridViewModel> GetAssignments(string culture)
         {
             DateTime Today = DateTime.Today.Date;
+            var companyId = 0; // you should passing companyid as parameter then change > to =
+
             var Assignments = from p in context.People
                               join e in context.Employements on p.Id equals e.EmpId into g
                               from e in g.Where(s => s.Status == 1).DefaultIfEmpty()
                               join a in context.Assignments on e.EmpId equals a.EmpId into g1
-                              from a in g1.Where(x => x.CompanyId == e.CompanyId && x.AssignDate <= Today && x.EndDate >= Today).DefaultIfEmpty()
-                              join c in context.CompanyStructures on a.BranchId equals c.Id into g2
-                              from c in g2.DefaultIfEmpty()
-                              select new AssignmentGridViewModel
+                              from a in g1.Where(x => x.AssignDate <= Today && x.EndDate >= Today).DefaultIfEmpty()
+                              select new PeopleGridViewModel
                               {
                                   Id = p.Id,
                                   EmpId = p.Id,
@@ -459,14 +489,10 @@ namespace Db.Persistence.Repositories
                                   Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
                                   Code = e.Code,
                                   Department = HrContext.TrlsName(a.Department.Name, culture),
-                                  Docs = HrContext.GetDocsCount(e.CompanyId, p.Id, a.JobId),
-                                  EmployementDate = a != null ? a.AssignDate : e.StartDate,
                                   Job = HrContext.TrlsName(a.Job.Name, culture),
-                                  Position = context.Positions.Where(z => z.Id == a.PositionId && z.JobId == a.JobId && z.DeptId == a.DepartmentId).Select(b => HrContext.TrlsName(b.Name, culture)).FirstOrDefault(),
                                   DepartmentId = a.DepartmentId,
                                   JobId = a.JobId,
                                   PositionId = a.PositionId,
-                                  Supervisor = a.Position.Supervisor,
                                   ManagerId = a.ManagerId,
                                   Gender = p.Gender,
                                   Age = DateTime.Now.Year - p.BirthDate.Year,
@@ -474,13 +500,9 @@ namespace Db.Persistence.Repositories
                                   PersonType = e.PersonType,
                                   Qualification = p.QualificationId,
                                   EmpStatus = HrContext.GetEmpStatus(p.Id),
-                                  Location = HrContext.TrlsName(a.Location.Name, culture),
+                                  Branch = HrContext.TrlsName(a.Branch.Name, culture),
                                   HasImage = p.HasImage,
                                   BranchId = a.BranchId,
-                                  BranchName = HrContext.TrlsName(c.Name, culture),
-                                  SectorId = a.SectorId,
-                                  CompanyName = HrContext.TrlsName(e.Company.Name, culture),
-                                  LocationId = a.LocationId,
                                   PayGradeId = a.PayGradeId,
                                   PayrollId = a.PayrollId,
                                   GroupId = a.GroupId,
@@ -488,8 +510,114 @@ namespace Db.Persistence.Repositories
                                   IsDeptManger = a != null ? a.IsDepManager : false,
                                   Attachement = HrContext.GetDoc("EmployeePic", p.Id)
                               };
+
             return Assignments;
         }
+
+        public IQueryable<PeopleGridViewModel> GetCurrentEmployee(int company, string culture)
+        {
+            DateTime Today = DateTime.Today.Date;
+            return from p in context.People
+                   join a in context.Assignments on p.Id equals a.EmpId
+                   where a.CompanyId == company && a.AssignDate <= Today && a.EndDate >= Today
+                   join e in context.Employements on p.Id equals e.EmpId
+                   where e.CompanyId == company && e.Status == 1
+                   select new PeopleGridViewModel
+                   {
+                       Id = p.Id,
+                       EmpId = p.Id,
+                       CompanyId = a.CompanyId,
+                       Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
+                       Code = a.Code,
+                       Department = HrContext.TrlsName(a.Department.Name, culture),
+                       Job = HrContext.TrlsName(a.Job.Name, culture),
+                       DepartmentId = a.DepartmentId,
+                       JobId = a.JobId,
+                       PositionId = a.PositionId,
+                       ManagerId = a.ManagerId,
+                       Gender = p.Gender,
+                       Age = DateTime.Now.Year - p.BirthDate.Year,
+                       JoinedDate = p.JoinDate,
+                       PersonType = e.PersonType,
+                       Qualification = p.QualificationId,
+                       EmpStatus = HrContext.GetEmpStatus(p.Id),
+                       Branch = HrContext.TrlsName(a.Branch.Name, culture),
+                       HasImage = p.HasImage,
+                       BranchId = a.BranchId,
+                       PayGradeId = a.PayGradeId,
+                       PayrollId = a.PayrollId,
+                       GroupId = a.GroupId,
+                       Nationality = p.Nationality, //for documents
+                       IsDeptManger = a != null ? a.IsDepManager : false,
+                       Attachement = HrContext.GetDoc("EmployeePic", p.Id)
+                   };
+        }
+
+        public IQueryable<PeopleGridViewModel> GetWaitingEmployee(int company, string culture)
+        {
+            DateTime Today = DateTime.Today.Date;
+            var query = from p in context.People
+                        join e in context.Employements on p.Id equals e.EmpId into g
+                        from e in g.Where(s => s.CompanyId == company && s.Status == 1).DefaultIfEmpty()
+                        join a in context.Assignments on p.Id equals a.EmpId into g2
+                        from a in g2.Where(s => s.CompanyId == company).DefaultIfEmpty()
+                        where a == null
+                        select new PeopleGridViewModel
+                        {
+                            Id = p.Id,
+                            EmpId = p.Id,
+                            CompanyId = e.CompanyId,
+                            Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
+                            Code = e.Code,
+                            Gender = p.Gender,
+                            Age = DateTime.Now.Year - p.BirthDate.Year,
+                            JoinedDate = p.JoinDate,
+                            PersonType = e.PersonType,
+                            Qualification = p.QualificationId,
+                            HasImage = p.HasImage,
+                            Nationality = p.Nationality,
+                            Attachement = HrContext.GetDoc("EmployeePic", p.Id),
+                            PersonStatus = p.Status
+                        };
+            return query;
+        }
+
+        public IQueryable<PeopleGridViewModel> GetTerminatedEmployee(int company, string culture)
+        {
+            DateTime Today = DateTime.Today.Date;
+            return from p in context.People
+                   join a in context.Assignments on p.Id equals a.EmpId
+                   where a.CompanyId == company && a.SysAssignStatus == 3
+                   select new PeopleGridViewModel
+                   {
+                       Id = p.Id,
+                       EmpId = p.Id,
+                       CompanyId = a.CompanyId,
+                       Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
+                       Code = a.Code,
+                       Department = HrContext.TrlsName(a.Department.Name, culture),
+                       Job = HrContext.TrlsName(a.Job.Name, culture),
+                       DepartmentId = a.DepartmentId,
+                       JobId = a.JobId,
+                       PositionId = a.PositionId,
+                       ManagerId = a.ManagerId,
+                       Gender = p.Gender,
+                       Age = DateTime.Now.Year - p.BirthDate.Year,
+                       JoinedDate = p.JoinDate,
+                       Qualification = p.QualificationId,
+                       EmpStatus = 3,
+                       Branch = HrContext.TrlsName(a.Branch.Name, culture),
+                       HasImage = p.HasImage,
+                       BranchId = a.BranchId,
+                       PayGradeId = a.PayGradeId,
+                       PayrollId = a.PayrollId,
+                       GroupId = a.GroupId,
+                       Nationality = p.Nationality, //for documents
+                       IsDeptManger = a != null ? a.IsDepManager : false,
+                       Attachement = HrContext.GetDoc("EmployeePic", p.Id)
+                   };
+        }
+
         public IQueryable<SysCodeViewModel> BranchName(int DepId, string culture)
         {
             var query = "select top 1 B.Id As id, dbo.fn_TrlsName(B.Name, '" + culture + "') AS name from CompanyStructures A, CompanyStructures B where A.Id = 1056 and B.Id != 1056 and A.CompanyId = B.CompanyId and A.Sort LIKE B.Sort + '%' and (B.NodeType in (select C.CodeId from LookUpUserCodes C where C.CodeName = 'CompanyStructure' and C.SysCodeId = 2)) order by LEN(B.Sort) desc";
@@ -516,10 +644,11 @@ namespace Db.Persistence.Repositories
             var query = "select top 1 B.Id As id, dbo.fn_TrlsName(B.Name, '" + culture + "') AS name from CompanyStructures A, CompanyStructures B where A.Id = 1056 and B.Id != 1056 and A.CompanyId = B.CompanyId and A.Sort LIKE B.Sort + '%' and (B.NodeType in (select C.CodeId from LookUpUserCodes C where C.CodeName = 'CompanyStructure' and C.SysCodeId = 3)) order by LEN(B.Sort) desc";
             return context.Database.SqlQuery<SysCodeViewModel>(query).AsQueryable();
         }
-        public AssignmentFormViewModel GetAssignment(int EmpId,string culture)
+
+        public AssignmentFormViewModel GetAssignment(int EmpId, string culture)
         {
             var assignment = (from e in context.Employements
-                              where e.EmpId == EmpId && (e.Status==1)
+                              where e.EmpId == EmpId && e.Status == 1
                               join a in context.Assignments on e.EmpId equals a.EmpId into g
                               from a in g.Where(c => (c.AssignDate <= DateTime.Today && c.EndDate >= DateTime.Today)).DefaultIfEmpty()
                               select new AssignmentFormViewModel
@@ -536,7 +665,7 @@ namespace Db.Persistence.Repositories
                                   GroupId = a.GroupId,
                                   IsDepManager = a == null ? false : a.IsDepManager,
                                   JobId = a == null ? 0 : a.JobId,
-                                  LocationId = a.LocationId,
+                                  BranchId = a == null ? 0 : a.BranchId,
                                   ManagerId = a.ManagerId,
                                   NoticePrd = a.NoticePrd,
                                   PayGradeId = a.PayGradeId,
@@ -551,17 +680,18 @@ namespace Db.Persistence.Repositories
                                   Payrolls = a.Payrolls,
                                   Employments = a.Employments,
                                   Jobs = a.Jobs,
-                                  Locations = a.Locations,
+                                  Branches = a.Branches,
                                   CompanyStuctures = a.CompanyStuctures,
                                   Positions = a.Positions,
                                   PayrollGrades = a.PayrollGrades,
                                   PeopleGroups = a.PeopleGroups,
-                                  BranchId = a.BranchId,
-                                  SectorId = a.SectorId,
                                   EmpTasks=a.EmpTasks,
                                   Performance = a.Performance,
-                                  BranchName = a.BranchId != null ? HrContext.TrlsName(e.Company.Name,culture)+"-"+HrContext.TrlsName(context.CompanyStructures.FirstOrDefault(n=> n.Id == a.BranchId).Name,culture) : HrContext.TrlsName(e.Company.Name, culture)
+                                  CompanyName = HrContext.TrlsName(e.Company.Name, culture),
+                                  BranchName =  "-" + HrContext.TrlsName(context.CompanyStructures.Where(n => n.Id == a.BranchId).Select(n => n.Name).FirstOrDefault(),culture)
                               }).FirstOrDefault();
+
+            if (assignment == null) return null;
            
             var assignmentObj = new AssignmentFormViewModel
             {
@@ -577,10 +707,8 @@ namespace Db.Persistence.Repositories
                 GroupId = assignment.GroupId,
                 IsDepManager = assignment.IsDepManager,
                 JobId = assignment.JobId,
-                SectorId = assignment.SectorId,
                 BranchId = assignment.BranchId,
-                BranchName = assignment.BranchName,
-                LocationId = assignment.LocationId,
+                BranchName = assignment.CompanyName + assignment.BranchName,
                 ManagerId = assignment.ManagerId,
                 NoticePrd = assignment.NoticePrd,
                 PayGradeId = assignment.PayGradeId,
@@ -594,15 +722,14 @@ namespace Db.Persistence.Repositories
                 ModifiedUser = assignment.ModifiedUser,
                 EmpTasks=assignment.EmpTasks,
                 Performance = assignment.Performance,
-                IPayrolls = assignment.Payrolls == null ? null : assignment.Payrolls.Split(',').Select(int.Parse).ToList(),
-                ICompanyStuctures = assignment.CompanyStuctures == null ? null : assignment.CompanyStuctures.Split(',').Select(int.Parse).ToList(),
-                IEmployments = assignment.Employments == null ? null : assignment.Employments.Split(',').Select(int.Parse).ToList(),
-                IPayrollGrades = assignment.PayrollGrades == null ? null : assignment.PayrollGrades.Split(',').Select(int.Parse).ToList(),
-                IPositions = assignment.Positions == null ? null : assignment.Positions.Split(',').Select(int.Parse).ToList(),
-                ILocations = assignment.Locations == null ? null : assignment.Locations.Split(',').Select(int.Parse).ToList(),
-                IJobs = assignment.Jobs == null ? null : assignment.Jobs.Split(',').Select(int.Parse).ToList(),
-                IPeopleGroups = assignment.PeopleGroups == null ? null : assignment.PeopleGroups.Split(',').Select(int.Parse).ToList()
-
+                IPayrolls = assignment.Payrolls == null ? null : assignment.Payrolls.Split(',').Select(int.Parse),
+                ICompanyStuctures = assignment.CompanyStuctures == null ? null : assignment.CompanyStuctures.Split(',').Select(int.Parse),
+                IEmployments = assignment.Employments == null ? null : assignment.Employments.Split(',').Select(int.Parse),
+                IPayrollGrades = assignment.PayrollGrades == null ? null : assignment.PayrollGrades.Split(',').Select(int.Parse),
+                IPositions = assignment.Positions == null ? null : assignment.Positions.Split(',').Select(int.Parse),
+                IBranches = assignment.Branches == null ? null : assignment.Branches.Split(',').Select(int.Parse),
+                IJobs = assignment.Jobs == null ? null : assignment.Jobs.Split(',').Select(int.Parse),
+                IPeopleGroups = assignment.PeopleGroups == null ? null : assignment.PeopleGroups.Split(',').Select(int.Parse)
             };
 
             return assignmentObj;
@@ -657,8 +784,6 @@ namespace Db.Persistence.Repositories
                                   TaxFamlyCnt = p.TaxFamlyCnt != null ? p.TaxFamlyCnt.ToString() : " ",
                                   BnftFamlyCnt = p.TaxFamlyCnt != null ? p.BnftFamlyCnt.ToString() : " ",
                                   Religion = p.Religion != null ? HrContext.GetLookUpCode("Religion", p.Religion.Value, culture) : " ",
-                                  Address = p.AddressId != null ? p.Address.Address1 + " " + p.Address.Address2 + " " + p.Address.Address3 : " ",
-                                  HostAddress = p.HoAddressId != null ? p.HoAddress.Address1 + " " + p.HoAddress.Address2 + " " + p.HoAddress.Address3 : "",
                                   Mobile = p.Mobile,
                                   Curr = e != null ? e.Curr != null ? e.Curreny.Name : " " : " ",
                                   InspectDate = p.InspectDate != null ? p.InspectDate.ToString() : " ",
@@ -686,8 +811,6 @@ namespace Db.Persistence.Repositories
                                   BloodClass = p.BloodClass != null ? HrContext.GetLookUpCode("BloodClass", p.BloodClass.Value, culture) : " ",
                                   Recommend = p.Recommend,
                                   RecommenReson = p.RecommenReson != null ? HrContext.GetLookUpCode("RecommenReson", p.RecommenReson.Value, culture) : " ",
-                                  LocationId = HrContext.TrlsName(p.Location.Name, culture),
-                                  RoomNo = p.RoomNo,
                                   SubscripDate = p.SubscripDate != null ? p.SubscripDate.Value.ToString() : " ",
                                   BasicSubAmt = p.BasicSubAmt != null ? p.BasicSubAmt.ToString() : " ",
                                   VarSubAmt = p.VarSubAmt != null ? p.VarSubAmt.ToString() : " ",
@@ -717,7 +840,7 @@ namespace Db.Persistence.Repositories
                                   IsDepManager = a != null ? HrContext.TrlsMsg(a.IsDepManager.ToString(),culture) : " ",
                                   Code = e != null ? e.Code : " ",
                                   JobId = a != null ? HrContext.TrlsName(a.Job.Name, culture) : " ",
-                                  AssignLocation = a != null ? a.LocationId != null ? HrContext.TrlsName(a.Location.Name, culture) : " " : " ",
+                                  AssignBranch = a != null ? HrContext.TrlsName(a.Branch.Name, culture) : " ",
                                   PositionId = a != null ? HrContext.TrlsName(a.Position.Name, culture) : " ",
                                   GroupId = a != null ? HrContext.TrlsName(a.PeopleGroup.Name, culture) : " ",
                                   PayrollId = a != null ? HrContext.TrlsName(a.Payroll.Name, culture) : " ",
@@ -831,11 +954,11 @@ namespace Db.Persistence.Repositories
             return query;
 
         }
-        public IEnumerable CountEmpsByLocations(int companyId, string culture)
+        public IEnumerable CountEmpsByBranches(int companyId, string culture)
         {
             var query = (from a in context.Assignments
                          where a.CompanyId == companyId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today
-                         join loc in context.Locations on a.LocationId.Value equals loc.Id
+                         join loc in context.Sites on a.BranchId equals loc.Id
                          group a by new  { loc.Name , loc.Id } into g
                          select new ChartViewModel
                          {
@@ -846,11 +969,11 @@ namespace Db.Persistence.Repositories
                          }).ToList();
             return query;
         }
-        public IEnumerable LocationsByDepts(int[] depts, int compantyId, string cultuer)
+        public IEnumerable BranchesByDepts(int[] depts, int compantyId, string cultuer)
         {
-            string sql = "select CS.Id, L.Id [EmpId], dbo.fn_TrlsName(CS.Name, '" + cultuer + "') [category], dbo.fn_TrlsName(L.Name, '" + cultuer + "') [myGroup], Count(1) [value] from Assignments A , CompanyStructures CS, Locations L "
+            string sql = "select CS.Id, L.Id [EmpId], dbo.fn_TrlsName(CS.Name, '" + cultuer + "') [category], dbo.fn_TrlsName(L.Name, '" + cultuer + "') [myGroup], Count(1) [value] from Assignments A , CompanyStructures CS, Branches L "
                 + (depts == null ? ", CompanyStructures S where S.CompanyId=" + compantyId + " and A.DepartmentId = S.Id" : "where  A.DepartmentId = CS.Id")
-                + " And A.CompanyId = " + compantyId + " and CS.CompanyId="+compantyId+" And GETDATE() between A.AssignDate and A.EndDate And L.Id = A.LocationId "
+                + " And A.CompanyId = " + compantyId + " and CS.CompanyId="+compantyId+" And GETDATE() between A.AssignDate and A.EndDate And L.Id = A.BranchId "
                 + (depts == null ? "And S.Sort LIKE CS.Sort + '%' And Len(CS.Sort) = 5" : "And CS.Id in (" + string.Join(",", depts) + ")")
                 + " Group by CS.Id,L.Id, CS.Sort, CS.Name, L.Name";
             return context.Database.SqlQuery<ChartViewModel>(sql.ToString()).ToList();
@@ -901,10 +1024,10 @@ namespace Db.Persistence.Repositories
                          }).ToList();
             return query;
         }
-        public IEnumerable<PeoplesViewModel> GetPeopleWithLoc(int LocId,int companyId, string culture)
+        public IEnumerable<PeoplesViewModel> GetPeopleInBranch(int branchId,int companyId, string culture)
         {
             var query = (from a in context.Assignments
-                         where a.CompanyId == companyId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today &&  a.LocationId.Value==LocId
+                         where a.CompanyId == companyId && a.AssignDate <= DateTime.Today && a.EndDate >= DateTime.Today &&  a.BranchId==branchId
                          join p in context.People on a.EmpId equals p.Id
                          select new PeoplesViewModel
                          {
@@ -991,8 +1114,8 @@ namespace Db.Persistence.Repositories
         }
         public IEnumerable<PeoplesViewModel> GetPeopleLocDepts(bool isDefault, int DeptId, int LocId, int companyId, string culture)
         {
-            string sql = "select CS.Id, dbo.fn_TrlsName(CS.Name, '" + culture + "') [category],dbo.fn_TrlsName(ISNULL(P.Title, '')+' '+P.FirstName+' '+P.Familyname, '" + culture + "') localName ,dbo.fn_GetLookUpCode('Gender', P.Gender ,'" + culture + "') [Title] from Assignments A, CompanyStructures CS, People P ,Locations L "
-                            + (isDefault ? ", CompanyStructures S where A.DepartmentId = S.Id and S.CompanyId=" + companyId + "  And L.Id = A.LocationId And S.Sort LIKE CS.Sort + '%' AND Len(CS.Sort) = 5 " : "where A.DepartmentId = CS.Id AND L.Id = A.LocationId AND CS.Id = " + DeptId)
+            string sql = "select CS.Id, dbo.fn_TrlsName(CS.Name, '" + culture + "') [category],dbo.fn_TrlsName(ISNULL(P.Title, '')+' '+P.FirstName+' '+P.Familyname, '" + culture + "') localName ,dbo.fn_GetLookUpCode('Gender', P.Gender ,'" + culture + "') [Title] from Assignments A, CompanyStructures CS, People P ,Branches L "
+                            + (isDefault ? ", CompanyStructures S where A.DepartmentId = S.Id and S.CompanyId=" + companyId + "  And L.Id = A.BranchId And S.Sort LIKE CS.Sort + '%' AND Len(CS.Sort) = 5 " : "where A.DepartmentId = CS.Id AND L.Id = A.BranchId AND CS.Id = " + DeptId)
                             + " And A.EmpId = P.Id And A.CompanyId = " + companyId + " and CS.CompanyId=" + companyId + " and GETDATE() between A.AssignDate And A.EndDate And L.Id =" + LocId;
 
             var query = context.Database.SqlQuery<PeoplesViewModel>(sql).ToList();
@@ -1255,7 +1378,7 @@ namespace Db.Persistence.Repositories
                              _19_EmploymentDay = e.StartDate.Day.ToString(),
                              _1_NationalId =p.NationalId != null ? p.NationalId:" ",
                              _2_NationalIdDate = p.IdIssueDate ,
-                             _3_EmployeeAddress = p.Address != null ? p.Address.Address1 + " " + p.Address.Address2 + " " + p.Address.Address3 + "/" + p.Address.City.Name + "/" + p.Address.Country.Name : " ",
+                             _3_EmployeeAddress = "TODO",
                              _4_PassportNo =p.PassportNo != null ? p.PassportNo:" ",
                              _5_PassportIssueDate = p.IssueDate,
                              _9_EmploymentEndDate = e.EndDate,
@@ -1263,7 +1386,7 @@ namespace Db.Persistence.Repositories
                              _7_ContractPeriod = e.DurInYears.ToString()+""+HrContext.TrlsMsg("Year", Culture) + " " + HrContext.TrlsMsg("And", Culture) + " " + e.DurInMonths.ToString() + "" + HrContext.TrlsMsg("Month", Culture),
                              _6_AddressingNo = p.NationalId != null ? p.NationalId : " ",
                              _20_SuggestedJob = a != null ? a.JobId.ToString() : " ",
-                             _21_Location = a.LocationId != null ? HrContext.TrlsName(a.Location.Name, Culture) : " ",
+                             _21_Branch = HrContext.TrlsName(a.Branch.Name, Culture),
                              _22_Mobile = p.Mobile != null ? p.Mobile : " ",
                              _23_HomeTelephone = p.HomeTel != null ? p.HomeTel : " ",
                              _24_Kafel = p.KafeelId != null ? HrContext.TrlsName(p.Kafeel.Name, Culture) : " ",

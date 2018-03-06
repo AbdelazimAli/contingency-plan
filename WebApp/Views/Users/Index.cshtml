@@ -4,7 +4,7 @@
 
     ViewBag.Title = "Index";
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     string[] function = ViewData["Functions"] as string[];
 }
 <br>
@@ -17,7 +17,7 @@
 <div id="Users"></div>
 <script>
     var addUrl = "@Url.Action("Details", "Users")";
-    RequestFilters.ApplayAllFilters([], {}, "Users", "@Url.Action("ReadUsers", "Users")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "Users", "@Url.Action("ReadUsers", "Users")?MenuId=@Request.QueryString["MenuId"]", addUrl);
     var grid = "'AspNetUsers'";
     var objectName = "AspNetUsers";
     Grids.indexGrid({
@@ -57,15 +57,15 @@
                     },
                 }
             }],
-        dataBound: function (e) {
-            dataView = $("#Users").data("kendoGrid").dataSource.data();
-            for (var i = 0; i <dataView.length; i++) {
-                if (dataView[i].Locked == true) {
-                    var uid = dataView[i].uid;
-                    $("#Users tbody").find("tr[data-uid=" + uid + "]").addClass("customClass");
-                }
-            }
-        },
+        //dataBound: function (e) {
+        //    dataView = $("#Users").data("kendoGrid").dataSource.data();
+        //    for (var i = 0; i <dataView.length; i++) {
+        //        if (dataView[i].Locked == true) {
+        //            var uid = dataView[i].uid;
+        //            $("#Users tbody").find("tr[data-uid=" + uid + "]").addClass("customClass");
+        //        }
+        //    }
+        //},
           toolbar: '<div style="float: left"><div class="btn-group"><button type="button" class="btn btn-sm btn-default glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span></button><ul class="dropdown-menu" id="toolsMenu">@if(admin == true){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}' +
                   '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
                   '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + grid + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>',

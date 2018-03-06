@@ -4,7 +4,7 @@
 @model IEnumerable<DashboardsViewModel>*@
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     int dataLevel = 4, read = 0;

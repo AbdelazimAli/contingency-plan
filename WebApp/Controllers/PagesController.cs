@@ -12,15 +12,14 @@ using System;
 using System.Web.Routing;
 using Model.ViewModel.Personnel;
 using System.Data.Entity;
+using Model.Domain.Payroll;
 
 namespace WebApp.Controllers
 {
     public class PagesController : BaseController
     {
         private readonly IHrUnitOfWork _hrUnitOfWork;
-        private string UserName { get; set; }
-        private string Language { get; set; }
-        private int CompanyId { get; set; }
+
         protected override void Initialize(RequestContext requestContext)
         {
             base.Initialize(requestContext);
@@ -177,13 +176,15 @@ namespace WebApp.Controllers
         [HttpGet]
         public ActionResult FormColumnPropForm(string tableName, string objectName, string columnName, byte version)
         {
-            var codeUserNames = _hrUnitOfWork.LookUpRepository.GetLookUpUserCode(Language).Select(l => new { id = l.CodeName, name = l.Title }).ToList();
-            var codeName = _hrUnitOfWork.LookUpRepository.GetLookUp(Language).Select(l => new { id = l.CodeName, name = l.Title }).ToList();
-            codeName.AddRange(codeUserNames);
-            ViewBag.CodeName = codeName;
-            ViewBag.Columns = _hrUnitOfWork.NotificationRepository.GetColumnList(tableName, objectName, version, "Form", CompanyId, Language);
+            //ViewBag.Columns = _hrUnitOfWork.NotificationRepository.GetColumnList(tableName, objectName, version, "Form", CompanyId, Language);
 
-            FormColumnViewModel model = _hrUnitOfWork.PagesRepository.GetFormColumnInfo(CompanyId, objectName, version, Language).Where(c => c.name == columnName).FirstOrDefault();
+            FormColumnViewModel model = _hrUnitOfWork.PagesRepository.GetFormColumn(CompanyId, objectName, version, Language, columnName) ?? new FormColumnViewModel();
+
+            if (model.ColumnType == "number")
+            {
+                ViewBag.CodeName = _hrUnitOfWork.PagesRepository.GetCodeNamesList(Language);
+            }
+       
             return PartialView("_FormColumnForm", model);
         }
 
@@ -227,7 +228,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "FormColumnProp",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = Model.Domain.TransType.Update
                     });
@@ -508,36 +508,34 @@ namespace WebApp.Controllers
         }
         #endregion
 
+        private class myWorld
+        {
+            public int id { get; set; }
+            public int country { get; set; }
+            public int city { get; set; }
+            public int dist { get; set; }
+            public string name { get; set; }
+        }
+
         public JsonResult ReadRemoteList(string tableName, string formTblName, string query, int? Id)
         {
             if (Id != null && tableName != "World")
-                return Json(_hrUnitOfWork.PagesRepository.GetRemoteList(tableName, query, formTblName, CompanyId, Language).Where(a => a.Id == Id).Select(q => new { id = q.Id, name = q.Name, Icon = q.Icon, PicUrl = q.PicUrl }).ToList(), JsonRequestBehavior.AllowGet);
-            else if (tableName == "World")
+                return Json(_hrUnitOfWork.PagesRepository.GetRemoteList(tableName, query, formTblName, CompanyId, Language, Id.Value.ToString()).Select(q => new { id = q.Id, name = q.Name, Icon = q.Icon, PicUrl = q.PicUrl, Gender = q.Gender }), JsonRequestBehavior.AllowGet);
+
+            if (query == "") query = "%";
+            else if (query.IndexOf('*') >= 0) query = query.Replace('*', '%');
+            else query = "%" + query + "%";
+
+            if (tableName == "World")
             {
-                if (Language.Substring(0, 2) == "ar")
-                {
-                    var world = _hrUnitOfWork.Repository<World>()
-                        .Where(c => c.NameAr != null && query != null ? c.NameAr.Contains(query) : false)
-                        .Select(c => new { id = c.CountryId, country = c.CountryId, city = c.CityId, dist = c.DistrictId, name = c.NameAr }).ToList();
-                    return Json(world.Take(world.Count < 10 ? world.Count : 10), JsonRequestBehavior.AllowGet);
-                }
-                else
-                {
-                    if (query != null)
-                    {
-                        var world = _hrUnitOfWork.Repository<World>()
-                            .Where(c => c.Name.ToLower().Contains(query.ToLower()))
-                            .Select(c => new { id = c.CountryId, country = c.CountryId, city = c.CityId, dist = c.DistrictId, name = c.Name }).ToList();
-                        return Json(world.Take(world.Count < 10 ? world.Count : 10), JsonRequestBehavior.AllowGet);
-                    }
-                    else
-                        return Json("", JsonRequestBehavior.AllowGet);
-                }
+                string lang = Language.Substring(0, 2) == "ar" ? "Ar" : "";
+                IEnumerable<myWorld> result = _hrUnitOfWork.SqlQuery<myWorld>("SELECT top 7 CountryId id,CountryId country, CityId city, DistrictId dist, Name" + lang + " name FROM v_World where Name" + lang + " like '" + query + "'").ToList();
+                return Json(result, JsonRequestBehavior.AllowGet);
             }
             else
             {
-                var result = _hrUnitOfWork.PagesRepository.GetRemoteList(tableName, query, formTblName, CompanyId, Language).Select(q => new { id = q.Id, name = q.Name, Icon = q.Icon, PicUrl = q.PicUrl });
-                return Json(result.Take(result.Count() < 20 ? result.Count() : 20).ToList(), JsonRequestBehavior.AllowGet);
+                var result = _hrUnitOfWork.PagesRepository.GetRemoteList(tableName, query, formTblName, CompanyId, Language, "").Select(q => new { id = q.Id, name = q.Name, Icon = q.Icon, PicUrl = q.PicUrl, Gender = q.Gender });
+                return Json(result, JsonRequestBehavior.AllowGet);
             }
         }
 
@@ -762,6 +760,37 @@ namespace WebApp.Controllers
                 _hrUnitOfWork.PagesRepository.CacheManager.Remove(key);
 
             return Json("OK");
+        }
+
+        [HttpGet]
+        public JsonResult GetEligibiltyDropdownlists(int JobID = 0, int DepartmentId = 0, int PositionId = 0)
+        {
+            try
+            {
+                var Branch = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+                var Dept = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, JobID, Language).Select(a => new { id = a.id, name = a.name }).ToList();
+                var job = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language, JobID).Select(a => new { id = a.Id, name = a.LocalName }).ToList();
+                var Payroll = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name }).ToList();
+                var Position = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Where(p => p.DeptId == DepartmentId && p.JobId == JobID && (p.HiringStatus == 2 || p.Id == PositionId)).Select(a => new { id = a.Id, name = a.Name, HeadCount = a.Headcount, ErrorMes = a.SysResponse }).ToList();
+                var PeopleGroup = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name }).ToList();
+                var PayrollGrad = _hrUnitOfWork.JobRepository.GetPayrollGrade(CompanyId);
+
+                return Json(new
+                {
+                    Result = true,
+                    Branch = Branch,
+                    Dept = Dept,
+                    job = job,
+                    Payroll = Payroll,
+                    Position = Position,
+                    PayrollGrad = PayrollGrad,
+                    PeopleGroup = PeopleGroup
+                }, JsonRequestBehavior.AllowGet);
+            }
+            catch
+            {
+                return Json(new { Result = false }, JsonRequestBehavior.AllowGet);
+            }
         }
     }
 }

@@ -12,6 +12,8 @@ using WebApp.Extensions;
 using WebApp.Models;
 using Model.Domain.Payroll;
 using System.Web.Routing;
+using System.Web.Script.Serialization;
+using System.Collections;
 
 namespace WebApp.Controllers
 {
@@ -42,10 +44,6 @@ namespace WebApp.Controllers
         public ActionResult Index()
         {
             ViewBag.AbsenceType = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("AbsenceType",Language).Select(a=> new { value=a.CodeId , text=a.Title }); //HrContext.GetLookUpUserCode("AbsenceType", l.AbsenceType, culture),
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetLeaveTypes(int MenuId)
@@ -98,7 +96,6 @@ namespace WebApp.Controllers
                 {
                     Source = periodName,
                     ObjectName = "HRCalendar",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.BudgetRepository.Remove(periodName);
@@ -114,11 +111,6 @@ namespace WebApp.Controllers
         [HttpGet]
         public ActionResult Details(int id=0)
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Session["MenuId"] != null ? int.Parse(Session["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
-
             if (id == 0)
             {
                 fillViewBag(id);
@@ -136,13 +128,13 @@ namespace WebApp.Controllers
         public void fillViewBag(int id)
         {
             string culture = Language;
-            ViewBag.Jobs = _hrUnitOfWork.JobRepository.ReadJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
-            ViewBag.Locations = _hrUnitOfWork.LocationRepository.ReadLocations(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName});
+            ViewBag.Jobs = _hrUnitOfWork.JobRepository.GetAllJobs(CompanyId, Language,0).Select(a => new { id = a.Id, name = a.LocalName });
+            ViewBag.Branches = _hrUnitOfWork.BranchRepository.ReadBranches(Language, CompanyId).Select(a => new { id = a.Id, name = a.LocalName});
             ViewBag.CompanyStuctures = _hrUnitOfWork.CompanyStructureRepository.GetAllDepartments(CompanyId, null, culture);
             ViewBag.Payrolls = _hrUnitOfWork.Repository<Payrolls>().Select(a => new { id = a.Id, name = a.Name });
             ViewBag.Positions = _hrUnitOfWork.PositionRepository.GetPositions(Language, CompanyId).Select(a => new { id = a.Id, name = a.Name });
             ViewBag.PeopleGroups = _hrUnitOfWork.PeopleRepository.GetPeoples().Select(a => new { id = a.Id, name = a.Name });
-            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade();
+            ViewBag.PayrollGrades = _hrUnitOfWork.JobRepository.GetPayrollGrade(CompanyId);
 
             var PervCalIds =  _hrUnitOfWork.Repository<LeaveType>().Where(a => a.Id != id && a.HasAccrualPlan).Select(a => a.CalendarId).ToList().Distinct();
             var Calender = _hrUnitOfWork.BudgetRepository.GetCalender(CompanyId);
@@ -227,14 +219,14 @@ namespace WebApp.Controllers
         }
 
         [HttpPost]
-        public ActionResult Details(LeaveTypeFormViewModel model, OptionsViewModel moreInfo, LeaveRangeVM grid1)
+        public ActionResult Details(LeaveTypeFormViewModel model, OptionsViewModel moreInfo, LeaveRangeVM grid1, bool clear)
         {
             List<Error> errors = new List<Error>();
             if (ModelState.IsValid)
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "LeaveType",
@@ -250,6 +242,7 @@ namespace WebApp.Controllers
                         {
                             foreach (var errorMsg in e.errors)
                             {
+                              
                                 ModelState.AddModelError(errorMsg.field, errorMsg.message);
                             }
                         }
@@ -298,27 +291,32 @@ namespace WebApp.Controllers
                     record.ModifiedTime = DateTime.Now;
                     record.ModifiedUser = UserName;
                     record.CompanyId = model.IsLocal ? CompanyId : (int?)null;
+
                     if (record.StartDate > record.EndDate)
                     {
                         ModelState.AddModelError("EndDate", MsgUtils.Instance.Trls("MustGreaterthanStart"));
                         return Json(Models.Utils.ParseFormErrors(ModelState));
                     }
+
                     if (record.HasAccrualPlan) record.CalendarId = calendar.Id;
                     _hrUnitOfWork.LeaveRepository.Attach(record);
                     _hrUnitOfWork.LeaveRepository.Entry(record).State = EntityState.Modified;
                 }
 
-                
                 // Save grid2
                 errors = SaveGrid2(grid1, ModelState.Where(a => a.Key.Contains("grid1")), record);
                 if (errors.Count > 0) return Json(errors.First().errors.First().message);
 
                 errors = SaveChanges(Language);
 
-                var message = "OK";
-                if (errors.Count > 0) message = errors.First().errors.First().message;
+                if (clear)
+                    model = new LeaveTypeFormViewModel();
+                else
+                    model.Id = record.Id;
 
-                return Json(message);
+                if (errors.Count > 0) return Json(errors.First().errors.First().message);
+
+                return Json("OK," + ((new JavaScriptSerializer()).Serialize(model)));
             }
 
             return Json(Models.Utils.ParseFormErrors(ModelState));
@@ -360,7 +358,7 @@ namespace WebApp.Controllers
 
         private void MapLeaveType(LeaveType leaveobject, LeaveTypeFormViewModel model, OptionsViewModel moreInfo)
         {
-            model.Locations = model.ILocations == null ? null : string.Join(",", model.ILocations.ToArray());
+            model.Branches = model.IBranches == null ? null : string.Join(",", model.IBranches.ToArray());
             model.Jobs = model.IJobs == null ? null : string.Join(",", model.IJobs.ToArray());
             model.Employments = model.IEmployments == null ? null : string.Join(",", model.IEmployments.ToArray());
             model.PeopleGroups = model.IPeopleGroups == null ? null : string.Join(",", model.IPeopleGroups.ToArray());
@@ -368,7 +366,7 @@ namespace WebApp.Controllers
             model.PayrollGrades = model.IPayrollGrades == null ? null : string.Join(",", model.IPayrollGrades.ToArray());
             model.CompanyStuctures = model.ICompanyStuctures == null ? null : string.Join(",", model.ICompanyStuctures.ToArray());
             model.Positions = model.IPositions == null ? null : string.Join(",", model.IPositions.ToArray());
-            moreInfo.VisibleColumns.Add("Locations");
+            moreInfo.VisibleColumns.Add("Branches");
             moreInfo.VisibleColumns.Add("Jobs");
             moreInfo.VisibleColumns.Add("Employments");
             moreInfo.VisibleColumns.Add("PeopleGroups");
@@ -382,7 +380,6 @@ namespace WebApp.Controllers
                 Destination = leaveobject,
                 Source = model,
                 ObjectName = "LeaveType",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo
             });
             //MonthOrYear: 2-year, AccBalDays: 1-Fixed days
@@ -440,48 +437,57 @@ namespace WebApp.Controllers
             leaveobject.Percentage = model.Percentage / 100;
             leaveobject.MaxPercent = model.MaxPercent / 100;
         }
-        
-
         #endregion
+
         #region LevelRange
         public ActionResult ReadLeaveRange(int LeaveTypeId)
         {
             return Json(_hrUnitOfWork.LeaveRepository.GetLeaveRange(LeaveTypeId), JsonRequestBehavior.AllowGet);
         }
         #endregion
+
         #region RequestWf
         public ActionResult ReadWfRole(int RequestWfId)
         {
-            
             return Json(_hrUnitOfWork.LeaveRepository.GetWfRole(RequestWfId),JsonRequestBehavior.AllowGet);
         }
-        public ActionResult WorkFlowIndex(int LeaveTypeId)
+
+        [OutputCache(VaryByParam = "*", Duration = 60)]
+        public ActionResult WorkFlow(string source, int sourceid)
         {
-            ViewBag.RoleCode = _hrUnitOfWork.LeaveRepository.GetOrgChartRoles(Language).Select(a => new { text = a.text, value = a.value }).ToList();
-            ViewBag.Role = db.Roles.Select(r => new { value = r.Id, text = r.Name }).ToList();
-            ViewBag.Hierarchy = _hrUnitOfWork.Repository<Diagram>().Select(a => new { id = a.Id, name = a.Name });
-            
-            ViewBag.sourceTxt = "Leave";
-
-
-            string source = "Leave";
-            ViewBag.sourceId = LeaveTypeId;
-
-            var reqestwf = _hrUnitOfWork.LeaveRepository.ReadLeaveRequest(LeaveTypeId, source);
+            var reqestwf = _hrUnitOfWork.LeaveRepository.ReadRequestWF(sourceid, source, Language);
             if (reqestwf == null)
-                return View(new RequestWfFormViewModel());
-            else
-                return reqestwf == null ? (ActionResult)HttpNotFound() : View(reqestwf);
-        }
-        public ActionResult RequestDetails(int sourceId,string Source,RequestWfFormViewModel model, OptionsViewModel moreInfo,WfRoleWfVM grid1)
-        {
+            {
+                reqestwf = new RequestWfFormViewModel();
+                reqestwf.Source = source;
+                reqestwf.SourceId = sourceid;
+                reqestwf.Roles = _hrUnitOfWork.LeaveRepository.GetOrgChartRoles(Language);
+                reqestwf.Diagrams = _hrUnitOfWork.Repository<Diagram>().Select(a => new FormDropDown { id = a.Id, name = a.Name }).ToList();
+            }
            
-             List<Error> errors = new List<Error>();
+            ViewBag.HeirTypeList = new SelectList(new List<FormDropDown> {
+                        new FormDropDown { id = 1, name = MsgUtils.Instance.Trls("Org Chart") },
+                        new FormDropDown { id = 2, name = MsgUtils.Instance.Trls("Org Chart Hierarchy") },
+                        new FormDropDown { id = 3, name = MsgUtils.Instance.Trls("Position Hierarchy") },
+                        new FormDropDown { id = 4, name = MsgUtils.Instance.Trls("Direct Manager Hierarchy")}
+            },"id", "name", reqestwf.HeirType);
+
+            ViewBag.WaitAction = new SelectList(new List<FormDropDown> {
+                        new FormDropDown { id = 1, name = MsgUtils.Instance.Trls("Foreword to next step") },
+                        new FormDropDown { id = 2, name = MsgUtils.Instance.Trls("Back to previous step") },
+                        new FormDropDown { id = 3, name = MsgUtils.Instance.Trls("Back to requester") }
+            }, "id", "name", reqestwf.TimeOutAction);
+
+            return PartialView("_WorkFlow", reqestwf);
+        }
+        public ActionResult RequestDetails(RequestWfFormViewModel model, OptionsViewModel moreInfo, WfRoleWfVM grid1)
+        {
+            List<Error> errors = new List<Error>();
             if (ModelState.IsValid)
             {
                 if (ServerValidationEnabled)
                 {
-                    errors = _hrUnitOfWork.LocationRepository.CheckForm(new CheckParm
+                    errors = _hrUnitOfWork.SiteRepository.CheckForm(new CheckParm
                     {
                         CompanyId = CompanyId,
                         ObjectName = "RequestWfs",
@@ -514,7 +520,6 @@ namespace WebApp.Controllers
                         Destination = record,
                         Source = model,
                         ObjectName = "RequestWfs",
-                        Version = Convert.ToByte(Request.Form["Version"]),
                         Options = moreInfo,
                         Transtype = TransType.Insert
                     });
@@ -546,16 +551,19 @@ namespace WebApp.Controllers
                     _hrUnitOfWork.LeaveRepository.Attach(record);
                     _hrUnitOfWork.LeaveRepository.Entry(record).State = EntityState.Modified;
                 }
+
                 errors = SaveGrid1(grid1, ModelState.Where(a => a.Key.Contains("grid1")), record);
                 if (errors.Count > 0) return Json(errors.First().errors.First().message);
 
-
                 errors = SaveChanges(Language);
+                if (errors.Count > 0) return Json(errors.First().errors.First().message);
 
-                var message = "OK";
-                if (errors.Count > 0) message = errors.First().errors.First().message;
+                model.Id = record.Id;
+                
+                // clear cache
+                Response.RemoveOutputCacheItem(Url.Action("WorkFlow", "LeaveType"));
 
-                return Json(message);
+                return Json("OK," + ((new JavaScriptSerializer()).Serialize(model)));
             }
 
             return Json(Models.Utils.ParseFormErrors(ModelState));
@@ -563,7 +571,6 @@ namespace WebApp.Controllers
         private List<Error> SaveGrid1(WfRoleWfVM grid1, IEnumerable<KeyValuePair<string, ModelState>> state, RequestWf Request)
         {
             List<Error> errors = new List<Error>();
-
             // Deleted
             if (grid1.deleted != null)
             {
@@ -621,10 +628,6 @@ namespace WebApp.Controllers
 
             return errors;
         }
-
-
-
-
         #endregion
     }
 }

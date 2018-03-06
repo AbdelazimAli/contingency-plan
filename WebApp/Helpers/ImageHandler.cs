@@ -7,7 +7,6 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 
-
 namespace HR_uploader.Helpers
 {
     public class ImageHandler
@@ -101,4 +100,7 @@ namespace HR_uploader.Helpers
                 return new Size((int)(originalWidth * factor), (int)(originalHeight * factor));
             }
         }
-    }
+
+
+  
+}

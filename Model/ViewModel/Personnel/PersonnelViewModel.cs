@@ -33,6 +33,7 @@ namespace Model.ViewModel.Personnel
         public string ModifiedUser { get; set; }
         public DateTime? ModifiedTime { get; set; }
          public byte MaxPassTrials { get; set; }
+        public int WaitingInMinutes { get; set; } = 5;
         public int? TaskPeriodId { get; set; }
         public int? BudgetPeriodId { get; set; }
         public int? QualGroupId { get; set; }

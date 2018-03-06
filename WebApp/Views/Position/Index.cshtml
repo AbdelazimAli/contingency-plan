@@ -4,18 +4,18 @@
     ViewBag.Title = "Index";
     Layout = null;
     var rtl = User.Identity.RTL();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
     string[] function = ViewData["Functions"] as string[];
 }
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Positions" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "PositionDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "Positions" } })
 <div id="PositionDiv"></div>
 
 <script>
     var addUrl = "@Url.Action("Details", "Position")";
-    RequestFilters.ApplayAllFilters([], {}, "PositionDiv", "@Url.Action("GetPositions", "Position")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    RequestFilters.applyAllFilters([], {}, "PositionDiv", "@Url.Action("GetPositions", "Position")?MenuId=@Request.QueryString["MenuId"]", addUrl);
 
     var PositionObj = [{ value:1, text: "@MsgUtils.Instance.Trls("Single")" }, { value:2, text: "@MsgUtils.Instance.Trls("Shared")" }, { value: 3, text: "@MsgUtils.Instance.Trls("None")" }];
     var SeasonalObj = [{value:"true",text: "@MsgUtils.Instance.Trls("Seasonal")" }, {value:"false",text:"@MsgUtils.Instance.Trls("Permenant")"}];

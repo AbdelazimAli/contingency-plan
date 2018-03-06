@@ -9,34 +9,25 @@
     int dataLevel = 0, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     string[] function = ViewData["Functions"] as string[];
 }
 
-@Html.Partial("_RequestFilters", new ViewDataDictionary { { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "EmpDisciplines" } })
+@Html.Partial("_RequestFilters", new ViewDataDictionary { { "GridName", "EmpDisciplinDiv" }, { "HasDepts", "false" }, { "HasRange", "false" }, { "Functions", function }, { "TableName", "EmpDisciplines" } })
 <div id="EmpDisciplinDiv"></div>
 
 <script>
     var addUrl = "@Url.Action("EmpDisciplineDetails", "Discipline")";
-    RequestFilters.ApplayAllFilters([], {}, "EmpDisciplinDiv", "@Url.Action("ReadEmpDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
-    function Exist(data){
-        if(data.HasImage)
-            return "url(../SpecialData/Photos/"+@User.Identity.GetDefaultCompany().ToString()+"/"+data.empId+".jpeg?dummy="+(new Date().getTime())+")"
-        else
-            return "url(/SpecialData/Photos/noimage.jpg)"
-    }
-
+    RequestFilters.applyAllFilters([], {}, "EmpDisciplinDiv", "@Url.Action("ReadEmpDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]", addUrl);
+    
     //var EmpId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.EmpId));
     var DiscplinId = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.DiscplinId));
 
-    var columns = [
-                   {field:"EmpId",
-                   template: "<div class='k-people-photo' " +
-                       "style='background-image: #:Exist(data)# '></div>" +
-                       "&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<div class='k-people-name'>#: EmpId #</div>",
+    var columns = [{field:"EmpId",
+                   template: "<div><img class='k-people-photo' src=#:Exist(data.Gender,data.Image)# />&nbsp;<i class='ace-icon fa fa-circle stat#:EmpStatus#'></i>&nbsp;<span class='k-people-name'>#: EmpId #</span></div>",
                    locked:true},
-                    {field:"DiscplinId",values:DiscplinId}
-    ];
+                   {field:"DiscplinId",values:DiscplinId}];
+
     Grids.indexGrid({
         read: "@Url.Action("ReadEmpDiscipline", "Discipline")?MenuId=@Request.QueryString["MenuId"]",
         show:"@Url.Action("EmpDisciplineDetails", "Discipline")",

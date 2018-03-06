@@ -1,0 +1,30 @@
+﻿
+@{
+    var admin = User.Identity.CanCustomize();
+    bool ssMenue = false;
+    int dataLevel = 4, read = 0, Menuid = 0;
+    int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
+    bool.TryParse(Request.QueryString["SSMenu"], out ssMenue);
+    int.TryParse(Request.QueryString["Read"], out read);
+    var rtl = User.Identity.RTL();
+    Layout = null;
+    int.TryParse(Request.QueryString["MenuId"], out Menuid);
+}
+<div id="NotifyGidDiv"></div>
+<script>
+    RequestFilters.applyAllFilters([], {}, "NotifyGidDiv", "@Url.Action("GetEmpNotificationsLetters", "Notification")?MenuId=@Request.QueryString["MenuId"]");
+    $(".btn.add").hide();
+    var gridname = "NotifyGidDiv";
+    Grids.indexGrid({
+        read: "@Url.Action("GetEmpNotificationsLetters", "Notification")?MenuId="+@Menuid,
+        objectName: "NotifiyEmpsLetter",  // name of the page or table name used to create local db key
+        gridName: "NotifyGidDiv",
+        recordName: "Subject",
+        admin: "@admin",
+        lang: "@User.Identity.GetCulture()",
+      //  sort: [{"field":"NotifyDate","dir":"asc"}],
+        serverPaging: true,
+        serverFiltering: true,
+        serverSorting: true
+    });
+</script>

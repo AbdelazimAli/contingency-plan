@@ -4,7 +4,7 @@
 <script type="text/x-kendo-template" id="templateColProp">
     <div>
         @{
-            var admin = User.IsInRole("Admin");
+            var admin = User.Identity.CanCustomize();
             var rtl = User.Identity.RTL();
             var Culture = User.Identity.GetCulture();
         }

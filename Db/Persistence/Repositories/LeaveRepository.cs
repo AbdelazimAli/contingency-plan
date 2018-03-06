@@ -45,8 +45,8 @@ namespace Db.Persistence.Repositories
                              TypeId = c.Name,
                              NofDays = PT.NofDays,
                              EmpStatus = HrContext.GetEmpStatus(p.Id),
-                             HasImage = p.HasImage,
-                             PhotoId = p.Id,
+                             Image = HrContext.GetDoc("EmployeePic", p.Id),
+                             Gender = p.Gender,
                              empId = p.Id,
                              TransType = PT.TransType
                          };
@@ -139,19 +139,19 @@ namespace Db.Persistence.Repositories
             return query;
         }
 
-        public IEnumerable GetAcuralLeaveTypes(int companyId, string culture)
+        public IQueryable GetAccrualLeaveTypes(int companyId, string culture)
         {
             return context.LeaveTypes.Where(t =>
                         t.HasAccrualPlan && ((t.IsLocal && t.CompanyId == companyId) || t.IsLocal == false)
                         && (t.StartDate <= DateTime.Today && (t.EndDate == null || t.EndDate >= DateTime.Today)))
-                        .Select(t => new { id = t.Id, name = HrContext.TrlsName(t.Name, culture) }).ToList();
+                        .Select(t => new { id = t.Id, name = HrContext.TrlsName(t.Name, culture) });
         }
-        public IEnumerable GetAcuralGridLeaveTypes(int companyId, string culture)
+        public IQueryable GetAcuralGridLeaveTypes(int companyId, string culture)
         {
             return context.LeaveTypes.Where(t =>
                         t.HasAccrualPlan && ((t.IsLocal && t.CompanyId == companyId) || t.IsLocal == false)
                         && (t.StartDate <= DateTime.Today && (t.EndDate == null || t.EndDate >= DateTime.Today)))
-                        .Select(t => new { value = t.Id, text = HrContext.TrlsName(t.Name, culture) }).ToList();
+                        .Select(t => new { value = t.Id, text = HrContext.TrlsName(t.Name, culture) });
         }
         public IEnumerable GetAcuralRestLeaveTypes(int companyId, string culture)
         {
@@ -162,7 +162,7 @@ namespace Db.Persistence.Repositories
         public IQueryable<PeriodListViewModel> GetOpenedLeavePeriods()
         {
             return (from p in context.Periods
-                    where p.Status == 1
+                    where p.Status == 1 
                     join l in context.LeaveTypes on p.CalendarId equals l.CalendarId
                     select new PeriodListViewModel { id = p.Id, name = p.Name, typeId = l.Id });
         }
@@ -286,7 +286,6 @@ namespace Db.Persistence.Repositories
             //                 Code = a.Code,
             //                 DeptId = a.DepartmentId,
             //                 BranchId = a.BranchId,
-            //                 SectorId = a.SectorId
             //             } into g
             //             orderby new { g.Key.EmpId, g.Key.TypeId }
             //             select new LeaveTransSummary
@@ -301,10 +300,9 @@ namespace Db.Persistence.Repositories
             //                 EmpCode = g.Key.Code,
             //                 DeptId = g.Key.DeptId,
             //                 BranchId = g.Key.BranchId,
-            //                 SectorId = g.Key.SectorId
             //             });
 
-            var query = context.Database.SqlQuery<LeaveTransSummary>("SELECT LeaveTrans.CompanyId, LeaveTrans.PeriodId, LeaveTrans.EmpId, LeaveTrans.EmpId Id, LeaveTrans.TypeId, [Periods].[Name] [Period], dbo.fn_TrlsName(ISNULL(People.Title, '') + ' ' + People.FirstName + ' ' + People.Familyname, '" + culture + "') Employee, dbo.fn_TrlsName(LeaveTypes.[Name], '" + culture + "') LeaveType, Assignments.Code EmpCode, Assignments.DepartmentId DeptId, Assignments.BranchId, Assignments.SectorId, dbo.fn_TrlsName(CompanyStructures.[Name], '" + culture + "') Dept, Round(SUM(LeaveTrans.TransFlag * LeaveTrans.TransQty),2) Balance FROM LeaveTrans INNER JOIN LeaveTypes ON LeaveTrans.TypeId = LeaveTypes.Id INNER JOIN Assignments ON (LeaveTrans.EmpId = Assignments.EmpId AND Convert(date, GetDate()) BETWEEN Assignments.AssignDate AND Assignments.EndDate) INNER JOIN CompanyStructures ON Assignments.DepartmentId = CompanyStructures.Id INNER JOIN People ON LeaveTrans.EmpId = People.Id INNER JOIN [Periods] ON LeaveTrans.PeriodId = [Periods].Id WHERE LeaveTrans.CompanyId = " + companyId + " AND [Periods].YearId = " + YearId + " GROUP BY LeaveTrans.CompanyId, LeaveTrans.PeriodId, LeaveTrans.EmpId, LeaveTrans.TypeId, People.Title, People.FirstName, People.Familyname, [Periods].[Name], LeaveTypes.[Name], Assignments.Code, Assignments.DepartmentId, Assignments.BranchId, Assignments.SectorId, CompanyStructures.[Name] ORDER BY LeaveTrans.EmpId, LeaveTrans.TypeId").AsQueryable<LeaveTransSummary>();
+            var query = context.Database.SqlQuery<LeaveTransSummary>("SELECT LeaveTrans.CompanyId, LeaveTrans.PeriodId, LeaveTrans.EmpId, LeaveTrans.EmpId Id, LeaveTrans.TypeId, [Periods].[Name] [Period], dbo.fn_TrlsName(ISNULL(People.Title, '') + ' ' + People.FirstName + ' ' + People.Familyname, '" + culture + "') Employee, dbo.fn_TrlsName(LeaveTypes.[Name], '" + culture + "') LeaveType, Assignments.Code EmpCode, Assignments.DepartmentId DeptId, Assignments.BranchId, dbo.fn_TrlsName(CompanyStructures.[Name], '" + culture + "') Dept, Round(SUM(LeaveTrans.TransFlag * LeaveTrans.TransQty),2) Balance FROM LeaveTrans INNER JOIN LeaveTypes ON LeaveTrans.TypeId = LeaveTypes.Id INNER JOIN Assignments ON (LeaveTrans.EmpId = Assignments.EmpId AND Convert(date, GetDate()) BETWEEN Assignments.AssignDate AND Assignments.EndDate) INNER JOIN CompanyStructures ON Assignments.DepartmentId = CompanyStructures.Id INNER JOIN People ON LeaveTrans.EmpId = People.Id INNER JOIN [Periods] ON LeaveTrans.PeriodId = [Periods].Id WHERE LeaveTrans.CompanyId = " + companyId + " AND [Periods].YearId = " + YearId + " GROUP BY LeaveTrans.CompanyId, LeaveTrans.PeriodId, LeaveTrans.EmpId, LeaveTrans.TypeId, People.Title, People.FirstName, People.Familyname, [Periods].[Name], LeaveTypes.[Name], Assignments.Code, Assignments.DepartmentId, Assignments.BranchId, CompanyStructures.[Name] ORDER BY LeaveTrans.EmpId, LeaveTrans.TypeId").AsQueryable<LeaveTransSummary>();
             return query;
         }
 
@@ -546,7 +544,7 @@ namespace Db.Persistence.Repositories
                     break;
             }
 
-            string sql = "SELECT P.Id EmpId, A.Code EmpCode, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') Name, " + startdate + ", P.BirthDate,IsNull((SELECT SUM(LT.TransQty * LT.TransFlag) FROM LeaveTrans LT WHERE LT.TypeId = LT.TypeId AND LT.PeriodId = " + selectedPeriod + " AND LT.EmpId = P.Id),0) Balance FROM LeaveTypes T, Assignments A, Employements E, People P LEFT OUTER JOIN LeavePostings LP ON (LP.PeriodId = " + selectedPeriod + " AND LP.EmpId = P.Id AND LP.Posted = 1) WHERE E.CompanyId = " + companyId + " And A.EmpId = E.EmpId And A.EmpId = P.Id And T.Id = " + leave.Id + endate + " AND LP.Id IS NULL AND (Convert(date, GETDATE()) Between A.AssignDate And A.EndDate) AND A.SysAssignStatus = 1 AND E.Status = 1 AND (Convert(date, GETDATE()) Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Locations) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Locations, ',') WHERE VALUE = ISNULL(A.LocationId, 0)), -1) ELSE ISNULL(A.LocationId, 0) END) = ISNULL(A.LocationId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
+            string sql = "SELECT P.Id EmpId, A.Code EmpCode, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') Name, " + startdate + ", P.BirthDate,IsNull((SELECT SUM(LT.TransQty * LT.TransFlag) FROM LeaveTrans LT WHERE LT.TypeId = LT.TypeId AND LT.PeriodId = " + selectedPeriod + " AND LT.EmpId = P.Id),0) Balance FROM LeaveTypes T, Assignments A, Employements E, People P LEFT OUTER JOIN LeavePostings LP ON (LP.PeriodId = " + selectedPeriod + " AND LP.EmpId = P.Id AND LP.Posted = 1) WHERE E.CompanyId = " + companyId + " And A.EmpId = E.EmpId And A.EmpId = P.Id And T.Id = " + leave.Id + endate + " AND LP.Id IS NULL AND (Convert(date, GETDATE()) Between A.AssignDate And A.EndDate) AND A.SysAssignStatus = 1 AND E.Status = 1 AND (Convert(date, GETDATE()) Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Branches) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Branches, ',') WHERE VALUE = ISNULL(A.BranchId, 0)), -1) ELSE ISNULL(A.BranchId, 0) END) = ISNULL(A.BranchId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
             return context.Database.SqlQuery<EmpLeaveDays>(sql).ToList();
         }
 
@@ -1026,22 +1024,19 @@ namespace Db.Persistence.Repositories
         #region Leave Request
         public IList<DropDownList> GetEmpLeaveTypes(int empId, int compnayId, string culture)
         {
-            string sql = "SELECT T.Id, dbo.fn_TrlsName(T.Name, '" + culture + "') Name FROM LeaveTypes T, Assignments A, Employements E, People P WHERE A.EmpId = E.EmpId And A.EmpId = P.Id And A.EmpId = " + empId + " AND (CONVERT(date, getdate()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (GETDATE() Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND ((T.IsLocal = 1 And T.CompanyId = " + compnayId + ") Or t.IsLocal = 0) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Locations) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Locations, ',') WHERE VALUE = ISNULL(A.LocationId, 0)), -1) ELSE ISNULL(A.LocationId, 0) END) = ISNULL(A.LocationId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
+            string sql = "SELECT T.Id, dbo.fn_TrlsName(T.Name, '" + culture + "') Name FROM LeaveTypes T, Assignments A, Employements E, People P WHERE A.EmpId = E.EmpId And A.EmpId = P.Id And A.EmpId = " + empId + " AND (CONVERT(date, getdate()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (GETDATE() Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND ((T.IsLocal = 1 And T.CompanyId = " + compnayId + ") Or t.IsLocal = 0) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Branches) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Branches, ',') WHERE VALUE = ISNULL(A.BranchId, 0)), -1) ELSE ISNULL(A.BranchId, 0) END) = ISNULL(A.BranchId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
             return context.Database.SqlQuery<DropDownList>(sql).ToList();
         }
 
         public IQueryable<LeaveRequestViewModel> ReadLeaveRequests(int companyId, string culture)
         {
+            DateTime today = DateTime.Today;
             return from l in context.LeaveRequests
                    where l.CompanyId == companyId
+                   join a in context.Assignments on l.EmpId equals a.EmpId
+                   where (a.CompanyId == companyId && a.AssignDate <= l.StartDate && a.EndDate >= l.StartDate)
                    join p in context.People on l.EmpId equals p.Id
                    join lt in context.LeaveTypes on l.TypeId equals lt.Id
-                   join wft in context.WF_TRANS on new { p1 = "Leave", p2 = l.TypeId, p3 = l.Id } equals new { p1 = wft.Source, p2 = wft.SourceId, p3 = wft.DocumentId } into g
-                   from wft in g.DefaultIfEmpty()
-                   join ap in context.People on wft.AuthEmp equals ap.Id into g1
-                   from ap in g1.DefaultIfEmpty()
-                   join role in context.Roles on wft.RoleId equals role.Id into g4
-                   from role in g4.DefaultIfEmpty()
                    select new LeaveRequestViewModel
                    {
                        Id = l.Id,
@@ -1055,18 +1050,9 @@ namespace Db.Persistence.Repositories
                        ApprovalStatus = l.ApprovalStatus,
                        EmpId = l.EmpId,
                        CompanyId = l.CompanyId,
-                       RoleId = wft.RoleId.ToString(),
-                       DeptId = wft.DeptId,
-                       PositionId = wft.PositionId,
-                       AuthBranch = wft.AuthBranch,
-                       AuthDept = wft.AuthDept,
-                       AuthEmp = wft.AuthEmp,
-                       AuthEmpName = HrContext.TrlsName(ap.Title + " " + ap.FirstName + " " + ap.Familyname, culture),
-                       AuthPosition = wft.AuthPosition,
-                       BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
+                       DeptId = a.DepartmentId,
+                       BranchId = a.BranchId,
                        HasImage = p.HasImage,
-                       ApprovalName = "",
                        EndDate = l.EndDate,
                        ReplaceEmpId = l.ReplaceEmpId,
                        //last edit by Abdelazim
@@ -1078,10 +1064,11 @@ namespace Db.Persistence.Repositories
                        CancelReason = l.CancelReason,
                        CancelDesc = l.CancelDesc,
                        ActualEndDate = l.ActualEndDate,
+                       ActualStartDate=l.ActualStartDate,
                        ActualNofDays = l.ActualNofDays,
                        DayFraction = l.DayFraction,
-
-
+                       isStarted = today >= (l.ActualStartDate ?? l.StartDate),
+                       isBreaked = (DbFunctions.TruncateTime(l.EndDate)  != DbFunctions.TruncateTime(l.ActualEndDate)) && (DbFunctions.TruncateTime(l.StartDate) == DbFunctions.TruncateTime(l.ActualStartDate))
                    };
         }
 
@@ -1108,13 +1095,11 @@ namespace Db.Persistence.Repositories
                 join a in context.Assignments on l.EmpId equals a.EmpId
                 where (a.CompanyId == companyId && a.AssignDate <= l.StartDate && a.EndDate >= l.StartDate && (Depts == "" || deptLst.Contains(a.DepartmentId)))
                 join p in context.People on l.EmpId equals p.Id
-                join lt in context.LeaveTypes on l.TypeId equals lt.Id
                 select new LeaveRequestViewModel
                 {
                     Id = l.Id,
                     RequestDate = l.RequestDate,
                     Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                    Type = HrContext.TrlsName(lt.Name, culture),
                     TypeId = l.TypeId,
                     StartDate = l.ActualStartDate ?? l.StartDate,
                     ReturnDate = l.ReturnDate,
@@ -1123,11 +1108,11 @@ namespace Db.Persistence.Repositories
                     EmpId = l.EmpId,
                     CompanyId = l.CompanyId,
                     HasImage = p.HasImage,
-                    Notes = l.ApprovalStatus == 9 && l.RejectReason != null ? HrContext.GetLookUpCode("LeaveRejectReason", l.RejectReason.Value, culture) : "",
+                    Notes = l.ApprovalStatus == 9 && l.RejectReason != null ? HrContext.GetLookUpCode("LeaveRejectReason", l.RejectReason.Value, culture) : l.RejectDesc,
                     AttUrl = HrContext.GetDoc("LeaveRequest", l.Id)
                 };
 
-            return query;
+            return query.OrderByDescending(a=>a.StartDate);
         }
 
         public IQueryable<LeaveRequestViewModel> ReadLeaveRequestTabs(int companyId, byte Tab, byte Range, string Depts, DateTime? Start, DateTime? End, string culture)
@@ -1162,19 +1147,11 @@ namespace Db.Persistence.Repositories
                 join a in context.Assignments on l.EmpId equals a.EmpId
                 where (a.CompanyId == companyId && a.AssignDate <= l.StartDate && a.EndDate >= l.StartDate && (Depts == "" || deptLst.Contains(a.DepartmentId)))
                 join p in context.People on l.EmpId equals p.Id
-                join lt in context.LeaveTypes on l.TypeId equals lt.Id
-                join wft in context.WF_TRANS on new { p1 = "Leave", p2 = l.TypeId, p3 = l.Id } equals new { p1 = wft.Source, p2 = wft.SourceId, p3 = wft.DocumentId } into g
-                from wft in g.DefaultIfEmpty()
-                join ap in context.People on wft.AuthEmp equals ap.Id into g1
-                from ap in g1.DefaultIfEmpty()
-                join role in context.Roles on wft.RoleId equals role.Id into g4
-                from role in g4.DefaultIfEmpty()
                 select new LeaveRequestViewModel
                 {
                     Id = l.Id,
                     RequestDate = l.RequestDate,
                     Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                    Type = HrContext.TrlsName(lt.Name, culture),
                     TypeId = l.TypeId,
                     StartDate = l.ActualStartDate ?? l.StartDate,
                     ReturnDate = l.ReturnDate,
@@ -1182,47 +1159,41 @@ namespace Db.Persistence.Repositories
                     ApprovalStatus = l.ApprovalStatus,
                     EmpId = l.EmpId,
                     CompanyId = l.CompanyId,
-                    RoleId = wft.RoleId.ToString(),
-                    DeptId = wft.DeptId,
-                    PositionId = wft.PositionId,
-                    AuthBranch = wft.AuthBranch,
-                    AuthDept = wft.AuthDept,
-                    AuthEmp = wft.AuthEmp,
-                    AuthEmpName = HrContext.TrlsName(ap.Title + " " + ap.FirstName + " " + ap.Familyname, culture),
-                    AuthPosName = role == null ? "" : role.Name,
-                    AuthPosition = wft.AuthPosition,
-                    BranchId = wft.BranchId,
-                    SectorId = wft.SectorId,
+                    Code = a.Code,
+                    JobId = a.JobId,
+                    JobName = HrContext.TrlsName(a.Job.Name, culture),
+                    DeptId = a.DepartmentId,
+                    DeptName = HrContext.TrlsName(a.Department.Name, culture),
+                    BranchId = a.BranchId,
+                    BranchName = HrContext.TrlsName(a.Branch.Name, culture),
                     HasImage = p.HasImage,
-                    WorkflowTime = wft.CreatedTime,
-                    Notes = l.ApprovalStatus == 9 && l.RejectReason != null ? HrContext.GetLookUpCode("LeaveRejectReason", l.RejectReason.Value, culture) : wft.Message,
+                    Notes = l.ApprovalStatus == 9 && l.RejectReason != null ? HrContext.GetLookUpCode("LeaveRejectReason", l.RejectReason.Value, culture) : l.RejectDesc,
                     AttUrl = HrContext.GetDoc("LeaveRequest", l.Id)
                 };
 
-            return query;
+            return query.OrderByDescending(a => a.StartDate);
         }
 
-        public RequestWfFormViewModel ReadLeaveRequest(int leaveId, string Source)
+        public RequestWfFormViewModel ReadRequestWF(int sourceId, string source, string lang)
         {
-            var obj = context.RequestWf.FirstOrDefault(a => a.Source == Source && a.SourceId == leaveId);
-            if (obj == null)
-                return null;
-            else
-            {
-                var res = new RequestWfFormViewModel
-                {
-                    Source = obj.Source,
-                    HeirType = obj.HeirType,
-                    Hierarchy = obj.Hierarchy,
-                    Id = obj.Id,
-                    NofApprovals = obj.NofApprovals,
-                    SourceId = obj.SourceId,
-                    TimeOutAction = obj.TimeOutAction,
-                    TimeOutDays = obj.TimeOutDays
-                };
+            var request = from r in context.RequestWf
+                          where r.Source == source && r.SourceId == sourceId
+                          select new RequestWfFormViewModel
+                          {
+                              Source = r.Source,
+                              HeirType = r.HeirType,
+                              Hierarchy = r.Hierarchy,
+                              Id = r.Id,
+                              NofApprovals = r.NofApprovals,
+                              SourceId = r.SourceId,
+                              TimeOutAction = r.TimeOutAction,
+                              TimeOutDays = r.TimeOutDays,
+                              ForceUpload = r.ForceUpload,
+                              Roles = context.LookUpUserCodes.Where(c => c.CodeName == "Roles").Select(c => new Model.ViewModel.Personnel.RolesViewModel { RoleId = null, CodeId = c.CodeId, text = HrContext.GetLookUpUserCode("Roles", c.CodeId, lang) }).Union(context.Roles.Select(a => new Model.ViewModel.Personnel.RolesViewModel { RoleId = a.Id, CodeId = null, text = a.Name })).ToList(),
+                              Diagrams = context.Diagrams.Select(a => new FormDropDown { id = a.Id, name = a.Name }).ToList()
+                          };
 
-                return res;
-            }
+            return request.FirstOrDefault();
         }
 
         public LeaveReqViewModel GetRequest(int requestId, string culture)
@@ -1252,7 +1223,6 @@ namespace Db.Persistence.Repositories
                                              EndDate = req.EndDate,
                                              ReturnDate = req.ReturnDate,
                                              NofDays = req.NofDays,
-                                             //StartTolerance = req.StartTolerance,
                                              ReplaceEmpId = req.ReplaceEmpId,
                                              AuthbyEmpId = req.AuthbyEmpId,
                                              DayFraction = req.DayFraction,
@@ -1267,6 +1237,7 @@ namespace Db.Persistence.Repositories
                                              CancelDesc = req.CancelDesc,
                                              Stars = req.Stars,
                                              Attachments = HrContext.GetAttachments("LeaveRequest", req.Id),
+                                             ForceUpload = HrContext.ForceUpload("Leave", req.TypeId),
                                              CreatedTime = req.CreatedTime,
                                              CreatedUser = req.CreatedUser,
                                              ModifiedTime = req.ModifiedTime,
@@ -1287,6 +1258,7 @@ namespace Db.Persistence.Repositories
 
             Request.BalBefore = balBefore;
             Request.BalAfter = balAfter;
+
             return Request;
         }
 
@@ -1356,6 +1328,7 @@ namespace Db.Persistence.Repositories
             if (prevReqs.Count > 0)
                 message.Append(MsgUtils.Instance.Trls(culture, "DoublicateStartDate") + "<br>");
 
+
             //Allowed Dayes and Balance
             int periodId = GetLeaveBalance(ref requestVal, new ReqDaysParamVM { type = type, EmpId = EmpId, RequestId = RequestId, StartDate = StartDate, culture = culture });
 
@@ -1379,13 +1352,17 @@ namespace Db.Persistence.Repositories
             // for edit in leave operationd
             int approvalStatus = 1;
             if (RequestId > 0)
-                approvalStatus = context.LeaveRequests.FirstOrDefault(r => r.Id == RequestId)?.ApprovalStatus ?? 1;
+            {
+                approvalStatus = context.LeaveRequests.Where(a => a.Id == RequestId).Select(a => a.ApprovalStatus).FirstOrDefault();
+                if (approvalStatus == 0) approvalStatus = 1;
+            }
             
             if (approvalStatus < 6)
             {
                 if (NofDays > requestVal.AllowedDays) message.Append(MsgUtils.Instance.Trls(culture, "AllowedDays") + "<br>");
                 if (NofDays > type.MaxDays) message.Append(MsgUtils.Instance.Trls(culture, "CantGreaterThan") + " " + type.MaxDays + "<br>");
             }
+
             requestVal.BalAfter = requestVal.BalBefore.GetValueOrDefault() - NofDays;
             requestVal.Message = message.Length > 0 ? message.ToString().Substring(0, message.ToString().Length - 4) : "";
 
@@ -1476,7 +1453,7 @@ namespace Db.Persistence.Repositories
                         var query = (from a in context.Assignments
                                       where a.CompanyId == param.ComapnyId && a.AssignDate <= param.StartDate && a.EndDate >= param.StartDate && a.DepartmentId == leavePlans.DeptId && a.JobId == leavePlans.JobId && a.SysAssignStatus == 1
                                       join r in context.LeaveRequests on a.EmpId equals r.EmpId into lj
-                                      from r in lj.Where(l => l.Id != param.RequestId && (l.ApprovalStatus == 5 || l.ApprovalStatus == 6) && (((l.ActualStartDate ?? l.StartDate) >= sdate && (l.ActualStartDate ?? l.StartDate) <= edate) || ((l.ActualEndDate ?? l.EndDate) >= sdate && (l.ActualEndDate ?? l.EndDate) <= edate))).DefaultIfEmpty()
+                                      from r in lj.Where(l => l.Id != param.RequestId && (l.ApprovalStatus == 5 || l.ApprovalStatus == 6) && (((l.ActualStartDate ?? l.StartDate) >= sdate && (l.ActualStartDate ?? l.StartDate) <= edate) || ((l.ActualEndDate ?? l.EndDate) >= sdate && (l.ActualEndDate ?? l.EndDate) <= edate) || ((l.ActualStartDate ?? l.StartDate) <= sdate && (l.ActualEndDate ?? l.EndDate) >= sdate) || ((l.ActualStartDate ?? l.StartDate) <= edate && (l.ActualEndDate ?? l.EndDate) >= edate))).DefaultIfEmpty()
                                       select new { a.DepartmentId, a.JobId, ActiveEmps = a.EmpId, LeaveReq = r == null ? 0 : 1 } into gb
                                       group gb by new { gb.DepartmentId, gb.JobId } into g
                                       select new { sum = (g.Sum(p => p.LeaveReq)), count = g.Count() });
@@ -1520,10 +1497,10 @@ namespace Db.Persistence.Repositories
             return PeriodId;
         }
 
-        public IEnumerable GetLeaveTypesList(int companyId, string culture)
+        public IQueryable GetLeaveTypesList(int companyId, string culture)
         {
-            return context.LeaveTypes.Where(l => ((l.IsLocal && l.CompanyId == companyId) || l.IsLocal == false))
-                .Select(l => new { id = l.Id, name = HrContext.TrlsName(l.Name, culture), depts = l.CompanyStuctures, isActive = (l.StartDate <= DateTime.Today && (l.EndDate == null || l.EndDate >= DateTime.Today)) }).ToList();
+            return context.LeaveTypes.Where(l => (l.CompanyId == companyId) || l.IsLocal == false)
+                .Select(l => new { id = l.Id, name = HrContext.TrlsName(l.Name, culture), depts = l.CompanyStuctures, isActive = (l.StartDate <= DateTime.Today && (l.EndDate == null || l.EndDate >= DateTime.Today)) });
         }
 
         public CalenderViewModel GetHolidays(int compId)
@@ -1581,11 +1558,12 @@ namespace Db.Persistence.Repositories
         }
 
         //Replacement Employee
-        public IEnumerable<FormList> GetReplaceEmpList(int empId, string culture)
+        public IQueryable<FormList> GetReplaceEmpList(int empId, string culture)
         {
             string active = " And Convert(date, GETDATE()) between A.AssignDate And A.EndDate AND A.SysAssignStatus = 1 ";
-            string sql = "SELECT P.Id id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') name, (CASE WHEN P.HasImage = 1 THEN CAST(P.Id as nvarchar(10)) + '.jpeg' ELSE 'noimage.jpg' END) PicUrl, dbo.fn_GetEmpStatus(P.Id) Icon FROM Assignments A, People P WHERE A.EmpId != " + empId + " And A.EmpId = P.Id " + active + " And A.DepartmentId In (SELECT RD.Id FROM Assignments A, CompanyStructures ED, CompanyStructures RD WHERE A.EmpId = " + empId + " And A.DepartmentId = ED.Id And (ED.ParentId = RD.Id OR RD.Sort LIKE (SUBSTRING(ED.Sort, 0, Len(ED.Sort) - 4)) + '_____' ))";
-            return context.Database.SqlQuery<FormList>(sql).ToList();
+            string sql = "SELECT P.Id id, dbo.fn_TrlsName(ISNULL(P.Title, '') + ' ' + P.FirstName + ' ' + P.Familyname, '" + culture + "') name, [dbo].[fn_GetDoc]('EmployeePic', p.Id) PicUrl, p.Gender, dbo.fn_GetEmpStatus(P.Id) Icon FROM Assignments A, People P WHERE A.EmpId != " + empId + " And A.EmpId = P.Id " + active + " And A.DepartmentId In (SELECT RD.Id FROM Assignments A, CompanyStructures ED, CompanyStructures RD WHERE A.EmpId = " + empId + " And A.DepartmentId = ED.Id And (ED.ParentId = RD.Id OR RD.Sort LIKE (SUBSTRING(ED.Sort, 0, Len(ED.Sort) - 4)) + '_____' ))";
+
+            return context.Database.SqlQuery<FormList>(sql).AsQueryable();
         }
 
         //EmpTasks Grid
@@ -1624,7 +1602,7 @@ namespace Db.Persistence.Repositories
             //                TransTypeName = HrContext.GetLookUpCode("TransType", t.TransType, culture),
             //                Balance = t.TransQty * t.TransFlag
             //            };
-
+            //return query;
             string sql = $"SELECT LT.Id, dbo.fn_TrlsName(L.Name, '{culture}') LeaveType, LT.TransType, LT.TransDate, (CASE WHEN LT.TransFlag = 1 THEN LT.TransQty ELSE 0 END) CreditQty, (CASE WHEN LT.TransFlag = -1 THEN LT.TransQty ELSE 0 END) DebitQty, CAST(SUM(LT.TransQty * LT.TransFlag) OVER(PARTITION BY LT.typeid ORDER BY LT.TransDate, LT.TransType, LT.Id) AS real) Balance, dbo.fn_GetLookUpCode('TransType', LT.TransType, '{culture}') TransTypeName FROM LeaveTrans LT, [Periods] P, LeaveTypes L WHERE LT.CompanyId = {companyId} AND LT.EmpId = {empId} AND LT.TypeId = L.Id AND P.Id = LT.PeriodId AND '{startDate.Date.ToString("yyyy-MM-dd")}' BETWEEN P.StartDate and P.EndDate";
             return context.Database.SqlQuery<LeaveTransViewModel>(sql).AsQueryable();
         }
@@ -1797,7 +1775,8 @@ namespace Db.Persistence.Repositories
                 SMonth = h.SMonth,
                 HoliDate = h.HoliDate,
                 Standard = h.Standard
-            }).ToList();
+            })
+            .ToList();
 
             return query.Select(h => new HolidayViewModel
             {
@@ -1805,7 +1784,8 @@ namespace Db.Persistence.Repositories
                 Name = h.Name,
                 HoliDate = h.Standard ? new DateTime(DateTime.Today.Year, h.SMonth.Value, h.SDay.Value) : h.HoliDate,
                 Standard = h.Standard
-            }).OrderBy(h => h.HoliDate);
+            })
+            .OrderBy(h => h.HoliDate);
         }
 
         public IEnumerable GetUpcomingLeaves(int companyId, string culture)
@@ -1820,7 +1800,8 @@ namespace Db.Persistence.Repositories
                              Day = 1, //Today
                              EmpId = l.EmpId,
                              Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                             HasImage = p.HasImage,
+                             Image = HrContext.GetDoc("EmployeePic", l.Id),
+                             Gender = p.Gender,
                              LeaveType = HrContext.TrlsName(l.LeaveType.Name, culture),
                              NofDays = l.NofDays,
                              ActualStartDate = l.ActualStartDate
@@ -1833,7 +1814,8 @@ namespace Db.Persistence.Repositories
                                       Day = 2, //Tomorrow
                                       EmpId = l.EmpId,
                                       Employee = HrContext.TrlsName(p.Title + " " + p.FirstName + " " + p.Familyname, culture),
-                                      HasImage = p.HasImage,
+                                      Image = HrContext.GetDoc("EmployeePic", l.Id),
+                                      Gender = p.Gender,
                                       LeaveType = HrContext.TrlsName(l.LeaveType.Name, culture),
                                       NofDays = l.NofDays,
                                       ActualStartDate = l.ActualStartDate
@@ -1984,7 +1966,7 @@ namespace Db.Persistence.Repositories
                 IEmployments = obj.a.Employments == null ? null : obj.a.Employments.Split(',').Select(int.Parse).ToList(),
                 IPayrollGrades = obj.a.PayrollGrades == null ? null : obj.a.PayrollGrades.Split(',').Select(int.Parse).ToList(),
                 IPositions = obj.a.Positions == null ? null : obj.a.Positions.Split(',').Select(int.Parse).ToList(),
-                ILocations = obj.a.Locations == null ? null : obj.a.Locations.Split(',').Select(int.Parse).ToList(),
+                IBranches = obj.a.Branches == null ? null : obj.a.Branches.Split(',').Select(int.Parse).ToList(),
                 IJobs = obj.a.Jobs == null ? null : obj.a.Jobs.Split(',').Select(int.Parse).ToList(),
                 IPeopleGroups = obj.a.PeopleGroups == null ? null : obj.a.PeopleGroups.Split(',').Select(int.Parse).ToList()
             };
@@ -2001,13 +1983,7 @@ namespace Db.Persistence.Repositories
                              RoleId = R.RoleId,
                              Role = (R.RoleId == null ? R.CodeId.ToString() : R.RoleId.ToString()),
                              Order = R.Order,
-                             WFlowId = R.WFlowId,
-                             CreatedTime = R.CreatedTime,
-                             CreatedUser = R.CreatedUser,
-                             ModifiedTime = R.ModifiedTime,
-                             ModifiedUser = R.ModifiedUser
-
-
+                             WFlowId = R.WFlowId
                          };
             return result;
         }
@@ -2206,9 +2182,10 @@ namespace Db.Persistence.Repositories
                              AuthPosition = wft.AuthPosition,
                              AuthPosName = role == null ? HrContext.TrlsName(apos.Name, culture) : role.Name,
                              BranchId = wft.BranchId,
-                             SectorId = wft.SectorId,
                              HasImage = p.HasImage,
-                             EmpStars = context.LeaveRequests.Where(r => r.EmpId == l.EmpId && r.StartDate.Year == l.StartDate.Year && r.ApprovalStatus <= 6).Select(r => r.Stars).Sum(r => r) ?? 0
+                             EmpStars = context.LeaveRequests.Where(r => r.EmpId == l.EmpId && r.StartDate.Year == l.StartDate.Year && r.ApprovalStatus <= 6).Select(r => r.Stars).Sum(r => r) ?? 0,
+                             Attachement = HrContext.GetDoc("EmployeePic", p.Id),
+                             Gender = p.Gender
                          }).OrderBy(o => new { o.EmpStars, o.StartDate });
 
             return query;
@@ -2222,16 +2199,6 @@ namespace Db.Persistence.Repositories
                    where l.CompanyId == companyId && l.ApprovalStatus == 6
                    join p in context.People on l.EmpId equals p.Id
                    join lt in context.LeaveTypes on l.TypeId equals lt.Id
-                   join wft in context.WF_TRANS on new { p1 = "Leave", p2 = l.TypeId, p3 = l.Id } equals new { p1 = wft.Source, p2 = wft.SourceId, p3 = wft.DocumentId } into g
-                   from wft in g.DefaultIfEmpty()
-                   join ap in context.People on wft.AuthEmp equals ap.Id into g1
-                   from ap in g1.DefaultIfEmpty()
-                   join apos in context.Positions on wft.AuthPosition equals apos.Id into g2
-                   from apos in g2.DefaultIfEmpty()
-                   join dep in context.CompanyStructures on wft.AuthDept equals dep.Id into g3
-                   from dep in g3.DefaultIfEmpty()
-                   join role in context.Roles on wft.RoleId equals role.Id into g4
-                   from role in g4.DefaultIfEmpty()
                    select new LeaveReqGridViewModel
                    {
                        Id = l.Id,
@@ -2248,19 +2215,11 @@ namespace Db.Persistence.Repositories
                        CompanyId = l.CompanyId,
                        ReqReason = HrContext.GetLookUpCode("LeaveReason", l.ReqReason.Value, culture),
                        EmpId = l.EmpId,
-                       RoleId = wft.RoleId.ToString(),
-                       DeptId = wft.DeptId,
-                       PositionId = wft.PositionId,
-                       AuthBranch = wft.AuthBranch,
-                       AuthDept = wft.AuthDept,
-                       AuthEmp = wft.AuthEmp,
-                       AuthPosition = wft.AuthPosition,
-                       BranchId = wft.BranchId,
-                       SectorId = wft.SectorId,
                        HasImage = p.HasImage,
                        isStarted = today >= (l.ActualStartDate ?? l.StartDate),
                        isBreaked = l.EndDate != l.ActualEndDate && l.StartDate == l.ActualStartDate,
-                       //ApproveName = ""
+                       Gender = p.Gender,
+                       Attachement = HrContext.GetDoc("EmployeePic", p.Id)
                    };
         }
 
@@ -2739,13 +2698,14 @@ namespace Db.Persistence.Repositories
 
         #endregion
         #region API
-        public ValidationMessages CheckLeaveRequestApi(int TypeId, int EmpId, DateTime StartDate, DateTime EndDate, string culture, int RequestId, bool isSSUser, int companyId, int? replaceEmp = null)
+        public ValidationMessages CheckLeaveRequestApi(int TypeId, int EmpId, DateTime StartDate, DateTime EndDate,float NofDays, string culture, int RequestId, bool isSSUser, int companyId, int? replaceEmp = null)
         {
             ValidationMessages message = new ValidationMessages();
             message.IsError = false;
             // List<string> Errors = new List<string>();
             LeaveType type = new LeaveType();
-
+            var request = context.LeaveRequests.FirstOrDefault(r => r.Id == RequestId);
+            #region assign
             string assignError = CheckAssignStatus(EmpId, TypeId, out type, culture);
             RequestValidationViewModel requestVal = new RequestValidationViewModel() { ExDayOff = type.ExDayOff, ExHolidays = type.ExHolidays, MaxDays = type.MaxDays };
 
@@ -2755,6 +2715,24 @@ namespace Db.Persistence.Repositories
                 message.IsError = true;
                 return message;
             }
+            #endregion
+
+            #region Check Workflow
+            //WfViewModel wf = new WfViewModel()
+            //{
+            //    Source = "Leave",
+            //    SourceId = type.Id,
+            //    DocumentId = RequestId,
+            //    RequesterEmpId = EmpId,
+            //    ApprovalStatus = 2,
+            //};
+            //var wfTrans = AddWorkFlow(wf, culture);
+            //if (wfTrans == null && wf.WorkFlowStatus != "Success")
+            //{
+            //    message.NoWorkFlowError= MsgUtils.Instance.Trls(culture, "NoWorkFlowerror");
+            //}
+            #endregion
+
             #region Replacement Employee
             //Check if the employee is Replacement Employee in this date
             var replaceFor = IsReplacement(EmpId, StartDate, EndDate, companyId, culture);
@@ -2819,6 +2797,15 @@ namespace Db.Persistence.Repositories
 
             string msg;
             int PeriodId = GetLeaveRequestPeriod(type.CalendarId, StartDate, culture, out msg);
+            var currentDate = request == null ? DateTime.Now.Date : request.StartDate;
+            int CheckedId = GetLeaveRequestPeriod(type.CalendarId, currentDate, culture, out msg);
+            var period = (from p in context.Periods where p.Id == CheckedId select new {p.StartDate,p.EndDate }).FirstOrDefault();
+            if (StartDate.Date > period.EndDate.Date || StartDate.Date < period.StartDate.Date)
+            {
+                message.IsError = true;
+                message.PeriodError = MsgUtils.Instance.Trls(culture, "ExceedPeriodLimit");
+
+            } 
             if (msg != "OK") // only check valid period
             {
                 message.StarsError = msg;
@@ -2842,6 +2829,23 @@ namespace Db.Persistence.Repositories
             }
             #endregion
 
+            #region  for edit leave operation 
+            int approvalStatus = 1;
+            if (RequestId > 0)
+                approvalStatus = context.LeaveRequests.FirstOrDefault(r => r.Id == RequestId)?.ApprovalStatus ?? 1;
+            
+            if (approvalStatus < 6)
+            {
+                if (NofDays > requestVal.AllowedDays) 
+                    message.AllowedDaysError= MsgUtils.Instance.Trls(culture, "AllowedDays");
+                if (NofDays > type.MaxDays) 
+                    message.CantGreaterError =MsgUtils.Instance.Trls(culture, "CantGreaterThan");
+            }
+            requestVal.BalAfter = requestVal.BalBefore.GetValueOrDefault() - NofDays;
+            
+
+
+            #endregion
             return message;
         }
         public Dictionary<string, string> ReadMailEmpAssign(string Language, int Id)
@@ -2954,12 +2958,11 @@ namespace Db.Persistence.Repositories
                     LeaveType = HrContext.TrlsName(l.LeaveType.Name, culture),
                     Manager = HrContext.TrlsName(l.Manager.Title + " " + l.Manager.FirstName + " " + l.Manager.Familyname, culture),
                     BranchId = wft.BranchId,
-                    SectorId = wft.SectorId,
                     Status = l.ApprovalStatus,
                     WorkflowTime = wft.CreatedTime,
                 };
 
-            return query;
+            return query.OrderByDescending(a => a.AssignDate);
         }
         public IQueryable<AssignOrderViewModel> ReadAssignOrders(int companyId, byte Tab, byte Range, string Depts, DateTime? Start, DateTime? End, string culture)
         {
@@ -3011,7 +3014,7 @@ namespace Db.Persistence.Repositories
                     Duration = l.Duration,
                     LeaveTypeId = l.LeaveTypeId,
                     Manager = HrContext.TrlsName(l.Manager.Title + " " + l.Manager.FirstName + " " + l.Manager.Familyname, culture),
-                     ManagerId = l.ManagerId,
+                    ManagerId = l.ManagerId,
                     TaskDesc = l.TaskDesc,
                     ApprovalStatus = l.ApprovalStatus,
                     CompanyId = l.CompanyId,
@@ -3026,12 +3029,11 @@ namespace Db.Persistence.Repositories
                     AuthPosition = wft.AuthPosition,
                     LeaveType = HrContext.TrlsName(l.LeaveType.Name, culture),
                     BranchId = wft.BranchId,
-                    SectorId = wft.SectorId,
                     WorkflowTime = wft.CreatedTime,
                     Status = l.ApprovalStatus
                 };
 
-            return query;
+            return query.OrderByDescending(a => a.AssignDate);
         }
 
         public IQueryable<AssignOrderViewModel> ReadAssignOrdersArchieve(int companyId, byte Range, string Depts, DateTime? Start, DateTime? End, string culture)
@@ -3089,11 +3091,10 @@ namespace Db.Persistence.Repositories
                     AuthPosition = wft.AuthPosition,
                     LeaveType = HrContext.TrlsName(l.LeaveType.Name, culture),
                     BranchId = wft.BranchId,
-                    SectorId = wft.SectorId,
                     WorkflowTime = wft.CreatedTime,
                     Status= l.ApprovalStatus
                 };
-            return query;
+            return query.OrderByDescending(a=>a.AssignDate);
         }
 
         public IQueryable<DateTime> GetEmpAssignDates(int companyId, int EmpId)
@@ -3114,12 +3115,12 @@ namespace Db.Persistence.Repositories
 
             return query.FirstOrDefault();
         }
-        public AssignmentGridViewModel GetFullEmpInfo(int companyId, int EmpId,string culture)
+        public PeopleGridViewModel GetFullEmpInfo(int companyId, int EmpId,string culture)
         {
             var today = DateTime.Today.Date;
             var query = from a in context.Assignments
                         where a.CompanyId == companyId && a.EmpId == EmpId && a.AssignDate <= today && a.EndDate >= today
-                        select new AssignmentGridViewModel
+                        select new PeopleGridViewModel
                         {
                             Job = HrContext.TrlsName(a.Job.Name, culture),
                             DepartmentId = a.DepartmentId,
@@ -3131,7 +3132,7 @@ namespace Db.Persistence.Repositories
         public IQueryable<AssignOrderViewModel> GetEmpAssignData(int companyId, int EmpId,string culture)
         {
             IQueryable<AssignOrderViewModel> query =
-                from l in context.AssignOrders
+                from l in context.AssignOrders where l.ApprovalStatus == 6
                 join a in context.Assignments on l.EmpId equals a.EmpId
                 where (a.CompanyId == companyId && a.EmpId == EmpId && a.AssignDate <= l.AssignDate && a.EndDate >= l.AssignDate)
                 join p in context.People on l.EmpId equals p.Id
@@ -3165,7 +3166,7 @@ namespace Db.Persistence.Repositories
         public IList<DropDownList> GetSpacificLeaveTypes(int companyId, string culture,int empId)
         {
 
-            string sql = "SELECT T.Id, dbo.fn_TrlsName(T.Name, '" + culture + "') Name FROM LeaveTypes T, Assignments A, Employements E, People P WHERE A.EmpId = E.EmpId And A.EmpId = P.Id And A.EmpId = " + empId + " AND (CONVERT(date, getdate()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (GETDATE() Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND (T.AbsenceType in (1,6,8)) AND ((T.IsLocal = 1 And T.CompanyId = " + companyId + ") Or t.IsLocal = 0) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Locations) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Locations, ',') WHERE VALUE = ISNULL(A.LocationId, 0)), -1) ELSE ISNULL(A.LocationId, 0) END) = ISNULL(A.LocationId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
+            string sql = "SELECT T.Id, dbo.fn_TrlsName(T.Name, '" + culture + "') Name FROM LeaveTypes T, Assignments A, Employements E, People P WHERE A.EmpId = E.EmpId And A.EmpId = P.Id And A.EmpId = " + empId + " AND (CONVERT(date, getdate()) Between A.AssignDate And A.EndDate) AND E.Status = 1 AND (GETDATE() Between T.StartDate And ISNULL(T.EndDate, '2099/01/01')) AND (T.AbsenceType in (1,6,8)) AND ((T.IsLocal = 1 And T.CompanyId = " + companyId + ") Or t.IsLocal = 0) AND ISNULL(T.Gender, P.Gender) = P.Gender AND ISNULL(T.Religion, ISNULL(P.Religion, 0)) = ISNULL(P.Religion, 0) AND ISNULL(T.MaritalStat, ISNULL(P.MaritalStat, 0)) = ISNULL(P.MaritalStat, 0) AND ISNULL(T.Nationality, ISNULL(P.Nationality, 0)) = ISNULL(P.Nationality, 0) AND ISNULL(T.MilitaryStat, ISNULL(P.MilitaryStat, 0)) = ISNULL(P.MilitaryStat, 0) AND (CASE WHEN LEN(T.Employments) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Employments, ',') WHERE VALUE = E.PersonType), 0) ELSE E.PersonType END) = E.PersonType AND (CASE WHEN LEN(T.Jobs) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Jobs, ',') WHERE VALUE = A.JobId), 0) ELSE A.JobId END) = A.JobId AND (CASE WHEN LEN(T.CompanyStuctures) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.CompanyStuctures, ',') WHERE VALUE = A.DepartmentId), 0) ELSE A.DepartmentId END) = A.DepartmentId AND (CASE WHEN LEN(T.Branches) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Branches, ',') WHERE VALUE = ISNULL(A.BranchId, 0)), -1) ELSE ISNULL(A.BranchId, 0) END) = ISNULL(A.BranchId, 0) AND (CASE WHEN LEN(T.Positions) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Positions, ',') WHERE VALUE = ISNULL(A.PositionId, 0)), -1) ELSE ISNULL(A.PositionId, 0) END) = ISNULL(A.PositionId, 0) AND (CASE WHEN LEN(T.PeopleGroups) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PeopleGroups, ',') WHERE VALUE = ISNULL(A.GroupId, 0)), -1) ELSE ISNULL(A.GroupId, 0) END) = ISNULL(A.GroupId, 0) AND (CASE WHEN LEN(T.Payrolls) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.Payrolls, ',') WHERE VALUE = ISNULL(A.PayrollId, 0)), -1) ELSE ISNULL(A.PayrollId, 0) END) = ISNULL(A.PayrollId, 0) AND (CASE WHEN LEN(T.PayrollGrades) > 0 THEN ISNULL((SELECT VALUE FROM STRING_SPLIT(T.PayrollGrades, ',') WHERE VALUE = ISNULL(A.PayGradeId, 0)), -1) ELSE ISNULL(A.PayGradeId, 0) END) = ISNULL(A.PayGradeId, 0)";
             return context.Database.SqlQuery<DropDownList>(sql).ToList();
             //var res = from LT in context.LeaveTypes
             //          where (LT.AbsenceType == 1 || LT.AbsenceType == 6) && (LT.CompanyId == companyId)
@@ -3187,7 +3188,6 @@ namespace Db.Persistence.Repositories
                 return true;
             }
             return false;
-
         }
 
 

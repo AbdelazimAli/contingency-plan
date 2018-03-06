@@ -38,10 +38,6 @@ namespace WebApp.Controllers
         #region Medical Request
         public ActionResult Index()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult GetMedicalRequest(int MenuId)
@@ -69,24 +65,28 @@ namespace WebApp.Controllers
         {
             var Medical = _hrUnitOfWork.MedicalRepository.ReadMedical(id);
             ViewBag.BenefitId = _hrUnitOfWork.MedicalRepository.FillDDLBenefit(User.Identity.GetLanguage());
-            if (User.Identity.IsSelfServiceUser())
-            {
-                int EmpId = User.Identity.GetEmpId();
-                ViewBag.BeneficiaryId = _hrUnitOfWork.Repository<EmpRelative>().Where(a => a.EmpId == EmpId).Select(p => new { id = p.Id, name = p.Name }).ToList();
-                //  ViewBag.Services = _hrUnitOfWork.MedicalRepository.GetAllservice(EmpId,0);
-            }
+
+            // TODO
+            //if (User.Identity.IsSelfServiceUser())
+            //{
+            //    int EmpId = User.Identity.GetEmpId();
+            //    ViewBag.BeneficiaryId = _hrUnitOfWork.Repository<EmpRelative>().Where(a => a.EmpId == EmpId).Select(p => new { id = p.Id, name = p.Name }).ToList();
+            //    //  ViewBag.Services = _hrUnitOfWork.MedicalRepository.GetAllservice(EmpId,0);
+            //}
+
             if (Medical != null)
             {
-                ViewBag.BeneficiaryId = _hrUnitOfWork.Repository<EmpRelative>().Where(a => a.EmpId == Medical.EmpId).Select(p => new { id = p.Id, name = p.Name }).ToList();
-        
+                ViewBag.BeneficiaryId = _hrUnitOfWork.Repository<EmpRelative>().Where(a => a.EmpId == Medical.EmpId).Select(p => new { id = p.Id, name = p.Name });
                 ViewBag.Services = _hrUnitOfWork.MedicalRepository.GetAllservice(Medical.EmpId, Medical.BenefitId, Medical.BeneficiaryId);
             }
+
             ViewBag.Providers = _hrUnitOfWork.MedicalRepository.GetAllProvider();
             ViewBag.Currency = _hrUnitOfWork.LookUpRepository.GetCurrencyCode();
             string culture = Language;
-            List<string> columns = _hrUnitOfWork.LeaveRepository.GetAutoCompleteColumns("MedicalRequestsForm", CompanyId, Version);
-            if (columns.FirstOrDefault(fc => fc == "EmpId") == null)
-                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, Medical != null ? Medical.EmpId : 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus }).ToList();
+            
+            if (!_hrUnitOfWork.LeaveRepository.CheckAutoCompleteColumn("MedicalRequestsForm", CompanyId, Version, "EmpId"))
+                ViewBag.Employees = _hrUnitOfWork.EmployeeRepository.GetActiveEmployees(Language, Medical != null ? Medical.EmpId : 0, CompanyId).Select(a => new { id = a.Id, name = a.Employee, PicUrl = a.PicUrl, Icon = a.EmpStatus });
+
             if (id == 0)
                 return View(new MedicalRequestViewModel());
 
@@ -250,7 +250,6 @@ namespace WebApp.Controllers
                 {
                     Source = request,
                     ObjectName = "MedRequest",
-                    Version = Convert.ToByte(Request.Form["Version"]),
                     Transtype = TransType.Delete
                 });
                 _hrUnitOfWork.MedicalRepository.Remove(request);
@@ -273,10 +272,6 @@ namespace WebApp.Controllers
         {
             ViewBag.CanselReasons = _hrUnitOfWork.LookUpRepository.GetLookUpCodes("MedCancelReason", Language).Select(a => new { id = a.CodeId, name = a.Title });
             ViewBag.Mangers = _hrUnitOfWork.EmployeeRepository.GetManagers(CompanyId, Language).Select(m => new { id = m.Id, name = m.Name });
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         //  Read Medical Follow Up
@@ -508,7 +503,6 @@ namespace WebApp.Controllers
                 Destination = request,
                 Source = model,
                 ObjectName = "MedicalReqFollowUpForm",
-                Version = Convert.ToByte(Request.Form["Version"]),
                 Options = moreInfo,
                 Transtype = TransType.Update
             });
@@ -557,10 +551,6 @@ namespace WebApp.Controllers
         #region Benefit
         public ActionResult AcceptedMedical()
         {
-            string RoleId = Request.QueryString["RoleId"]?.ToString();
-            int MenuId = Request.QueryString["MenuId"] != null ? int.Parse(Request.QueryString["MenuId"].ToString()) : 0;
-            if (MenuId != 0)
-                ViewBag.Functions = _hrUnitOfWork.MenuRepository.GetUserFunctions(RoleId, MenuId).ToArray();
             return View();
         }
         public ActionResult ReadAcceptedMedical(int MenuId)

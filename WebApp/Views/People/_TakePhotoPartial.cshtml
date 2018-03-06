@@ -1,0 +1,162 @@
+﻿@model TakePhotoVModel
+<div class="row">
+    <div class="col-md-6">
+        <video id="video" style="width:400px;" autoplay></video>
+    </div>
+    <div class="col-md-6">
+        <canvas id="canvas" style="width:400px;height:300px"></canvas>
+        <img src="" alt="" id="img" style="width:400px;height:300px"/>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-6">
+
+    </div>
+</div>
+<div class="modal-btns">
+    <button id="snap" type="button" class="btn btn-primary btn-lg">
+        <span class="glyphicon glyphicon-camera MyButtons" aria-hidden="true"></span> @MsgUtils.Instance.Trls("Take Photo")
+    </button>
+    <button type="button" class="btn save MyButtons" id="Save">@MsgUtils.Instance.Trls("Save")</button>
+</div>
+
+
+
+
+
+
+
+
+
+<script>
+    var video = document.getElementById('video');
+    var canvas = document.getElementById('canvas');
+    var context = canvas.getContext('2d');
+
+    StartCamera();
+    RegisterTakePhoto_Upload_Button();
+
+    setTimeout( ShowImageFromDatabase,500);
+   
+    function ShowImageFromDatabase()
+    {
+        var ImageData='@Model.ImageData';
+        if(ImageData!='')
+        {
+            $('#canvas').hide();
+            $('#img').attr('src','data:image/jpg;base64,' + ImageData).show();
+            //var img=new Image();
+            //img.src='data:image/jpg;base64,' + ImageData;
+            //context.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        }
+        else
+        {
+            canvas.src="/Content/Photos/systemnoimage.jpg";
+        }
+    }
+    function StartCamera() {
+
+        // Grab elements, create settings, etc.
+
+
+        // Get access to the camera!
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            // Not adding `{ audio: true }` since we only want video now
+            navigator.mediaDevices.getUserMedia({ video: true }).then(function (stream) {
+
+                video.src = window.URL.createObjectURL(stream);
+                video.play();
+            }).catch(errBack);
+        }
+        else if (navigator.getUserMedia) { // Standard
+            navigator.getUserMedia({ video: true }, function (stream) {
+                video.src = stream;
+                video.play();
+            }, errBack);
+        } else if (navigator.webkitGetUserMedia) { // WebKit-prefixed
+            navigator.webkitGetUserMedia({ video: true }, function (stream) {
+                video.src = window.webkitURL.createObjectURL(stream);
+                video.play();
+            }, errBack);
+        } else if (navigator.mozGetUserMedia) { // Mozilla-prefixed
+            navigator.mozGetUserMedia({ video: true }, function (stream) {
+                video.src = window.URL.createObjectURL(stream);
+                video.play();
+            }, errBack);
+
+        }
+    }
+
+    function errBack(err) {
+        alert(err.message);
+
+    }
+    function RegisterTakePhoto_Upload_Button() {
+        // Elements for taking the snapshot
+
+
+        // Trigger photo take
+        document.getElementById("snap").addEventListener("click", function () {
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            $('#canvas').show();
+            $('#img').hide();
+        });
+
+        document.getElementById("Save").addEventListener("click", function () {
+
+            // context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            var dataURL = canvas.toDataURL('image/png');
+
+            var img = imageDataURItoBlob(dataURL);
+            var objURL = window.URL.createObjectURL(img);
+            window.URL.revokeObjectURL(objURL);
+
+
+            var EmpID = @Model.EmpID;
+            var url = '@Html.Raw(Url.Action("UploadOneFile", "FileUpload",new {area="", Source=Constants.Sources.EmployeePic, SourceId = Model.EmpID }))';
+            var formData = new FormData();
+            formData.append('file', img, 'blob.jpg');
+
+            var request = new XMLHttpRequest();
+            request.open("POST", url);
+            request.send(formData);
+            request.onreadystatechange = function() {
+                if (this.readyState == 4 && this.status == 200) {
+
+                    document.getElementById("myimage").src = dataURL;
+                    HideModal('myModal');
+                }
+            };
+
+        });
+    }
+
+
+    function imageDataURItoBlob(dataURI) {
+        // convert base64/URLEncoded data component to raw binary data held in a string
+        var byteString;
+
+        if (dataURI.split(',')[0].indexOf('base64') >= 0)
+            byteString = atob(dataURI.split(',')[1]);
+        else
+            byteString = unescape(dataURI.split(',')[1]);
+
+        // separate out the mime component
+        var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+        // write the bytes of the string to a typed array
+        var ia = new Uint8Array(byteString.length);
+
+        for (var i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+        }
+
+        return new Blob([ia], {
+            type: mimeString
+        });
+
+    }
+
+
+</script>

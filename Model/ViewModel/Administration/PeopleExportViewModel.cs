@@ -24,9 +24,8 @@ namespace Model.ViewModel.Administration
         public List<FormList> AssignStatus { get; set; }
         public List<FormList> MilitaryStat { get; set; }
         public List<FormList> ProviderId { get; set; }
-        public List<FormList> LocationId { get; set; }
-        public List<FormList> AssignLocation { get; set; }
-        public List<FormList> KafeelId { get; set; }
+        public List<FormList> AssignBranch { get; set; }
+        public List<FormList> BranchId { get; set; }
         public IEnumerable Curr { get; set; }
         public List<FormList> ToCountry { get; set; }
         public List<FormList> FromCountry { get; set; }

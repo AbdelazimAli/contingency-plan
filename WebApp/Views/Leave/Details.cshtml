@@ -3,35 +3,41 @@
 @model Model.ViewModel.Personnel.LeaveReqViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
     var ssMenu = ViewBag.isSSMenu;
 }
+
+@Html.Partial("_FormButtons")
+
 <div id="pageTabs"></div>
-<div id="docWindow"></div>
+@*<div id="docWindow"></div>*@
 <div id="prevLeavesWindow"></div>
 
-
-@Html.Partial("_LeavesFunc")
-
 <script>
+    var source = "LeaveRequest";
+    var sourceId = 0;
     $(function(){
         FormJs.DrawTabs("pageTabs"); // "LeaveRequests"
+        //$('#classcol-md-2').append($('.btns-form').html());
 
         var model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
         var Progress = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Progress));
-
+        sourceId = model.Id;
         $("#t_WorkFlow").click(function(){
+            showToolbar([]);
             $('#tab_WorkFlow').load("@Url.Action("WorkFlow", "Log")"+"?Source=Leave&SourceId=" + model.TypeId + "&DocumentId=" + model.Id + "&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
         });
 
         $("#t_AudiLog").click(function(){
+            showToolbar([]);
             $('#tab_AudiLog').load("@Url.Action("Log", "Log")?id="+model.Id+"&RoleId=@Request.QueryString["RoleId"]&ObjectName=LeaveRequest&Version=@Request.QueryString["Version"]&DataLevel=@Request.QueryString["DataLevel"]&Read=@Request.QueryString["Read"]");
         });
 
         $("#t_GeneralInfo").click(function () {
+            showToolbar([1,2,3,6,7,8,11], '#leaveReq');
             $("#tab_GeneralInfo").html("<div id='leaveReqDiv'></div>");
             LeaveRequesForm();
         });
@@ -104,8 +110,10 @@
             var calender = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Calender))
             var calcOptions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CalcOptions))
             var fractions = [{id: 0, name: ""}, {id: 1, name: "@MsgUtils.Instance.Trls("0.25 start day")"}, {id: 2, name: "@MsgUtils.Instance.Trls("0.5 start day")"}, {id: 3, name: "@MsgUtils.Instance.Trls("0.25 end day")"}, {id: 4, name: "@MsgUtils.Instance.Trls("0.50 end day")"}];
-            var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
-            var ApprovalStatus = ['@MsgUtils.Instance.Trls("Darft")', '@MsgUtils.Instance.Trls("Submit")', '@MsgUtils.Instance.Trls("AprovalEmployeeReview")', '@MsgUtils.Instance.Trls("ManagerReview")', '@MsgUtils.Instance.Trls("Accepted")' ,'@MsgUtils.Instance.Trls("Approved")' ,'@MsgUtils.Instance.Trls("Cancel before accepted")' , '@MsgUtils.Instance.Trls("Cancel after accepted")'  , '@MsgUtils.Instance.Trls("Rejected")'];
+            @*var funs = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));*@
+            var funs = $.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+
+            var ApprovalStatus = ['@MsgUtils.Instance.Trls("Draft")', '@MsgUtils.Instance.Trls("Submit")', '@MsgUtils.Instance.Trls("AprovalEmployeeReview")', '@MsgUtils.Instance.Trls("ManagerReview")', '@MsgUtils.Instance.Trls("Accepted")' ,'@MsgUtils.Instance.Trls("Approved")' ,'@MsgUtils.Instance.Trls("Cancel before accepted")' , '@MsgUtils.Instance.Trls("Cancel after accepted")'  , '@MsgUtils.Instance.Trls("Rejected")'];
             @*var ReqStatus = [{id: 2, name: "@MsgUtils.Instance.Trls("Confirmed")" }, {id: 1, name: "@MsgUtils.Instance.Trls("Planned")"}];*@
 
             var url = "@Url.Action("ReadFormInfo", "Pages")";
@@ -135,15 +143,15 @@
                     var approval = model.ApprovalStatus - 1;
                     model.ApprovalStatus = ApprovalStatus[approval];
                 }
-                data.reqbtns = ['Send'];
 
                 if(funs && funs.length >0)
                 {
-                    if($.inArray('Download',funs) >= 0)
-                        data.reqbtns.push('Download');
-                    if($.inArray('Upload',funs) >= 0)
-                        data.reqbtns.push('Upload');
+                    if($.inArray('Download',funs) == -1)
+                        $('#b6').hide();
+                    if($.inArray('Upload',funs) == -1)
+                        $('#b7').hide();
                 }
+
                 $("#leaveReqDiv").Forms(data, model);
                 model.ApprovalStatus = model.Approval;
 
@@ -328,16 +336,28 @@
                     $("#" + formId +" #ReturnDate").data(picker).readonly();
                 }
 
-                $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
+                @*$("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');*@
+                $('div[name=btnSec]').hide();
 
+                // append submit hidden field
                 var hidden = "<input type='hidden' id='submit' name='submit' value='false' />";
                 $("#" + formId).append(hidden);
 
-                //submitRequest
-                $("#" + formId).on( 'click', '#saveChanges, #submitRequest', function (e) {
+                if (model.ForceUpload /*&& model.Attachments == 0*/)
+                    $('#b8').attr('disabled', true);
+                else
+                    $('#b8').attr('disabled', false);
+
+                //submit Request
+                $("#b1,#b2,#b3,#b8").off('click').on('click', function (e) {
                     validateReqReason();
-                    var submit = $(this).attr("id") == "submitRequest";
-                    $("#" + formId + " #submit").val(submit);
+
+                    var send = $(this).attr("id") == "b8" ? true : false; // click send
+                    var andNew = $(this).attr("id") == "b2" ? true : false; // click new
+                    var close = send || $(this).attr("id") == "b3" ? true : false; // click close or send
+                   
+                    // submit button is clicked
+                    $("#submit").val(send);
 
                     if($('#DayFraction').val() == "") $('#DayFraction').val(0);
 
@@ -345,33 +365,56 @@
                     if(defer) {
                         defer.then(function(d) {
                             FormJs.saveForm($("#" + formId), $(this), function (res) {
-                                $("#Documents").attr("disabled", false);
-                                if(res && res.model) {
+                                if(res) {
                                     model = res.model;
-                                    $("#" + formId + " #Id").val(res.model.Id);
-                                    $("#Documents").attr("disabled", false);
-                                    res.error ? toastr.error(res.error) : toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                                    if(submit) {
-                                        if(model.Stars) toastr.warning("@MsgUtils.Instance.Trls("UsedStars")".replace('{0}', model.Stars));
+                                    sourceId = model.Id;
+                                    if (model.ForceUpload == 1 /*&& model.Attachments == 0*/)
+                                        $('#b8').attr('disabled', true);
+                                    else
+                                        $('#b8').attr('disabled', false);
 
-                                        var oldPage = localStorage.getItem("menuhigh").split(",");
-                                        oldulr = $("#"+ oldPage[2] + " a").attr("href");
-                                        $("#renderbody").load(oldulr);
-                                    }
-                                } else
-                                    toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                            });
+                                    $("#" + formId + " #Id").val(model.Id);
+                                    res.error ? toastr.error(res.error) : toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
+
+                                    if(send) if(model.Stars) toastr.warning("@MsgUtils.Instance.Trls("UsedStars")".replace('{0}', model.Stars));
+                                    if (close) updateHistory(oldUlr);
+                                }
+                            }, andNew);
                         });
                     }
                 });
 
-                if($("#" + formId + " #Id").val() == 0) $("#Documents").attr("disabled", true);
+                if($("#" + formId + " #Id").val() == 0) $("#b6,#b7,#b8").attr("disabled", true);
+
+                //$('#b7').off('click').on('click', function () {
+                //    $('#UploadPopup').modal('show');
+                //});
+
+                $('#b6').on('click', function () {
+                    var objectName = 'LeaveRequest';
+                    var Idelem = $("#" + formId).find("#Id");
+                    var Id = Idelem.is("input") ? Idelem.val() : Idelem.text();
+                    var field2 = $("#" + formId).find("#EmpId"); //if text: autocomplete, else: select- kendoDropDownList || hidden input
+                    var EmpId = (field2.prop("type") == "text" ? field2.prop("data-val") : field2.val());
+                    if (EmpId === undefined)
+                        EmpId = model.EmpId;
+                    if (Id != 0 && EmpId != "" && EmpId != 0)
+                        MergeData(objectName, Id, EmpId);
+                    else if (Id == 0)
+                        toastr.error("@MsgUtils.Instance.Trls("NotSave")")
+                    else
+                        toastr.error("@MsgUtils.Instance.Trls("NoEmp")")
+                });
+
+                function MergeData(objectName, Id, EmpId) {
+                    $.post('/Letters/MergeEmp', { objectName: objectName, Id: Id, EmpId: EmpId }, function (res) { if (res.Exist) location.href = res.Path; else toastr.error(res.Error); });
+                }
 
                 //Open window when click
-                $("#Documents").on('click', function() {
-                    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveRequest&SourceId=" + model.Id).center().open();
-                    $("#Documents").fadeOut();
-                });
+                //$("#b10").on('click', function() {
+                //    $("#docWindow").data("kendoWindow").refresh("/FileUpload/Edit?Source=LeaveRequest&SourceId=" + model.Id).center().open();
+                //    $("#b10").fadeOut();
+                //});
 
                 $('#prevLeaveBtn').click(function(e) {
                     e.preventDefault();
@@ -388,7 +431,7 @@
 
 
         //----Documents----
-        $("#docWindow").kendoWindow ({
+        @*$("#docWindow").kendoWindow ({
             title: "@MsgUtils.Instance.Trls("LeaveRequestWindow")",
             minWidth: "1000px",
             width: "80%",
@@ -400,7 +443,7 @@
                 $("#Documents #nofdocs").text($("#docWindow table > tbody > tr.template-download").length);
                 $("#docWindow").empty();
             }
-        });
+        });*@
 
         //----Prev Employee Leave Requests----
         $("#prevLeavesWindow").kendoWindow ({
@@ -420,4 +463,6 @@
     });
 
 </script>
-@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "leaveReq" } })
+
+@Html.Partial("_LeavesFunc")
+@*@Html.Partial("_UploadFile", new ViewDataDictionary { { "FormId", "leaveReq" } })*@

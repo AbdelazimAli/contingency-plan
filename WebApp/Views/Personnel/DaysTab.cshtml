@@ -5,7 +5,7 @@
 @model DeptPlanFormDaysViewModel
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -35,7 +35,8 @@
        margin-top :10px;
    }
 </style>
-<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" />
+
+<link href="~/Content/fonts/Simple-Line-Icons.woff" rel="stylesheet" type="font/woff">
 
 <div id="DaysTab"></div>
 

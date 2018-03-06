@@ -6,7 +6,7 @@
     Layout = null;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);

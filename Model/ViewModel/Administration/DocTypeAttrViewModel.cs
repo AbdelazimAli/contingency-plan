@@ -16,6 +16,7 @@ namespace Model.ViewModel
         [MaxLength(20)]
         public string CodeName { get; set; }      
         public byte InputType { get; set; }
-      
+        public bool IsRequired { get; set; } = false;
+
     }
 }

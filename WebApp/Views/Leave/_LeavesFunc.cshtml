@@ -1,11 +1,11 @@
 ﻿@using WebApp.Extensions
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
-    var allawEditStars = !User.Identity.IsSelfServiceUser();
+    var allowEditStars = Request.QueryString["SSMenu"] == "false";
 }
 
 <style>
@@ -25,7 +25,7 @@
     }
 </style>
 
-<script src="~/Scripts/starwars.js"></script>
+
 <link href="~/Content/starwars.css" rel="stylesheet" />
 
 <script>
@@ -82,7 +82,7 @@
 
 
         function DrawStars(NofDays, isShow, ReqStars) {
-            var allawEdtStars = "@allawEditStars";
+            var allawEdtStars = "@allowEditStars";
             ("@rtl" == "True" ? myForm.find("#" + NofDays).before('<div class="rate_row"></div>') : myForm.find("#" + NofDays).after('<div class="rate_row"></div>'));
 
             myForm.find(".rate_row").starwarsjs({ stars: 5, count: 1, default_stars: ReqStars, disable: (!isShow && allawEdtStars == "True" ? 5 : 0) });  // 0=disabled
@@ -373,3 +373,5 @@
     }();
 
 </script>
+
+<script src="~/Scripts/starwars.js"></script>

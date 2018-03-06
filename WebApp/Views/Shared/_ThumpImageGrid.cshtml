@@ -102,11 +102,11 @@
             max-width:100% !important;
         }
 
-        /*@@page {
+        @@page {
             size: A4 portrait;
             max-height:100% !important;
             max-width:100% !important;
-        }*/
+        }
 
         #img01 {
             height: 100% !important;
@@ -131,12 +131,12 @@
 
 <script>
     var ThumpImage = function () {
-
-    function CheckPic(data) {
+        
+        function CheckPic(data) {
         if (data.AttUrl == null)
             return "/Content/Photos/systemnoimage.jpg";
-        //else if (data.AttUrl == 'pdf')
-        //    return "/Content/Free-file-icons/48px/pdf.png";
+        else if (data.AttUrl == 'pdf')
+            return "/Content/Free-file-icons/48px/pdf.png";
         else
             return 'data:image/jpg;base64,' + data.AttUrl;
     }
@@ -149,10 +149,12 @@
         $("#" + gridName).on("click", ".myThumpImg", null, function () {
             modal.style.display = "block";
             var dataitem = $("#" + gridName).getKendoGrid().dataItem($(this).closest("tr"));
+            console.log(dataitem);
             if (dataitem.AttUrl != null)
                 $.get("@Url.Action("GetImage", "Pages")", { id: dataitem[columnName], source: source }, function (e) {modalImg.src = (e == false ? "/Content/Photos/systemnoimage.jpg" : 'data:image/jpg;base64,' + e);});
             else
                 modalImg.src = "/Content/Photos/systemnoimage.jpg";
+
             captionText.innerHTML = this.alt;
         });
         document.addEventListener("keyup", function (e) {

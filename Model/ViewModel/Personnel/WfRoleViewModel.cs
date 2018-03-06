@@ -14,10 +14,5 @@ namespace Model.ViewModel.Personnel
         public Guid? RoleId { get; set; }
         public short? CodeId { get; set; }
         public string Role { get; set; }
-        public string CreatedUser { get; set; }
-        public string ModifiedUser { get; set; }
-        public DateTime? CreatedTime { get; set; }
-        public DateTime? ModifiedTime { get; set; }
-
     }
 }

@@ -3,7 +3,7 @@
 @model ExcelFileImports
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var rtl = User.Identity.RTL();
     int dataLevel = 4;
     int.TryParse(Model.DataLevel.ToString(), out dataLevel);
@@ -47,8 +47,8 @@
 
     });
 
-    var oldPage = localStorage.getItem("menuhigh").split(",");
-    oldulr = $("#"+ oldPage[2] + " a").attr("href");
+    //var oldPage = localStorage.getItem("menuhigh").split(",");
+    //oldulr = $("#"+ oldPage[2] + " a").attr("href");
     var timezoneSrc =JSON.stringify(timeZoneList.getTimeZone("@User.Identity.GetLanguage()","Grid"));
 
     var file = {ver:@Model.Ver , MenuId:@Model.MenuId,objectName:"@Model.ObjectName",OldObjectName:"@Model.OldObjectName",TableName:"@Model.TableName",ErrorData:true,TimeZone:timezoneSrc};
@@ -276,7 +276,7 @@
         $("#ErrorData").val(MyError);
         if($("#ExcelEmployeeGridsplt").length !== 0)
             $("#ExcelEmployeeGridsplt").remove();
-        
+
         $("#ExcelEmployeeGrid").remove();
         $("#UpperDiv").append('<div id="ExcelEmployeeGrid"></div>');
 
@@ -297,7 +297,7 @@
                         dataSource : res.data,
                         admin: "@admin", // Admin role
                         lang: "@User.Identity.GetCulture()",
-                        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="MySave(this,' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right");@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
+                        toolbar: '<div style="@(rtl ? "float: right" : "float: left")"><a class="btn btn-default btn-sm glyphicon glyphicon-plus" onclick="Grids.addNewClick(' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>@MsgUtils.Instance.Trls("AddNewRecord")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ok" onclick="MySave(this,' + gridname + ')" style="@(dataLevel < 2 ? "display: none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("SaveChanges")</span></a>&nbsp;<a class="btn btn-default btn-sm glyphicon glyphicon-ban-circle" onclick="Grids.cancelClick(' + gridname + ')" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelChanges")</span></a>&nbsp;<div class="btn-group" style="@(rtl ? "float: left" : "float: right");@(admin == false ? "display: none" : "")"><button type="button" class="btn btn-default btn-sm glyphicon glyphicon-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu" style="@(rtl ? "" : "left: -90px")"><li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp;&nbsp;&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a> <a class="glyphicon glyphicon-share-alt" onclick="Grids.redrawGrid(1, '+ gridname +')"><span>&nbsp;@MsgUtils.Instance.Trls("RowFilter")</span></a>&nbsp;&nbsp;</li></ul></div></div>',
                         objectName: "Import"+"@Model.OldObjectName",
                         tableName: "@Model.TableName",
                         gridName: "ExcelEmployeeGrid",
@@ -365,7 +365,7 @@
                     if (dataChanged == "true")  Grids.TriggerChanges(name,"Data",false);
 
                     toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-                    $("#renderbody").load(oldulr);
+                    updateHistory(oldUlr);
                     $("#SaveDataError").attr("hidden","hidden");
                 }else {
                     toastr.error("@MsgUtils.Instance.Trls("erroroccurred")");

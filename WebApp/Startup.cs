@@ -1,5 +1,7 @@
-﻿using Microsoft.Owin;
+﻿using Hangfire;
+using Microsoft.Owin;
 using Owin;
+using WebApp.Filters;
 
 [assembly: OwinStartup(typeof(WebApp.Startup))]
 namespace WebApp
@@ -12,8 +14,14 @@ namespace WebApp
             ConfigureAuth(app);
             app.MapSignalR();
 
-         //   app.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
+            app.UseCors(Microsoft.Owin.Cors.CorsOptions.AllowAll);
 
+            GlobalConfiguration.Configuration.UseSqlServerStorage("HrContext");
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = new[] { new CustomHangFireAuthorizationFilter() },
+            });
+            app.UseHangfireServer();
         }
     }
 }

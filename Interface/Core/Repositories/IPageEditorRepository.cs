@@ -57,7 +57,6 @@ namespace Interface.Core.Repositories
         IQueryable<ColumnInfoViewModel> GetColumnInfo(int gridId);
         IQueryable<RoleGridColumnsViewModel> GetRoleGridColumns(string RoleId, string objectName, byte version, int companyId, string culture);
         void UpdateRoleGridColumns(IEnumerable<RoleGridColumnsViewModel> models, string objectName, byte version, int companyId);
-        void Remove(Address address);
         IEnumerable GetobjectName(int companyId, string culture);
         IEnumerable<FlexColumnsViewModel> GetFlexColumns(int pageId,string name, string culture, int companyId);
         IEnumerable GetInputType(string culture, string code);

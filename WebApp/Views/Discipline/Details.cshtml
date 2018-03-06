@@ -4,7 +4,7 @@
 @model Model.Domain.DisplinPeriod
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -18,7 +18,7 @@
 <br />
 <div id="DisplinDiv"></div>
 
-<script src="~/Scripts/typeahead.bundle.min.js"></script>
+@*<script src="~/Scripts/typeahead.bundle.min.js"></script>*@
 <script>
     var model;
     var startPeriod=@Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.StartPeriod));
@@ -28,8 +28,8 @@
 
     $(function () {
 
-        var oldPage = localStorage.getItem("menuhigh").split(",");
-        oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
+        //oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         var formId = "DisplinForm";
         model = @Html.Raw((new JavaScriptSerializer()).Serialize(Model))
@@ -100,7 +100,7 @@
                     FormJs.saveForm($("#" + formId), $(this), function (res) {
                         toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
 
-                        $("#renderbody").load(oldulr);
+                        updateHistory(oldUlr);
                         $("#GridRangeDiv").data("kendoGrid").dataSource.read();
 
                     },Grids.sendData("GridRangeDiv"));
@@ -244,7 +244,7 @@
         });
         // Find Button BackToindex and bind for Click
         $('#DisplinDiv').on('click',"#backToIndex",null, function(){
-            $("#renderbody").load(oldulr);
+            updateHistory(oldUlr);
         });
         var id = desplinObj ==null ?0 :desplinObj.Id;
         //Employee Custody Grid

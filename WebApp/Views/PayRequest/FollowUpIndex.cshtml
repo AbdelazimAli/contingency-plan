@@ -2,13 +2,12 @@
 @using System.Web.Script.Serialization
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     int dataLevel = 4, read = 0;
     var rtl = User.Identity.RTL();
     var culture = User.Identity.GetCulture();
     int.TryParse(Request.QueryString["DataLevel"], out dataLevel);
     int.TryParse(Request.QueryString["Read"], out read);
-    string[] function = ViewData["Functions"] as string[];
 }
 <link href="~/Content/forms.css" rel="stylesheet" />
 <script src="~/Scripts/starwars.js"></script>
@@ -20,7 +19,7 @@
 <script>
     var CancelReasons = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.CanselReasons));
     var Mangers = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Mangers));
-    var Functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
+
 
     var approvalStatus = [
          { value: 1, text: '@MsgUtils.Instance.Trls("Darft")' },
@@ -38,7 +37,7 @@
     var columns = [{ field: "ApprovalStatus", values: approvalStatus }, { field: "PayMethod", values: payMethods }, { field: "RequestNo", locked: true }];
     var gridname = "'reqFollowup'";
 
-    var toolbar = '<div><div style="@(rtl ? "float: right" : "float: left")">'+
+    @*var toolbar = '<div><div style="@(rtl ? "float: right" : "float: left")">'+
         '<a class="btn btn-default btn-sm fa fa-eye" onclick="showRequest()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length>0)?!Array.Exists(function,f => f == "ShowRecord") :true)? "display:none" : "")" accesskey="s"><span>&nbsp;@MsgUtils.Instance.Trls("Show Record")</span></a>&nbsp;'+
         '<a class="btn btn-default btn-sm fa fa-thumbs-o-up" onclick="AcceptRefuFun()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "AcceptAndReject") : true) ? "display: none" : "")" accesskey="a"><span>&nbsp;@MsgUtils.Instance.Trls("Accept/Reject")</span></a>&nbsp;'+
         '<a class="btn btn-default btn-sm fa fa-male" onclick="SendTo(1)" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "SendToEmp") : true) ? "display: none" : "")" accesskey="e"><span>&nbsp;@MsgUtils.Instance.Trls("SendToEmployee")</span></a>&nbsp;'+
@@ -46,7 +45,7 @@
         '<a class="btn btn-default btn-sm fa fa-ban" onclick="CancelReq()" style="@(dataLevel < 2 || read == 1 || ((function != null && function.Length > 0) ? !Array.Exists(function, f => f == "CancelRequest") : true) ? "display: none" : "")" accesskey="c"><span>&nbsp;@MsgUtils.Instance.Trls("CancelRequest")</span></a>'+
         '&nbsp;&nbsp;<div class="btn-group"><button type="button" class="btn btn-default btn-sm fa fa-cog dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span class="caret"></span>&nbsp;</button><ul class="dropdown-menu">@if (admin){<li><a class="glyphicon glyphicon-floppy-save" onclick="Grids.saveGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveGrid")</span></a></li>}'+
         '@if (function != null && function.Length > 0){if (Array.Exists(function, f => f == "ExportExcel")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsXsl(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsExcel")</span></a></li>}if (Array.Exists(function, f => f == "ExportPdf")){<li><a class="fa fa-file-powerpoint-o" onclick="Grids.saveAsPdf(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("SaveAsPDF")</span></a></li>}}' +
-        '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';
+        '<li><a class="glyphicon glyphicon-trash" onclick="Grids.resetGrid(' + gridname + ')"><span>&nbsp; @MsgUtils.Instance.Trls("ResetGrid")</span></a></li> </ul></div></div>&nbsp;&nbsp;</div>';*@
 
     Grids.indexGrid({
         read: "@Url.Action("GetPayFollowUp", "PayRequest")?MenuId=@Request.QueryString["MenuId"]",
@@ -59,7 +58,7 @@
         columns: columns,
         lang: "@User.Identity.GetCulture()",
         select: { "ApprovalStatus": approvalStatus },
-        toolbar: toolbar,
+        //toolbar: toolbar,
         dataBound: function(e) {
 
             $("#" + this.gridName).find(".rate_row").each(function (index, element) {

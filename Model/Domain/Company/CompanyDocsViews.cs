@@ -1,12 +1,13 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-
+using System.Collections.Generic;
 namespace Model.Domain
 {
     public class CompanyDocsViews
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public Guid stream_id { get; set; }
         public byte[] file_stream { get; set; }
         public byte[] thumbs { get; set; }
@@ -44,5 +45,14 @@ namespace Model.Domain
         public string CreatedUser { get; set; }
         [MaxLength(128)]
         public string ModifiedUser { get; set; }
+
+        private IList<CompanyDocAttr> _CompanyDocAttrs = new List<CompanyDocAttr>();
+        public virtual IList<CompanyDocAttr> CompanyDocAttrs
+        {
+            get
+            {
+                return this._CompanyDocAttrs;
+            }
+        }
     }
 }

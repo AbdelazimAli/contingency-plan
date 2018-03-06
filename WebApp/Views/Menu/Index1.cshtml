@@ -5,7 +5,7 @@
 
 @{
     Layout = null;
-    var admin = User.IsInRole("Admin");
+    var admin = User.Identity.CanCustomize();
     var compantId = User.Identity.GetDefaultCompany();
     var culture = User.Identity.GetCulture();
     var rtl = User.Identity.RTL();
@@ -172,20 +172,22 @@
             if(edit!=null && model.Id!=0)$("#MenuName").attr("readonly","");
             $("#" + formId).find('#saveChanges').val('@MsgUtils.Instance.Trls("SaveChanges")');
 
-            if("@User.IsInRole("Developer")" == "False" && read != 1)
+            if("@User.Identity.Developer()" == "False" && read != 1)
                 $("#IFunctions").data("kendoMultiSelect").readonly();
 
 
         });
     }
     $(function () {
-        var oldPage = localStorage.getItem("menuhigh").split(",");
+        //var oldPage = localStorage.getItem("menuhigh").split(",");
         var readn = 1;
         var re = @Html.Raw((new JavaScriptSerializer()).Serialize(Model));
         functions = @Html.Raw((new JavaScriptSerializer()).Serialize(ViewBag.Functions));
-
+            //JSON.parse(localStorage["Functions"]).map(function(obj){ return obj.Name });
+            //$.grep(JSON.parse(localStorage["Functions"]), function (e) { return e.MenuId == "@Request.QueryString["MenuId"]" }).map(function(obj){ return obj.Name });
+        console.log(functions);
         var selector = '#lefttreeview';
-        var oldulr = $("#"+ oldPage[2] + " a").attr("href");
+        //var oldulr = $("#"+ oldPage[2] + " a").attr("href");
 
         $('#lefttreeview').TreeView({
             dragAndDrop: true,
@@ -267,7 +269,7 @@
                 var source = tree.dataItem(e.sourceNode);
                 var dest = tree.dataItem(e.dropTarget);
                 if (e.dropPosition == "over") {
-                    // level = 1 -> Menu   2 -> Page  3 -> Tab  
+                    // level = 1 -> Menu   2 -> Page  3 -> Tab
                     if ((source.NodeType == 2 && dest.NodeType != 1) || (source.Level == 3 && source.ParentId != dest.Id)) {
                         e.setValid(false);
                         console.log('Invalid Move');
@@ -320,7 +322,7 @@
         $("#MenuFormDiv").on("click","#saveChanges",null,(function (e) {
             FormJs.saveForm($("#MenuForm"), $(this), function () {
                 toastr.success("@MsgUtils.Instance.Trls("SaveComplete")");
-               // $("#renderbody").load(oldulr);
+                // updateHistory(oldUlr);
             });
         }));
 
@@ -330,13 +332,13 @@
             $('#lblValidate').css('display', 'none');
             $('#whereClausePopup').modal('show');
             var availableTags = [];
-            var logicalArr = ["And", "Or", ">=", "=>", "<=","=","@@User","@@Company","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@LocationId","@@PositionId","@@SectorId","@@BranchId","@@DepartmentId"];
+            var logicalArr = ["And", "Or", ">=", "=>", "<=","=","@@User","@@Company","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@PositionId","@@BranchId","@@DepartmentId"];
             var whereclauseText =$("#WhereClause").val();
             var ColumnsList = $("#ColumnList").val();
 
 
             availableTags = ColumnsList.split(",");
-            availableTags.push("And", "Or", ">=", "=>", "<=", "=", "@@User", "@@Company", "(", ")","@@Date(","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@LocationId","@@PositionId","@@SectorId","@@BranchId","@@DepartmentId");
+            availableTags.push("And", "Or", ">=", "=>", "<=", "=", "@@User", "@@Company", "(", ")","@@Date(","@@RoleId","@@EmpId","@@IsDepManager","@@JobId","@@PositionId","@@BranchId","@@DepartmentId");
             var tagsLowerCase = [];
             var logicalArrLowerCase = [];
 

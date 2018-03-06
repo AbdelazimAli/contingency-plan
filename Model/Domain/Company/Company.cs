@@ -51,8 +51,8 @@ namespace Model.Domain
         public string Responsible { get; set; } // Responsible Manager
         public short? LegalForm { get; set; } // Legal form  // LegalForm   
 
-        public int? AddressId { get; set; }
-        public Address Address { get; set; }
+        [MaxLength(500)]
+        public string Address { get; set; }
         ///////////////////////////////
 
         [MaxLength(20)]
